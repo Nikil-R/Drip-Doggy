@@ -1,0 +1,163 @@
+import { Slider } from "./ui/slider";
+import { Separator } from "./ui/separator";
+import { useSearchParams } from "react-router";
+
+export function ProductFilters() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedCategory = searchParams.get("category")?.toUpperCase() || "ALL CATEGORIES";
+  const selectedSize = searchParams.get("size")?.toUpperCase() || "";
+  const selectedColor = searchParams.get("color") || "";
+  
+  const priceRangeParam = searchParams.get("price");
+  const priceRange = priceRangeParam ? priceRangeParam.split("-").map(Number) : [0, 500];
+
+  const categories = [
+    "ALL CATEGORIES",
+    "T-SHIRTS",
+    "HOODIES",
+    "JACKETS",
+    "PANTS",
+    "ACCESSORIES",
+  ];
+
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  const colors = [
+    { name: "Black", value: "#000000" },
+    { name: "White", value: "#FFFFFF" },
+    { name: "Gray", value: "#9CA3AF" },
+    { name: "Brown", value: "#92400E" },
+    { name: "Beige", value: "#D4C5B9" },
+  ];
+
+  const handleCategoryClick = (category: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (category === "ALL CATEGORIES") {
+      newParams.delete("category");
+    } else {
+      newParams.set("category", category.toLowerCase());
+    }
+    // Reset collection if moving to specific categories to show all items
+    newParams.delete("collection");
+    newParams.delete("new");
+    setSearchParams(newParams);
+  };
+
+  const handleSizeClick = (size: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (selectedSize === size) {
+      newParams.delete("size");
+    } else {
+      newParams.set("size", size.toLowerCase());
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleColorClick = (colorName: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (selectedColor.toLowerCase() === colorName.toLowerCase()) {
+      newParams.delete("color");
+    } else {
+      newParams.set("color", colorName.toLowerCase());
+    }
+    setSearchParams(newParams);
+  };
+
+  const handlePriceChange = (val: number[]) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("price", `${val[0]}-${val[1]}`);
+    setSearchParams(newParams);
+  };
+
+  return (
+    <aside className="w-64 pr-8 border-r border-neutral-200/60">
+      {/* Categories */}
+      <div className="mb-8">
+        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">CATEGORIES</h3>
+        <div className="space-y-2.5">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => handleCategoryClick(category)}
+              className={`block w-full text-left py-1 text-xs font-bold tracking-wider transition-colors uppercase ${
+                selectedCategory === category
+                  ? "text-[#030213] font-extrabold"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Separator className="my-6 bg-neutral-200/60 h-px" />
+
+      {/* Sizes */}
+      <div className="mb-8">
+        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">SIZE</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {sizes.map((size) => (
+            <button
+              key={size}
+              onClick={() => handleSizeClick(size)}
+              className={`border text-[10px] font-bold py-2.5 rounded-sm transition-all text-center uppercase ${
+                selectedSize === size
+                  ? "bg-[#030213] text-white border-neutral-900"
+                  : "bg-white text-neutral-700 border-neutral-200/60 hover:border-neutral-900"
+              }`}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Separator className="my-6 bg-neutral-200/60 h-px" />
+
+      {/* Colors */}
+      <div className="mb-8">
+        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">COLOR</h3>
+        <div className="flex flex-wrap gap-2.5">
+          {colors.map((color) => (
+            <button
+              key={color.name}
+              onClick={() => handleColorClick(color.name)}
+              className={`w-8 h-8 rounded-full border border-neutral-200 p-0.5 transition-all hover:scale-105 ${
+                selectedColor.toLowerCase() === color.name.toLowerCase() ? "ring-2 ring-neutral-900 ring-offset-2 scale-105" : ""
+              }`}
+              title={color.name}
+            >
+              <div
+                className="w-full h-full rounded-full border border-neutral-200/20"
+                style={{ backgroundColor: color.value }}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Separator className="my-6 bg-neutral-200/60 h-px" />
+
+      {/* Price Range */}
+      <div className="mb-8">
+        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">PRICE RANGE</h3>
+        <div className="px-1 py-3">
+          <Slider
+            min={0}
+            max={500}
+            step={10}
+            defaultValue={[0, 500]}
+            value={priceRange}
+            onValueChange={handlePriceChange}
+            className="w-full cursor-pointer accent-[#030213]"
+          />
+        </div>
+        <div className="flex justify-between items-baseline mt-3 text-[10px] font-bold tracking-wider text-neutral-500 uppercase">
+          <span>${priceRange[0]}</span>
+          <span>${priceRange[1]}</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
