@@ -14,6 +14,8 @@ import { Orders } from "./pages/Orders";
 import { Wishlist } from "./pages/Wishlist";
 import { ComingSoon } from "./pages/ComingSoon";
 import { Search } from "./pages/Search";
+import { About } from "./pages/About";
+import { Help } from "./pages/Help";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -39,11 +41,13 @@ export default function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/account" element={<Profile />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/coming-soon" element={<ComingSoon />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/help" element={<Help />} />
         </Routes>
         <Footer />
       </div>

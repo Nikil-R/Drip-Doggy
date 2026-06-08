@@ -5,21 +5,19 @@ import { useSearchParams } from "react-router";
 export function ProductFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const selectedCategory = searchParams.get("category")?.toUpperCase() || "ALL CATEGORIES";
+  const genderParam = searchParams.get("gender") || "women";
+  const isAccessories = genderParam === "accessories";
+
+  const selectedCategory = searchParams.get("category")?.toUpperCase() || (isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
   const selectedSize = searchParams.get("size")?.toUpperCase() || "";
   const selectedColor = searchParams.get("color") || "";
   
   const priceRangeParam = searchParams.get("price");
   const priceRange = priceRangeParam ? priceRangeParam.split("-").map(Number) : [0, 500];
 
-  const categories = [
-    "ALL CATEGORIES",
-    "T-SHIRTS",
-    "HOODIES",
-    "JACKETS",
-    "PANTS",
-    "ACCESSORIES",
-  ];
+  const categories = isAccessories
+    ? ["ALL ACCESSORIES", "BAGS", "CAPS", "BELTS"]
+    : ["ALL WOMEN'S", "DRESSES", "OUTERWEAR", "TOPS", "SKIRTS"];
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
   const colors = [
@@ -32,7 +30,7 @@ export function ProductFilters() {
 
   const handleCategoryClick = (category: string) => {
     const newParams = new URLSearchParams(searchParams);
-    if (category === "ALL CATEGORIES") {
+    if (category.startsWith("ALL ")) {
       newParams.delete("category");
     } else {
       newParams.set("category", category.toLowerCase());
@@ -73,7 +71,7 @@ export function ProductFilters() {
     <aside className="w-64 pr-8 border-r border-neutral-200/60">
       {/* Categories */}
       <div className="mb-8">
-        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">CATEGORIES</h3>
+        <h3 className="text-xs font-extrabold tracking-[0.15em] text-neutral-800 mb-4 uppercase">SUB CATEGORIES</h3>
         <div className="space-y-2.5">
           {categories.map((category) => (
             <button

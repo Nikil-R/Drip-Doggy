@@ -36,6 +36,7 @@ export function ProductGrid() {
   const sizeParam = searchParams.get("size");
   const colorParam = searchParams.get("color");
   const priceRangeParam = searchParams.get("price");
+  const genderParam = searchParams.get("gender");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isInfiniteLoading, setIsInfiniteLoading] = useState(false);
@@ -113,6 +114,30 @@ export function ProductGrid() {
       name: "Oversized French Terry Dress Hoodie",
       price: 220.00,
       image: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      id: 10,
+      brand: "ACCESSORIES",
+      name: "Tactical Ripstop Sling Bag",
+      price: 95.00,
+      image: "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=600",
+      colors: ["#000000", "#9CA3AF"]
+    },
+    {
+      id: 11,
+      brand: "ACCESSORIES",
+      name: "Signature Webbing Collar & Lead Set",
+      price: 65.00,
+      image: "https://images.unsplash.com/photo-1541599540903-216a46ca1ad0?auto=format&fit=crop&q=80&w=600",
+      colors: ["#000000", "#D4C5B9"]
+    },
+    {
+      id: 12,
+      brand: "ACCESSORIES",
+      name: "Streetwear Ripstop Camp Cap",
+      price: 45.00,
+      image: "https://images.unsplash.com/photo-1534215754734-18e55d13ce35?auto=format&fit=crop&q=80&w=600",
+      colors: ["#000000", "#D2C9BD"]
     }
   ]);
 
@@ -138,7 +163,7 @@ export function ProductGrid() {
       setIsLoading(false);
     }, 800);
     return () => clearTimeout(timer);
-  }, [collectionParam, newParam, categoryParam, sizeParam, colorParam, priceRangeParam]);
+  }, [collectionParam, newParam, categoryParam, sizeParam, colorParam, priceRangeParam, genderParam]);
 
   const filteredProducts = products.filter(product => {
     // 1. Filter by collection
@@ -151,20 +176,24 @@ export function ProductGrid() {
     }
     // 2. Filter by new arrivals
     if (newParam === "true" && product.badge !== "NEW") return false;
-    // 3. Filter by category
+    // Filter by gender / main category
+    const isAccessories = genderParam === "accessories";
+    if (isAccessories && product.brand !== "ACCESSORIES") return false;
+    if (!isAccessories && product.brand === "ACCESSORIES") return false;
+
+    // 3. Filter by subcategory
     if (categoryParam) {
       const cat = categoryParam.toLowerCase();
       const name = product.name.toLowerCase();
-      if (cat === "hoodies") {
-        if (!name.includes("hoodie") && !name.includes("sweater")) return false;
-      } else if (cat === "jackets") {
-        if (!name.includes("jacket") && !name.includes("trench") && !name.includes("utility")) return false;
-      } else if (cat === "t-shirts") {
-        if (!name.includes("tee") && !name.includes("t-shirt") && !name.includes("rib") && !name.includes("slip") && !name.includes("maxi")) return false;
-      } else if (cat === "pants") {
-        if (!name.includes("pants") && !name.includes("skirt")) return false;
-      } else if (cat === "accessories") {
-        if (!name.includes("bag") && !name.includes("sling") && !name.includes("collar") && !name.includes("lead")) return false;
+      if (isAccessories) {
+        if (cat === "bags" && !name.includes("bag") && !name.includes("sling")) return false;
+        if (cat === "caps" && !name.includes("cap") && !name.includes("hat")) return false;
+        if (cat === "belts" && !name.includes("belt") && !name.includes("collar") && !name.includes("lead")) return false;
+      } else {
+        if (cat === "dresses" && !name.includes("dress") && !name.includes("slip")) return false;
+        if (cat === "outerwear" && !name.includes("trench") && !name.includes("utility") && !name.includes("jacket") && !name.includes("hoodie") && !name.includes("sweater")) return false;
+        if (cat === "tops" && !name.includes("rib") && !name.includes("tee") && !name.includes("t-shirt")) return false;
+        if (cat === "skirts" && !name.includes("skirt") && !name.includes("pants")) return false;
       }
     }
     // 4. Filter by color

@@ -11,25 +11,43 @@ interface WishlistItem {
 }
 
 export function Wishlist() {
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([
-    {
-      id: 1,
-      brand: "CONCRETE CULTURE",
-      name: "Reflective Utility Sling",
-      price: 45.00,
-      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600"
-    },
-    {
-      id: 2,
-      brand: "CONCRETE CULTURE",
-      name: "Italian Leather Cardholder",
-      price: 75.00,
-      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=600"
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("wishlist");
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error(e);
     }
-  ]);
+    return [
+      {
+        id: 1,
+        brand: "CONCRETE CULTURE",
+        name: "Reflective Utility Sling",
+        price: 45.00,
+        image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600"
+      },
+      {
+        id: 2,
+        brand: "CONCRETE CULTURE",
+        name: "Italian Leather Cardholder",
+        price: 75.00,
+        image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=600"
+      }
+    ];
+  });
 
   const removeItem = (id: number) => {
-    setWishlistItems(prev => prev.filter(item => item.id !== id));
+    setWishlistItems(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      try {
+        localStorage.setItem("wishlist", JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
   };
 
   const addToCart = (item: WishlistItem) => {

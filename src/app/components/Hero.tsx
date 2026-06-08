@@ -27,16 +27,16 @@ export function Hero() {
           <p className="text-lg lg:text-xl mb-8 text-white/90 leading-relaxed font-light">
             Discover avant-garde women's streetwear designed to make a statement. Unmatched comfort, structured silhouettes, and premium fabrics.
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
             <Link to="/shop">
               <Button size="lg" className="bg-white text-black hover:bg-white/90 font-bold tracking-wider px-8 py-3.5 uppercase text-xs">
                 Explore Women's Drop
               </Button>
             </Link>
             <Link to="/coming-soon">
-              <button className="border border-white text-white bg-transparent hover:bg-white hover:text-black font-bold tracking-wider px-8 py-3.5 rounded-md transition-colors text-xs h-12 flex items-center justify-center uppercase">
+              <Button size="lg" className="border border-white text-white bg-transparent hover:bg-white hover:text-black font-bold tracking-wider px-8 py-3.5 uppercase text-xs">
                 Men's Syndicate (Soon)
-              </button>
+              </Button>
             </Link>
           </div>
         </div>
