@@ -25,9 +25,9 @@ const categories = [
 
 export function Categories() {
   return (
-    <section className="snap-start snap-always min-h-screen lg:h-screen flex flex-col justify-center bg-white pt-[73px] lg:pt-[81px] pb-8">
+    <section className="snap-start snap-always min-h-screen py-10 lg:py-14 flex flex-col justify-center bg-white">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <h2 className="text-3xl lg:text-4xl mb-3 font-extrabold tracking-tight">Shop by Category</h2>
           <p className="text-muted-foreground text-sm lg:text-base">
             Find exactly what you're looking for
@@ -39,7 +39,7 @@ export function Categories() {
             <Link
               key={category.title}
               to={category.route}
-              className="group relative overflow-hidden rounded-lg aspect-[4/5] md:aspect-[3/4] block"
+              className="group relative overflow-hidden rounded-lg h-[46vh] max-h-[380px] w-full block"
             >
               <ImageWithFallback
                 src={category.image}

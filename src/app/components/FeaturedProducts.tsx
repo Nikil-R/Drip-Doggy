@@ -100,7 +100,7 @@ function ProductCard({ product }: { product: Product }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Card className="group overflow-hidden border border-neutral-100 hover:shadow-lg transition-all duration-300 rounded-lg bg-white">
-        <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100">
+        <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
           <ImageWithFallback
             src={product.images[currentImgIndex]}
             alt={product.name}
@@ -161,7 +161,7 @@ function ProductCard({ product }: { product: Product }) {
 
 export function FeaturedProducts() {
   return (
-    <section className="snap-start snap-always min-h-screen lg:h-screen flex flex-col justify-center bg-gray-50 pt-[73px] lg:pt-[81px] pb-8">
+    <section className="snap-start snap-always min-h-screen pt-6 pb-16 lg:pt-8 lg:pb-20 flex flex-col justify-center bg-gray-50">
       <div className="container mx-auto px-6">
         <div className="text-center mb-6 lg:mb-8">
           <h2 className="text-3xl lg:text-4xl mb-2 font-extrabold tracking-tight">Featured Products</h2>
@@ -176,7 +176,7 @@ export function FeaturedProducts() {
           ))}
         </div>
 
-        <div className="text-center mt-6 lg:mt-8">
+        <div className="text-center mt-6 lg:mt-8 pb-6 lg:pb-12">
           <Link to="/shop">
             <Button size="lg" variant="outline" className="border-black text-black hover:bg-black hover:text-white transition-all duration-300 font-bold uppercase tracking-wider text-xs px-8">
               View All Products
