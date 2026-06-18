@@ -102,7 +102,7 @@ export function Wishlist() {
                   </div>
                   <span className="text-[9px] font-bold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
                   <h3 className="text-sm font-bold tracking-tight mb-1 mt-0.5 text-neutral-900 line-clamp-1">{item.name}</h3>
-                  <p className="text-xs font-semibold text-neutral-500 mb-4">£{item.price.toFixed(2)}</p>
+                  <p className="text-xs font-semibold text-neutral-500 mb-4">₹{item.price.toFixed(2)}</p>
                 </div>
 
                 <button

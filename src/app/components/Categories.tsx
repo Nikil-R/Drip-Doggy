@@ -25,21 +25,21 @@ const categories = [
 
 export function Categories() {
   return (
-    <section className="py-16 lg:py-24">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl mb-4 font-extrabold tracking-tight">Shop by Category</h2>
-          <p className="text-muted-foreground text-lg">
+    <section className="snap-start snap-always min-h-screen lg:h-screen flex flex-col justify-center bg-white pt-[73px] lg:pt-[81px] pb-8">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl lg:text-4xl mb-3 font-extrabold tracking-tight">Shop by Category</h2>
+          <p className="text-muted-foreground text-sm lg:text-base">
             Find exactly what you're looking for
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {categories.map((category) => (
             <Link
               key={category.title}
               to={category.route}
-              className="group relative overflow-hidden rounded-lg aspect-[3/4] block"
+              className="group relative overflow-hidden rounded-lg aspect-[4/5] md:aspect-[3/4] block"
             >
               <ImageWithFallback
                 src={category.image}

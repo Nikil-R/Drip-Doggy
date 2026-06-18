@@ -262,7 +262,7 @@ export function Profile() {
                             </div>
                             <div>
                               <p className="text-[9px] tracking-wider text-neutral-440 uppercase">TOTAL AMOUNT</p>
-                              <p className="text-neutral-950 font-bold">£{order.total.toFixed(2)}</p>
+                              <p className="text-neutral-950 font-bold">₹{order.total.toFixed(2)}</p>
                             </div>
                           </div>
 
@@ -294,7 +294,7 @@ export function Profile() {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <span className="text-sm font-bold text-neutral-900">£{(item.price * item.quantity).toFixed(2)}</span>
+                                <span className="text-sm font-bold text-neutral-900">₹{(item.price * item.quantity).toFixed(2)}</span>
                               </div>
                             </div>
                           ))}
@@ -601,7 +601,7 @@ export function Profile() {
                           <div>
                             <span className="text-[9px] font-bold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
                             <h4 className="text-xs font-bold text-neutral-900 mt-0.5 line-clamp-1">{item.name}</h4>
-                            <p className="text-xs font-semibold text-neutral-500 mt-1">£{item.price.toFixed(2)}</p>
+                            <p className="text-xs font-semibold text-neutral-500 mt-1">₹{item.price.toFixed(2)}</p>
                           </div>
                           <button
                             onClick={() => alert(`Added "${item.name}" to bag!`)}

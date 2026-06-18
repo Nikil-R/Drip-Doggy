@@ -364,7 +364,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       </div>
                       <span className="text-[8px] font-bold tracking-widest text-[#b2533e] uppercase">{product.category}</span>
                       <h4 className="text-xs font-bold text-neutral-900 tracking-tight leading-tight mt-0.5 line-clamp-1">{product.name}</h4>
-                      <span className="text-xs font-extrabold text-neutral-900 mt-1 block">£{product.price.toFixed(2)}</span>
+                      <span className="text-xs font-extrabold text-neutral-900 mt-1 block">₹{product.price.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -416,7 +416,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                               <span className="text-[8px] font-bold tracking-widest text-[#b2533e] uppercase">{prod.category}</span>
                               <h4 className="text-xs font-bold text-neutral-900 tracking-tight leading-snug mt-0.5 line-clamp-1">{prod.name}</h4>
-                              <span className="text-xs font-extrabold text-neutral-900 mt-1 block">£{prod.price.toFixed(2)}</span>
+                              <span className="text-xs font-extrabold text-neutral-900 mt-1 block">₹{prod.price.toFixed(2)}</span>
                             </div>
                           </div>
                         ))}

@@ -1,6 +1,6 @@
-import { ShoppingCart, CircleUser, Search, Heart, Trash2 } from "lucide-react";
+import { ShoppingCart, CircleUser, Search, Heart, Trash2, ShieldCheck, RefreshCw, Truck, Tag, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import logo from "../../imports/logo.png";
 import logoIcon from "../../imports/logo_icon.png";
@@ -13,62 +13,153 @@ export function Header() {
   const [navSearchVal, setNavSearchVal] = useState("");
   const navigate = useNavigate();
 
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      brand: "Velocitee™ 26",
-      name: "Velocitee™ 26 – Airdry® – Ultra-Light Ventilated Running Tee - Polyamide With Efast",
-      size: "XS",
-      color: "Lime",
-      price: 599,
-      quantity: 1,
-      image: "https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=200",
+  const [cartItems, setCartItems] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem("cart");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
     }
-  ]);
+  });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [isPromoOpen, setIsPromoOpen] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
-  const updateQuantity = (id: number, delta: number) => {
+  const applyPromo = () => {
+    if (promoCode.trim().toUpperCase() === "DRIP20") {
+      setAppliedPromo("DRIP20");
+      setPromoDiscount(Math.round(subtotal * 0.2));
+      setPromoError(null);
+    } else if (promoCode.trim().toUpperCase() === "FREE50") {
+      setAppliedPromo("FREE50");
+      setPromoDiscount(50);
+      setPromoError(null);
+    } else {
+      setPromoError("Invalid code. Try 'DRIP20'.");
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoDiscount(0);
+    setPromoCode("");
+    setPromoError(null);
+  };
+
+  const updateItemSize = (cartItemId: string, newSize: string) => {
     setIsLoading(true);
-    setCartItems(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const newQty = Math.max(1, item.quantity + delta);
-          return { ...item, quantity: newQty };
+    const itemToChange = cartItems.find(item => item.cartItemId === cartItemId);
+    if (!itemToChange) {
+      setIsLoading(false);
+      return;
+    }
+    
+    // Calculate new cartItemId
+    const newCartItemId = `${itemToChange.id}-${itemToChange.color}-${newSize}`;
+    
+    // Check if newCartItemId already exists
+    const duplicateIndex = cartItems.findIndex(item => item.cartItemId === newCartItemId);
+    let updated;
+    if (duplicateIndex > -1 && cartItems[duplicateIndex].cartItemId !== cartItemId) {
+      // Merge
+      updated = cartItems.map((item, idx) => {
+        if (idx === duplicateIndex) {
+          return { ...item, quantity: item.quantity + itemToChange.quantity };
         }
         return item;
-      })
-    );
+      }).filter(item => item.cartItemId !== cartItemId);
+    } else {
+      // Just change size
+      updated = cartItems.map(item => {
+        if (item.cartItemId === cartItemId) {
+          return { ...item, size: newSize, cartItemId: newCartItemId };
+        }
+        return item;
+      });
+    }
+    
+    setCartItems(updated);
+    saveCart(updated);
     setTimeout(() => setIsLoading(false), 300);
   };
 
-  const removeItem = (id: number) => {
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      try {
+        const stored = localStorage.getItem("cart");
+        setCartItems(stored ? JSON.parse(stored) : []);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdate);
+    window.addEventListener("storage", handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("storage", handleCartUpdate);
+    };
+  }, []);
+
+  const saveCart = (items: any[]) => {
+    localStorage.setItem("cart", JSON.stringify(items));
+    window.dispatchEvent(new Event("cart-updated"));
+  };
+
+  const updateQuantity = (cartItemId: string, delta: number) => {
     setIsLoading(true);
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    const updated = cartItems.map(item => {
+      if (item.cartItemId === cartItemId) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    });
+    setCartItems(updated);
+    saveCart(updated);
+    setTimeout(() => setIsLoading(false), 300);
+  };
+
+  const removeItem = (cartItemId: string) => {
+    setIsLoading(true);
+    const updated = cartItems.filter(item => item.cartItemId !== cartItemId);
+    setCartItems(updated);
+    saveCart(updated);
     setTimeout(() => setIsLoading(false), 300);
   };
 
   const quickShop = (rec: { id: number; name: string; price: number; image: string }) => {
     setIsLoading(true);
-    setCartItems(prev => {
-      const existing = prev.find(item => item.id === rec.id);
-      if (existing) {
-        return prev.map(item => item.id === rec.id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
-      return [
-        ...prev,
+    let updated;
+    const size = "S";
+    const color = "Default";
+    const cartItemId = `${rec.id}-${color}-${size}`;
+    const existing = cartItems.find(item => item.cartItemId === cartItemId);
+    if (existing) {
+      updated = cartItems.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
+    } else {
+      updated = [
+        ...cartItems,
         {
           id: rec.id,
+          cartItemId,
           brand: "DRIP RECOMMENDED",
           name: rec.name,
-          size: "S",
-          color: "Default",
+          size,
+          color,
           price: rec.price,
           quantity: 1,
           image: rec.image
         }
       ];
-    });
+    }
+    setCartItems(updated);
+    saveCart(updated);
     setTimeout(() => setIsLoading(false), 300);
   };
 
@@ -80,7 +171,7 @@ export function Header() {
   const isFreeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD;
   const amountToFreeDelivery = FREE_DELIVERY_THRESHOLD - subtotal;
   const deliveryFeeValue = isFreeDelivery || totalItemCount === 0 ? 0 : DELIVERY_FEE;
-  const totalToPay = subtotal + deliveryFeeValue;
+  const totalToPay = Math.max(0, subtotal + deliveryFeeValue - promoDiscount);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,75 +291,120 @@ export function Header() {
                 </button>
               </SheetTrigger>
               <SheetContent className="w-full sm:max-w-md bg-[#FAF8F5] p-4 flex flex-col h-full border-l border-neutral-200/60 shadow-xl overflow-y-auto">
-                <SheetHeader className="pb-2 border-b border-neutral-200/60">
-                  <SheetTitle className="text-sm font-extrabold tracking-[0.2em] uppercase text-neutral-800">
+                <SheetHeader className="p-0 pb-3 border-b border-neutral-200/60 flex flex-row items-center justify-between pr-8">
+                  <SheetTitle className="text-sm font-extrabold tracking-[0.2em] uppercase text-neutral-800 leading-none">
                     My Cart
                   </SheetTitle>
-                </SheetHeader>
-
-                {/* Selected Item Count & Loader */}
-                <div className="flex justify-between items-center mt-2.5 mb-1.5">
-                  <span className="text-[10px] font-bold text-neutral-400 tracking-wider uppercase">
-                    {totalItemCount} {totalItemCount === 1 ? "Item" : "Items"} Selected
-                  </span>
                   {isLoading && (
                     <span className="text-[9px] font-bold text-[#b2533e] tracking-widest uppercase animate-pulse">
-                      Loading...
+                      Updating...
                     </span>
                   )}
-                </div>
+                </SheetHeader>
 
-                {/* Free Delivery Promo Bar */}
-                {totalItemCount > 0 && (
-                  <div className="mb-2">
-                    {isFreeDelivery ? (
-                      <div className="bg-green-50 border border-green-200 text-center py-1.5 px-3 text-[9px] font-extrabold tracking-wider text-green-700 uppercase rounded-sm">
-                        🎉 You have unlocked free delivery!
-                      </div>
-                    ) : (
-                      <div className="bg-[#b2533e]/5 border border-[#b2533e]/15 text-center py-1.5 px-3 text-[8px] font-extrabold tracking-wider text-[#b2533e] uppercase rounded-sm">
-                        SHOP FOR ₹{amountToFreeDelivery} MORE TO UNLOCK FREE DELIVERY
-                      </div>
-                    )}
-                  </div>
-                )}
-                
                 {/* Items List */}
-                <div className="space-y-2.5 py-1">
+                <div className="space-y-3 py-3 flex-1">
                   {cartItems.length === 0 ? (
-                    <div className="py-8 flex flex-col items-center justify-center text-center">
-                      <ShoppingCart className="h-10 w-10 text-neutral-300 mb-3 stroke-[1.5]" />
-                      <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Your cart is empty</p>
-                      <SheetClose asChild>
-                        <Link to="/shop" className="mt-4 border border-neutral-900 text-neutral-950 bg-white hover:bg-neutral-900 hover:text-white text-[9px] font-bold tracking-widest px-6 py-2.5 rounded-sm uppercase transition-colors">
-                          Shop Collections
-                        </Link>
-                      </SheetClose>
+                    <div className="py-6 flex flex-col justify-center">
+                      <div className="flex flex-col items-center justify-center text-center pb-4">
+                        <ShoppingCart className="h-10 w-10 text-neutral-300 mb-2.5 stroke-[1.5]" />
+                        <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Your cart is empty</p>
+                      </div>
+                      
+                      <div className="border-t border-neutral-200/50 pt-4 mt-2">
+                        <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-3 text-center">
+                          Complete The Look
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Recommended Extra 1 */}
+                          <div className="bg-white border border-neutral-200/50 p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
+                            <div>
+                              <img 
+                                src="https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=200" 
+                                alt="Apex Shell Jacket" 
+                                className="w-full h-24 object-cover rounded bg-neutral-50 mb-2"
+                              />
+                              <h4 className="text-[10px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Apex Shell Jacket</h4>
+                              <span className="text-[10px] font-extrabold text-neutral-500 mt-0.5 block">₹320.00</span>
+                            </div>
+                            <button 
+                              onClick={() => quickShop({ id: 10, name: "Apex Shell Jacket", price: 320, image: "https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=200" })}
+                              className="mt-2.5 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1.5 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
+                            >
+                              Add to bag
+                            </button>
+                          </div>
+
+                          {/* Recommended Extra 2 */}
+                          <div className="bg-white border border-neutral-200/50 p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
+                            <div>
+                              <img 
+                                src="https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=200" 
+                                alt="Modular Sling Bag" 
+                                className="w-full h-24 object-cover rounded bg-neutral-50 mb-2"
+                              />
+                              <h4 className="text-[10px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Modular Sling Bag</h4>
+                              <span className="text-[10px] font-extrabold text-neutral-500 mt-0.5 block">₹210.00</span>
+                            </div>
+                            <button 
+                              onClick={() => quickShop({ id: 11, name: "Modular Sling Bag", price: 210, image: "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=200" })}
+                              className="mt-2.5 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1.5 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
+                            >
+                              Add to bag
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     cartItems.map(item => (
-                      <div key={item.id} className="flex gap-3 bg-white border border-neutral-100 p-2.5 rounded-md shadow-xs relative">
-                        <img src={item.image} alt={item.name} className="w-14 h-14 object-cover rounded bg-neutral-100 flex-shrink-0" />
+                      <div key={item.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
+                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover rounded bg-neutral-100 flex-shrink-0" />
                         <div className="flex-1 flex flex-col justify-between">
                           <div>
-                            <span className="text-[8px] font-bold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
-                            <h4 className="text-xs font-bold text-neutral-900 tracking-tight leading-snug mt-0.5 pr-6">{item.name}</h4>
-                            <p className="text-[9px] text-neutral-400 mt-0.5">{item.size} - {item.color}</p>
+                            <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
+                            <h4 className="text-[13px] font-extrabold text-neutral-900 tracking-tight leading-snug mt-1 pr-6 line-clamp-2">{item.name}</h4>
+                            
+                            <div className="flex flex-col gap-1 mt-1">
+                              <p className="text-[10px] font-bold text-neutral-450 uppercase tracking-wider">
+                                Color: {item.color}
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-wider">Size:</span>
+                                <select 
+                                  value={item.size}
+                                  onChange={(e) => updateItemSize(item.cartItemId, e.target.value)}
+                                  className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none rounded-sm px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
+                                >
+                                  {["XS", "S", "M", "L", "XL", "XXL"].map(sz => (
+                                    <option key={sz} value={sz}>{sz}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center mt-2.5">
-                            <span className="text-xs font-extrabold text-neutral-900">₹{item.price}</span>
-                            <div className="flex items-center border border-neutral-200 rounded-full px-2 py-0.5 bg-neutral-50">
+                          <div className="flex justify-between items-center mt-3">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-extrabold text-neutral-900">₹{item.price}</span>
+                              {item.id === 3 && (
+                                <>
+                                  <span className="text-[11px] font-semibold text-neutral-450 line-through">₹999.00</span>
+                                  <span className="text-[8px] font-extrabold text-[#b2533e] bg-red-50 px-1 py-0.5 rounded-sm">51% OFF</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex items-center border border-neutral-300 rounded-full px-2.5 py-1 bg-neutral-50 shadow-xs">
                               <button 
-                                onClick={() => updateQuantity(item.id, -1)} 
-                                className="text-neutral-400 hover:text-neutral-900 px-1 text-xs"
+                                onClick={() => updateQuantity(item.cartItemId, -1)} 
+                                className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
                                 aria-label={`Decrease quantity for ${item.name}`}
                               >
                                 -
                               </button>
-                              <span className="text-[10px] font-bold w-4 text-center">{item.quantity}</span>
+                              <span className="text-[11px] font-extrabold w-4 text-center text-neutral-800">{item.quantity}</span>
                               <button 
-                                onClick={() => updateQuantity(item.id, 1)} 
-                                className="text-neutral-400 hover:text-neutral-900 px-1 text-xs"
+                                onClick={() => updateQuantity(item.cartItemId, 1)} 
+                                className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
                                 aria-label={`Increase quantity for ${item.name}`}
                               >
                                 +
@@ -276,97 +412,171 @@ export function Header() {
                             </div>
                           </div>
                         </div>
-                        <button onClick={() => removeItem(item.id)} className="absolute top-2.5 right-2 text-neutral-300 hover:text-red-500 transition-colors">
-                          <Trash2 className="h-3.5 w-3.5 stroke-[1.8]" />
+                        <button onClick={() => removeItem(item.cartItemId)} className="absolute top-4 right-4 text-neutral-300 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer">
+                          <Trash2 className="h-4 w-4 stroke-[1.8]" />
                         </button>
                       </div>
                     ))
                   )}
                 </div>
 
+                {/* Promo Code Accordion */}
+                {totalItemCount > 0 && (
+                  <div className="border-t border-neutral-200/50 pt-3 mt-1 bg-white p-3 rounded-lg border border-neutral-200/30">
+                    <button 
+                      onClick={() => setIsPromoOpen(!isPromoOpen)}
+                      className="w-full flex items-center justify-between text-[9px] font-extrabold tracking-widest text-neutral-400 uppercase hover:text-neutral-900 transition-colors bg-transparent border-none cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
+                        Apply Promo Code
+                      </span>
+                      {isPromoOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+                    {isPromoOpen && (
+                      <div className="pt-2.5 space-y-2">
+                        {appliedPromo ? (
+                          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-2.5 py-1.5 text-[9px] font-extrabold text-green-700 uppercase tracking-wider">
+                            <span>Applied: {appliedPromo} (-₹{promoDiscount})</span>
+                            <button 
+                              onClick={removePromo} 
+                              className="text-red-500 hover:text-red-700 font-extrabold underline text-[9px] bg-transparent border-none cursor-pointer"
+                            >
+                              REMOVE
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              placeholder="TRY 'DRIP20'" 
+                              value={promoCode}
+                              onChange={(e) => setPromoCode(e.target.value)}
+                              className="flex-1 px-3 py-1.5 text-[11px] font-bold uppercase border border-neutral-300 rounded focus:outline-none placeholder-neutral-400 text-neutral-850 bg-white"
+                            />
+                            <button 
+                              onClick={applyPromo}
+                              className="bg-black hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-1.5 rounded-sm uppercase border-none cursor-pointer"
+                            >
+                              APPLY
+                            </button>
+                          </div>
+                        )}
+                        {promoError && (
+                          <p className="text-[9px] font-extrabold text-red-500 uppercase tracking-wider">{promoError}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+ 
                 {/* Bill Details */}
                 {totalItemCount > 0 && (
-                  <div className="pt-3 border-t border-neutral-200/60 space-y-2 mt-4">
+                  <div className="pt-3 border-t border-neutral-200/60 space-y-2.5 mt-2 bg-white border border-neutral-200/50 p-4 rounded-lg">
                     <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-0.5">
-                      Bill Details
+                      Bill Summary
                     </h3>
                     <div className="space-y-1.5 text-[11px] font-medium tracking-wide">
                       <div className="flex justify-between text-neutral-500">
-                        <span>Item Total</span>
-                        <span className="font-bold text-neutral-900">₹{subtotal}</span>
+                        <span>Subtotal</span>
+                        <span className="font-extrabold text-neutral-900">₹{subtotal}.00</span>
                       </div>
+                      {promoDiscount > 0 && (
+                        <div className="flex justify-between text-green-600 font-bold">
+                          <span>Promo Discount ({appliedPromo})</span>
+                          <span>-₹{promoDiscount}.00</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-neutral-500">
                         <span>Delivery Fee (Free on orders above ₹1999)</span>
-                        <span className={`font-bold ${deliveryFeeValue === 0 ? "text-green-600 tracking-wider" : "text-neutral-900"}`}>
-                          {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue}`}
+                        <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600 tracking-wider" : "text-neutral-900"}`}>
+                          {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue}.00`}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs font-extrabold text-neutral-900 border-t border-neutral-200/40 pt-1.5">
-                        <span>To Pay</span>
-                        <span>₹{totalToPay}</span>
+                      <div className="flex justify-between text-xs font-extrabold text-neutral-900 border-t border-neutral-200/40 pt-2">
+                        <span>Total To Pay</span>
+                        <span className="text-sm">₹{totalToPay}.00</span>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 pt-1.5">
+                    <div className="grid grid-cols-2 gap-3 pt-1">
                       <SheetClose asChild>
-                        <Link to="/cart" className="w-full border border-neutral-900 text-neutral-950 bg-white hover:bg-neutral-900 hover:text-white py-2 rounded-sm text-[9px] font-extrabold tracking-widest text-center uppercase transition-colors">
+                        <Link to="/cart" className="w-full border border-neutral-900 text-neutral-950 bg-white hover:bg-neutral-900 hover:text-white py-2.5 rounded-sm text-[9px] font-extrabold tracking-widest text-center uppercase transition-colors">
                           View Cart
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/checkout" className="w-full bg-[#030213] text-white py-2 rounded-sm text-[9px] font-extrabold tracking-widest text-center uppercase hover:bg-neutral-800 transition-colors shadow-lg shadow-neutral-950/5">
+                        <Link to="/checkout" className="w-full bg-[#030213] text-white py-2.5 rounded-sm text-[9px] font-extrabold tracking-widest text-center uppercase hover:bg-neutral-800 transition-colors shadow-lg shadow-neutral-950/5">
                           Checkout
                         </Link>
                       </SheetClose>
                     </div>
+
+                    {/* Trust Badges Grid */}
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t border-neutral-100 text-center text-[7.5px] font-bold text-neutral-400 tracking-wider uppercase">
+                      <div className="flex flex-col items-center gap-1">
+                        <ShieldCheck className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
+                        <span>SECURE PAYMENTS</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <RefreshCw className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
+                        <span>EASY EXCHANGES</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <Truck className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
+                        <span>EXPRESS DELIVERY</span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* Recommendations */}
-                <div className="border-t border-neutral-200/60 pt-3 mt-4">
-                  <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-2.5">
-                    You May Also Like
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Recommendation 1 */}
-                    <div className="bg-white border border-neutral-100 p-2 rounded-md flex flex-col justify-between">
-                      <div>
-                        <img 
-                          src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=200" 
-                          alt="Flare Fit Mid Rise Printed Skirt" 
-                          className="w-full h-16 object-cover rounded bg-neutral-50 mb-1.5"
-                        />
-                        <h4 className="text-[9px] font-bold text-neutral-800 line-clamp-1">Flare Fit Mid Rise Printed Skirt</h4>
-                        <span className="text-[10px] font-extrabold text-neutral-900 mt-0.5 block">₹699</span>
+                {/* You May Also Like Suggestions (Rendered only if cart has items) */}
+                {totalItemCount > 0 && (
+                  <div className="border-t border-neutral-200/50 pt-3 mt-2">
+                    <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-2">
+                      Complete the Look
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Rec 1 */}
+                      <div className="bg-white border border-neutral-200/40 p-2 rounded-lg flex flex-col justify-between shadow-xs">
+                        <div>
+                          <img 
+                            src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=200" 
+                            alt="Flare Skirt" 
+                            className="w-full h-16 object-cover rounded bg-neutral-50 mb-1"
+                          />
+                          <h4 className="text-[9px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Flare Printed Skirt</h4>
+                          <span className="text-[9px] font-extrabold text-neutral-500 mt-0.5 block">₹699.00</span>
+                        </div>
+                        <button 
+                          onClick={() => quickShop({ id: 101, name: "Flare Printed Skirt", price: 699, image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=200" })}
+                          className="mt-2 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
+                        >
+                          Add
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => quickShop({ id: 101, name: "Flare Fit Mid Rise Printed Skirt", price: 699, image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=200" })}
-                        className="mt-2 w-full bg-neutral-900 hover:bg-[#b2533e] text-white text-[8px] font-bold py-1 rounded-sm uppercase tracking-wider transition-colors"
-                      >
-                        QUICK SHOP
-                      </button>
-                    </div>
 
-                    {/* Recommendation 2 */}
-                    <div className="bg-white border border-neutral-100 p-2 rounded-md flex flex-col justify-between">
-                      <div>
-                        <img 
-                          src="https://images.unsplash.com/photo-1519242220831-09410926fbff?auto=format&fit=crop&q=80&w=200" 
-                          alt="Girls Regular Fit Jacquard Sweat Tee" 
-                          className="w-full h-16 object-cover rounded bg-neutral-50 mb-1.5"
-                        />
-                        <h4 className="text-[9px] font-bold text-neutral-800 line-clamp-1">Girls Regular Fit Jacquard Sweat Tee</h4>
-                        <span className="text-[10px] font-extrabold text-neutral-900 mt-0.5 block">₹199</span>
+                      {/* Rec 2 */}
+                      <div className="bg-white border border-neutral-200/40 p-2 rounded-lg flex flex-col justify-between shadow-xs">
+                        <div>
+                          <img 
+                            src="https://images.unsplash.com/photo-1519242220831-09410926fbff?auto=format&fit=crop&q=80&w=200" 
+                            alt="Jacquard Sweat Tee" 
+                            className="w-full h-16 object-cover rounded bg-neutral-50 mb-1"
+                          />
+                          <h4 className="text-[9px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Jacquard Sweat Tee</h4>
+                          <span className="text-[9px] font-extrabold text-neutral-500 mt-0.5 block">₹199.00</span>
+                        </div>
+                        <button 
+                          onClick={() => quickShop({ id: 102, name: "Jacquard Sweat Tee", price: 199, image: "https://images.unsplash.com/photo-1519242220831-09410926fbff?auto=format&fit=crop&q=80&w=200" })}
+                          className="mt-2 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
+                        >
+                          Add
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => quickShop({ id: 102, name: "Girls Regular Fit Jacquard Sweat Tee", price: 199, image: "https://images.unsplash.com/photo-1519242220831-09410926fbff?auto=format&fit=crop&q=80&w=200" })}
-                        className="mt-2 w-full bg-neutral-900 hover:bg-[#b2533e] text-white text-[8px] font-bold py-1 rounded-sm uppercase tracking-wider transition-colors"
-                      >
-                        QUICK SHOP
-                      </button>
                     </div>
                   </div>
-                </div>
+                )}
               </SheetContent>
             </Sheet>
 

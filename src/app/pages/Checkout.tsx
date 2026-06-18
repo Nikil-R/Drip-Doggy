@@ -262,7 +262,7 @@ export function Checkout() {
                       <p className="text-[10px] text-neutral-500">Next Working Day</p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold">£15.00</span>
+                  <span className="text-xs font-bold">₹15.00</span>
                 </label>
               </div>
             </section>
@@ -334,7 +334,7 @@ export function Checkout() {
               type="submit"
               className="w-full bg-[#030213] text-white py-4 rounded-md text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-colors shadow-lg shadow-neutral-950/15"
             >
-              CONFIRM AND PAY £{total.toFixed(2)}
+              CONFIRM AND PAY ₹{total.toFixed(2)}
             </button>
           </form>
 
@@ -356,7 +356,7 @@ export function Checkout() {
                     <p className="text-[10px] text-neutral-500 mt-0.5">Qty: {item.quantity} | {item.size}</p>
                   </div>
                   <span className="text-xs font-semibold text-neutral-900">
-                    £{(item.price * item.quantity).toFixed(2)}
+                    ₹{(item.price * item.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -365,15 +365,15 @@ export function Checkout() {
             <div className="space-y-3 pt-6 border-t border-neutral-100 text-xs font-medium tracking-wider mb-8">
               <div className="flex justify-between text-neutral-500">
                 <span>Subtotal</span>
-                <span className="font-semibold text-neutral-950">£{subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-neutral-950">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-neutral-500">
                 <span>Shipping</span>
-                <span>{shippingCost > 0 ? `£${shippingCost.toFixed(2)}` : "FREE"}</span>
+                <span>{shippingCost > 0 ? `₹${shippingCost.toFixed(2)}` : "FREE"}</span>
               </div>
               <div className="border-t border-neutral-100 pt-4 flex justify-between text-sm font-bold">
                 <span>Total</span>
-                <span className="text-base font-bold text-neutral-950">£{total.toFixed(2)}</span>
+                <span className="text-base font-bold text-neutral-950">₹{total.toFixed(2)}</span>
               </div>
             </div>
 

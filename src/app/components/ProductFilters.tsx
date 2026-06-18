@@ -152,8 +152,8 @@ export function ProductFilters() {
           />
         </div>
         <div className="flex justify-between items-baseline mt-3 text-[10px] font-bold tracking-wider text-neutral-500 uppercase">
-          <span>${priceRange[0]}</span>
-          <span>${priceRange[1]}</span>
+          <span>₹{priceRange[0]}</span>
+          <span>₹{priceRange[1]}</span>
         </div>
       </div>
     </aside>

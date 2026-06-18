@@ -142,7 +142,7 @@ export function Cart() {
                     </div>
 
                     <span className="font-semibold text-neutral-900">
-                      £{(item.price * item.quantity).toFixed(2)}
+                      ₹{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -184,7 +184,7 @@ export function Cart() {
             <div className="space-y-4 text-xs font-medium tracking-wider mb-8">
               <div className="flex justify-between text-neutral-500">
                 <span>Subtotal</span>
-                <span className="font-semibold text-neutral-950">£{subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-neutral-950">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-neutral-500">
                 <span>Shipping</span>
@@ -192,7 +192,7 @@ export function Cart() {
               </div>
               <div className="border-t border-neutral-200/60 pt-4 flex justify-between text-sm font-bold">
                 <span>Total</span>
-                <span className="text-lg font-bold">£{subtotal.toFixed(2)}</span>
+                <span className="text-lg font-bold">₹{subtotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -255,7 +255,7 @@ export function Cart() {
                 </span>
               </div>
               <h3 className="text-sm font-bold tracking-tight mb-1">Reflective Utility Sling</h3>
-              <p className="text-xs text-neutral-500">£45.00</p>
+              <p className="text-xs text-neutral-500">₹45.00</p>
             </div>
 
             {/* Recommendation 2 */}
@@ -268,7 +268,7 @@ export function Cart() {
                 />
               </div>
               <h3 className="text-sm font-bold tracking-tight mb-1">Heritage Knit Sweater</h3>
-              <p className="text-xs text-neutral-500">£95.00</p>
+              <p className="text-xs text-neutral-500">₹95.00</p>
             </div>
 
             {/* Recommendation 3 */}
@@ -281,7 +281,7 @@ export function Cart() {
                 />
               </div>
               <h3 className="text-sm font-bold tracking-tight mb-1">Italian Leather Cardholder</h3>
-              <p className="text-xs text-neutral-500">£75.00</p>
+              <p className="text-xs text-neutral-500">₹75.00</p>
             </div>
 
             {/* Recommendation 4 */}
@@ -294,7 +294,7 @@ export function Cart() {
                 />
               </div>
               <h3 className="text-sm font-bold tracking-tight mb-1">Technical Rain Shell</h3>
-              <p className="text-xs text-neutral-500">£120.00</p>
+              <p className="text-xs text-neutral-500">₹120.00</p>
             </div>
           </div>
         </section>

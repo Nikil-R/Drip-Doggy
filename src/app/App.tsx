@@ -27,6 +27,13 @@ function ScrollToTop() {
   return null;
 }
 
+function FooterWrapper() {
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
+  if (isHome) return null;
+  return <Footer />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -49,7 +56,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
         </Routes>
-        <Footer />
+        <FooterWrapper />
       </div>
     </BrowserRouter>
   );

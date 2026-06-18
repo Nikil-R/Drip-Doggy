@@ -264,7 +264,7 @@ export function Search() {
 
                   <div>
                     <p className="text-xs font-semibold text-neutral-500">
-                      £{product.price.toFixed(2)}
+                      ₹{product.price.toFixed(2)}
                     </p>
                   </div>
                 </div>

@@ -140,7 +140,7 @@ export function Orders() {
                     </div>
                     <div>
                       <p className="text-[9px] tracking-wider text-neutral-400 uppercase">TOTAL AMOUNT</p>
-                      <p className="text-neutral-950 font-bold">£{order.total.toFixed(2)}</p>
+                      <p className="text-neutral-950 font-bold">₹{order.total.toFixed(2)}</p>
                     </div>
                   </div>
 
@@ -178,7 +178,7 @@ export function Orders() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold text-neutral-900">£{(item.price * item.quantity).toFixed(2)}</span>
+                        <span className="text-sm font-bold text-neutral-900">₹{(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     </div>
                   ))}

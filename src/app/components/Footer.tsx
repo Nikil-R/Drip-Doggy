@@ -13,13 +13,13 @@ export function Footer() {
         </h2>
       </div> */}
 
-      <div className="container mx-auto px-4 py-5 pb-12">
+      <div className="container mx-auto px-4 py-8 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src={logoIcon} alt="" className="h-15 w-auto object-contain mix-blend-multiply" />
-              <img src={logo} alt="DRIP DOGGY" className="h-15 w-auto object-contain mix-blend-multiply" />
+              <img src={logoIcon} alt="" className="h-12 w-auto object-contain mix-blend-multiply" />
+              <img src={logo} alt="DRIP DOGGY" className="h-12 w-auto object-contain mix-blend-multiply" />
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Your destination for premium streetwear and timeless style.
@@ -42,7 +42,7 @@ export function Footer() {
 
           {/* Shop */}
           <div>
-            <h4 className="mb-4">Shop</h4>
+            <h4 className="mb-4 font-semibold text-neutral-900">Shop</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/shop" className="hover:underline">Shop All</Link></li>
               <li><Link to="/shop?new=true" className="hover:underline">New Arrivals</Link></li>
@@ -54,7 +54,7 @@ export function Footer() {
 
           {/* Customer Service */}
           <div>
-            <h4 className="mb-4">Customer Service</h4>
+            <h4 className="mb-4 font-semibold text-neutral-900">Customer Service</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="#" className="hover:underline">Contact Us</a></li>
               <li><a href="#" className="hover:underline">Shipping Info</a></li>
@@ -66,7 +66,7 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="mb-4">Company</h4>
+            <h4 className="mb-4 font-semibold text-neutral-900">Company</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="#" className="hover:underline">About Us</a></li>
               <li><a href="#" className="hover:underline">Careers</a></li>
@@ -77,7 +77,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
+        <div className="border-t mt-8 pt-6 text-center text-sm text-muted-foreground">
           <p>&copy; 2026 DRIP DOGGY. All rights reserved.</p>
         </div>
       </div>
