@@ -1,13 +1,43 @@
+# Drip Doggy 🐶
 
-  # Clothing E-commerce Homepage
+A premium streetwear e-commerce platform.
 
-  This is a code bundle for Clothing E-commerce Homepage. The original project is available at https://www.figma.com/design/F3d3ONBEern26TQY1VCDCs/Clothing-E-commerce-Homepage.
+## Project Structure
 
-  ## Running the code
+```
+Drip-Doggy/
+├── frontend/          ← React + Vite frontend application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/
+│   │   │   │   ├── layout/    ← Header, Footer, Hero, Newsletter
+│   │   │   │   ├── shop/      ← ProductGrid, ProductFilters, CuratedCollections
+│   │   │   │   ├── home/      ← Categories, FeaturedProducts
+│   │   │   │   ├── search/    ← SearchOverlay
+│   │   │   │   ├── figma/     ← Figma-generated UI helpers
+│   │   │   │   └── ui/        ← shadcn/ui primitives
+│   │   │   └── pages/         ← Route pages (Home, Shop, ProductDetail, etc.)
+│   │   ├── assets/            ← Static images and icons
+│   │   └── styles/            ← Global CSS and theme
+│   ├── index.html
+│   ├── vite.config.ts
+│   └── package.json
+│
+├── backend/           ← API server (coming soon)
+│   └── README.md
+│
+└── README.md
+```
 
-  Run `npm i` to install the dependencies.
+## Getting Started
 
-  Run `npm run dev` to start the development server.
+### Frontend
+```bash
+cd frontend
+npm install    # or: pnpm install
+npm run dev    # Starts dev server at http://localhost:5173
+npm run build  # Production build
+```
 
-  hello iam SuperMan
-  
+### Backend
+> Coming soon.
