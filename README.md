@@ -41,3 +41,9 @@ npm run build  # Production build
 
 ### Backend
 > Coming soon.
+
+## Documentation
+- [Tech Stack & Developer Guide](file:///d:/Drip-Doggy/TECH_STACK.md)
+- [Project Guidelines & Style Rules](file:///d:/Drip-Doggy/GUIDELINES.md)
+- [Design Aesthetics Specification](file:///d:/Drip-Doggy/frontend/src/DESIGN.md)
+
