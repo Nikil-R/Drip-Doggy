@@ -1,5 +1,6 @@
-import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImageWithFallback } from "../ui/ImageWithFallback";
 import { Link } from "react-router";
+
 import menSuit from "../../../assets/men_suit.png";
 
 const categories = [

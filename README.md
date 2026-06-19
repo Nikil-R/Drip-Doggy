@@ -34,16 +34,22 @@ Drip-Doggy/
 ### Frontend
 ```bash
 cd frontend
-npm install    # or: pnpm install
-npm run dev    # Starts dev server at http://localhost:5173
+npm install --legacy-peer-deps
+npm run dev    # Starts dev server at http://localhost:3000 / http://localhost:5173
 npm run build  # Production build
 ```
+
+
 
 ### Backend
 > Coming soon.
 
 ## Documentation
-- [Tech Stack & Developer Guide](file:///d:/Drip-Doggy/TECH_STACK.md)
-- [Project Guidelines & Style Rules](file:///d:/Drip-Doggy/GUIDELINES.md)
+- [Tech Stack & Developer Guide](file:///d:/Drip-Doggy/docs/TECH_STACK.md)
 - [Design Aesthetics Specification](file:///d:/Drip-Doggy/frontend/src/DESIGN.md)
+- [AI Agent Safety & Coding Rules](file:///d:/Drip-Doggy/docs/AI_RULES.md)
+- [Project Development Journey](file:///d:/Drip-Doggy/docs/JOURNEY.md)
+
+
+
 

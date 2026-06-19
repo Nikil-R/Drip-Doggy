@@ -3,10 +3,11 @@
 This directory is reserved for the Drip Doggy backend API.
 
 ## Planned Stack
-- **Runtime**: Node.js
-- **Framework**: Express / Fastify
-- **Database**: TBD (PostgreSQL / MongoDB)
+- **Language & Runtime**: Java 17+ / JDK
+- **Framework**: Spring Boot 3.x (Spring Web, Spring Data JPA, Spring Security)
+- **Database**: MySQL
 - **Auth**: JWT-based authentication
+
 
 ## Getting Started
 

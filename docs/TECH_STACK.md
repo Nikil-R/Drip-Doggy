@@ -4,7 +4,8 @@ Welcome to the **Drip Doggy** workspace. This document serves as the guide for t
 
 ## Technical Core
 
-The project is structured as a monorepo containing `frontend/` (React + Vite) and `backend/` (Node.js placeholder).
+The project is structured as a monorepo containing `frontend/` (React + Vite) and `backend/` (Java Spring Boot + MySQL).
+
 
 ### Frontend Architecture
 - **Framework**: [React 18.3.1](https://react.dev/)

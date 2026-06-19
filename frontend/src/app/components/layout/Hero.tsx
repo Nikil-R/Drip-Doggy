@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImageWithFallback } from "../ui/ImageWithFallback";
 import { Link } from "react-router";
+
 
 const SLIDES = [
   {
