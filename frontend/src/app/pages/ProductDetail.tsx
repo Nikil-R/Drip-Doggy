@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Star, ShieldCheck, Truck, RefreshCw, Lock, ArrowRight, Layers, Eye, Shield, ChevronLeft, ChevronRight, ShoppingCart, Heart, Share2, Copy, Check } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+
 
 interface ColorOption {
   name: string;
@@ -8,7 +9,9 @@ interface ColorOption {
 }
 
 export function ProductDetail() {
+  const navigate = useNavigate();
   const [selectedColor, setSelectedColor] = useState("JET BLACK");
+
   const [selectedSize, setSelectedSize] = useState("M");
   const [activeTab, setActiveTab] = useState<"description" | "specifications" | "shipping" | "reviews">("description");
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -222,6 +225,15 @@ export function ProductDetail() {
   const handleAddToBag = () => {
     updateProductQuantity(1);
   };
+
+  const handleBuyNow = () => {
+    // If quantity is 0, add at least 1 item to the cart
+    if (cartQuantity === 0) {
+      updateProductQuantity(1);
+    }
+    navigate("/checkout");
+  };
+
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200">
@@ -470,11 +482,12 @@ export function ProductDetail() {
                 </div>
               )}
               <button
-                onClick={() => alert("Proceeding to checkout!")}
+                onClick={handleBuyNow}
                 className="bg-white text-black border border-[#030213] py-4 rounded-sm text-xs font-extrabold tracking-[0.15em] hover:bg-[#030213] hover:text-white transition-all uppercase active:scale-[0.99] cursor-pointer"
               >
                 BUY IT NOW
               </button>
+
             </div>
 
             {/* Pincode Delivery Check */}
@@ -1020,11 +1033,12 @@ export function ProductDetail() {
                 </div>
               )}
               <button
-                onClick={() => alert("Proceeding to checkout!")}
+                onClick={handleBuyNow}
                 className="w-[180px] h-[48px] bg-[#030213] text-white text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-800 transition-all uppercase rounded-sm shadow-md active:scale-[0.99] cursor-pointer"
               >
                 BUY NOW
               </button>
+
             </div>
           </div>
         </div>
@@ -1076,11 +1090,12 @@ export function ProductDetail() {
               </div>
             )}
             <button
-              onClick={() => alert("Proceeding to checkout!")}
+              onClick={handleBuyNow}
               className="w-full h-[52px] bg-[#030213] text-white text-[10px] font-extrabold tracking-[0.15em] hover:bg-neutral-800 uppercase rounded-sm active:scale-[0.99] cursor-pointer"
             >
               BUY NOW
             </button>
+
           </div>
         </div>
       </div>

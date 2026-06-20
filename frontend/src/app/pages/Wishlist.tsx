@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Search, ShoppingBag, Heart, Trash2, Share2, HelpCircle } from "lucide-react";
 
@@ -14,35 +14,36 @@ export function Wishlist() {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(() => {
     try {
       const stored = localStorage.getItem("wishlist");
-      if (stored) {
-        return JSON.parse(stored);
-      }
+      return stored ? JSON.parse(stored) : [];
     } catch (e) {
       console.error(e);
+      return [];
     }
-    return [
-      {
-        id: 1,
-        brand: "CONCRETE CULTURE",
-        name: "Reflective Utility Sling",
-        price: 45.00,
-        image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600"
-      },
-      {
-        id: 2,
-        brand: "CONCRETE CULTURE",
-        name: "Italian Leather Cardholder",
-        price: 75.00,
-        image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=600"
-      }
-    ];
   });
+
+  useEffect(() => {
+    const handleWishlistUpdate = () => {
+      try {
+        const stored = localStorage.getItem("wishlist");
+        setWishlistItems(stored ? JSON.parse(stored) : []);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    window.addEventListener("wishlist-updated", handleWishlistUpdate);
+    window.addEventListener("storage", handleWishlistUpdate);
+    return () => {
+      window.removeEventListener("wishlist-updated", handleWishlistUpdate);
+      window.removeEventListener("storage", handleWishlistUpdate);
+    };
+  }, []);
 
   const removeItem = (id: number) => {
     setWishlistItems(prev => {
       const updated = prev.filter(item => item.id !== id);
       try {
         localStorage.setItem("wishlist", JSON.stringify(updated));
+        window.dispatchEvent(new Event("wishlist-updated"));
       } catch (e) {
         console.error(e);
       }
@@ -51,8 +52,34 @@ export function Wishlist() {
   };
 
   const addToCart = (item: WishlistItem) => {
-    alert(`Added "${item.name}" to cart!`);
+    try {
+      const stored = localStorage.getItem("cart");
+      let cart = stored ? JSON.parse(stored) : [];
+      const cartItemId = `${item.id}-Default-S`;
+      
+      const existing = cart.find((i: any) => i.cartItemId === cartItemId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({
+          id: item.id,
+          cartItemId,
+          brand: item.brand,
+          name: item.name,
+          size: "S",
+          color: "Default",
+          price: item.price,
+          quantity: 1,
+          image: item.image
+        });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch (err) {
+      console.error(err);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200 ">

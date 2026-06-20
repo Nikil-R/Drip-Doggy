@@ -127,36 +127,7 @@ function ProductCard({
           <Heart className={`h-4 w-4 stroke-[1.5] ${product.favorite ? "fill-red-500 stroke-red-500" : ""}`} />
         </button>
 
-         {/* Hover Quick Add */}
-         <div className="absolute inset-x-4 bottom-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-           {!cartItem ? (
-             <button
-               onClick={(e) => handleAddToBag(product, e)}
-               className="w-full bg-[#030213] text-white py-3 rounded text-[10px] font-bold tracking-[0.15em] hover:bg-neutral-800 transition-colors uppercase shadow-lg cursor-pointer border-none"
-             >
-               ADD TO BAG
-             </button>
-           ) : (
-             <div 
-               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-               className="w-full bg-[#030213] text-white py-2 rounded text-[11px] font-bold tracking-[0.15em] shadow-lg flex items-center justify-between select-none px-2"
-             >
-               <button
-                 onClick={(e) => updateProductQuantityInCart(product, cartItem.quantity - 1, e)}
-                 className="px-3 py-1 text-white hover:text-neutral-300 font-extrabold text-sm cursor-pointer border-none bg-transparent"
-               >
-                 -
-               </button>
-               <span>{cartItem.quantity}</span>
-               <button
-                 onClick={(e) => updateProductQuantityInCart(product, cartItem.quantity + 1, e)}
-                 className="px-3 py-1 text-white hover:text-neutral-300 font-extrabold text-sm cursor-pointer border-none bg-transparent"
-               >
-                 +
-               </button>
-             </div>
-           )}
-         </div>
+
       </div>
 
       {/* Info details */}
@@ -395,10 +366,44 @@ export function ProductGrid() {
   const toggleFavorite = (id: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
     setProducts(prev =>
-      prev.map(p => (p.id === id ? { ...p, favorite: !p.favorite } : p))
+      prev.map(p => {
+        if (p.id === id) {
+          const newFavoriteState = !p.favorite;
+          
+          try {
+            const stored = localStorage.getItem("wishlist");
+            let wishlist = stored ? JSON.parse(stored) : [];
+            
+            if (newFavoriteState) {
+              const exists = wishlist.some((item: any) => item.id === id);
+              if (!exists) {
+                wishlist.push({
+                  id: p.id,
+                  brand: p.brand,
+                  name: p.name,
+                  price: p.price,
+                  image: p.image
+                });
+              }
+            } else {
+              wishlist = wishlist.filter((item: any) => item.id !== id);
+            }
+            
+            localStorage.setItem("wishlist", JSON.stringify(wishlist));
+            window.dispatchEvent(new Event("wishlist-updated"));
+          } catch (err) {
+            console.error(err);
+          }
+          
+          return { ...p, favorite: newFavoriteState };
+        }
+        return p;
+      })
     );
   };
+
 
   const [cartItems, setCartItems] = useState<any[]>(() => {
     try {
@@ -427,6 +432,25 @@ export function ProductGrid() {
       window.removeEventListener("storage", handleCartUpdate);
     };
   }, []);
+
+  // Sync initial favorite state from localStorage wishlist
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("wishlist");
+      const wishlist = stored ? JSON.parse(stored) : [];
+      const wishlistIds = new Set(wishlist.map((item: any) => item.id));
+      
+      setProducts(prev => 
+        prev.map(p => ({
+          ...p,
+          favorite: wishlistIds.has(p.id)
+        }))
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
 
   const updateProductQuantityInCart = (product: Product, newQty: number, e: React.MouseEvent) => {
     e.preventDefault();

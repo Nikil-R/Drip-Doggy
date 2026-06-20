@@ -15,28 +15,15 @@ interface CartItem {
 }
 
 export function Checkout() {
-  const [cartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      brand: "CONCRETE CULTURE",
-      name: "Vanguard Tactical Vest",
-      size: "Medium",
-      color: "Stealth Black",
-      price: 185.00,
-      quantity: 1,
-      image: "https://images.unsplash.com/photo-1605897472359-85e4b9482221?auto=format&fit=crop&q=80&w=600"
-    },
-    {
-      id: 2,
-      brand: "CONCRETE CULTURE",
-      name: "Heavyweight Hoodie",
-      size: "Small",
-      color: "Sandstone",
-      price: 300.00,
-      quantity: 2,
-      image: "https://images.unsplash.com/photo-1583511655826-05700d52f4d9?auto=format&fit=crop&q=80&w=600"
+  const [cartItems] = useState<CartItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("cart");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
     }
-  ]);
+  });
+
 
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
   const [formData, setFormData] = useState({
