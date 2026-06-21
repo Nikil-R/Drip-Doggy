@@ -3,19 +3,24 @@ import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
 
-// Pick a curated set — products that represent the brand silhouette best
-const NEW_IN: Product[] = products
-  .filter((p) => p.badge === "NEW")
-  .concat(products.filter((p) => p.rating && p.rating >= 4.8))
-  .slice(0, 4);
+// Core brand-defining pieces — the "uniform" products
+const SIGNATURE_PIECES: Product[] = [
+  products.find((p) => p.id === 4)!, // Structured Canvas Utility Dress (ARCHIVE COLLECTION)
+  products.find((p) => p.id === 9)!, // Oversized French Terry Dress Hoodie (CORE COLLECTION)
+  products.find((p) => p.id === 1)!, // Sartorial Pleated Trench Dress (DRIP DOGGY COLLECTION)
+  products.find((p) => p.id === 6)!, // Architectural Drape Rib Dress (ESSENTIALS)
+].filter(Boolean);
 
-function ProductCard({ product }: { product: Product }) {
+function SignatureCard({ product }: { product: Product }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     if (!isHovered) { setActiveIdx(0); return; }
-    const timer = setInterval(() => setActiveIdx(prev => (prev + 1) % product.images.length), 1500);
+    const timer = setInterval(
+      () => setActiveIdx((prev) => (prev + 1) % product.images.length),
+      1500
+    );
     return () => clearInterval(timer);
   }, [isHovered, product.images.length]);
 
@@ -39,7 +44,6 @@ function ProductCard({ product }: { product: Product }) {
           />
         ))}
 
-        {/* Progress indicators */}
         {isHovered && product.images.length > 1 && (
           <div className="absolute top-3 inset-x-4 flex gap-1.5 z-10">
             {product.images.map((_, idx) => (
@@ -47,11 +51,13 @@ function ProductCard({ product }: { product: Product }) {
                 {idx === activeIdx ? (
                   <div
                     key={`progress-${idx}`}
-                    style={{ animation: 'progressGrow 1.5s linear forwards' }}
+                    style={{ animation: "progressGrow 1.5s linear forwards" }}
                     className="absolute left-0 top-0 h-full bg-white"
                   />
                 ) : (
-                  <div className={`absolute left-0 top-0 h-full bg-white/40 ${idx < activeIdx ? 'w-full' : 'w-0'}`} />
+                  <div
+                    className={`absolute left-0 top-0 h-full bg-white/40 ${idx < activeIdx ? "w-full" : "w-0"}`}
+                  />
                 )}
               </div>
             ))}
@@ -92,18 +98,17 @@ function ProductCard({ product }: { product: Product }) {
   );
 }
 
-export function FeaturedProducts() {
+export function SignaturePieces() {
   return (
-    <section className="pt-2 pb-16 lg:pt-6 lg:pb-20 bg-white">
-      <div className="max-w-7xl mx-auto px-2">
-        {/* Section Header */}
+    <section className="pt-2 pb-8 lg:pt-6 lg:pb-10 bg-white border-t border-neutral-100">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="mb-10">
           <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
-            New This Season
+            Brand Uniform
           </span>
           <div className="flex justify-between items-baseline">
             <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#030213] uppercase">
-              New In
+              Signature Pieces
             </h2>
             <Link
               to="/shop"
@@ -114,10 +119,9 @@ export function FeaturedProducts() {
           </div>
         </div>
 
-        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {NEW_IN.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {SIGNATURE_PIECES.map((product) => (
+            <SignatureCard key={product.id} product={product} />
           ))}
         </div>
       </div>

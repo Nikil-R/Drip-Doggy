@@ -1,56 +1,71 @@
-import { ImageWithFallback } from "../ui/ImageWithFallback";
 import { Link } from "react-router";
-
-import menSuit from "../../../assets/men_suit.png";
 
 const categories = [
   {
     title: "Women's Collection",
-    image: "https://images.unsplash.com/photo-1542295669297-4d352b042bca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21lbiUyMHN1bW1lciUyMGRyZXNzfGVufDF8fHx8MTc4MDU5MzM0M3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    description: "Sleek apparel & structured outer layers",
-    route: "/shop"
+    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800",
+    description: "Utility layers & draped silhouettes",
+    route: "/shop?gender=women",
+    comingSoon: false,
   },
   {
-    title: "Men's Archive (Soon)",
-    image: menSuit,
-    description: "Unreleased premium menswear collection",
-    route: "/coming-soon"
+    title: "Men's Syndicate",
+    image: "https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&q=80&w=800",
+    description: "Upcoming menswear capsule",
+    route: "/coming-soon",
+    comingSoon: true,
+    comingSeason: "FW26",
   },
-  {
-    title: "Gear & Accessories (Soon)",
-    image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=600",
-    description: "Coming soon — caps, sling bags & streetwear essentials",
-    route: "/coming-soon"
-  }
 ];
 
 export function Categories() {
   return (
-    <section className="snap-start snap-always min-h-screen py-10 lg:py-14 flex flex-col justify-center bg-white">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl lg:text-4xl mb-3 font-extrabold tracking-tight">Shop by Category</h2>
-          <p className="text-muted-foreground text-sm lg:text-base">
-            Find exactly what you're looking for
-          </p>
+    <section className="pt-16 pb-8 lg:pt-20 lg:pb-10 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="mb-10">
+          <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
+            Shop by Category
+          </span>
+          <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#030213] uppercase">
+            Curatorial Categories
+          </h2>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {categories.map((category) => (
             <Link
               key={category.title}
               to={category.route}
-              className="group relative overflow-hidden h-[46vh] max-h-[380px] w-full block"
+              className="group relative overflow-hidden min-h-[420px] lg:min-h-[500px] block"
             >
-              <ImageWithFallback
+              <img
                 src={category.image}
                 alt={category.title}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
+              <div
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  category.comingSoon
+                    ? "bg-black/50 group-hover:bg-black/60"
+                    : "bg-gradient-to-t from-black/70 via-black/10 to-transparent"
+                }`}
+              />
+
+              {/* Coming Soon Badge */}
+              {category.comingSoon && (
+                <div className="absolute top-6 right-6 border border-white/20 px-3 py-1.5">
+                  <span className="text-white/60 text-[8px] font-extrabold tracking-[0.25em] uppercase">
+                    COMING SOON // {category.comingSeason}
+                  </span>
+                </div>
+              )}
+
               <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <h3 className="text-2xl mb-1 font-bold tracking-wide">{category.title}</h3>
-                <p className="text-white/80 text-sm">{category.description}</p>
+                <h3 className="text-xl lg:text-2xl font-extrabold tracking-tight mb-1 uppercase">
+                  {category.title}
+                </h3>
+                <p className="text-white/70 text-xs font-medium tracking-wide">
+                  {category.description}
+                </p>
               </div>
             </Link>
           ))}
@@ -59,6 +74,3 @@ export function Categories() {
     </section>
   );
 }
-
-
-
