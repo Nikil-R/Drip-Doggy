@@ -104,15 +104,33 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
     Drip Doggy — Architectural silhouettes, premium fabrication, uncompromised street luxury.<br>
     Thank you for your order.
   </div>
-
-  <script>window.print();window.close();<\/script>
 </body>
 </html>`;
 }
 
 export function printInvoice(order: Order, user: { firstName: string; lastName: string; email: string; phone: string }) {
   const html = generateInvoiceHTML(order, user);
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  
+  // Create hidden iframe
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "absolute";
+  iframe.style.width = "0px";
+  iframe.style.height = "0px";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document || iframe.contentDocument;
+  if (doc) {
+    doc.open();
+    doc.write(html);
+    doc.close();
+  }
+
+  // Trigger print after iframe renders
+  setTimeout(() => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+    // Clean up iframe from DOM
+    document.body.removeChild(iframe);
+  }, 500);
 }

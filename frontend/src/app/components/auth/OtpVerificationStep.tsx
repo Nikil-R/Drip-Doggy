@@ -33,9 +33,6 @@ export function OtpVerificationStep({
 
   const handleAutoFill = () => {
     onOtpChange(MOCK_OTP);
-    setTimeout(() => {
-      onSubmit();
-    }, 150);
   };
 
   return (

@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import logo from "../../../assets/logo.png";
-import logoIcon from "../../../assets/logo_icon.png";
+import logoIcon from "../../../assets/new_logo_icon.png";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "../ui/sheet";
 import { SearchOverlay } from "../search/SearchOverlay";
 import { useAuth } from "../../context/AuthContext";

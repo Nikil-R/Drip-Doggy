@@ -44,7 +44,6 @@ export function PhoneVerification({
 
   const handleAutoFill = () => {
     setOtp(getMockOtp());
-    setTimeout(() => handleVerifyOtp(), 150);
   };
 
   if (step === "success") {
