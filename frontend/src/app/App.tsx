@@ -45,23 +45,11 @@ export default function App() {
         <div className="min-h-screen bg-white">
           <Header />
           <Routes>
-            {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
+            {/* Public Routes — no auth required for browsing */}
+            <Route path="/" element={<Home />} />
+            <Route path="/checkout" element={<Checkout />} />
+
+            {/* Protected Routes — auth required */}
             <Route
               path="/account"
               element={

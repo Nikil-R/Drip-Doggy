@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Heart, Search, ShoppingBag, ShieldCheck, RefreshCw, Truck, Share2, HelpCircle, Trash2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 interface CartItem {
   id: number;
@@ -14,6 +15,32 @@ interface CartItem {
   image: string;
   favorite?: boolean;
   originalPrice?: number;
+}
+
+function CheckoutButton({ cartItems }: { cartItems: CartItem[] }) {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) return;
+    if (isAuthenticated) {
+      navigate("/checkout");
+    } else {
+      navigate("/login", { state: { from: { pathname: "/checkout" } } });
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCheckout}
+      disabled={cartItems.length === 0}
+      className={`w-full bg-[#030213] text-white py-3.5 text-[10px] font-extrabold tracking-[0.2em] hover:bg-neutral-800 transition-colors shadow-lg shadow-neutral-950/10 cursor-pointer disabled:cursor-not-allowed border border-black ${
+        cartItems.length === 0 ? "opacity-50" : ""
+      }`}
+    >
+      PROCEED TO CHECKOUT
+    </button>
+  );
 }
 
 export function Cart() {
@@ -550,11 +577,7 @@ export function Cart() {
             </div>
 
             <div className="space-y-4">
-              <Link to="/checkout" className={cartItems.length === 0 ? "pointer-events-none opacity-50" : ""}>
-                <button disabled={cartItems.length === 0} className="w-full bg-[#030213] text-white py-3.5 rounded-none text-[10px] font-extrabold tracking-[0.2em] hover:bg-neutral-850 transition-colors shadow-lg shadow-neutral-950/10 cursor-pointer disabled:cursor-not-allowed border border-black">
-                  PROCEED TO CHECKOUT
-                </button>
-              </Link>
+              <CheckoutButton cartItems={cartItems} />
 
               {/* Trust Badges Grid */}
               <div className="grid grid-cols-3 gap-2 pt-4 border-t border-neutral-200/40 text-center text-[7.5px] font-bold text-neutral-400 tracking-wider uppercase">
