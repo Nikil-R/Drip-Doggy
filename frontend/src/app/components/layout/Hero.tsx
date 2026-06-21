@@ -100,9 +100,9 @@ export function Hero() {
                 Explore Collection
               </Button>
             </Link>
-            <Link to="/shop">
+            <Link to="/coming-soon">
               <Button size="lg" className="border border-white text-white bg-transparent hover:bg-white hover:text-black font-bold tracking-wider px-8 py-3.5 uppercase text-xs">
-                Accessories
+                Accessories (Soon)
               </Button>
             </Link>
           </div>

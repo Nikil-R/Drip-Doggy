@@ -26,7 +26,7 @@ interface CartItem {
 function ProductSkeleton() {
   return (
     <div className="flex flex-col justify-between">
-      <div className="aspect-[3/4] bg-neutral-200/60 animate-pulse rounded-lg" />
+      <div className="aspect-[3/4] bg-neutral-200/60 animate-pulse" />
       <div className="space-y-2.5 mt-4">
         <div className="h-2.5 bg-neutral-200/60 animate-pulse rounded w-1/4" />
         <div className="h-4 bg-neutral-200/60 animate-pulse rounded w-3/4" />
@@ -75,7 +75,7 @@ function ProductCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[3/4] bg-neutral-100 rounded-lg overflow-hidden mb-4">
+      <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden mb-4">
         {/* Image crossfade */}
         {product.images.map((imgSrc, idx) => (
           <img
@@ -95,7 +95,7 @@ function ProductCard({
             {product.images.map((_, idx) => (
               <div
                 key={idx}
-                className="h-[2px] flex-1 bg-white/20 rounded-full overflow-hidden relative"
+                className="h-[2px] flex-1 bg-white/20 overflow-hidden relative"
               >
                 {idx === activeIdx ? (
                   <div
@@ -129,7 +129,7 @@ function ProductCard({
         {/* Badge */}
         {product.badge && (
           <span
-            className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 rounded-sm z-10 ${
+            className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 z-10 ${
               product.badge === "SOLD OUT"
                 ? "bg-neutral-100 text-neutral-500"
                 : "bg-white text-[#030213]"
@@ -142,7 +142,7 @@ function ProductCard({
         {/* Wishlist Heart */}
         <button
           onClick={onToggleFav}
-          className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 rounded-full shadow-sm hover:text-red-500 transition-colors z-10 bg-transparent border-none cursor-pointer"
+          className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 shadow-sm hover:text-red-500 transition-colors z-10 bg-transparent border-none cursor-pointer"
           aria-label={isFav ? "Remove from wishlist" : "Add to wishlist"}
         >
           <Heart
@@ -167,13 +167,13 @@ function ProductCard({
                 e.stopPropagation();
                 onAddToBag(e);
               }}
-              className="w-full bg-black/90 hover:bg-black text-white text-[9px] font-extrabold tracking-[0.2em] py-3 rounded-sm uppercase backdrop-blur-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+              className="w-full bg-black/90 hover:bg-black text-white text-[9px] font-extrabold tracking-[0.2em] py-3 uppercase backdrop-blur-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
             >
               <ShoppingBag className="h-3.5 w-3.5 stroke-[2]" />
               ADD TO BAG
             </button>
           ) : (
-            <div className="w-full bg-black/90 text-white rounded-sm backdrop-blur-sm flex items-center justify-between px-3 py-2">
+            <div className="w-full bg-black/90 text-white backdrop-blur-sm flex items-center justify-between px-3 py-2">
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -223,7 +223,7 @@ function ProductCard({
                 ₹{product.originalPrice.toFixed(2)}
               </span>
               {discount > 0 && (
-                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
+                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
                   {discount}% OFF
                 </span>
               )}
@@ -236,7 +236,7 @@ function ProductCard({
             {product.colors.map((c, i) => (
               <div
                 key={i}
-                className="w-2.5 h-2.5 rounded-full border border-neutral-200"
+                className="w-2.5 h-2.5 border border-neutral-200"
                 style={{ backgroundColor: c }}
               />
             ))}

@@ -412,7 +412,7 @@ export function Search() {
                         className="group flex flex-col justify-between"
                       >
                         <div>
-                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-neutral-100 mb-4 relative">
+                          <div className="aspect-[3/4] overflow-hidden bg-neutral-100 mb-4 relative">
                             <img
                               src={product.image}
                               alt={product.name}
@@ -422,7 +422,7 @@ export function Search() {
                             {/* Badge */}
                             {product.badge && (
                               <span
-                                className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 rounded-sm ${
+                                className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 ${
                                   product.badge === "SOLD OUT"
                                     ? "bg-neutral-100 text-neutral-500"
                                     : "bg-white text-[#030213]"
@@ -435,7 +435,7 @@ export function Search() {
                             {/* Favorite */}
                             <button
                               onClick={(e) => toggleWishlist(product, e)}
-                              className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 rounded-full shadow-sm hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
+                              className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 shadow-sm hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
                               aria-label={
                                 isFav
                                   ? "Remove from wishlist"
@@ -453,7 +453,7 @@ export function Search() {
 
                             {/* Hover add-to-bag indicator */}
                             <div className="absolute inset-x-4 bottom-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                              <div className="bg-black/90 text-white text-[8px] font-extrabold tracking-[0.2em] py-2.5 text-center uppercase rounded-sm backdrop-blur-sm">
+                              <div className="bg-black/90 text-white text-[8px] font-extrabold tracking-[0.2em] py-2.5 text-center uppercase backdrop-blur-sm">
                                 Quick View
                               </div>
                             </div>
@@ -477,7 +477,7 @@ export function Search() {
                                 ₹{product.originalPrice.toFixed(2)}
                               </span>
                               {discount > 0 && (
-                                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
+                                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
                                   {discount}% OFF
                                 </span>
                               )}

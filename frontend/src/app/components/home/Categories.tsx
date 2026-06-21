@@ -17,10 +17,10 @@ const categories = [
     route: "/coming-soon"
   },
   {
-    title: "Gear & Accessories",
+    title: "Gear & Accessories (Soon)",
     image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=600",
-    description: "Sling bags, caps & streetwear essentials",
-    route: "/shop"
+    description: "Coming soon — caps, sling bags & streetwear essentials",
+    route: "/coming-soon"
   }
 ];
 
@@ -40,7 +40,7 @@ export function Categories() {
             <Link
               key={category.title}
               to={category.route}
-              className="group relative overflow-hidden rounded-lg h-[46vh] max-h-[380px] w-full block"
+              className="group relative overflow-hidden h-[46vh] max-h-[380px] w-full block"
             >
               <ImageWithFallback
                 src={category.image}
