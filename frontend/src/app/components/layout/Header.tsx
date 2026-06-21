@@ -408,8 +408,8 @@ export function Header() {
                     </div>
                   ) : (
                     cartItems.map(item => (
-                      <div key={item.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
-                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover rounded bg-neutral-100 flex-shrink-0" />
+                      <div key={item.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
+                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover bg-neutral-100 flex-shrink-0" />
                         <div className="flex-1 flex flex-col justify-between">
                           <div>
                             <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
@@ -424,7 +424,7 @@ export function Header() {
                                 <select 
                                   value={item.size}
                                   onChange={(e) => updateItemSize(item.cartItemId, e.target.value)}
-                                  className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none rounded-sm px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
+                                  className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
                                   aria-label="Select size"
                                 >
                                   {["XS", "S", "M", "L", "XL", "XXL"].map(sz => (
@@ -444,7 +444,7 @@ export function Header() {
                                 </>
                               )}
                             </div>
-                            <div className="flex items-center border border-neutral-300 rounded-full px-2.5 py-1 bg-neutral-50 shadow-xs">
+                            <div className="flex items-center border border-neutral-300 px-2.5 py-1 bg-neutral-50 shadow-xs">
                               <button 
                                 onClick={() => updateQuantity(item.cartItemId, -1)} 
                                 className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
@@ -618,7 +618,7 @@ export function Header() {
                         Address
                       </Link>
                       <Link 
-                        to="/wishlist" 
+                        to="/account#wishlist" 
                         onClick={() => setIsProfileOpen(false)}
                         className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
                       >
