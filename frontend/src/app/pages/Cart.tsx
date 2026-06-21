@@ -13,17 +13,26 @@ interface CartItem {
   quantity: number;
   image: string;
   favorite?: boolean;
+  originalPrice?: number;
 }
 
 export function Cart() {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
-      const stored = localStorage.getItem("cart");
-      return stored ? JSON.parse(stored) : [];
+      const storedCart = localStorage.getItem("cart");
+      const items = storedCart ? JSON.parse(storedCart) : [];
+      const storedWishlist = localStorage.getItem("wishlist");
+      const wishlist = storedWishlist ? JSON.parse(storedWishlist) : [];
+      const wishlistIds = new Set(wishlist.map((w: any) => w.id));
+      return items.map((item: any) => ({
+        ...item,
+        favorite: wishlistIds.has(item.id)
+      }));
     } catch {
       return [];
     }
   });
+
 
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
@@ -34,19 +43,30 @@ export function Cart() {
   useEffect(() => {
     const syncCart = () => {
       try {
-        const stored = localStorage.getItem("cart");
-        setCartItems(stored ? JSON.parse(stored) : []);
+        const storedCart = localStorage.getItem("cart");
+        const items = storedCart ? JSON.parse(storedCart) : [];
+        const storedWishlist = localStorage.getItem("wishlist");
+        const wishlist = storedWishlist ? JSON.parse(storedWishlist) : [];
+        const wishlistIds = new Set(wishlist.map((w: any) => w.id));
+        
+        setCartItems(items.map((item: any) => ({
+          ...item,
+          favorite: wishlistIds.has(item.id)
+        })));
       } catch {
         setCartItems([]);
       }
     };
     window.addEventListener("cart-updated", syncCart);
+    window.addEventListener("wishlist-updated", syncCart);
     window.addEventListener("storage", syncCart);
     return () => {
       window.removeEventListener("cart-updated", syncCart);
+      window.removeEventListener("wishlist-updated", syncCart);
       window.removeEventListener("storage", syncCart);
     };
   }, []);
+
 
   const saveCart = (items: CartItem[]) => {
     localStorage.setItem("cart", JSON.stringify(items));
@@ -72,12 +92,45 @@ export function Cart() {
   };
 
   const toggleFavorite = (cartItemId: string) => {
+    const itemToToggle = cartItems.find(item => item.cartItemId === cartItemId);
+    if (!itemToToggle) return;
+
+    const nextFavorite = !itemToToggle.favorite;
+
     const updated = cartItems.map(item => 
-      item.cartItemId === cartItemId ? { ...item, favorite: !item.favorite } : item
+      item.cartItemId === cartItemId ? { ...item, favorite: nextFavorite } : item
     );
     setCartItems(updated);
     saveCart(updated);
+
+    try {
+      const stored = localStorage.getItem("wishlist");
+      let wishlist = stored ? JSON.parse(stored) : [];
+      
+      if (nextFavorite) {
+        // Add to wishlist if not already exists
+        const exists = wishlist.some((wItem: any) => wItem.id === itemToToggle.id);
+        if (!exists) {
+          wishlist.push({
+            id: itemToToggle.id,
+            brand: itemToToggle.brand,
+            name: itemToToggle.name,
+            price: itemToToggle.price,
+            image: itemToToggle.image
+          });
+        }
+      } else {
+        // Remove from wishlist
+        wishlist = wishlist.filter((wItem: any) => wItem.id !== itemToToggle.id);
+      }
+      
+      localStorage.setItem("wishlist", JSON.stringify(wishlist));
+      window.dispatchEvent(new Event("wishlist-updated"));
+    } catch (e) {
+      console.error(e);
+    }
   };
+
 
   const applyPromo = () => {
     if (promoCode.trim().toUpperCase() === "DRIP20") {
@@ -102,6 +155,32 @@ export function Cart() {
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const getOriginalPrice = (item: CartItem) => {
+    if (item.originalPrice) return item.originalPrice;
+    const idMap: Record<number, number> = {
+      1: 499.00,
+      2: 399.00,
+      3: 999.00,
+      4: 599.00,
+      5: 699.00,
+      6: 349.00,
+      7: 399.00,
+      8: 449.00,
+      9: 449.00,
+      10: 199.00,
+      11: 149.00,
+      12: 99.00,
+      101: 1999.00,
+      102: 1499.00,
+      103: 1250.00,
+      104: 999.00
+    };
+    if (idMap[item.id]) return idMap[item.id];
+    if (item.name.toLowerCase().includes("floral wrap dress")) return 3999.00;
+    return Math.round(item.price * 2.05);
+  };
+
   const deliveryFeeValue = subtotal > 1999 || totalItemCount === 0 ? 0 : 90;
   const totalToPay = Math.max(0, subtotal - promoDiscount + deliveryFeeValue);
 
@@ -190,10 +269,10 @@ export function Cart() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200 py-16">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200 py-5">
       {/* Main Cart Content */}
       <div className="max-w-7xl mx-auto px-6">
-        <h1 className="text-3xl font-extrabold tracking-[0.15em] mb-0.5 uppercase">
+        <h1 className="text-3xl font-extrabold tracking-[0.15em] mb-0.1 uppercase">
           SHOPPING CART
         </h1>
         <p className="text-neutral-500 text-[10px] font-bold tracking-widest uppercase mb-8">
@@ -214,39 +293,123 @@ export function Cart() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-neutral-200 border-t border-b border-neutral-200">
-                {cartItems.map(item => (
-                  <div
-                    key={item.cartItemId}
-                    className="py-6 flex flex-col sm:flex-row gap-6 relative"
-                  >
-                    {/* Item Image */}
-                    <div className="w-full sm:w-28 aspect-[3/4] overflow-hidden bg-neutral-100 flex-shrink-0 rounded-none">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+              <div className="space-y-4">
+                {/* Desktop Table Header */}
+                <div className="hidden md:grid grid-cols-12 gap-6 pb-4 border-b border-neutral-200 text-[9px] font-extrabold tracking-[0.2em] text-neutral-400 uppercase">
+                  <div className="col-span-6">PRODUCT</div>
+                  <div className="col-span-2 text-center">PRICE</div>
+                  <div className="col-span-2 text-center">QUANTITY</div>
+                  <div className="col-span-2 text-right">TOTAL</div>
+                </div>
 
-                    {/* Item Info */}
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">
-                              {item.brand}
-                            </span>
-                            <h2 className="text-sm font-extrabold tracking-wide mt-1 mb-1.5 uppercase text-neutral-900 leading-tight">
-                              {item.name}
-                            </h2>
-                            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
-                              Size: {item.size} | Color: {item.color}
-                            </p>
+                <div className="divide-y divide-neutral-200 border-b border-neutral-200">
+                  {cartItems.map(item => {
+                    const originalPrice = getOriginalPrice(item);
+                    const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
+
+                    return (
+                      <div
+                        key={item.cartItemId}
+                        className="py-6 flex flex-col md:grid md:grid-cols-12 md:gap-6 items-center relative"
+                      >
+                        {/* ITEM COLUMN */}
+                        <div className="col-span-6 flex gap-6 w-full items-start">
+                          {/* Item Image */}
+                          <div className="w-20 md:w-24 aspect-[3/4] overflow-hidden bg-neutral-100 flex-shrink-0 rounded-none border border-neutral-200/40">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center gap-1.5">
+                          {/* Item Details */}
+                          <div className="flex-1 flex flex-col justify-between min-h-[100px] md:min-h-0">
+                            <div>
+                              <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">
+                                {item.brand}
+                              </span>
+                              <h2 className="text-xs md:text-sm font-extrabold tracking-wide mt-1 mb-1.5 uppercase text-neutral-900 leading-tight">
+                                {item.name}
+                              </h2>
+                              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+                                Size: {item.size} | Color: {item.color}
+                              </p>
+                            </div>
+
+                            {/* Mobile-only Price and Quantity displays */}
+                            <div className="flex justify-between items-center mt-4 md:hidden">
+                              <div className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-extrabold text-neutral-900">
+                                    ₹{item.price.toFixed(2)}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-neutral-450 line-through">
+                                    ₹{originalPrice.toFixed(2)}
+                                  </span>
+                                  <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
+                                    {discountPercent}% OFF
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center border border-neutral-300 rounded-none px-2 py-0.5 bg-white">
+                                <button
+                                  onClick={() => updateQuantity(item.cartItemId, -1)}
+                                  className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <span className="text-[10px] font-extrabold w-5 text-center text-neutral-800">{item.quantity}</span>
+                                <button
+                                  onClick={() => updateQuantity(item.cartItemId, 1)}
+                                  className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* DESKTOP PRICE COLUMN */}
+                        <div className="hidden md:flex col-span-2 flex-col items-center justify-center text-center gap-1">
+                          <div className="flex items-center gap-2 justify-center">
+                            <span className="text-sm font-extrabold text-neutral-900">
+                              ₹{item.price.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] font-medium text-neutral-450 line-through">
+                              ₹{originalPrice.toFixed(2)}
+                            </span>
+                          </div>
+                          <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-widest bg-red-50 px-1.5 py-0.5">
+                            {discountPercent}% OFF
+                          </span>
+                        </div>
+
+                        {/* DESKTOP QUANTITY COLUMN */}
+                        <div className="hidden md:flex col-span-2 justify-center">
+                          <div className="flex items-center border border-neutral-200/80 rounded-none px-2 py-1 bg-white">
+                            <button
+                              onClick={() => updateQuantity(item.cartItemId, -1)}
+                              className="text-neutral-400 hover:text-neutral-900 px-2 text-xs font-bold bg-transparent border-none cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="text-[11px] font-extrabold w-6 text-center text-neutral-800">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.cartItemId, 1)}
+                              className="text-neutral-400 hover:text-neutral-900 px-2 text-xs font-bold bg-transparent border-none cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* DESKTOP TOTAL COLUMN & ACTIONS */}
+                        <div className="col-span-2 w-full flex md:flex-col items-center justify-between md:items-end md:justify-center gap-2 mt-4 md:mt-0 pt-4 md:pt-0 border-t border-neutral-100 md:border-none">
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1.5 md:absolute md:top-6 md:right-0">
                             <button
                               onClick={() => toggleFavorite(item.cartItemId)}
                               className="p-1 text-neutral-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
@@ -267,34 +430,19 @@ export function Cart() {
                               <Trash2 className="h-4.5 w-4.5 stroke-[1.8]" />
                             </button>
                           </div>
-                        </div>
-                      </div>
 
-                      {/* Quantity Selector & Price */}
-                      <div className="flex justify-between items-center mt-6">
-                        <div className="flex items-center border border-neutral-300 rounded-none px-3 py-1 bg-white">
-                          <button
-                            onClick={() => updateQuantity(item.cartItemId, -1)}
-                            className="text-neutral-400 hover:text-neutral-900 px-2 text-xs font-bold bg-transparent border-none cursor-pointer"
-                          >
-                            -
-                          </button>
-                          <span className="text-[11px] font-extrabold w-6 text-center text-neutral-800">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.cartItemId, 1)}
-                            className="text-neutral-400 hover:text-neutral-900 px-2 text-xs font-bold bg-transparent border-none cursor-pointer"
-                          >
-                            +
-                          </button>
+                          <div className="text-right">
+                            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block md:hidden">Total:</span>
+                            <span className="text-sm font-extrabold text-neutral-950">
+                              ₹{(item.price * item.quantity).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
 
-                        <span className="text-sm font-extrabold text-neutral-900">
-                          ₹{(item.price * item.quantity).toFixed(2)}
-                        </span>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -302,9 +450,41 @@ export function Cart() {
           {/* Right Column: Order Summary with Repositioned Coupon */}
           <div className="lg:col-span-4 bg-[#FAF8F5]/30 rounded-none border border-neutral-200/80 p-6 flex flex-col justify-between">
             <div>
-              <h2 className="text-xs font-extrabold tracking-[0.2em] mb-6 pb-2 border-b border-neutral-200/60 uppercase">
+              <h2 className="text-xs font-extrabold tracking-[0.2em] mb-4 pb-2 border-b border-neutral-200/60 uppercase">
                 ORDER SUMMARY
               </h2>
+
+              {/* Free Shipping Progress Bar */}
+              {cartItems.length > 0 && (
+                <div className="mb-6 p-4 bg-white border border-neutral-200/60 rounded-none">
+                  {subtotal >= 1999 ? (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[9px] font-extrabold tracking-wider text-green-600 uppercase">You qualify for FREE shipping!</span>
+                        <span className="text-[10px] font-black text-green-600">100%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-neutral-100 rounded-none overflow-hidden">
+                        <div className="h-full bg-green-600 w-full transition-all duration-500"></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[9px] font-extrabold tracking-wider text-neutral-500 uppercase">
+                          Add <span className="text-neutral-900 font-black">₹{(1999 - subtotal).toFixed(2)}</span> more for FREE shipping
+                        </span>
+                        <span className="text-[10px] font-black text-neutral-850">{Math.round((subtotal / 1999) * 100)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-neutral-100 rounded-none overflow-hidden">
+                        <div 
+                          className="h-full bg-black transition-all duration-500" 
+                          style={{ width: `${(subtotal / 1999) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-3.5 text-[10px] font-bold tracking-wider text-neutral-600 uppercase mb-6">
                 <div className="flex justify-between">
