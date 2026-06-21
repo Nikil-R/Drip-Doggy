@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { User, Package, MapPin, CheckCircle, Truck, Heart, LogOut, Trash2, Plus } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 interface Order {
   id: string;
@@ -19,6 +20,9 @@ interface Order {
 }
 
 export function Profile() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState<"profile" | "orders" | "addresses" | "wishlist">(() => {
     const hash = window.location.hash.replace("#", "");
     if (hash === "orders" || hash === "profile" || hash === "addresses" || hash === "wishlist") {
@@ -44,10 +48,10 @@ export function Profile() {
   };
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [profile, setProfile] = useState({
-    firstName: "Nikil",
-    lastName: "Kumar",
-    email: "nikil@example.com",
-    phone: "+44 7911 123456",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
     address: "123 Kings Road",
     city: "London",
     postalCode: "SW3 4TR",
@@ -104,10 +108,8 @@ export function Profile() {
   };
 
   const handleLogout = () => {
-    if (confirm("Are you sure you want to log out?")) {
-      alert("Logged out successfully.");
-      window.location.href = "/";
-    }
+    logout();
+    navigate("/login", { replace: true });
   };
 
   const [orders] = useState<Order[]>([

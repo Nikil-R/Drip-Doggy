@@ -6,8 +6,10 @@ import logo from "../../../assets/logo.png";
 import logoIcon from "../../../assets/logo_icon.png";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "../ui/sheet";
 import { SearchOverlay } from "../search/SearchOverlay";
+import { useAuth } from "../../context/AuthContext";
 
 export function Header() {
+  const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [navSearchVal, setNavSearchVal] = useState("");
@@ -579,45 +581,66 @@ export function Header() {
                 isProfileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
               }`}>
                 <div className="bg-[#FAF8F5] border border-neutral-250/90 shadow-[0_10px_30px_rgba(0,0,0,0.08)] py-3 rounded-none text-left flex flex-col text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-800">
-                  {/* User Details Header with link redirect to the account page */}
-                  <Link 
-                    to="/account"
-                    onClick={() => setIsProfileOpen(false)}
-                    className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
-                  >
-                    <span className="text-[13px] font-black tracking-[0.1em] text-neutral-900 uppercase">Nikil R</span>
-                    <span className="text-[10px] font-bold tracking-normal text-neutral-500 lowercase mt-1.5">nikilvijay48@gmail.com</span>
-                  </Link>
-                  
-                  {/* Navigation Links with enhanced visibility */}
-                  <Link 
-                    to="/account#orders" 
-                    onClick={() => setIsProfileOpen(false)}
-                    className="block px-5 py-3 hover:text-black hover:bg-neutral-150/60 transition-colors mt-2"
-                  >
-                    My Orders
-                  </Link>
-                  <Link 
-                    to="/account#addresses" 
-                    onClick={() => setIsProfileOpen(false)}
-                    className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
-                  >
-                    Address
-                  </Link>
-                  <Link 
-                    to="/wishlist" 
-                    onClick={() => setIsProfileOpen(false)}
-                    className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
-                  >
-                    Wishlist
-                  </Link>
-                  <Link 
-                    to="/login" 
-                    onClick={() => setIsProfileOpen(false)}
-                    className="block px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/60 transition-colors border-t border-neutral-200/60 mt-2 pt-3 font-extrabold"
-                  >
-                    Sign Out
-                  </Link>
+                  {isAuthenticated && user ? (
+                    <>
+                      {/* User Details Header */}
+                      <Link 
+                        to="/account"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
+                      >
+                        <span className="text-[13px] font-black tracking-[0.1em] text-neutral-900 uppercase">{user.firstName} {user.lastName.charAt(0)}.</span>
+                        <span className="text-[10px] font-bold tracking-normal text-neutral-500 lowercase mt-1.5">{user.email}</span>
+                      </Link>
+                      
+                      {/* Navigation Links */}
+                      <Link 
+                        to="/account#orders" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:text-black hover:bg-neutral-150/60 transition-colors mt-2"
+                      >
+                        My Orders
+                      </Link>
+                      <Link 
+                        to="/account#addresses" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
+                      >
+                        Address
+                      </Link>
+                      <Link 
+                        to="/wishlist" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
+                      >
+                        Wishlist
+                      </Link>
+                      <button 
+                        onClick={() => { logout(); setIsProfileOpen(false); navigate('/login'); }}
+                        className="w-full text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/60 transition-colors border-t border-neutral-200/60 mt-2 pt-3 font-extrabold bg-transparent border-none cursor-pointer"
+                      >
+                        Sign Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Unauthenticated */}
+                      <Link 
+                        to="/login" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-4 hover:bg-neutral-100/60 transition-colors font-extrabold"
+                      >
+                        Sign In
+                      </Link>
+                      <Link 
+                        to="/register" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:bg-neutral-100/60 transition-colors border-t border-neutral-200/60"
+                      >
+                        Create Account
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
