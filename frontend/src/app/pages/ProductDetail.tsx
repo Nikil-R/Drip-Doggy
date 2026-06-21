@@ -1,28 +1,92 @@
 import { useState, useEffect, useRef } from "react";
-import { Star, ShieldCheck, Truck, RefreshCw, Lock, ArrowRight, Layers, Eye, Shield, ChevronLeft, ChevronRight, ShoppingCart, Heart, Share2, Copy, Check } from "lucide-react";
-import { Link, useNavigate } from "react-router";
-
-
-interface ColorOption {
-  name: string;
-  thumbnail: string;
-}
+import {
+  Star,
+  ShieldCheck,
+  ArrowRight,
+  Heart,
+  Share2,
+  Copy,
+  Check,
+  Truck,
+  RotateCcw,
+} from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router";
+import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
+import type { Product, ProductColorVariant } from "../data/products";
 
 export function ProductDetail() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [selectedColor, setSelectedColor] = useState("JET BLACK");
+  const productId = parseInt(id || "0", 10);
+  const product = getProductById(productId);
 
-  const [selectedSize, setSelectedSize] = useState("M");
-  const [activeTab, setActiveTab] = useState<"description" | "specifications" | "shipping" | "reviews">("description");
-  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  // ─── 404 State ──────────────────────────────────────────────────────────
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <h1 className="text-4xl font-extrabold tracking-[0.1em] mb-4 uppercase">
+            Product Not Found
+          </h1>
+          <p className="text-neutral-500 text-xs tracking-widest uppercase mb-8">
+            The product you are looking for does not exist or has been removed.
+          </p>
+          <Link
+            to="/shop"
+            className="inline-block bg-[#030213] text-white px-8 py-3.5 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <ProductDetailContent product={product} />;
+}
+
+// ─── Live Product Detail ────────────────────────────────────────────────────
+function ProductDetailContent({ product }: { product: Product }) {
+  const navigate = useNavigate();
+
+  // Color variants
+  const hasVariants = product.variants && product.variants.length > 0;
+  const firstVariant = hasVariants ? product.variants![0] : null;
+  const [selectedColor, setSelectedColor] = useState(
+    firstVariant?.name ?? "DEFAULT"
+  );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const [selectedSize, setSelectedSize] = useState(
+    (product.sizes && product.sizes[0]) || "M"
+  );
+  const [activeTab, setActiveTab] = useState<
+    "description" | "specifications" | "shipping" | "reviews"
+  >("description");
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [pincode, setPincode] = useState("");
   const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
+
+  const productImages = getVariantImages(product, selectedColor);
+  const colorOptions = getColorOptions(product);
+  const displaySizes = (product.sizes && product.sizes.length > 0) ? product.sizes : DEFAULT_SIZES;
+  const discountPercent = product.originalPrice
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
+    : 0;
+
+  // Cart quantity
   const [cartQuantity, setCartQuantity] = useState<number>(() => {
     try {
       const stored = localStorage.getItem("cart");
       const items = stored ? JSON.parse(stored) : [];
-      const item = items.find((i: any) => i.id === 3 && i.color === selectedColor && i.size === selectedSize);
+      const item = items.find(
+        (i: any) =>
+          i.id === product.id &&
+          i.color === selectedColor &&
+          i.size === selectedSize
+      );
       return item ? item.quantity : 0;
     } catch {
       return 0;
@@ -34,7 +98,12 @@ export function ProductDetail() {
       try {
         const stored = localStorage.getItem("cart");
         const items = stored ? JSON.parse(stored) : [];
-        const item = items.find((i: any) => i.id === 3 && i.color === selectedColor && i.size === selectedSize);
+        const item = items.find(
+          (i: any) =>
+            i.id === product.id &&
+            i.color === selectedColor &&
+            i.size === selectedSize
+        );
         setCartQuantity(item ? item.quantity : 0);
       } catch (e) {
         console.error(e);
@@ -43,22 +112,19 @@ export function ProductDetail() {
 
     window.addEventListener("cart-updated", syncQuantity);
     window.addEventListener("storage", syncQuantity);
-
-    // Initial sync in case values changed
     syncQuantity();
-
     return () => {
       window.removeEventListener("cart-updated", syncQuantity);
       window.removeEventListener("storage", syncQuantity);
     };
-  }, [selectedColor, selectedSize]);
+  }, [selectedColor, selectedSize, product.id]);
 
   const updateProductQuantity = (newQty: number) => {
     try {
       const stored = localStorage.getItem("cart");
       let items = stored ? JSON.parse(stored) : [];
-      const cartItemId = `3-${selectedColor}-${selectedSize}`;
-      
+      const cartItemId = `${product.id}-${selectedColor}-${selectedSize}`;
+
       if (newQty <= 0) {
         items = items.filter((i: any) => i.cartItemId !== cartItemId);
       } else {
@@ -67,15 +133,15 @@ export function ProductDetail() {
           existing.quantity = newQty;
         } else {
           items.push({
-            id: 3,
+            id: product.id,
             cartItemId,
-            brand: "ARCHITECTURAL PRECISION SERIES",
-            name: "STRUCTURE TACTICAL LAYER",
+            brand: product.brand,
+            name: product.name,
             size: selectedSize,
             color: selectedColor,
-            price: 485.00,
+            price: product.price,
             quantity: newQty,
-            image: variants[selectedColor]?.[0] || "https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&q=80&w=800"
+            image: productImages[0] || product.image,
           });
         }
       }
@@ -86,10 +152,12 @@ export function ProductDetail() {
     }
   };
 
-  const [showStickyBar, setShowStickyBar] = useState(false);
+  // Wishlist
   const [isWishlisted, setIsWishlisted] = useState(false);
   const ctaSectionRef = useRef<HTMLDivElement | null>(null);
-  
+
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -115,60 +183,48 @@ export function ProductDetail() {
       const stored = localStorage.getItem("wishlist");
       if (stored) {
         const items = JSON.parse(stored);
-        setIsWishlisted(items.some((item: any) => item.id === 3));
+        setIsWishlisted(items.some((item: any) => item.id === product.id));
       }
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [product.id]);
 
   const toggleWishlist = () => {
     const nextState = !isWishlisted;
     setIsWishlisted(nextState);
     try {
       const stored = localStorage.getItem("wishlist");
-      let items = stored ? JSON.parse(stored) : [
-        {
-          id: 1,
-          brand: "CONCRETE CULTURE",
-          name: "Reflective Utility Sling",
-          price: 45.00,
-          image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600"
-        },
-        {
-          id: 2,
-          brand: "CONCRETE CULTURE",
-          name: "Italian Leather Cardholder",
-          price: 75.00,
-          image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=600"
-        }
-      ];
-
+      let items = stored ? JSON.parse(stored) : [];
       const productItem = {
-        id: 3,
-        brand: "ARCHITECTURAL PRECISION SERIES",
-        name: "STRUCTURE TACTICAL LAYER",
-        price: 485.00,
-        image: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&q=80&w=800"
+        id: product.id,
+        brand: product.brand,
+        name: product.name,
+        price: product.price,
+        image: product.image,
       };
 
       if (nextState) {
-        if (!items.some((item: any) => item.id === 3)) {
+        if (!items.some((item: any) => item.id === product.id)) {
           items.push(productItem);
         }
       } else {
-        items = items.filter((item: any) => item.id !== 3);
+        items = items.filter((item: any) => item.id !== product.id);
       }
       localStorage.setItem("wishlist", JSON.stringify(items));
+      window.dispatchEvent(new Event("wishlist-updated"));
     } catch (e) {
       console.error(e);
     }
   };
 
+  // Sticky bar observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setShowStickyBar(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+        setShowStickyBar(
+          !entry.isIntersecting && entry.boundingClientRect.top < 0
+        );
       },
       { threshold: 0 }
     );
@@ -184,69 +240,29 @@ export function ProductDetail() {
     };
   }, []);
 
-  const variants: Record<string, string[]> = {
-    "JET BLACK": [
-      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.3&z=2",
-      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.6&z=1.8",
-      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.48&fp-y=0.45&z=2.5"
-    ],
-    "COFFEE BROWN": [
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.3&z=2",
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.6&z=1.8",
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.48&fp-y=0.45&z=2.5"
-    ],
-    "SAND BEIGE": [
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.3&z=2",
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.6&z=1.8",
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.48&fp-y=0.45&z=2.5"
-    ],
-    "IVORY WHITE": [
-      "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.3&z=2",
-      "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.5&fp-y=0.6&z=1.8",
-      "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=800&crop=focalpoint&fp-x=0.48&fp-y=0.45&z=2.5"
-    ]
-  };
-
-  const colors: ColorOption[] = [
-    { name: "JET BLACK", thumbnail: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=150" },
-    { name: "COFFEE BROWN", thumbnail: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=150" },
-    { name: "SAND BEIGE", thumbnail: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=150" },
-    { name: "IVORY WHITE", thumbnail: "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=150" }
-  ];
-
-  const productImages = variants[selectedColor] || variants["JET BLACK"];
-
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
   const handleAddToBag = () => {
     updateProductQuantity(1);
   };
 
   const handleBuyNow = () => {
-    // If quantity is 0, add at least 1 item to the cart
     if (cartQuantity === 0) {
       updateProductQuantity(1);
     }
     navigate("/checkout");
   };
 
+  // Recommendations (exclude current product)
+  const recommendations = getRecommendations(product.id, 4);
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200">
-      
-
       {/* Product Section */}
       <section className="max-w-7xl mx-auto px-6 py-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Product Image Column (Left) */}
+          {/* ─── LEFT COLUMN — Images ──────────────────────────────────── */}
           <div className="lg:col-span-6 space-y-5">
             <div className="flex flex-col-reverse md:flex-row gap-4">
-              {/* Thumbnails list */}
+              {/* Thumbnail Strip */}
               <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pb-2 md:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {productImages.map((imgUrl, index) => (
                   <button
@@ -261,22 +277,56 @@ export function ProductDetail() {
                   >
                     <img
                       src={imgUrl}
-                      alt={`Thumbnail ${index + 1}`}
+                      alt={`${product.name} thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>
                 ))}
               </div>
 
-              {/* Main Image Viewport with Nav Arrows */}
+              {/* Main Image */}
               <div className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[4/5] lg:aspect-square group">
                 <img
                   src={productImages[currentImageIndex]}
-                  alt="Structure Tactical Layer"
+                  alt={product.name}
                   className="w-full h-full object-cover transition-all duration-300"
                 />
 
-                {/* Wishlist Toggle Button at Top-Right */}
+                {/* Image Navigation Arrows */}
+                {productImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() =>
+                        setCurrentImageIndex(
+                          (prev) =>
+                            (prev - 1 + productImages.length) %
+                            productImages.length
+                        )
+                      }
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-sm transition-all duration-200 opacity-0 group-hover:opacity-100 cursor-pointer border-none z-10"
+                      aria-label="Previous image"
+                    >
+                      <svg className="h-4 w-4 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() =>
+                        setCurrentImageIndex(
+                          (prev) => (prev + 1) % productImages.length
+                        )
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-sm transition-all duration-200 opacity-0 group-hover:opacity-100 cursor-pointer border-none z-10"
+                      aria-label="Next image"
+                    >
+                      <svg className="h-4 w-4 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+
+                {/* Wishlist Toggle */}
                 <button
                   onClick={toggleWishlist}
                   className="absolute top-4 right-4 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-md transition-all duration-200 z-10 hover:scale-105 cursor-pointer border-none"
@@ -284,38 +334,50 @@ export function ProductDetail() {
                 >
                   <Heart
                     className={`h-4.5 w-4.5 stroke-[1.8] transition-all duration-300 ${
-                      isWishlisted ? "fill-pink-500 stroke-pink-500 text-pink-500 scale-110" : "text-neutral-800"
+                      isWishlisted
+                        ? "fill-pink-500 stroke-pink-500 text-pink-500 scale-110"
+                        : "text-neutral-800"
                     }`}
                   />
                 </button>
 
-                {/* Dots indicator for mobile */}
+                {/* Mobile dots */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:hidden">
                   {productImages.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-                        currentImageIndex === index ? "bg-[#030213] w-3" : "bg-neutral-450/40"
+                        currentImageIndex === index
+                          ? "bg-[#030213] w-3"
+                          : "bg-neutral-450/40"
                       }`}
                     />
                   ))}
                 </div>
               </div>
             </div>
-
-            {/* Design Highlights Box to fill empty space */}            {/* Design highlights relocated to bottom row to prevent whitespace issues */}
           </div>
 
-          {/* Product Actions Column (Right) */}
+          {/* ─── RIGHT COLUMN — Product Info ───────────────────────────── */}
           <div className="lg:col-span-6 space-y-4 lg:pl-6">
+            {/* Breadcrumb */}
             <div className="flex items-center justify-between gap-4 border-b border-neutral-200/50 pb-2">
-              <nav className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.15em] text-[#6B7280] uppercase" aria-label="Breadcrumb">
-                <Link to="/" className="hover:underline hover:text-black transition-colors duration-150">Home</Link>
+              <nav
+                className="flex items-center gap-1.5 text-[9px] font-bold tracking-[0.15em] text-[#6B7280] uppercase"
+                aria-label="Breadcrumb"
+              >
+                <Link to="/" className="hover:underline hover:text-black transition-colors duration-150">
+                  Home
+                </Link>
                 <span className="text-[8px] text-neutral-400">&gt;</span>
-                <Link to="/shop" className="hover:underline hover:text-black transition-colors duration-150">Women</Link>
+                <Link to="/shop" className="hover:underline hover:text-black transition-colors duration-150">
+                  Shop
+                </Link>
                 <span className="text-[8px] text-neutral-400">&gt;</span>
-                <span className="text-neutral-500 truncate max-w-[120px]">Structure Tactical Layer</span>
+                <span className="text-neutral-500 truncate max-w-[120px]">
+                  {product.name}
+                </span>
               </nav>
               <button
                 onClick={() => setIsShareModalOpen(true)}
@@ -326,69 +388,104 @@ export function ProductDetail() {
               </button>
             </div>
 
+            {/* Brand + Name */}
             <div>
               <span className="text-[9px] font-bold tracking-[0.2em] text-[#b2533e] uppercase">
-                ARCHITECTURAL PRECISION SERIES
+                {product.brand}
               </span>
               <h1 className="text-2xl lg:text-3.5xl font-extrabold tracking-tight mt-1 mb-2 leading-tight uppercase">
-                Structure Tactical Layer
+                {product.name}
               </h1>
-              
+
+              {/* Price + Rating */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-extrabold tracking-tight text-neutral-900">₹485.00</span>
-                  <span className="text-xs font-semibold text-neutral-450 line-through">₹999.00</span>
-                  <span className="text-[9px] font-extrabold text-[#b2533e] tracking-wider uppercase bg-red-50 px-1.5 py-0.5 rounded-sm">51% OFF</span>
+                  <span className="text-xl font-extrabold tracking-tight text-neutral-900">
+                    ₹{product.price.toFixed(2)}
+                  </span>
+                  {product.originalPrice && (
+                    <>
+                      <span className="text-xs font-semibold text-neutral-450 line-through">
+                        ₹{product.originalPrice.toFixed(2)}
+                      </span>
+                      {discountPercent > 0 && (
+                        <span className="text-[9px] font-extrabold text-[#b2533e] tracking-wider uppercase bg-red-50 px-1.5 py-0.5 rounded-sm">
+                          {discountPercent}% OFF
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
-                <div className="flex items-center gap-0.5 text-neutral-800">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-3 w-3 fill-current stroke-current" />
-                  ))}
-                  <span className="text-[9px] font-bold tracking-wider text-neutral-450 ml-1">(24 REVIEWS)</span>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-neutral-500 text-xs leading-relaxed max-w-lg">
-              A monolithic aesthetic defined by a precision-engineered silhouette. The Structure Tactical Layer is designed as a foundational piece for the modern wardrobe, balancing technical rigidity with refined comfort.
-            </p>
-
-            {/* Premium Color Variant Thumbnail Selector */}
-            <div>
-              <p className="text-[10px] font-bold tracking-[0.15em] text-neutral-450 mb-1.5 uppercase">
-                Color: <span className="text-neutral-900 font-extrabold">{selectedColor}</span>
-              </p>
-              <div className="flex gap-3 overflow-x-auto py-1.5 px-0.5 scrollbar-none">
-                {colors.map(color => (
-                  <button
-                    key={color.name}
-                    onClick={() => {
-                      setSelectedColor(color.name);
-                      setCurrentImageIndex(0); // Reset main gallery to first image of new variant
-                    }}
-                    className={`relative p-0.5 rounded-full border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
-                      selectedColor === color.name 
-                        ? "border-[#030213] scale-105 shadow-sm" 
-                        : "border-transparent opacity-80 hover:opacity-100 hover:scale-105"
-                    }`}
-                    aria-label={`Select ${color.name} variant`}
-                  >
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden">
-                      <img
-                        src={color.thumbnail}
-                        alt={`${color.name} style variant`}
-                        className="w-full h-full object-cover"
+                {(product.rating ?? 0) > 0 && (
+                  <div className="flex items-center gap-0.5 text-neutral-800">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-3 w-3 stroke-current ${
+                          i < Math.floor(product.rating ?? 0)
+                            ? "fill-current text-amber-500"
+                            : "text-neutral-300"
+                        }`}
                       />
-                    </div>
-                  </button>
-                ))}
+                    ))}
+                    <span className="text-[9px] font-bold tracking-wider text-neutral-450 ml-1">
+                      ({product.reviewCount ?? product.reviews?.length ?? 0} REVIEWS)
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Description */}
+            {product.description && (
+              <p className="text-neutral-500 text-xs leading-relaxed max-w-lg">
+                {product.description}
+              </p>
+            )}
+
+            {/* Color Variant Selector */}
+            {hasVariants && colorOptions.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.15em] text-neutral-450 mb-1.5 uppercase">
+                  Color:{" "}
+                  <span className="text-neutral-900 font-extrabold">
+                    {selectedColor}
+                  </span>
+                </p>
+                <div className="flex gap-3 overflow-x-auto py-1.5 px-0.5 scrollbar-none">
+                  {colorOptions.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => {
+                        setSelectedColor(color.name);
+                        setCurrentImageIndex(0);
+                      }}
+                      className={`relative p-0.5 rounded-full border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
+                        selectedColor === color.name
+                          ? "border-[#030213] scale-105 shadow-sm"
+                          : "border-transparent opacity-80 hover:opacity-100 hover:scale-105"
+                      }`}
+                      aria-label={`Select ${color.name} variant`}
+                    >
+                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden">
+                        <img
+                          src={color.thumbnail}
+                          alt={`${color.name} variant`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Size Selector */}
             <div>
               <div className="flex justify-between items-baseline mb-1.5 max-w-md">
-                <span className="text-[10px] font-bold tracking-[0.15em] text-neutral-450">SIZE</span>
+                <span className="text-[10px] font-bold tracking-[0.15em] text-neutral-450">
+                  SIZE
+                </span>
                 <button
                   type="button"
                   onClick={() => setIsSizeGuideOpen(true)}
@@ -397,8 +494,16 @@ export function ProductDetail() {
                   SIZE GUIDE
                 </button>
               </div>
-              <div className="grid grid-cols-6 gap-2 max-w-md">
-                {sizes.map(size => (
+              <div
+                className={`grid gap-2 max-w-md`}
+                style={{
+                  gridTemplateColumns: `repeat(${Math.min(
+                    displaySizes.length,
+                    6
+                  )}, 1fr)`,
+                }}
+              >
+                {displaySizes.map((size) => (
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
@@ -414,10 +519,11 @@ export function ProductDetail() {
               </div>
             </div>
 
-
-
-            {/* CTA Buttons in a Row Grid */}
-            <div ref={ctaSectionRef} className="grid grid-cols-2 gap-4 max-w-md pt-2">
+            {/* CTA Buttons */}
+            <div
+              ref={ctaSectionRef}
+              className="grid grid-cols-2 gap-4 max-w-md pt-2"
+            >
               {cartQuantity === 0 ? (
                 <button
                   onClick={handleAddToBag}
@@ -448,73 +554,78 @@ export function ProductDetail() {
               >
                 BUY IT NOW
               </button>
-
             </div>
-            {/* Delivery check relocated to bottom row to prevent whitespace issues */}
-
-
-
           </div>
         </div>
 
-        {/* Features & Delivery Pincode Row (Side-by-Side to prevent vertical whitespace mismatch) */}
+        {/* ─── Bottom Row — Design Details + Delivery Check ────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 pt-8 border-t border-neutral-200/60 max-w-7xl mx-auto px-6">
-          {/* Design Highlights Box */}
+          {/* Design Details */}
           <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-neutral-900 border-b border-neutral-200/60 pb-2">
                 DESIGN DETAILS
               </h3>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
-                <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Double-Stitched Seams
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Modular System
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Breathable Lining
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Premium Zipper Details
-                </li>
+                {(product.designDetails ?? [
+                  "Premium Construction",
+                  "Quality Materials",
+                  "Modern Fit",
+                  "Attention to Detail",
+                ]).map((detail) => (
+                  <li key={detail} className="flex items-center gap-2">
+                    <span className="text-[#b2533e] font-extrabold">—</span>{" "}
+                    {detail}
+                  </li>
+                ))}
               </ul>
             </div>
-            
-            {/* Feature Highlights Grid */}
+
+            {/* Feature Highlights */}
             <div className="grid grid-cols-3 gap-0 border-t border-neutral-200/60 pt-5 text-center divide-x divide-neutral-200/60">
               <div className="flex flex-col items-center justify-center py-1">
-                <svg className="w-5 h-5 text-neutral-900 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.129-1.125V11.25c0-.446-.26-.846-.662-1.025l-2.25-.945A1.125 1.125 0 0016.5 9.75H13.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v8.25" />
-                </svg>
-                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">FREE SHIPPING</span>
+                <Truck className="h-5 w-5 text-neutral-900 stroke-[1.2]" />
+                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">
+                  FREE SHIPPING
+                </span>
               </div>
               <div className="flex flex-col items-center justify-center py-1">
-                <svg className="w-5 h-5 text-neutral-900 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
-                </svg>
-                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">EXCHANGE STORE</span>
+                <RotateCcw className="h-5 w-5 text-neutral-900 stroke-[1.2]" />
+                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">
+                  EXCHANGE STORE
+                </span>
               </div>
               <div className="flex flex-col items-center justify-center py-1">
-                <svg className="w-5 h-5 text-neutral-900 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                <svg
+                  className="w-5 h-5 text-neutral-900 stroke-[1.2]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
+                  />
                 </svg>
-                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">EASY RETURNS</span>
+                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">
+                  EASY RETURNS
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Check Delivery Status Card */}
+          {/* Check Delivery */}
           <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="text-[11px] font-extrabold text-neutral-900 tracking-[0.2em] uppercase border-b border-neutral-200/60 pb-2">
                 CHECK DELIVERY STATUS
               </h3>
-              
               <p className="text-[9.5px] font-semibold tracking-wider text-neutral-500 uppercase leading-relaxed">
-                ENTER YOUR DESTINATION PINCODE TO VERIFY SHIPPING AVAILABILITY AND ESTIMATED TRANSIT TIMELINES. DELIVERY TYPICALLY TAKES 2-6 WORKING DAYS.
+                ENTER YOUR DESTINATION PINCODE TO VERIFY SHIPPING AVAILABILITY
+                AND ESTIMATED TRANSIT TIMELINES. DELIVERY TYPICALLY TAKES 2-6
+                WORKING DAYS.
               </p>
-              
               <div className="space-y-2 pt-1">
                 <div className="flex border border-neutral-300 bg-white rounded-none overflow-hidden w-full">
                   <input
@@ -530,7 +641,9 @@ export function ProductDetail() {
                   <button
                     onClick={() => {
                       if (pincode.trim().length >= 5) {
-                        setPincodeStatus(`Available! Expected delivery in 2-4 working days.`);
+                        setPincodeStatus(
+                          `Available! Expected delivery in 2-4 working days.`
+                        );
                       } else {
                         setPincodeStatus("Enter a valid pincode.");
                       }
@@ -541,27 +654,37 @@ export function ProductDetail() {
                   </button>
                 </div>
                 {pincodeStatus && (
-                  <p className={`text-[9px] font-extrabold uppercase tracking-widest mt-2 ${pincodeStatus.includes("Available") ? "text-green-600" : "text-red-500"}`}>
+                  <p
+                    className={`text-[9px] font-extrabold uppercase tracking-widest mt-2 ${
+                      pincodeStatus.includes("Available")
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }`}
+                  >
                     {pincodeStatus}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Delivery highlights matching left column bullet design */}
+            {/* Delivery highlights */}
             <div className="border-t border-neutral-200/60 pt-5">
               <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
                 <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Fast Transit (2-6 Days)
+                  <span className="text-[#b2533e] font-extrabold">—</span> Fast
+                  Transit (2-6 Days)
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> COD Available
+                  <span className="text-[#b2533e] font-extrabold">—</span> COD
+                  Available
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Dispatch in 24 hrs
+                  <span className="text-[#b2533e] font-extrabold">—</span>{" "}
+                  Dispatch in 24 hrs
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-[#b2533e] font-extrabold">—</span> Secure Logistics
+                  <span className="text-[#b2533e] font-extrabold">—</span>{" "}
+                  Secure Logistics
                 </li>
               </ul>
             </div>
@@ -569,272 +692,359 @@ export function ProductDetail() {
         </div>
       </section>
 
-      {/* Breakdown and Specs Section */}
-      <section className="bg-white border-y border-neutral-200/60 py-8 mt-4">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-neutral-200/60 mb-8 text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30">
-            <button
-              onClick={() => setActiveTab("description")}
-              className={`py-4 px-6 text-center border-r md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
-                activeTab === "description" 
-                  ? "bg-[#030213] text-white font-extrabold" 
-                  : "hover:bg-neutral-100/50 hover:text-black"
-              }`}
-            >
-              01 / DESCRIPTION
-            </button>
-            <button
-              onClick={() => setActiveTab("specifications")}
-              className={`py-4 px-6 text-center md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
-                activeTab === "specifications" 
-                  ? "bg-[#030213] text-white font-extrabold" 
-                  : "hover:bg-neutral-100/50 hover:text-black"
-              }`}
-            >
-              02 / SPECIFICATIONS
-            </button>
-            <button
-              onClick={() => setActiveTab("shipping")}
-              className={`py-4 px-6 text-center border-r md:border-r-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
-                activeTab === "shipping" 
-                  ? "bg-[#030213] text-white font-extrabold" 
-                  : "hover:bg-neutral-100/50 hover:text-black"
-              }`}
-            >
-              03 / SHIPPING & RETURNS
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`py-4 px-6 text-center transition-all duration-300 cursor-pointer ${
-                activeTab === "reviews" 
-                  ? "bg-[#030213] text-white font-extrabold" 
-                  : "hover:bg-neutral-100/50 hover:text-black"
-              }`}
-            >
-              04 / REVIEWS (24)
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Tab content panel */}
-            <div className="lg:col-span-12 space-y-6">
-              {activeTab === "description" && (
-                <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
-                    ARCHITECTURAL BREAKDOWN
-                  </h2>
-                  <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">
-                    The Structure Tactical Layer represents a shift toward pure architectural form in apparel. Constructed from a triple-layered GORE-TEX nylon blend, it offers a monolithic aesthetic that provides absolute protection from the elements while maintaining a sleek, structured profile.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
-                      <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">CONSTRUCTION</h4>
-                      <p className="text-xs text-neutral-500 leading-relaxed">Reinforced structural seams. Anodized hardware components.</p>
-                    </div>
-                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
-                      <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">DIMENSIONS</h4>
-                      <p className="text-xs text-neutral-500 leading-relaxed">20,000mm Hydrostatic head. Precision-molded modular attachment points.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "specifications" && (
-                <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">PRODUCT SPECIFICATIONS</h2>
-                  <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
-                    <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">FABRIC</span>
-                      <span className="font-semibold text-neutral-800">Premium Breathable Cotton-Nylon Blend</span>
-                    </div>
-                    <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">FIT</span>
-                      <span className="font-semibold text-neutral-800">Oversized Fit / Relaxed Drop-Shoulder Style</span>
-                    </div>
-                    <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">CLIMATE SUITABILITY</span>
-                      <span className="font-semibold text-neutral-800">Lightweight & Airy — Perfect for Summers, Monsoons & Layering</span>
-                    </div>
-                    <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">ZIPPER & DETAILS</span>
-                      <span className="font-semibold text-neutral-800">Premium Rust-Free Metallic Zippers & Heavy-Duty Stitching</span>
-                    </div>
-                    <div className="grid grid-cols-2 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">WASH CARE</span>
-                      <span className="font-semibold text-neutral-800">Easy Machine Wash Cold / Dry in Shade (Do Not Bleach)</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "shipping" && (
-                <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">SHIPPING & DISPATCH INFO</h2>
-                  <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">
-                    Every order from the Architectural Series is handled with custom premium packaging.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
-                      <h4 className="text-xs font-bold tracking-widest text-[#b2533e] mb-2 uppercase">DELIVERY TIMES</h4>
-                      <p className="text-xs text-neutral-500 leading-relaxed">
-                        • Express Shipping: 2-3 working days (Free on order above ₹2,000)<br />
-                        • Standard Shipping: 5-7 working days (Free on all orders)
-                      </p>
-                    </div>
-                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
-                      <h4 className="text-xs font-bold tracking-widest text-[#b2533e] mb-2 uppercase">EASY EXCHANGES</h4>
-                      <p className="text-xs text-neutral-500 leading-relaxed">
-                        Enjoy a 7-day return window. Size exchanges are processed with complimentary home pickup across India.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "reviews" && (
-                <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">CUSTOMER REVIEWS</h2>
-                  
-                  {/* Reviews Summary Stats */}
-                  <div className="flex flex-col sm:flex-row gap-6 items-center bg-neutral-50 p-6 rounded-none border border-neutral-200/40">
-                    <div className="text-center sm:border-r border-neutral-200 sm:pr-8">
-                      <p className="text-4xl font-extrabold text-neutral-900">4.9</p>
-                      <div className="flex gap-0.5 my-1.5 justify-center text-amber-500">
-                        {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current stroke-current" />)}
-                      </div>
-                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Based on 24 reviews</p>
-                    </div>
-
-                    <div className="flex-1 space-y-2 w-full text-xs font-semibold text-neutral-600">
-                      <div className="flex items-center gap-3">
-                        <span className="w-10">5 Star</span>
-                        <div className="flex-1 h-2 bg-neutral-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-neutral-800 rounded-full" style={{ width: "90%" }}></div>
-                        </div>
-                        <span className="w-8 text-right text-neutral-400">90%</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="w-10">4 Star</span>
-                        <div className="flex-1 h-2 bg-neutral-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-neutral-800 rounded-full" style={{ width: "10%" }}></div>
-                        </div>
-                        <span className="w-8 text-right text-neutral-400">10%</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="w-10">3 Star</span>
-                        <div className="flex-1 h-2 bg-neutral-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-neutral-800 rounded-full" style={{ width: "0%" }}></div>
-                        </div>
-                        <span className="w-8 text-right text-neutral-400">0%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reviews List */}
-                  <div className="divide-y divide-neutral-200/60">
-                    <div className="py-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-extrabold text-neutral-900">Deepak R.</span>
-                          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm uppercase tracking-wider">Verified Buyer</span>
-                        </div>
-                        <span className="text-[9px] font-bold text-neutral-400">2 DAYS AGO</span>
-                      </div>
-                      <div className="flex gap-0.5 text-amber-500">
-                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current stroke-current" />)}
-                      </div>
-                      <h4 className="text-xs font-extrabold text-neutral-900 uppercase">Exceptional technical vest</h4>
-                      <p className="text-xs text-neutral-500 leading-relaxed">
-                        The fabric quality and modular pocket placement is top tier. Fits nicely on top of hoodies.
-                      </p>
-                    </div>
-
-                    <div className="py-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-extrabold text-neutral-900">Aditya S.</span>
-                          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm uppercase tracking-wider">Verified Buyer</span>
-                        </div>
-                        <span className="text-[9px] font-bold text-neutral-400">1 WEEK AGO</span>
-                      </div>
-                      <div className="flex gap-0.5 text-amber-500">
-                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current stroke-current" />)}
-                      </div>
-                      <h4 className="text-xs font-extrabold text-neutral-900 uppercase">Gore-tex protection is real</h4>
-                      <p className="text-xs text-neutral-500 leading-relaxed">
-                        Took this out in heavy rains, and the water drops just rolled off. Cobra buckles feel extremely premium.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+      {/* ─── Breakdown & Specs Section ─────────────────────────────────── */}
+      {(product.description || product.specs || product.reviews) && (
+        <section className="bg-white border-y border-neutral-200/60 py-8 mt-4">
+          <div className="max-w-7xl mx-auto px-6">
+            {/* Tab Navigation */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-neutral-200/60 mb-8 text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30">
+              <button
+                onClick={() => setActiveTab("description")}
+                className={`py-4 px-6 text-center border-r md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                  activeTab === "description"
+                    ? "bg-[#030213] text-white font-extrabold"
+                    : "hover:bg-neutral-100/50 hover:text-black"
+                }`}
+              >
+                01 / DESCRIPTION
+              </button>
+              <button
+                onClick={() => setActiveTab("specifications")}
+                className={`py-4 px-6 text-center md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                  activeTab === "specifications"
+                    ? "bg-[#030213] text-white font-extrabold"
+                    : "hover:bg-neutral-100/50 hover:text-black"
+                }`}
+              >
+                02 / SPECIFICATIONS
+              </button>
+              <button
+                onClick={() => setActiveTab("shipping")}
+                className={`py-4 px-6 text-center border-r md:border-r-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                  activeTab === "shipping"
+                    ? "bg-[#030213] text-white font-extrabold"
+                    : "hover:bg-neutral-100/50 hover:text-black"
+                }`}
+              >
+                03 / SHIPPING & RETURNS
+              </button>
+              <button
+                onClick={() => setActiveTab("reviews")}
+                className={`py-4 px-6 text-center transition-all duration-300 cursor-pointer ${
+                  activeTab === "reviews"
+                    ? "bg-[#030213] text-white font-extrabold"
+                    : "hover:bg-neutral-100/50 hover:text-black"
+                }`}
+              >
+                04 / REVIEWS (
+                {product.reviewCount ?? product.reviews?.length ?? 0})
+              </button>
             </div>
 
-          </div>
-        </div>
-      </section>
+            {/* Tab Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-12 space-y-6">
+                {/* ─── DESCRIPTION TAB ─────────────────────────────────── */}
+                {activeTab === "description" && (
+                  <div className="space-y-6">
+                    <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
+                      PRODUCT BREAKDOWN
+                    </h2>
+                    <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">
+                      {product.description ??
+                        "A premium piece from our latest collection, designed with meticulous attention to detail and crafted from the finest materials."}
+                    </p>
 
-      {/* Frequently Bought Together */}
+                    {(product.features ?? []).length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+                        {(product.features ?? []).map((f) => (
+                          <div
+                            key={f.title}
+                            className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
+                          >
+                            <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
+                              {f.title}
+                            </h4>
+                            <p className="text-xs text-neutral-500 leading-relaxed">
+                              {f.content}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── SPECIFICATIONS TAB ──────────────────────────────── */}
+                {activeTab === "specifications" && (
+                  <div className="space-y-6">
+                    <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
+                      PRODUCT SPECIFICATIONS
+                    </h2>
+                    {(product.specs ?? []).length > 0 ? (
+                      <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
+                        {(product.specs ?? []).map((spec, idx) => (
+                          <div
+                            key={spec.label}
+                            className={`grid grid-cols-2 ${
+                              idx < (product.specs ?? []).length - 1
+                                ? "border-b border-neutral-150"
+                                : ""
+                            } p-4`}
+                          >
+                            <span className="font-extrabold text-neutral-400 tracking-wider">
+                              {spec.label}
+                            </span>
+                            <span className="font-semibold text-neutral-800">
+                              {spec.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-neutral-400 text-sm">
+                        Specifications coming soon.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── SHIPPING TAB ────────────────────────────────────── */}
+                {activeTab === "shipping" && (
+                  <div className="space-y-6">
+                    <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
+                      SHIPPING & DISPATCH INFO
+                    </h2>
+                    <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">
+                      Every order is handled with custom premium packaging.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                      {(product.shippingInfo ?? [
+                        {
+                          title: "DELIVERY TIMES",
+                          content:
+                            "• Express Shipping: 2-3 working days (Free on order above ₹2,000)\n• Standard Shipping: 5-7 working days (Free on all orders)",
+                        },
+                        {
+                          title: "EASY EXCHANGES",
+                          content:
+                            "Enjoy a 7-day return window. Size exchanges are processed with complimentary home pickup across India.",
+                        },
+                      ]).map((info) => (
+                        <div
+                          key={info.title}
+                          className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
+                        >
+                          <h4 className="text-xs font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
+                            {info.title}
+                          </h4>
+                          <p className="text-xs text-neutral-500 leading-relaxed whitespace-pre-line">
+                            {info.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── REVIEWS TAB ─────────────────────────────────────── */}
+                {activeTab === "reviews" && (
+                  <div className="space-y-6">
+                    <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
+                      CUSTOMER REVIEWS
+                    </h2>
+
+                    {product.reviews && product.reviews.length > 0 ? (
+                      <>
+                        {/* Review Summary */}
+                        <div className="flex flex-col sm:flex-row gap-6 items-center bg-neutral-50 p-6 rounded-none border border-neutral-200/40">
+                          <div className="text-center sm:border-r border-neutral-200 sm:pr-8">
+                            <p className="text-4xl font-extrabold text-neutral-900">
+                              {product.rating?.toFixed(1) ?? "4.5"}
+                            </p>
+                            <div className="flex gap-0.5 my-1.5 justify-center text-amber-500">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className="w-4 h-4 fill-current stroke-current"
+                                />
+                              ))}
+                            </div>
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                              Based on {product.reviewCount ?? product.reviews.length} reviews
+                            </p>
+                          </div>
+
+                          {/* Rating Bars */}
+                          <div className="flex-1 space-y-2 w-full text-xs font-semibold text-neutral-600">
+                            {[5, 4, 3].map((star) => {
+                              const count = product.reviews?.filter(
+                                (r) => r.rating === star
+                              ).length ?? 0;
+                              const pct =
+                                product.reviews.length > 0
+                                  ? Math.round(
+                                      (count / product.reviews.length) * 100
+                                    )
+                                  : 0;
+                              return (
+                                <div
+                                  key={star}
+                                  className="flex items-center gap-3"
+                                >
+                                  <span className="w-10">{star} Star</span>
+                                  <div className="flex-1 h-2 bg-neutral-200 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-neutral-800 rounded-full"
+                                      style={{ width: `${pct}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="w-8 text-right text-neutral-400">
+                                    {pct}%
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Review List */}
+                        <div className="divide-y divide-neutral-200/60">
+                          {product.reviews.map((review, idx) => (
+                            <div key={idx} className="py-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-extrabold text-neutral-900">
+                                    {review.author}
+                                  </span>
+                                  {review.verified && (
+                                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm uppercase tracking-wider">
+                                      Verified Buyer
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[9px] font-bold text-neutral-400">
+                                  {review.date}
+                                </span>
+                              </div>
+                              <div className="flex gap-0.5 text-amber-500">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-3 h-3 ${
+                                      i < review.rating
+                                        ? "fill-current stroke-current"
+                                        : "text-neutral-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <h4 className="text-xs font-extrabold text-neutral-900 uppercase">
+                                {review.title}
+                              </h4>
+                              <p className="text-xs text-neutral-500 leading-relaxed">
+                                {review.content}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-neutral-400 text-sm">
+                        No reviews yet. Be the first to review this product.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── Frequently Bought Together ─────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 py-10 border-b border-neutral-200/60">
         <h2 className="text-center text-xs font-extrabold tracking-[0.25em] mb-6 uppercase">
           FREQUENTLY BOUGHT TOGETHER
         </h2>
-        
         <div className="flex flex-col md:flex-row justify-center items-center gap-6 max-w-4xl mx-auto bg-white border border-neutral-100 rounded-xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
           {/* Images assembly */}
           <div className="flex items-center gap-3">
             <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&q=80&w=150" alt="" className="w-full h-full object-cover" />
+              <img
+                src={productImages[0] ?? product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="text-neutral-400 font-bold text-sm">+</span>
             <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=150" alt="" className="w-full h-full object-cover" />
+              <img
+                src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=150"
+                alt=""
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="text-neutral-400 font-bold text-sm">+</span>
             <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=150" alt="" className="w-full h-full object-cover" />
+              <img
+                src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=150"
+                alt=""
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
 
-          {/* Pricing Info */}
+          {/* Pricing */}
           <div className="text-center md:text-left flex flex-col md:flex-row items-center gap-4">
             <div>
-              <p className="text-[9px] font-bold tracking-widest text-neutral-400">BUNDLE PRICE</p>
+              <p className="text-[9px] font-bold tracking-widest text-neutral-400">
+                BUNDLE PRICE
+              </p>
               <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-xl font-bold text-neutral-900">₹820.00</span>
-                <span className="text-xs text-neutral-400 line-through">₹916.00</span>
+                <span className="text-xl font-bold text-neutral-900">
+                  ₹{(product.price + 245 + 165).toFixed(2)}
+                </span>
+                <span className="text-xs text-neutral-400 line-through">
+                  ₹{(product.originalPrice ?? product.price + 245 + 165).toFixed(2)}
+                </span>
               </div>
             </div>
-            <button className="bg-[#030213] text-white px-6 py-3 rounded text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase cursor-pointer">
+            <button
+              onClick={handleAddToBag}
+              className="bg-[#030213] text-white px-6 py-3 rounded text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase cursor-pointer"
+            >
               ADD BUNDLE TO BAG
             </button>
           </div>
         </div>
       </section>
 
-      {/* You May Also Like */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-end mb-8 border-b border-neutral-200/60 pb-4">
-          <h2 className="text-xs font-extrabold tracking-[0.25em] uppercase text-neutral-900">
-            YOU MAY ALSO LIKE
-          </h2>
-          <Link to="/shop" className="text-[10px] font-extrabold tracking-[0.15em] text-[#b2533e] hover:text-black transition-colors flex items-center gap-1.5 uppercase">
-            <span>View All</span>
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
-        
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 border border-neutral-200 bg-white">
-          {recommendations.map((rec) => (
-            <RecommendationCard key={rec.id} product={rec} />
-          ))}
-        </div>
-      </section>
+      {/* ─── You May Also Like ──────────────────────────────────────────── */}
+      {recommendations.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-12">
+          <div className="flex justify-between items-end mb-8 border-b border-neutral-200/60 pb-4">
+            <h2 className="text-xs font-extrabold tracking-[0.25em] uppercase text-neutral-900">
+              YOU MAY ALSO LIKE
+            </h2>
+            <Link
+              to="/shop"
+              className="text-[10px] font-extrabold tracking-[0.15em] text-[#b2533e] hover:text-black transition-colors flex items-center gap-1.5 uppercase"
+            >
+              <span>View All</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
 
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 border border-neutral-200 bg-white">
+            {recommendations.map((rec) => (
+              <RecommendationCard key={rec.id} product={rec} />
+            ))}
+          </div>
+        </section>
+      )}
 
-
-      {/* Join Community */}
+      {/* ─── Join Community ──────────────────────────────────────────────── */}
       <section className="bg-black text-white py-24 text-center">
         <div className="max-w-xl mx-auto px-6 space-y-6">
           <h2 className="text-3xl font-extrabold tracking-[0.1em] uppercase text-white font-sans">
@@ -856,7 +1066,7 @@ export function ProductDetail() {
         </div>
       </section>
 
-      {/* Size Guide Modal */}
+      {/* ─── Size Guide Modal ────────────────────────────────────────────── */}
       {isSizeGuideOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-[#FAF8F5] border border-neutral-200/80 rounded-xl max-w-2xl w-full p-8 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -877,7 +1087,7 @@ export function ProductDetail() {
               <table className="w-full text-left border-collapse text-xs font-semibold text-neutral-800">
                 <thead>
                   <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-bold tracking-widest text-neutral-400 uppercase whitespace-nowrap">
-                    <th className="py-4 px-6">AGE / SIZE</th>
+                    <th className="py-4 px-6">SIZE</th>
                     <th className="py-4 px-6">CHEST (CM)</th>
                     <th className="py-4 px-6">ACROSS SHOULDER (CM)</th>
                     <th className="py-4 px-6">FRONT LENGTH (CM)</th>
@@ -887,110 +1097,74 @@ export function ProductDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">XS</td>
-                    <td className="py-4 px-6">99.1</td>
-                    <td className="py-4 px-6">40.6</td>
-                    <td className="py-4 px-6">64.8</td>
-                    <td className="py-4 px-6">68.6</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">106.7</td>
-                  </tr>
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">S</td>
-                    <td className="py-4 px-6">104.1</td>
-                    <td className="py-4 px-6">43.2</td>
-                    <td className="py-4 px-6">67.3</td>
-                    <td className="py-4 px-6">73.7</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">107.3</td>
-                  </tr>
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">M</td>
-                    <td className="py-4 px-6">109.2</td>
-                    <td className="py-4 px-6">45.7</td>
-                    <td className="py-4 px-6">69.8</td>
-                    <td className="py-4 px-6">78.7</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">108</td>
-                  </tr>
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">L</td>
-                    <td className="py-4 px-6">114.3</td>
-                    <td className="py-4 px-6">48.3</td>
-                    <td className="py-4 px-6">72.4</td>
-                    <td className="py-4 px-6">83.8</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">106</td>
-                  </tr>
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">XL</td>
-                    <td className="py-4 px-6">119.4</td>
-                    <td className="py-4 px-6">50.8</td>
-                    <td className="py-4 px-6">74.9</td>
-                    <td className="py-4 px-6">88.9</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">106.7</td>
-                  </tr>
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">XXL</td>
-                    <td className="py-4 px-6">127</td>
-                    <td className="py-4 px-6">53.3</td>
-                    <td className="py-4 px-6">77.5</td>
-                    <td className="py-4 px-6">94</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">107.3</td>
-                  </tr>
-                  <tr className="hover:bg-neutral-50/50">
-                    <td className="py-4 px-6 font-bold">XXXL</td>
-                    <td className="py-4 px-6">134.6</td>
-                    <td className="py-4 px-6">55.9</td>
-                    <td className="py-4 px-6">80</td>
-                    <td className="py-4 px-6">99.1</td>
-                    <td className="py-4 px-6">76.2</td>
-                    <td className="py-4 px-6 text-[#b2533e]">108</td>
-                  </tr>
+                  {[
+                    { size: "XS", chest: 99.1, shoulder: 40.6, length: 64.8, waist: 68.6, inseam: 76.2, outseam: 106.7 },
+                    { size: "S", chest: 104.1, shoulder: 43.2, length: 67.3, waist: 73.7, inseam: 76.2, outseam: 107.3 },
+                    { size: "M", chest: 109.2, shoulder: 45.7, length: 69.8, waist: 78.7, inseam: 76.2, outseam: 108 },
+                    { size: "L", chest: 114.3, shoulder: 48.3, length: 72.4, waist: 83.8, inseam: 76.2, outseam: 106 },
+                    { size: "XL", chest: 119.4, shoulder: 50.8, length: 74.9, waist: 88.9, inseam: 76.2, outseam: 106.7 },
+                    { size: "XXL", chest: 127, shoulder: 53.3, length: 77.5, waist: 94, inseam: 76.2, outseam: 107.3 },
+                    { size: "XXXL", chest: 134.6, shoulder: 55.9, length: 80, waist: 99.1, inseam: 76.2, outseam: 108 },
+                  ].map((row) => (
+                    <tr key={row.size} className="hover:bg-neutral-50/50">
+                      <td className="py-4 px-6 font-bold">{row.size}</td>
+                      <td className="py-4 px-6">{row.chest}</td>
+                      <td className="py-4 px-6">{row.shoulder}</td>
+                      <td className="py-4 px-6">{row.length}</td>
+                      <td className="py-4 px-6">{row.waist}</td>
+                      <td className="py-4 px-6">{row.inseam}</td>
+                      <td className="py-4 px-6 text-[#b2533e]">{row.outseam}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
             <div className="mt-8 bg-neutral-50 rounded-lg p-4 text-[10px] font-bold tracking-wide text-neutral-500 uppercase leading-relaxed">
-              * Note: For the most accurate fit, we recommend measuring at the chest, shoulders, and waist. If between sizes, choose the larger option.
+              * Note: For the most accurate fit, we recommend measuring at the
+              chest, shoulders, and waist. If between sizes, choose the larger
+              option.
             </div>
           </div>
         </div>
       )}
 
-      {/* Sticky Purchase Bar */}
-      <div 
+      {/* ─── Sticky Purchase Bar ─────────────────────────────────────────── */}
+      <div
         className={`fixed bottom-0 left-0 w-full bg-[#FAF8F5]/90 border-t border-neutral-200/60 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-[90] transition-all duration-300 ease-out transform ${
-          showStickyBar ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
+          showStickyBar
+            ? "translate-y-0 opacity-100"
+            : "translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        {/* Desktop Layout */}
+        {/* Desktop */}
         <div className="hidden md:flex max-w-7xl mx-auto px-6 h-24 items-center justify-between">
           <div className="flex items-center gap-4">
-            <img 
-              src={productImages[0]} 
-              alt="Structure Tactical Layer" 
+            <img
+              src={productImages[0] ?? product.image}
+              alt={product.name}
               className="w-[60px] h-[60px] object-cover rounded-md bg-neutral-100 flex-shrink-0"
             />
             <div>
-              <h4 className="text-sm font-extrabold text-neutral-900 tracking-tight leading-snug">STRUCTURE TACTICAL LAYER</h4>
-              <span className="text-sm font-extrabold text-[#b2533e] mt-0.5 block">₹485.00</span>
+              <h4 className="text-sm font-extrabold text-neutral-900 tracking-tight leading-snug">
+                {product.name}
+              </h4>
+              <span className="text-sm font-extrabold text-[#b2533e] mt-0.5 block">
+                ₹{product.price.toFixed(2)}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            {/* Selected Variant */}
             <div className="text-right">
-              <span className="text-[10px] font-bold text-neutral-400 block uppercase tracking-wider">Selected Option</span>
+              <span className="text-[10px] font-bold text-neutral-400 block uppercase tracking-wider">
+                Selected Option
+              </span>
               <span className="text-xs font-extrabold text-neutral-800 uppercase tracking-wide mt-0.5 block">
-                {selectedSize ? `${selectedSize} | ${selectedColor}` : "Select Size"}
+                {selectedSize} | {selectedColor}
               </span>
             </div>
 
-            {/* CTA Buttons */}
             <div className="flex gap-3">
               {cartQuantity === 0 ? (
                 <button
@@ -1022,32 +1196,33 @@ export function ProductDetail() {
               >
                 BUY NOW
               </button>
-
             </div>
           </div>
         </div>
 
-        {/* Mobile Layout */}
+        {/* Mobile */}
         <div className="md:hidden p-3.5 space-y-3.5">
-          {/* Row 1: Details */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <img 
-                src={productImages[0]} 
-                alt="Product" 
+              <img
+                src={productImages[0] ?? product.image}
+                alt="Product"
                 className="w-12 h-12 object-cover rounded bg-neutral-100 flex-shrink-0"
               />
               <div>
-                <h4 className="text-xs font-extrabold text-neutral-900 tracking-tight leading-tight line-clamp-1">STRUCTURE TACTICAL LAYER</h4>
+                <h4 className="text-xs font-extrabold text-neutral-900 tracking-tight leading-tight line-clamp-1">
+                  {product.name}
+                </h4>
                 <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">
                   {selectedSize} - {selectedColor.split(" ")[0]}
                 </p>
               </div>
             </div>
-            <span className="text-sm font-extrabold text-[#b2533e]">₹485.00</span>
+            <span className="text-sm font-extrabold text-[#b2533e]">
+              ₹{product.price.toFixed(2)}
+            </span>
           </div>
 
-          {/* Row 2: CTAs */}
           <div className="grid grid-cols-2 gap-3.5">
             {cartQuantity === 0 ? (
               <button
@@ -1079,12 +1254,11 @@ export function ProductDetail() {
             >
               BUY NOW
             </button>
-
           </div>
         </div>
       </div>
 
-      {/* Share Modal */}
+      {/* ─── Share Modal ─────────────────────────────────────────────────── */}
       {isShareModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="bg-[#FAF8F5] border border-neutral-200/80 rounded-xl max-w-md w-full p-6 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -1112,19 +1286,26 @@ export function ProductDetail() {
                   <Copy className="h-4 w-4 stroke-[1.8]" />
                   COPY PRODUCT LINK
                 </span>
-                {copied ? <Check className="h-4 w-4 text-green-600 stroke-[2.5]" /> : null}
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-600 stroke-[2.5]" />
+                ) : null}
               </button>
 
               {/* WhatsApp */}
               <a
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(window.location.href)}`}
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                  window.location.href
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsShareModalOpen(false)}
                 className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer no-underline"
               >
                 <span className="flex items-center gap-2.5">
-                  <svg className="h-4 w-4 fill-current text-[#25D366]" viewBox="0 0 24 24">
+                  <svg
+                    className="h-4 w-4 fill-current text-[#25D366]"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.963C16.488 2.012 14.04 1.01 11.993 1.01 6.562 1.01 2.137 5.381 2.133 10.81c0 1.691.455 3.342 1.32 4.81l-1.006 3.676 3.771-.979zm11.393-5.02c-.3-.149-1.772-.865-2.046-.964-.274-.1-.474-.149-.673.149-.199.299-.772.964-.946 1.162-.175.199-.349.224-.649.075-.3-.149-1.265-.462-2.41-1.474-.89-.785-1.49-1.754-1.664-2.053-.175-.299-.019-.461.13-.61.135-.133.3-.349.449-.523.149-.174.199-.299.299-.497.1-.199.05-.373-.025-.523-.075-.149-.673-1.62-.922-2.215-.242-.58-.488-.5-.673-.51-.175-.01-.374-.01-.573-.01-.199 0-.523.075-.797.373-.274.299-1.046 1.02-1.046 2.487 0 1.467 1.07 2.885 1.22 3.085.149.199 2.107 3.188 5.101 4.467.712.304 1.269.485 1.703.621.714.227 1.365.195 1.88.117.573-.085 1.772-.715 2.022-1.405.25-.688.25-1.28.175-1.405-.075-.124-.274-.199-.573-.348z" />
                   </svg>
                   WHATSAPP
@@ -1140,7 +1321,11 @@ export function ProductDetail() {
                 className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer no-underline"
               >
                 <span className="flex items-center gap-2.5">
-                  <svg className="h-4 w-4 fill-none stroke-current text-[#E1306C]" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg
+                    className="h-4 w-4 fill-none stroke-current text-[#E1306C]"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -1151,14 +1336,19 @@ export function ProductDetail() {
 
               {/* Facebook */}
               <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                  window.location.href
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsShareModalOpen(false)}
                 className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer no-underline"
               >
                 <span className="flex items-center gap-2.5">
-                  <svg className="h-4 w-4 fill-current text-[#1877F2]" viewBox="0 0 24 24">
+                  <svg
+                    className="h-4 w-4 fill-current text-[#1877F2]"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                   FACEBOOK
@@ -1167,14 +1357,21 @@ export function ProductDetail() {
 
               {/* X / Twitter */}
               <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent("Check out this amazing tactical layer from Drip Doggy!")}`}
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                  window.location.href
+                )}&text=${encodeURIComponent(
+                  `Check out this amazing piece from Drip Doggy!`
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsShareModalOpen(false)}
                 className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer no-underline"
               >
                 <span className="flex items-center gap-2.5">
-                  <svg className="h-4 w-4 fill-current text-black" viewBox="0 0 24 24">
+                  <svg
+                    className="h-4 w-4 fill-current text-black"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
                   X (TWITTER)
@@ -1183,14 +1380,21 @@ export function ProductDetail() {
 
               {/* Telegram */}
               <a
-                href={`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent("Check out this amazing tactical layer from Drip Doggy!")}`}
+                href={`https://t.me/share/url?url=${encodeURIComponent(
+                  window.location.href
+                )}&text=${encodeURIComponent(
+                  `Check out this amazing piece from Drip Doggy!`
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsShareModalOpen(false)}
                 className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer no-underline"
               >
                 <span className="flex items-center gap-2.5">
-                  <svg className="h-4 w-4 fill-current text-[#0088cc]" viewBox="0 0 24 24">
+                  <svg
+                    className="h-4 w-4 fill-current text-[#0088cc]"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.61l-1.91 9c-.14.63-.51.79-1.04.49l-2.91-2.15-1.4 1.35c-.15.15-.28.28-.58.28l.2-2.94 5.35-4.83c.23-.21-.05-.32-.35-.12L10.27 13.1l-2.85-.89c-.62-.2-.63-.62.13-.92l11.14-4.3c.51-.19.96.11.87.62z" />
                   </svg>
                   TELEGRAM
@@ -1201,7 +1405,7 @@ export function ProductDetail() {
         </div>
       )}
 
-      {/* Toast Notification */}
+      {/* ─── Toast Notification ──────────────────────────────────────────── */}
       {showToast && (
         <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[110] bg-[#030213] text-[#FAF8F5] text-[10px] font-extrabold tracking-widest px-6 py-3.5 rounded-sm uppercase shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200">
           {toastMessage}
@@ -1210,6 +1414,37 @@ export function ProductDetail() {
     </div>
   );
 }
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function getVariantImages(
+  product: Product,
+  selectedColor: string
+): string[] {
+  if (product.variants && product.variants.length > 0) {
+    const variant = product.variants.find((v) => v.name === selectedColor);
+    if (variant) return variant.images;
+  }
+  return product.images.length > 0 ? product.images : [product.image];
+}
+
+function getColorOptions(
+  product: Product
+): ProductColorVariant[] {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants;
+  }
+  // Generate a single default option from the product images
+  return [
+    {
+      name: "DEFAULT",
+      thumbnail: product.image,
+      images: product.images,
+    },
+  ];
+}
+
+// ─── Recommendation Card ─────────────────────────────────────────────────────
 
 interface RecProduct {
   id: number;
@@ -1220,58 +1455,7 @@ interface RecProduct {
   images: string[];
 }
 
-const recommendations: RecProduct[] = [
-  {
-    id: 10,
-    brand: "DRIP RECOMMENDED",
-    name: "Summer Linen Dress",
-    price: 3499,
-    originalPrice: 4999,
-    images: [
-      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.2&fp-z=1.5",
-      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.7&fp-z=1.3"
-    ]
-  },
-  {
-    id: 11,
-    brand: "DRIP RECOMMENDED",
-    name: "Sage Slip Dress",
-    price: 4299,
-    originalPrice: 5999,
-    images: [
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.3&fp-z=1.4",
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.6&fp-z=1.5"
-    ]
-  },
-  {
-    id: 12,
-    brand: "DRIP RECOMMENDED",
-    name: "Floral Wrap Dress",
-    price: 2899,
-    originalPrice: 3999,
-    images: [
-      "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.25&fp-z=1.5",
-      "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.6&fp-z=1.3"
-    ]
-  },
-  {
-    id: 13,
-    brand: "DRIP RECOMMENDED",
-    name: "Crimson Evening Gown",
-    price: 2199,
-    originalPrice: 2999,
-    images: [
-      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.25&fp-z=1.5",
-      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.65&fp-z=1.3"
-    ]
-  }
-];
-
-function RecommendationCard({ product }: { product: RecProduct }) {
+function RecommendationCard({ product }: { product: Product }) {
   const [isHovered, setIsHovered] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -1297,7 +1481,8 @@ function RecommendationCard({ product }: { product: RecProduct }) {
       }
     };
     window.addEventListener("wishlist-updated", handleWishlistUpdate);
-    return () => window.removeEventListener("wishlist-updated", handleWishlistUpdate);
+    return () =>
+      window.removeEventListener("wishlist-updated", handleWishlistUpdate);
   }, [product.id]);
 
   useEffect(() => {
@@ -1305,11 +1490,9 @@ function RecommendationCard({ product }: { product: RecProduct }) {
       setActiveIdx(0);
       return;
     }
-
     const timer = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % product.images.length);
     }, 1500);
-
     return () => clearInterval(timer);
   }, [isHovered, product.images.length]);
 
@@ -1320,7 +1503,7 @@ function RecommendationCard({ product }: { product: RecProduct }) {
       const stored = localStorage.getItem("wishlist");
       let list = stored ? JSON.parse(stored) : [];
       const exists = list.some((item: any) => item.id === product.id);
-      
+
       if (exists) {
         list = list.filter((item: any) => item.id !== product.id);
         setIsFavorite(false);
@@ -1330,7 +1513,7 @@ function RecommendationCard({ product }: { product: RecProduct }) {
           brand: product.brand,
           name: product.name,
           price: product.price,
-          image: product.images[0]
+          image: product.images[0] || product.image,
         });
         setIsFavorite(true);
       }
@@ -1340,6 +1523,12 @@ function RecommendationCard({ product }: { product: RecProduct }) {
       console.error(err);
     }
   };
+
+  const discountPercent = product.originalPrice
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
+    : 0;
 
   return (
     <Link
@@ -1365,16 +1554,21 @@ function RecommendationCard({ product }: { product: RecProduct }) {
           {isHovered && product.images.length > 1 && (
             <div className="absolute top-3 inset-x-4 flex gap-1.5 z-10 transition-all duration-300">
               {product.images.map((_, idx) => (
-                <div key={idx} className="h-[2px] flex-1 bg-white/20 rounded-none overflow-hidden relative">
+                <div
+                  key={idx}
+                  className="h-[2px] flex-1 bg-white/20 rounded-none overflow-hidden relative"
+                >
                   {idx === activeIdx ? (
                     <div
                       key={`progress-rec-${idx}`}
-                      style={{ animation: 'progressGrowRec 1.5s linear forwards' }}
+                      style={{ animation: "progressGrowRec 1.5s linear forwards" }}
                       className="absolute left-0 top-0 h-full bg-white"
                     />
                   ) : (
                     <div
-                      className={`absolute left-0 top-0 h-full bg-white/40 ${idx < activeIdx ? 'w-full' : 'w-0'}`}
+                      className={`absolute left-0 top-0 h-full bg-white/40 ${
+                        idx < activeIdx ? "w-full" : "w-0"
+                      }`}
                     />
                   )}
                 </div>
@@ -1382,22 +1576,31 @@ function RecommendationCard({ product }: { product: RecProduct }) {
             </div>
           )}
 
-          <style dangerouslySetInnerHTML={{__html: `
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
             @keyframes progressGrowRec {
               from { width: 0%; }
               to { width: 100%; }
             }
-          `}} />
+          `,
+            }}
+          />
 
           <button
             onClick={toggleFavorite}
             className="absolute top-2.5 right-2.5 p-1.5 bg-[#FAF8F5]/90 text-neutral-800 hover:text-red-500 transition-colors z-10 rounded-none shadow-sm border border-neutral-200/50 cursor-pointer"
           >
-            <Heart className={`h-3 w-3 stroke-[2] ${isFavorite ? "fill-red-500 stroke-red-500" : ""}`} />
+            <Heart
+              className={`h-3 w-3 stroke-[2] ${
+                isFavorite ? "fill-red-500 stroke-red-500" : ""
+              }`}
+            />
           </button>
-
         </div>
-        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{product.brand}</span>
+        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">
+          {product.brand}
+        </span>
         <h3 className="text-xs font-extrabold tracking-wider mt-1 mb-0.5 text-neutral-900 uppercase leading-snug line-clamp-1">
           {product.name}
         </h3>
@@ -1406,14 +1609,19 @@ function RecommendationCard({ product }: { product: RecProduct }) {
         <span className="text-xs font-bold text-neutral-800">
           ₹{product.price.toFixed(2)}
         </span>
-        <span className="text-[10px] font-semibold text-[#858383] line-through">
-          ₹{product.originalPrice.toFixed(2)}
-        </span>
-        <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
-          {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-        </span>
+        {product.originalPrice && (
+          <>
+            <span className="text-[10px] font-semibold text-[#858383] line-through">
+              ₹{product.originalPrice.toFixed(2)}
+            </span>
+            {discountPercent > 0 && (
+              <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
+                {discountPercent}% OFF
+              </span>
+            )}
+          </>
+        )}
       </div>
     </Link>
   );
 }
-
