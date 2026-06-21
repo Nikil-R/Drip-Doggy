@@ -18,6 +18,11 @@ import { ComingSoon } from "./pages/ComingSoon";
 import { Search } from "./pages/Search";
 import { About } from "./pages/About";
 import { Help } from "./pages/Help";
+import { Contact } from "./pages/Contact";
+import { FAQ } from "./pages/FAQ";
+import { Returns } from "./pages/Returns";
+import { Privacy } from "./pages/Privacy";
+import { Terms } from "./pages/Terms";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -85,6 +90,11 @@ export default function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/about" element={<About />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/returns" element={<Returns />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
           </Routes>
           <FooterWrapper />
         </div>

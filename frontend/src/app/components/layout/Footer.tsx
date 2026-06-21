@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  Truck,
-  RotateCcw,
-  ShieldCheck,
-  BadgeCheck,
-  Headphones,
   ArrowRight,
   ChevronDown,
   Mail,
@@ -15,45 +10,33 @@ import {
   Facebook,
 } from "lucide-react";
 import logo from "../../../assets/logo.png";
-import logoIcon from "../../../assets/logo_icon.png";
-import { Reveal } from "../home/Reveal";
+import logoIcon from "../../../assets/new_logo_icon.png";
+import { motion } from "motion/react";
 
 // ─── Link Data ──────────────────────────────────────────────────────────────
 const SHOP_LINKS = [
-  { label: "New Arrivals", to: "/shop?new=true" },
-  { label: "Women", to: "/shop?gender=women" },
-  { label: "Dresses", to: "/shop?gender=women&category=dresses" },
-  { label: "Outerwear", to: "/shop?gender=women&category=outerwear" },
-  { label: "Accessories", to: "/coming-soon" },
-  { label: "Gift Cards", to: "/coming-soon" },
+  { label: "New In", to: "/shop" },
+  { label: "Outerwear", to: "/shop?category=outerwear" },
+  { label: "Knitwear", to: "/shop?category=knitwear" },
+  { label: "Wishlist", to: "/account#wishlist" },
+  { label: "Accessories (Soon)", to: "/coming-soon" },
+  { label: "Men's Syndicate (Soon)", to: "/coming-soon" },
 ];
 
 const SERVICE_LINKS = [
-  { label: "Contact Us", to: "/help" },
-  { label: "Shipping & Delivery", to: "/help" },
-  { label: "Returns & Exchanges", to: "/help" },
-  { label: "Size Guide", to: "/help" },
-  { label: "FAQ", to: "/help" },
-  { label: "Track Order", to: "/orders" },
+  { label: "Contact Us", to: "/contact" },
+  { label: "FAQ & Shipping", to: "/faq" },
+  { label: "Returns & Size Guide", to: "/returns" },
+  { label: "Track Order", to: "/account#orders" },
 ];
 
 const HOUSE_LINKS = [
   { label: "About Drip Doggy", to: "/about" },
-  { label: "Sustainability", to: "/about" },
-  { label: "Careers", to: "/coming-soon" },
-  { label: "Privacy Policy", to: "/help" },
-  { label: "Terms of Service", to: "/help" },
+  { label: "Privacy Policy", to: "/privacy" },
+  { label: "Terms of Service", to: "/terms" },
 ];
 
-const TRUST_ITEMS = [
-  { icon: Truck, label: "Free Shipping", desc: "Above ₹1999" },
-  { icon: RotateCcw, label: "Easy Returns", desc: "Within 14 Days" },
-  { icon: ShieldCheck, label: "Secure Checkout", desc: "TLS Encrypted" },
-  { icon: BadgeCheck, label: "COD Available", desc: "Cash on Delivery" },
-  { icon: Headphones, label: "24/7 Support", desc: "Dedicated Team" },
-];
-
-const PAYMENT_METHODS = ["VISA", "MASTERCARD", "AMEX", "UPI", "COD"];
+const PAYMENT_METHODS = ["COD"];
 const SOCIAL_LINKS = [
   { icon: Instagram, label: "Instagram", href: "#" },
   { icon: Youtube, label: "YouTube", href: "#" },
@@ -116,7 +99,13 @@ export function Footer() {
       {/* ═════════════════════════════════════════════════════════════════════
           SECTION A — DARK CTA PRE-FOOTER (reveal on scroll)
           ═════════════════════════════════════════════════════════════════════ */}
-      <Reveal variant="up" delay={100}>
+      <motion.div
+        id="footer-cta"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="bg-[#030213] text-white">
           <div className="max-w-7xl mx-auto px-6 py-16 lg:py-20">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -159,7 +148,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-      </Reveal>
+      </motion.div>
 
       {/* ═════════════════════════════════════════════════════════════════════
           SECTION B — WARM EDITORIAL MAIN FOOTER
@@ -176,8 +165,8 @@ export function Footer() {
           <div className="hidden lg:grid lg:grid-cols-12 gap-10">
             <div className="col-span-5 space-y-6">
               <div className="flex items-center gap-3">
-                <img src={logoIcon} alt="" className="h-10 w-auto object-contain mix-blend-multiply" />
-                <img src={logo} alt="DRIP DOGGY" className="h-12 w-auto object-contain mix-blend-multiply" />
+                <img src={logoIcon} alt="" className="h-20 w-auto object-contain mix-blend-multiply" />
+                <img src={logo} alt="DRIP DOGGY" className="h-24 w-auto object-contain mix-blend-multiply" />
               </div>
               <span className="block text-[9px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase">Luxury Streetwear / Est. 2026</span>
               <p className="text-sm text-neutral-500 leading-relaxed font-light max-w-sm">
@@ -238,33 +227,6 @@ export function Footer() {
         </div>
       </div>
 
-      {/* ═════════════════════════════════════════════════════════════════════
-          SECTION C — TRUST BAR (cascading items)
-          ═════════════════════════════════════════════════════════════════════ */}
-      <Reveal variant="up" delay={50}>
-        <div className="bg-[#FAF8F5] border-t border-neutral-200/60">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6">
-              {TRUST_ITEMS.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <Reveal key={item.label} variant="up" delay={80 + idx * 60}>
-                    <div className="flex items-center gap-3 bg-white/60 border border-neutral-200/50 px-4 py-3.5">
-                      <div className="w-9 h-9 bg-[#FAF8F5] border border-neutral-200 flex items-center justify-center flex-shrink-0">
-                        <Icon className="h-4 w-4 text-neutral-600 stroke-[1.5]" />
-                      </div>
-                      <div>
-                        <span className="block text-[9px] font-extrabold tracking-[0.15em] text-neutral-800 uppercase leading-tight">{item.label}</span>
-                        <span className="block text-[8px] text-neutral-400 font-medium tracking-wider uppercase">{item.desc}</span>
-                      </div>
-                    </div>
-                  </Reveal>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </Reveal>
 
       {/* ═════════════════════════════════════════════════════════════════════
           SECTION D — BOTTOM LEGAL BAR
@@ -282,11 +244,11 @@ export function Footer() {
                 ))}
               </div>
               <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-white/10">
-                <Link to="/help" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Privacy</Link>
+                <Link to="/privacy" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Privacy</Link>
                 <span className="text-white/10 text-[8px]">|</span>
-                <Link to="/help" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Terms</Link>
+                <Link to="/terms" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Terms</Link>
                 <span className="text-white/10 text-[8px]">|</span>
-                <Link to="/help" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Cookies</Link>
+                <Link to="/privacy" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Cookies</Link>
               </div>
             </div>
           </div>

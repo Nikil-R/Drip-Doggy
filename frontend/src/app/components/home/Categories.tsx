@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { motion } from "motion/react";
 
 const categories = [
   {
@@ -20,7 +21,7 @@ const categories = [
 
 export function Categories() {
   return (
-    <section className="pt-16 pb-8 lg:pt-20 lg:pb-10 bg-white">
+    <section id="categories" className="pt-16 pb-8 lg:pt-20 lg:pb-10 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="mb-10">
           <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
@@ -31,9 +32,15 @@ export function Categories() {
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {categories.map((category) => (
-            <Link
+          {categories.map((category, idx) => (
+            <motion.div
               key={category.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: idx * 0.15, ease: [0.22, 1, 0.36, 1] }}
+            >
+            <Link
               to={category.route}
               className="group relative overflow-hidden min-h-[420px] lg:min-h-[500px] block"
             >
@@ -68,6 +75,7 @@ export function Categories() {
                 </p>
               </div>
             </Link>
+            </motion.div>
           ))}
         </div>
       </div>

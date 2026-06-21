@@ -152,56 +152,6 @@ function ProductCard({
           />
         </button>
 
-        {/* Add to Bag Overlay — visible on hover */}
-        <div
-          className={`absolute inset-x-4 bottom-4 transition-all duration-300 z-20 ${
-            isHovered
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-3 pointer-events-none"
-          }`}
-        >
-          {cartQty === 0 ? (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onAddToBag(e);
-              }}
-              className="w-full bg-black/90 hover:bg-black text-white text-[9px] font-extrabold tracking-[0.2em] py-3 uppercase backdrop-blur-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
-            >
-              <ShoppingBag className="h-3.5 w-3.5 stroke-[2]" />
-              ADD TO BAG
-            </button>
-          ) : (
-            <div className="w-full bg-black/90 text-white backdrop-blur-sm flex items-center justify-between px-3 py-2">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onUpdateQty(cartQty - 1, e);
-                }}
-                className="text-white hover:text-neutral-300 font-extrabold text-sm bg-transparent border-none cursor-pointer p-1"
-                aria-label="Decrease quantity"
-              >
-                <Minus className="h-3 w-3 stroke-[2]" />
-              </button>
-              <span className="text-[10px] font-extrabold tracking-wider">
-                {cartQty} IN BAG
-              </span>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onUpdateQty(cartQty + 1, e);
-                }}
-                className="text-white hover:text-neutral-300 font-extrabold text-sm bg-transparent border-none cursor-pointer p-1"
-                aria-label="Increase quantity"
-              >
-                <Plus className="h-3 w-3 stroke-[2]" />
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Info */}

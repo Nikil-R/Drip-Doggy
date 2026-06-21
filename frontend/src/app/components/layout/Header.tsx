@@ -1,4 +1,4 @@
-import { ShoppingCart, CircleUser, Search, Heart, Trash2, ShieldCheck, RefreshCw, Truck, Tag, ChevronDown, ChevronUp } from "lucide-react";
+import { ShoppingCart, CircleUser, Search, Heart, Trash2, ShieldCheck, RefreshCw, Truck, Tag, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
@@ -273,7 +273,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-[#FAF8F5]/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-6">
         <div className="flex h-20 items-center justify-between">
           
@@ -626,9 +626,10 @@ export function Header() {
                       </Link>
                       <button 
                         onClick={() => { logout(); setIsProfileOpen(false); navigate('/login'); }}
-                        className="w-full text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/60 transition-colors border-t border-neutral-200/60 mt-2 pt-3 font-extrabold bg-transparent border-none cursor-pointer"
+                        className="w-full flex items-center gap-2 text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/40 transition-colors border-t border-neutral-200/60 mt-2 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase bg-transparent border-none cursor-pointer"
                       >
-                        Sign Out
+                        <LogOut className="h-3.5 w-3.5 stroke-[1.8] text-red-600" />
+                        <span className="text-red-600">Sign Out</span>
                       </button>
                     </>
                   ) : (

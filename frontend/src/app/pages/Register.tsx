@@ -3,7 +3,7 @@ import { Link, useNavigate, Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { OtpVerificationStep } from "../components/auth/OtpVerificationStep";
 import { User, Mail, Phone, ArrowRight } from "lucide-react";
-import logoIcon from "../../assets/logo_icon.png";
+import logoIcon from "../../assets/new_logo_icon.png";
 
 type RegisterStep = "details" | "otp";
 

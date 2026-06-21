@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { motion, useScroll, useTransform } from "motion/react";
 
 const SLIDES = [
   {
@@ -26,6 +27,12 @@ export function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fade, setFade] = useState(true);
 
+  const { scrollY } = useScroll();
+  const bgParallaxY = useTransform(scrollY, [0, 600], [0, 120]);
+  const overlayParallax = useTransform(scrollY, [0, 600], [0.45, 0.6]);
+  const contentParallaxY = useTransform(scrollY, [0, 600], [0, -60]);
+  const contentOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setFade(false);
@@ -39,11 +46,15 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative min-h-screen lg:h-screen overflow-hidden pt-[73px] lg:pt-[81px]">
-      {/* Background Slides with crossfade */}
+    <section
+      id="hero"
+      className="relative min-h-screen lg:h-screen overflow-hidden pt-[73px] lg:pt-[81px]"
+    >
+      {/* Background Slides with parallax */}
       {SLIDES.map((slide, index) => (
-        <div
+        <motion.div
           key={index}
+          style={{ y: index === currentSlide ? bgParallaxY : undefined }}
           className={`absolute inset-0 transition-opacity duration-[800ms] ease-in-out ${
             index === currentSlide ? "opacity-100 z-0" : "opacity-0 z-0 pointer-events-none"
           }`}
@@ -51,16 +62,22 @@ export function Hero() {
           <img
             src={slide.image}
             alt={slide.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover scale-110"
           />
-        </div>
+        </motion.div>
       ))}
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/45 z-0" />
+      {/* Overlay with parallax darken */}
+      <motion.div
+        className="absolute inset-0 z-0"
+        style={{ background: useTransform(overlayParallax, (v) => `rgba(0,0,0,${v})`) }}
+      />
 
-      {/* Content */}
-      <div className="relative container mx-auto px-6 h-full flex items-center z-10">
+      {/* Content with parallax fade-out */}
+      <motion.div
+        className="relative container mx-auto px-6 h-full flex items-center z-10"
+        style={{ y: contentParallaxY, opacity: contentOpacity }}
+      >
         <div className="max-w-xl text-white">
           <div
             className={`transition-all duration-[600ms] ease-out transform ${
@@ -84,9 +101,9 @@ export function Hero() {
             </Link>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Slide dots — subtle, bottom-left */}
+      {/* Slide dots */}
       <div className="absolute bottom-8 left-6 z-20 flex gap-2">
         {SLIDES.map((_, i) => (
           <button

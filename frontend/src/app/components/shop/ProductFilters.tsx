@@ -127,44 +127,6 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
         </div>
       )}
 
-      {/* Gender toggle */}
-      <div className="mb-8">
-        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 uppercase mb-4">
-          DEPARTMENT
-        </h3>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              const p = new URLSearchParams(searchParams);
-              p.set("gender", "women");
-              p.delete("category");
-              setSearchParams(p);
-            }}
-            className={`flex-1 py-2.5 text-[9px] font-extrabold tracking-[0.2em] uppercase border transition-colors bg-transparent cursor-pointer ${
-              !isAccessories
-                ? "bg-[#030213] text-white border-[#030213]"
-                : "bg-white text-neutral-500 border-neutral-200 hover:border-neutral-400"
-            }`}
-          >
-            WOMEN
-          </button>
-          <button
-            onClick={() => {
-              const p = new URLSearchParams(searchParams);
-              p.set("gender", "accessories");
-              p.delete("category");
-              setSearchParams(p);
-            }}
-            className={`flex-1 py-2.5 text-[9px] font-extrabold tracking-[0.2em] uppercase border transition-colors bg-transparent cursor-pointer ${
-              isAccessories
-                ? "bg-[#030213] text-white border-[#030213]"
-                : "bg-white text-neutral-500 border-neutral-200 hover:border-neutral-400"
-            }`}
-          >
-            ACCESSORIES
-          </button>
-        </div>
-      </div>
 
       {/* Categories */}
       <div className="mb-8">
@@ -200,10 +162,10 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
             <button
               key={size}
               onClick={() => handleSizeClick(size)}
-              className={`border text-[10px] font-bold py-2.5 rounded-sm transition-all text-center uppercase bg-transparent cursor-pointer ${
+              className={`border text-[10px] font-bold py-2.5 rounded-sm transition-all text-center uppercase cursor-pointer ${
                 selectedSize === size
                   ? "bg-[#030213] text-white border-neutral-900"
-                  : "bg-white text-neutral-700 border-neutral-200/60 hover:border-neutral-900"
+                  : "bg-white text-neutral-750 border-neutral-200/60 hover:border-neutral-900"
               }`}
             >
               {size}

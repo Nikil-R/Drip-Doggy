@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
@@ -94,7 +95,7 @@ function ProductCard({ product }: { product: Product }) {
 
 export function FeaturedProducts() {
   return (
-    <section className="pt-2 pb-16 lg:pt-6 lg:pb-20 bg-white">
+    <section id="new-in" className="pt-2 pb-16 lg:pt-6 lg:pb-20 bg-white">
       <div className="max-w-7xl mx-auto px-2">
         {/* Section Header */}
         <div className="mb-10">
@@ -116,8 +117,16 @@ export function FeaturedProducts() {
 
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {NEW_IN.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {NEW_IN.map((product, idx) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
+            >
+            <ProductCard product={product} />
+            </motion.div>
           ))}
         </div>
       </div>

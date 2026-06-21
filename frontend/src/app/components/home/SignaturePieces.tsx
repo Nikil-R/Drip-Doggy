@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
@@ -100,7 +101,7 @@ function SignatureCard({ product }: { product: Product }) {
 
 export function SignaturePieces() {
   return (
-    <section className="pt-2 pb-8 lg:pt-6 lg:pb-10 bg-white border-t border-neutral-100">
+    <section id="signature-pieces" className="pt-2 pb-8 lg:pt-6 lg:pb-10 bg-white border-t border-neutral-100">
       <div className="max-w-7xl mx-auto px-6">
         <div className="mb-10">
           <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
@@ -120,8 +121,16 @@ export function SignaturePieces() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SIGNATURE_PIECES.map((product) => (
-            <SignatureCard key={product.id} product={product} />
+          {SIGNATURE_PIECES.map((product, idx) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
+            >
+            <SignatureCard product={product} />
+            </motion.div>
           ))}
         </div>
       </div>
