@@ -11,16 +11,16 @@ const categories = [
     route: "/shop"
   },
   {
-    title: "Men's Archive",
+    title: "Men's Archive (Soon)",
     image: menSuit,
-    description: "Unreleased premium menswear (Soon)",
+    description: "Unreleased premium menswear collection",
     route: "/coming-soon"
   },
   {
-    title: "Gear & Accs",
+    title: "Gear & Accessories",
     image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=600",
-    description: "Capsule bags, caps & streetwear detail",
-    route: "/coming-soon"
+    description: "Sling bags, caps & streetwear essentials",
+    route: "/shop"
   }
 ];
 

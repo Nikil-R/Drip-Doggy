@@ -7,8 +7,8 @@ import { Link } from "react-router";
 const SLIDES = [
   {
     tagline: "DRIP DOGGY APPAREL",
-    title: "High-End Drip For Modern Women",
-    description: "Discover avant-garde women's streetwear designed to make a statement. Unmatched comfort, structured silhouettes, and premium fabrics.",
+    title: "High-End Drip For The Bold",
+    description: "Discover avant-garde streetwear designed to make a statement. Unmatched comfort, structured silhouettes, and premium fabrics.",
     image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop",
   },
   {
@@ -26,7 +26,7 @@ const SLIDES = [
   {
     tagline: "NEW DROP / SEASON 01",
     title: "Minimalist Aesthetics, Maximal Impact",
-    description: "Draping details, premium knitwear, and architectural tailoring defining the new era of feminine streetwear.",
+    description: "Draping details, premium knitwear, and architectural tailoring defining the new era of luxury streetwear.",
     image: "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?q=80&w=1600&auto=format&fit=crop",
   },
   {
@@ -97,12 +97,12 @@ export function Hero() {
           <div className="flex flex-wrap gap-4 items-center">
             <Link to="/shop">
               <Button size="lg" className="bg-white text-black hover:bg-white/90 font-bold tracking-wider px-8 py-3.5 uppercase text-xs">
-                Explore Women's Drop
+                Explore Collection
               </Button>
             </Link>
-            <Link to="/coming-soon">
+            <Link to="/shop">
               <Button size="lg" className="border border-white text-white bg-transparent hover:bg-white hover:text-black font-bold tracking-wider px-8 py-3.5 uppercase text-xs">
-                Men's Syndicate (Soon)
+                Accessories
               </Button>
             </Link>
           </div>
