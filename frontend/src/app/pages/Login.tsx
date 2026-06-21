@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { OtpVerificationStep } from "../components/auth/OtpVerificationStep";
-import { Mail, Smartphone, ArrowRight } from "lucide-react";
+import { Mail, Smartphone, ArrowRight, ShoppingBag } from "lucide-react";
 import logoIcon from "../../assets/logo_icon.png";
 
 type LoginStep = "identifier" | "otp";
@@ -25,6 +25,12 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [verifiedMethod, setVerifiedMethod] = useState<"email" | "phone" | null>(null);
+
+  // Detect if user came from checkout flow
+  const fromPath = (location.state as { from?: { pathname: string } })?.from?.pathname;
+  const isCheckoutFlow = fromPath?.includes("checkout");
 
   // Rotating background images
   useEffect(() => {
@@ -38,9 +44,16 @@ export function Login() {
     return () => clearInterval(timer);
   }, []);
 
-  // If already authenticated, redirect away
+  // Resend countdown timer
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => setResendTimer(prev => prev - 1), 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // If already authenticated, redirect to intended destination
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={fromPath || "/"} replace />;
   }
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -57,8 +70,25 @@ export function Login() {
       }
       setStep("otp");
       setOtp("");
+      setResendTimer(30);
+      setVerifiedMethod(identifier.includes("@") ? "email" : "phone");
     } catch {
       setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await requestLoginOtp(identifier);
+      setResendTimer(30);
+      setOtp("");
+    } catch {
+      setError("Failed to resend. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,9 +105,7 @@ export function Login() {
         setIsSubmitting(false);
         return;
       }
-      const from = (location.state as { from?: { pathname: string } })?.from
-        ?.pathname;
-      navigate(from || "/", { replace: true });
+      navigate(fromPath || "/", { replace: true });
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -97,54 +125,37 @@ export function Login() {
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200 flex">
       {/* Left Panel — Brand Imagery */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-neutral-900">
-        {/* Crossfading Backgrounds */}
         {BRAND_IMAGES.map((img, idx) => (
-          <div
-            key={idx}
+          <div key={idx}
             className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
-              idx === bgIndex && !isFading
-                ? "opacity-100"
-                : idx === bgIndex && isFading
-                ? "opacity-0"
-                : "opacity-0"
+              idx === bgIndex && !isFading ? "opacity-100" : "opacity-0"
             }`}
-            style={{ backgroundImage: `url(${img})` }}
-          />
+            style={{ backgroundImage: `url(${img})` }} />
         ))}
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-
-        {/* Brand Content on Image */}
         <div className="relative z-10 flex flex-col justify-between p-16 h-full">
-          {/* Logo */}
           <div>
             <img src={logoIcon} alt="DRIP DOGGY" className="h-14 w-auto object-contain brightness-0 invert" />
           </div>
-
-          {/* Tagline */}
           <div className="space-y-4 max-w-md">
             <div className="h-px w-16 bg-white/40 mb-6" />
             <h2 className="text-4xl font-extrabold tracking-[0.05em] text-white leading-tight uppercase">
-              Welcome Back
+              {isCheckoutFlow ? "Almost There" : "Welcome Back"}
             </h2>
             <p className="text-sm text-white/70 tracking-wide leading-relaxed font-light">
-              Sign in to your DRIP DOGGY account to access exclusive drops, track orders, and curate your personal archive.
+              {isCheckoutFlow
+                ? "Sign in to complete your order. Your cart items will be waiting for you."
+                : "Sign in to your DRIP DOGGY account to access exclusive drops, track orders, and curate your personal archive."}
             </p>
-
-            {/* Feature Pills */}
             <div className="flex flex-wrap gap-3 pt-4">
               {["EXCLUSIVE DROPS", "EARLY ACCESS", "PERSONAL ARCHIVE"].map((feat) => (
-                <span
-                  key={feat}
-                  className="text-[9px] font-extrabold tracking-widest text-white/60 border border-white/20 px-3 py-1.5 uppercase"
-                >
+                <span key={feat}
+                  className="text-[9px] font-extrabold tracking-widest text-white/60 border border-white/20 px-3 py-1.5 uppercase">
                   {feat}
                 </span>
               ))}
             </div>
           </div>
-
-          {/* Bottom Credit */}
           <p className="text-[10px] text-white/30 tracking-wider uppercase font-bold">
             SS26 Collection — Architectural Precision
           </p>
@@ -159,6 +170,16 @@ export function Login() {
             <img src={logoIcon} alt="DRIP DOGGY" className="h-12 w-auto object-contain mix-blend-multiply" />
           </div>
 
+          {/* Checkout Flow Banner */}
+          {isCheckoutFlow && (
+            <div className="mb-6 p-3 bg-amber-50 border border-amber-200/60 flex items-center gap-2">
+              <ShoppingBag className="h-3.5 w-3.5 text-amber-600 stroke-[1.5] flex-shrink-0" />
+              <p className="text-[8px] font-extrabold tracking-widest text-amber-700 uppercase">
+                Sign in to continue to checkout
+              </p>
+            </div>
+          )}
+
           {/* Header */}
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-4">
@@ -168,21 +189,27 @@ export function Login() {
             </div>
             {step === "identifier" ? (
               <>
-                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">
-                  Sign In
-                </h1>
+                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">Sign In</h1>
                 <p className="text-neutral-500 text-xs tracking-wide text-center mt-3 font-medium">
-                  Enter your email or phone to receive a secure code
+                  {isCheckoutFlow
+                    ? "Enter your email or phone to verify and proceed"
+                    : "Enter your email or phone to receive a secure code"}
                 </p>
               </>
             ) : (
               <>
-                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">
-                  Enter Code
-                </h1>
+                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">Enter Code</h1>
                 <p className="text-neutral-500 text-xs tracking-wide text-center mt-3 font-medium">
                   We sent a code to <span className="text-[#030213] font-bold">{identifier}</span>
                 </p>
+                {verifiedMethod && (
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    <span className="text-[8px] font-extrabold tracking-widest text-green-600 uppercase flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-green-600 rounded-full" />
+                      Code sent via {verifiedMethod === "email" ? "email" : "SMS"}
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -198,51 +225,42 @@ export function Login() {
                     <Smartphone className="h-4 w-4 stroke-[1.5]" />
                   )}
                 </div>
-                <input
-                  type="text"
-                  id="identifier"
-                  required
-                  value={identifier}
+                <input type="text" id="identifier" required value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="Email address or phone number"
-                  className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 rounded-none text-neutral-900 placeholder-neutral-400"
-                  autoComplete="username"
-                />
+                  className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
+                  autoComplete="username" />
+                {/* Input type indicator */}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  {identifier.length > 0 && (
+                    <span className="text-[7px] font-extrabold tracking-widest text-neutral-400 uppercase">
+                      {isEmail ? "EMAIL" : "PHONE"}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {error && (
                 <div className="bg-red-50/50 border border-red-200/50 px-4 py-3">
-                  <p className="text-[11px] font-bold text-red-600 tracking-wider uppercase">
-                    {error}
-                  </p>
+                  <p className="text-[11px] font-bold text-red-600 tracking-wider uppercase">{error}</p>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting || !identifier.trim()}
-                className="group relative w-full bg-[#030213] text-white py-3.5 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer overflow-hidden"
-              >
+              <button type="submit" disabled={isSubmitting || !identifier.trim()}
+                className="group relative w-full bg-[#030213] text-white py-3.5 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer overflow-hidden">
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isSubmitting ? (
-                    <>
-                      <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      SENDING OTP...
-                    </>
+                    <><span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> SENDING OTP...</>
                   ) : (
-                    <>
-                      SEND OTP
-                      <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </>
+                    <>{isCheckoutFlow ? "VERIFY & CONTINUE" : "SEND OTP"} <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" /></>
                   )}
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               </button>
 
-              {/* Helper text */}
               <div className="text-center">
                 <p className="text-[9px] text-neutral-400 font-bold tracking-wider uppercase">
-                  Test Credentials: <span className="text-neutral-600">test@gmail.com</span>
+                  Test: <span className="text-neutral-600">test@gmail.com</span>
                 </p>
               </div>
             </form>
@@ -259,20 +277,33 @@ export function Login() {
               isSubmitting={isSubmitting}
               error={error}
               showDevHelper={true}
-              submitLabel="VERIFY & SIGN IN"
+              submitLabel={isCheckoutFlow ? "VERIFY & CHECKOUT" : "VERIFY & SIGN IN"}
             />
+          )}
+
+          {/* OTP actions (resend + change) */}
+          {step === "otp" && (
+            <div className="mt-6 space-y-3 text-center">
+              <button type="button" onClick={handleResendOtp} disabled={resendTimer > 0 || isSubmitting}
+                className="text-[10px] font-extrabold tracking-widest uppercase text-[#b2533e] hover:text-[#a04835] transition-colors bg-transparent border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : "Resend Code"}
+              </button>
+              <div>
+                <button type="button" onClick={handleBackToIdentifier}
+                  className="text-[9px] font-bold text-neutral-400 hover:text-neutral-600 underline underline-offset-2 bg-transparent border-none cursor-pointer">
+                  Change email / phone number
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Footer Link */}
           <div className="mt-8 text-center">
             <p className="text-xs text-neutral-500 font-medium">
               Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="text-[#030213] font-bold border-b border-[#030213] pb-0.5 hover:opacity-75 transition-opacity inline-flex items-center gap-1"
-              >
-                Create one
-                <ArrowRight className="h-3 w-3 stroke-[2]" />
+              <Link to="/register"
+                className="text-[#030213] font-bold border-b border-[#030213] pb-0.5 hover:opacity-75 transition-opacity inline-flex items-center gap-1">
+                Create one <ArrowRight className="h-3 w-3 stroke-[2]" />
               </Link>
             </p>
           </div>
