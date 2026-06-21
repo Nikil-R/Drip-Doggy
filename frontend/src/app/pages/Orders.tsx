@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Search, ShoppingBag, Package, CheckCircle, Truck, Share2, HelpCircle } from "lucide-react";
+import { Package, CheckCircle, Truck, Printer, Eye, X } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 interface Order {
   id: string;
@@ -18,8 +19,120 @@ interface Order {
   }[];
 }
 
+function generateInvoiceHTML(order: Order, user: { firstName: string; lastName: string; email: string; phone: string }) {
+  return `
+<!DOCTYPE html>
+<html>
+<head><title>Invoice — ${order.id}</title>
+<style>
+  @page { margin: 20mm 15mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Courier New', monospace; color: #111; background: #fff; padding: 40px; }
+  .header { display: flex; justify-content: space-between; align-items: start; border-bottom: 2px solid #111; padding-bottom: 20px; margin-bottom: 24px; }
+  .brand { font-size: 24px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
+  .brand-sub { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+  .invoice-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #666; }
+  .invoice-number { font-size: 18px; font-weight: 900; margin-top: 4px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .section-title { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+  .section-value { font-size: 10px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th { font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #888; text-align: left; padding: 8px 4px; border-bottom: 1px solid #ddd; }
+  td { font-size: 10px; padding: 10px 4px; border-bottom: 1px solid #eee; }
+  .amount { text-align: right; font-weight: 700; }
+  .total-row td { font-size: 12px; font-weight: 900; border-top: 2px solid #111; padding-top: 10px; }
+  .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 8px; color: #aaa; letter-spacing: 1px; text-transform: uppercase; text-align: center; }
+  .status-badge { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 2px; padding: 3px 8px; border: 1px solid #111; text-transform: uppercase; }
+  .payment-row { display: flex; justify-content: space-between; font-size: 10px; padding: 4px 0; }
+  .payment-label { color: #888; letter-spacing: 1px; text-transform: uppercase; font-size: 9px; }
+  .payment-value { font-weight: 700; }
+  .grand-total { font-size: 12px; font-weight: 900; border-top: 2px solid #111; padding-top: 8px; margin-top: 4px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand">DRIP DOGGY</div>
+      <div class="brand-sub">Luxury Streetwear — Est. 2026</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="invoice-title">Invoice / Tax Receipt</div>
+      <div class="invoice-number">${order.id}</div>
+      <div style="font-size:9px;color:#888;margin-top:4px;">Date: ${order.date}</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="section-title">Bill To</div>
+      <div class="section-value">
+        ${user.firstName} ${user.lastName}<br>
+        ${user.email}<br>
+        ${user.phone || '+91 _________ '}
+      </div>
+    </div>
+    <div>
+      <div class="section-title" style="text-align:right;">Order Status</div>
+      <div style="text-align:right;margin-top:4px;">
+        <span class="status-badge">${order.status}</span>
+      </div>
+      <div style="text-align:right;margin-top:8px;">
+        <div class="section-title" style="text-align:right;">Payment Mode</div>
+        <div style="font-size:10px;font-weight:700;margin-top:2px;">Cash on Delivery</div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Item</th><th>Brand</th><th>Size/Color</th><th class="amount">Qty</th><th class="amount">Price</th><th class="amount">Total</th></tr>
+    </thead>
+    <tbody>
+      ${order.items.map(item => `
+        <tr>
+          <td style="font-weight:700;">${item.name}</td>
+          <td style="color:#888;font-size:9px;">${item.brand}</td>
+          <td style="color:#888;font-size:9px;">${item.size} / ${item.color}</td>
+          <td class="amount">${item.quantity}</td>
+          <td class="amount">₹${item.price.toFixed(2)}</td>
+          <td class="amount">₹${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div style="margin-left:auto;width:280px;">
+    <div class="payment-row">
+      <span class="payment-label">Subtotal</span>
+      <span class="payment-value">₹${order.total.toFixed(2)}</span>
+    </div>
+    <div class="payment-row">
+      <span class="payment-label">Delivery</span>
+      <span class="payment-value" style="color:#059669;">FREE</span>
+    </div>
+    <div class="payment-row">
+      <span class="payment-label">Tax (GST 18%)</span>
+      <span class="payment-value">₹${(order.total * 0.18).toFixed(2)}</span>
+    </div>
+    <div class="grand-total">
+      <span style="letter-spacing:1px;text-transform:uppercase;">Total</span>
+      <span>₹${(order.total * 1.18).toFixed(2)}</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    Drip Doggy — Architectural silhouettes, premium fabrication, uncompromised street luxury.<br>
+    Thank you for your order.
+  </div>
+
+  <script>window.print();window.close();<\/script>
+</body>
+</html>`;
+}
+
 export function Orders() {
-  const [selectedTrackingOrder, setSelectedTrackingOrder] = useState<Order | null>(null);
+  const { user } = useAuth();
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   const [orders] = useState<Order[]>([
     {
@@ -58,130 +171,137 @@ export function Orders() {
     }
   ]);
 
+  const handlePrintInvoice = (order: Order) => {
+    const html = generateInvoiceHTML(order, {
+      firstName: user?.firstName || "Customer",
+      lastName: user?.lastName || "",
+      email: user?.email || "customer@email.com",
+      phone: user?.phone || "",
+    });
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
   const getTimelineSteps = (status: string, datePlaced: string) => {
     const isDelivered = status === "Delivered";
     const isShipped = status === "Shipped" || isDelivered;
-    
     return [
-      {
-        title: "Order Placed",
-        description: "Your order has been received",
-        date: datePlaced,
-        time: "10:30 AM",
-        done: true
-      },
-      {
-        title: "Processing",
-        description: "Item picked and packed",
-        date: datePlaced,
-        time: "02:15 PM",
-        done: true
-      },
-      {
-        title: "Shipped",
-        description: "In transit with carrier",
-        date: isShipped ? "06 June 2026" : "Pending",
-        time: isShipped ? "09:00 AM" : "",
-        done: isShipped
-      },
-      {
-        title: "Out for Delivery",
-        description: "Delivery driver is en route",
-        date: isDelivered ? "08 June 2026" : "Pending",
-        time: isDelivered ? "11:45 AM" : "",
-        done: isDelivered
-      },
-      {
-        title: "Delivered",
-        description: "Package dropped off safely",
-        date: isDelivered ? "08 June 2026" : "Pending",
-        time: isDelivered ? "03:00 PM" : "",
-        done: isDelivered
-      }
+      { title: "Order Placed", description: "Your order has been received", date: datePlaced, time: "10:30 AM", done: true },
+      { title: "Processing", description: "Item picked and packed", date: datePlaced, time: "02:15 PM", done: true },
+      { title: "Shipped", description: "In transit with carrier", date: isShipped ? "06 June 2026" : "Pending", time: isShipped ? "09:00 AM" : "", done: isShipped },
+      { title: "Out for Delivery", description: "Delivery driver is en route", date: isDelivered ? "08 June 2026" : "Pending", time: isDelivered ? "11:45 AM" : "", done: isDelivered },
+      { title: "Delivered", description: "Package dropped off safely", date: isDelivered ? "08 June 2026" : "Pending", time: isDelivered ? "03:00 PM" : "", done: isDelivered },
     ];
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200 ">
-      {/* Header */}
-      
-
-      {/* Main Content */}
-      <div className="max-w-4xl w-full mx-auto px-6 py-12 flex-1">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200">
+      <div className="max-w-4xl mx-auto px-6 py-12 flex-1">
+        {/* Header */}
         <div className="flex items-center gap-3 mb-8 pb-4 border-b border-neutral-200">
-          <Package className="h-6 w-6 stroke-[1.5]" />
-          <h1 className="text-2xl font-extrabold tracking-[0.1em] uppercase">
-            ORDER HISTORY
-          </h1>
+          <Package className="h-5 w-5 text-neutral-400 stroke-[1.5]" />
+          <h1 className="text-lg font-extrabold tracking-[0.1em] uppercase">Order History</h1>
         </div>
 
         {orders.length === 0 ? (
-          <div className="bg-white rounded-xl border border-neutral-100 p-12 text-center shadow-[0_4px_24px_rgba(0,0,0,0.01)]">
+          <div className="bg-white border border-neutral-200/80 p-16 text-center">
             <Package className="h-12 w-12 mx-auto text-neutral-300 stroke-[1.2] mb-4" />
-            <p className="text-sm text-neutral-500">You haven't placed any orders yet.</p>
+            <h2 className="text-sm font-extrabold tracking-[0.15em] uppercase mb-2">No Orders Yet</h2>
+            <p className="text-[11px] text-neutral-500 font-medium mb-6">You haven't placed any orders yet.</p>
+            <Link to="/shop" className="inline-block bg-[#030213] hover:bg-neutral-800 text-white px-8 py-3 text-[10px] font-extrabold tracking-[0.2em] uppercase transition-colors">
+              Start Shopping
+            </Link>
           </div>
         ) : (
-          <div className="space-y-6">
-            {orders.map(order => (
-              <div
-                key={order.id}
-                className="bg-white rounded-xl border border-neutral-100 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]"
-              >
-                {/* Order Header info */}
-                <div className="bg-neutral-50/50 border-b border-neutral-100 px-6 py-4 flex flex-wrap justify-between items-center gap-4 text-xs font-semibold">
-                  <div className="flex gap-6">
+          <div className="space-y-5">
+            {orders.map((order) => (
+              <div key={order.id} className="bg-white border border-neutral-200/80">
+                {/* Order Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-neutral-50/50 border-b border-neutral-200/80">
+                  <div className="flex flex-wrap items-center gap-6 text-[10px] font-bold tracking-wider">
                     <div>
-                      <p className="text-[9px] tracking-wider text-neutral-400 uppercase">ORDER ID</p>
-                      <p className="text-neutral-900 font-bold">{order.id}</p>
+                      <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Order ID</span>
+                      <span className="text-[#030213] font-extrabold tracking-wide">{order.id}</span>
                     </div>
                     <div>
-                      <p className="text-[9px] tracking-wider text-neutral-400 uppercase">DATE PLACED</p>
-                      <p className="text-neutral-500">{order.date}</p>
+                      <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Date</span>
+                      <span className="text-neutral-600">{order.date}</span>
                     </div>
                     <div>
-                      <p className="text-[9px] tracking-wider text-neutral-400 uppercase">TOTAL AMOUNT</p>
-                      <p className="text-neutral-950 font-bold">₹{order.total.toFixed(2)}</p>
+                      <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Total</span>
+                      <span className="text-[#030213] font-extrabold">₹{order.total.toFixed(2)}</span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2.5">
                     {order.status === "Delivered" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold tracking-wider uppercase bg-green-50 text-green-700 border border-green-200/50">
-                        <CheckCircle className="h-3 w-3" /> DELIVERED
+                      <span className="flex items-center gap-1 px-2.5 py-1 text-[8px] font-extrabold tracking-widest uppercase bg-green-50 text-green-700 border border-green-200/60">
+                        <CheckCircle className="h-3 w-3 stroke-[1.5]" />
+                        Delivered
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold tracking-wider uppercase bg-blue-50 text-blue-700 border border-blue-200/50">
-                        <Truck className="h-3 w-3" /> SHIPPED
+                      <span className="flex items-center gap-1 px-2.5 py-1 text-[8px] font-extrabold tracking-widest uppercase bg-blue-50 text-blue-700 border border-blue-200/60">
+                        <Truck className="h-3 w-3 stroke-[1.5]" />
+                        {order.status}
                       </span>
                     )}
-                    <button
-                      onClick={() => setSelectedTrackingOrder(order)}
-                      className="text-[9px] font-bold tracking-[0.15em] border border-neutral-300 px-3 py-1.5 rounded-sm hover:border-[#030213] hover:text-[#030213] transition-colors uppercase"
-                    >
-                      TRACK ORDER
-                    </button>
                   </div>
                 </div>
 
-                {/* Order Items list */}
-                <div className="p-6 divide-y divide-neutral-100">
-                  {order.items.map((item, index) => (
-                    <div key={index} className="flex gap-6 py-4 first:pt-0 last:pb-0">
-                      <div className="w-16 h-16 rounded bg-neutral-50 border border-neutral-100 overflow-hidden flex-shrink-0">
+                {/* Order Items */}
+                <div className="divide-y divide-neutral-100">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-14 h-18 bg-neutral-100 border border-neutral-200/60 overflow-hidden flex-shrink-0">
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[9px] font-bold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
-                        <h4 className="text-sm font-bold text-neutral-900 mt-0.5">{item.name}</h4>
-                        <p className="text-xs text-neutral-400 mt-1 font-medium">
+                        <span className="text-[8px] font-extrabold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
+                        <h4 className="text-[12px] font-extrabold text-[#030213] uppercase mt-0.5 truncate">{item.name}</h4>
+                        <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">
                           Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-neutral-900">₹{(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
+                      <span className="text-[12px] font-extrabold text-[#030213] flex-shrink-0">
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </span>
                     </div>
                   ))}
+                </div>
+
+                {/* Actions Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-neutral-50/30 border-t border-neutral-200/80">
+                  <button
+                    onClick={() => setTrackingOrder(order)}
+                    className="flex items-center gap-1.5 bg-white border border-neutral-200 hover:border-[#030213] text-neutral-600 hover:text-[#030213] px-4 py-2 text-[9px] font-extrabold tracking-widest uppercase transition-all cursor-pointer"
+                  >
+                    <Eye className="h-3 w-3 stroke-[1.5]" />
+                    Track Order
+                  </button>
+                  <div className="flex items-center gap-2">
+                    {order.status !== "Delivered" ? (
+                      <button
+                        onClick={() => alert(`Order ${order.id} cancellation submitted.`)}
+                        className="bg-white border border-red-200 hover:bg-red-50 text-red-500 px-4 py-2 text-[8px] font-extrabold tracking-widest uppercase transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => alert(`Return initiated for order ${order.id}.`)}
+                        className="bg-white border border-neutral-200 hover:border-[#030213] text-neutral-600 px-4 py-2 text-[8px] font-extrabold tracking-widest uppercase transition-all cursor-pointer"
+                      >
+                        Return
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handlePrintInvoice(order)}
+                      className="flex items-center gap-1.5 bg-[#030213] hover:bg-neutral-800 text-white px-4 py-2 text-[8px] font-extrabold tracking-widest uppercase transition-all cursor-pointer border-none"
+                    >
+                      <Printer className="h-3 w-3 stroke-[1.5]" />
+                      Invoice
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -189,63 +309,54 @@ export function Orders() {
         )}
       </div>
 
-      {/* Tracking Modal */}
-      {selectedTrackingOrder && (
+      {/* ─── Tracking Modal ──────────────────────────────────────────────── */}
+      {trackingOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[#FAF8F5] border border-neutral-200/80 rounded-xl max-w-md w-full p-8 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#FAF8F5] border border-neutral-200/80 max-w-md w-full p-8 relative shadow-2xl">
             <button
-              onClick={() => setSelectedTrackingOrder(null)}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-950 text-xl font-bold p-1"
+              onClick={() => setTrackingOrder(null)}
+              className="absolute top-5 right-5 text-neutral-400 hover:text-[#030213] transition-colors bg-transparent border-none cursor-pointer"
             >
-              ×
+              <X className="h-4 w-4 stroke-[1.5]" />
             </button>
-            <h2 className="text-xl font-extrabold tracking-[0.1em] mb-1 uppercase">
-              TRACK SHIPMENT
-            </h2>
-            <p className="text-neutral-500 text-[10px] tracking-wider uppercase mb-6">
-              ORDER ID: {selectedTrackingOrder.id} | Carrier: DripExpress
+
+            <div className="flex items-center gap-3 mb-6">
+              <Truck className="h-5 w-5 text-neutral-400 stroke-[1.5]" />
+              <h2 className="text-base font-extrabold tracking-[0.1em] uppercase">Track Shipment</h2>
+            </div>
+
+            <p className="text-[8px] font-extrabold tracking-widest text-neutral-400 uppercase mb-6">
+              Order: {trackingOrder.id} | Carrier: DripExpress
             </p>
 
-            {/* Timeline Wrapper */}
-            <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-neutral-250">
-              {getTimelineSteps(selectedTrackingOrder.status, selectedTrackingOrder.date).map((step, idx) => (
+            <div className="space-y-5 relative before:absolute before:left-[9px] before:top-2 before:bottom-2 before:w-[1px] before:bg-neutral-300">
+              {getTimelineSteps(trackingOrder.status, trackingOrder.date).map((step, idx) => (
                 <div key={idx} className="flex gap-4 relative items-start">
-                  {/* Dot status */}
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold z-10 transition-all ${
-                    step.done 
-                      ? "bg-[#030213] text-white border-2 border-neutral-900" 
-                      : "bg-white text-neutral-400 border-2 border-neutral-250"
+                  <div className={`w-[19px] h-[19px] flex items-center justify-center text-[7px] font-extrabold z-10 border ${
+                    step.done ? "bg-[#030213] text-white border-[#030213]" : "bg-white text-neutral-400 border-neutral-300"
                   }`}>
                     {step.done ? "✓" : idx + 1}
                   </div>
-                  
-                  {/* Step Description */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pt-px">
                     <div className="flex justify-between items-baseline">
-                      <h4 className={`text-xs font-bold uppercase tracking-wider ${step.done ? "text-neutral-900" : "text-neutral-400"}`}>
+                      <h4 className={`text-[10px] font-extrabold uppercase tracking-wider ${step.done ? "text-[#030213]" : "text-neutral-400"}`}>
                         {step.title}
                       </h4>
-                      <span className="text-[9px] font-bold text-neutral-450 uppercase">{step.date} {step.time}</span>
+                      <span className="text-[7px] font-bold text-neutral-400 uppercase">{step.date}</span>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-                      {step.description}
-                    </p>
+                    <p className="text-[9px] text-neutral-500 mt-0.5 leading-relaxed">{step.description}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-neutral-250 flex justify-between items-center text-[10px] font-bold tracking-wider text-neutral-500 uppercase">
-              <span>STATUS: <span className={selectedTrackingOrder.status === "Delivered" ? "text-green-600" : "text-blue-600"}>{selectedTrackingOrder.status}</span></span>
-              <span>EST. DELIVERY: 08 June 2026</span>
+            <div className="mt-8 pt-5 border-t border-neutral-200 flex justify-between items-center text-[8px] font-extrabold tracking-widest text-neutral-500 uppercase">
+              <span>Status: <span className={trackingOrder.status === "Delivered" ? "text-green-600" : "text-blue-600"}>{trackingOrder.status}</span></span>
+              <span>Est: 10 June 2026</span>
             </div>
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      
     </div>
   );
 }
-
