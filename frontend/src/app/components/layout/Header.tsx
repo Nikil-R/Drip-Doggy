@@ -19,52 +19,62 @@ export function Header() {
       const stored = localStorage.getItem("cart");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.length > 0) return parsed;
+        const hasOldJunk = parsed.some((item: any) => 
+          item.name === "Vanguard Tactical Vest" || 
+          item.name === "Heavyweight Hoodie" || 
+          item.name === "Apex Shell Jacket" || 
+          item.name === "Modular Sling Bag" ||
+          item.cartItemId.includes("coffee-brown") ||
+          item.cartItemId.includes("clay-sand") ||
+          item.cartItemId.includes("burnt-copper") ||
+          item.cartItemId.includes("editorial-ivory")
+        );
+        if (parsed.length > 0 && !hasOldJunk) return parsed;
       }
       const defaultItems = [
         {
           id: 1,
-          cartItemId: "1-coffee-brown-xl",
+          cartItemId: "1-Default-S",
+          brand: "DRIP DOGGY COLLECTION",
+          name: "SARTORIAL PLEATED TRENCH DRESS",
+          size: "S",
+          color: "Default",
+          price: 245.00,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=600"
+        },
+        {
+          id: 2,
+          cartItemId: "2-Default-S",
+          brand: "CORE COLLECTION",
+          name: "OVERSIZED KNIT SWEATER DRESS",
+          size: "S",
+          color: "Default",
+          price: 185.00,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=600"
+        },
+        {
+          id: 3,
+          cartItemId: "3-JET BLACK-M",
           brand: "ARCHITECTURAL PRECISION SERIES",
           name: "STRUCTURE TACTICAL LAYER",
-          size: "XL",
-          color: "COFFEE BROWN",
-          price: 485,
+          size: "M",
+          color: "JET BLACK",
+          price: 485.00,
           quantity: 1,
           image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=600"
         },
         {
-          id: 2,
-          cartItemId: "2-editorial-ivory-s",
-          brand: "STUDIO DRIP STUDIO",
-          name: "LINEN ASYMMETRICAL DRESS",
-          size: "S",
-          color: "EDITORIAL IVORY",
-          price: 1290,
-          quantity: 1,
-          image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=600"
-        },
-        {
-          id: 3,
-          cartItemId: "3-clay-sand-l",
-          brand: "CRAFT & CONSTRUCTION",
-          name: "OVERSIZED SLIT MIDI SKIRT",
-          size: "L",
-          color: "CLAY SAND",
-          price: 850,
-          quantity: 1,
-          image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=600"
-        },
-        {
           id: 4,
-          cartItemId: "4-burnt-copper-m",
-          brand: "DRIP COUTURE",
-          name: "DRAPED GEOMETRIC BLOUSE",
-          size: "M",
-          color: "BURNT COPPER",
-          price: 990,
+          cartItemId: "4-Default-S",
+          brand: "ARCHIVE COLLECTION",
+          name: "STRUCTURED CANVAS UTILITY DRESS",
+          size: "S",
+          color: "Default",
+          price: 295.00,
           quantity: 1,
-          image: "https://images.unsplash.com/photo-1554412933-514a83d2f3c8?auto=format&fit=crop&q=80&w=600"
+          image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=600"
         }
       ];
       localStorage.setItem("cart", JSON.stringify(defaultItems));
@@ -73,6 +83,17 @@ export function Header() {
       return [];
     }
   });
+
+  const [wishlistCount, setWishlistCount] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem("wishlist");
+      const list = stored ? JSON.parse(stored) : [];
+      return list.length;
+    } catch {
+      return 0;
+    }
+  });
+
 
   const [isLoading, setIsLoading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -149,14 +170,29 @@ export function Header() {
       }
     };
 
+    const handleWishlistUpdate = () => {
+      try {
+        const stored = localStorage.getItem("wishlist");
+        const list = stored ? JSON.parse(stored) : [];
+        setWishlistCount(list.length);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     window.addEventListener("cart-updated", handleCartUpdate);
+    window.addEventListener("wishlist-updated", handleWishlistUpdate);
     window.addEventListener("storage", handleCartUpdate);
+    window.addEventListener("storage", handleWishlistUpdate);
     
     return () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("wishlist-updated", handleWishlistUpdate);
       window.removeEventListener("storage", handleCartUpdate);
+      window.removeEventListener("storage", handleWishlistUpdate);
     };
   }, []);
+
 
   const saveCart = (items: any[]) => {
     localStorage.setItem("cart", JSON.stringify(items));
@@ -323,9 +359,15 @@ export function Header() {
               <Search className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
             </button>
 
-            <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity" aria-label="Wishlist">
+            <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
               <Heart className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
+
 
             <Sheet>
               <SheetTrigger asChild>
@@ -616,9 +658,15 @@ export function Header() {
               <Link to="/help" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 Help
               </Link>
-              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4">
-                Wishlist
+              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4 flex justify-between items-center">
+                <span>Wishlist</span>
+                {wishlistCount > 0 && (
+                  <span className="bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
               </Link>
+
               <Link to="/account" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 Account Settings
               </Link>

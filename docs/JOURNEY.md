@@ -29,3 +29,31 @@ This document captures the chronological journey of building the **Drip Doggy** 
   - Added an empty `backend/` directory template.
   - Restored and verified the build using relative references (`../../../assets/...`).
 - **AI Safeguards**: Created rules in `AI_RULES.md` to prevent future coding models from modifying path bases, performing unchecked directory wipes, or diverging from custom design systems.
+
+---
+
+## 🛒 Phase 4: Premium Shopping Cart Redesign & Wishlist Synchronization
+
+- **Shopping Cart Redesign**:
+  - Structured cart items inside a premium, desktop-aligned table layout featuring column headers: `PRODUCT`, `PRICE`, `QUANTITY`, and `TOTAL`.
+  - Converted stacked layout to a side-by-side display for prices, original MRPs, and discount tags.
+  - Implemented a live **Free Shipping Progress Bar** in the Order Summary sidebar to encourage higher average order values.
+- **Wishlist Counter & Real-Time Sync**:
+  - Equipped the navigation bar's Heart icon (desktop) and mobile sidebar link with dynamic wishlist item counter badges.
+  - Resolved synchronization issue where toggling the heart favorite status in the cart did not update the wishlist database; fully linked `toggleFavorite` in the Cart to `localStorage.wishlist` and triggered custom dispatch events for instant reactivity.
+
+---
+
+## 💳 Phase 5: Redesigned Multi-Step Checkout Wizard
+
+- **Wizard Interface**:
+  - Transformed the single-page Checkout into a clean, 3-step wizard layout (`Information` → `Delivery` → `Payment`).
+  - Added step status bar tracker highlights.
+- **Address Grid Selection**:
+  - Built a layout mimicking the account settings where users choose from saved card blocks (e.g. `HOME`, `WORK`).
+  - Included interactive inline add/edit form states and checkmarks for selected shipping addresses.
+- **Cash on Delivery Selection & Auto-fill**:
+  - Optimized checkout steps for Cash on Delivery (COD) order placements.
+  - Set up auto-fill mechanisms for user profile details like phone numbers and email addresses.
+
+
