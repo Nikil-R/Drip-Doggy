@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router";
 import { ProductFilters } from "../components/shop/ProductFilters";
 import { ProductGrid } from "../components/shop/ProductGrid";
-import { Newsletter } from "../components/layout/Newsletter";
+
 
 export function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,7 +18,6 @@ export function Shop() {
         </div>
       </section>
 
-      <Newsletter />
     </main>
   );
 }

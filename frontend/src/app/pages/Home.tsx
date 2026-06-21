@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { Hero } from "../components/layout/Hero";
 import { Categories } from "../components/home/Categories";
 import { FeaturedProducts } from "../components/home/FeaturedProducts";
-import { Newsletter } from "../components/layout/Newsletter";
 import { Footer } from "../components/layout/Footer";
 
 export function Home() {
@@ -47,7 +46,6 @@ export function Home() {
       <Categories />
       <FeaturedProducts />
       <div id="non-snapping-footer-zone">
-        <Newsletter />
         <Footer />
       </div>
     </main>
