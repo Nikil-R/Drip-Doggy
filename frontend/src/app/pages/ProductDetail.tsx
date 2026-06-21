@@ -1044,27 +1044,6 @@ function ProductDetailContent({ product }: { product: Product }) {
         </section>
       )}
 
-      {/* ─── Join Community ──────────────────────────────────────────────── */}
-      <section className="bg-black text-white py-24 text-center">
-        <div className="max-w-xl mx-auto px-6 space-y-6">
-          <h2 className="text-3xl font-extrabold tracking-[0.1em] uppercase text-white font-sans">
-            JOIN THE DRIP COMMUNITY
-          </h2>
-          <p className="text-xs text-neutral-450 tracking-widest uppercase">
-            Early access, exclusive drops, and culture updates.
-          </p>
-          <div className="flex gap-4 max-w-md mx-auto items-center border-b border-neutral-700 pb-2 pt-4">
-            <input
-              type="email"
-              placeholder="EMAIL ADDRESS"
-              className="bg-transparent border-none text-xs tracking-wider focus:outline-none flex-1 placeholder-neutral-500 uppercase"
-            />
-            <button className="text-xs font-bold tracking-[0.2em] text-white hover:opacity-75 transition-opacity">
-              SUBSCRIBE
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* ─── Size Guide Modal ────────────────────────────────────────────── */}
       {isSizeGuideOpen && (
