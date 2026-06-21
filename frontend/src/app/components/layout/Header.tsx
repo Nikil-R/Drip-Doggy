@@ -550,9 +550,18 @@ export function Header() {
                       {/* Actions side-by-side */}
                       <div className="grid grid-cols-2 gap-2 pt-1 pb-1">
                         <SheetClose asChild>
-                          <Link to="/checkout" className="flex items-center justify-center w-full bg-black hover:bg-neutral-800 text-white py-2.5 rounded-none text-[9px] font-extrabold tracking-[0.15em] text-center uppercase transition-all duration-300 cursor-pointer border border-black">
+                          <button
+                            onClick={() => {
+                              if (isAuthenticated) {
+                                navigate('/checkout');
+                              } else {
+                                navigate('/login', { state: { from: { pathname: '/checkout' } } });
+                              }
+                            }}
+                            className="flex items-center justify-center w-full bg-black hover:bg-neutral-800 text-white py-2.5 rounded-none text-[9px] font-extrabold tracking-[0.15em] text-center uppercase transition-all duration-300 cursor-pointer border border-black"
+                          >
                             CHECKOUT
-                          </Link>
+                          </button>
                         </SheetClose>
                         <SheetClose asChild>
                           <Link to="/cart" className="flex items-center justify-center w-full border border-neutral-900 text-neutral-950 bg-white hover:bg-neutral-900 hover:text-white py-2.5 rounded-none text-[9px] font-extrabold tracking-[0.15em] text-center uppercase transition-all duration-300 cursor-pointer">
