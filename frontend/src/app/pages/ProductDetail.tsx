@@ -304,46 +304,7 @@ export function ProductDetail() {
               </div>
             </div>
 
-            {/* Design Highlights Box to fill empty space */}
-            <div className="border border-neutral-200/50 rounded-xl p-5 bg-white space-y-4 max-w-full shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-              <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase text-neutral-800">Architectural Features</h3>
-              <ul className="grid grid-cols-2 gap-3 text-[11px] font-semibold text-neutral-500">
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span> Double-Stitched Seams
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span> Modular Attachment System
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span> Breathable Mesh Lining
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span> Custom Waterproof Zippers
-                </li>
-              </ul>
-              
-              {/* Feature Highlights Grid relocated here */}
-              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-neutral-100 text-center">
-                <div className="flex flex-col items-center space-y-1.5">
-                  <svg className="w-4.5 h-4.5 text-neutral-800" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.129-1.125V11.25c0-.446-.26-.846-.662-1.025l-2.25-.945A1.125 1.125 0 0016.5 9.75H13.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v8.25" />
-                  </svg>
-                  <span className="text-[7.5px] font-extrabold tracking-wider text-neutral-600 uppercase">FREE SHIPPING</span>
-                </div>
-                <div className="flex flex-col items-center space-y-1.5">
-                  <svg className="w-4.5 h-4.5 text-neutral-800" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
-                  </svg>
-                  <span className="text-[7.5px] font-extrabold tracking-wider text-neutral-600 uppercase">EXCHANGE AT STORE</span>
-                </div>
-                <div className="flex flex-col items-center space-y-1.5">
-                  <svg className="w-4.5 h-4.5 text-neutral-800" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                  </svg>
-                  <span className="text-[7.5px] font-extrabold tracking-wider text-neutral-600 uppercase">EASY RETURNS</span>
-                </div>
-              </div>
-            </div>
+            {/* Design Highlights Box to fill empty space */}            {/* Design highlights relocated to bottom row to prevent whitespace issues */}
           </div>
 
           {/* Product Actions Column (Right) */}
@@ -489,45 +450,121 @@ export function ProductDetail() {
               </button>
 
             </div>
+            {/* Delivery check relocated to bottom row to prevent whitespace issues */}
 
-            {/* Pincode Delivery Check */}
-            <div className="space-y-2.5 max-w-md pt-2">
-              <h3 className="text-xs font-extrabold text-neutral-800 tracking-tight uppercase">Check Pincode For Accurate Delivery</h3>
-              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Estimated delivery time: 2-6 working days</p>
-              
-              <div className="flex border border-neutral-300 rounded-sm overflow-hidden bg-white max-w-sm">
-                <input
-                  type="text"
-                  placeholder="Enter Pincode"
-                  value={pincode}
-                  onChange={(e) => {
-                    setPincode(e.target.value);
-                    setPincodeStatus(null);
-                  }}
-                  className="flex-1 px-4 py-2.5 text-xs font-semibold focus:outline-none placeholder-neutral-450 text-neutral-800"
-                />
-                <button
-                  onClick={() => {
-                    if (pincode.trim().length >= 5) {
-                      setPincodeStatus(`Available! Delivery expected in 2-4 working days to ${pincode}`);
-                    } else {
-                      setPincodeStatus("Enter a valid pincode.");
-                    }
-                  }}
-                  className="bg-black hover:bg-neutral-800 text-white text-[10px] font-bold tracking-widest px-6 uppercase border-none cursor-pointer"
-                >
-                  CHECK
-                </button>
+
+
+          </div>
+        </div>
+
+        {/* Features & Delivery Pincode Row (Side-by-Side to prevent vertical whitespace mismatch) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 pt-8 border-t border-neutral-200/60 max-w-7xl mx-auto px-6">
+          {/* Design Highlights Box */}
+          <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
+            <div className="space-y-4">
+              <h3 className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-neutral-900 border-b border-neutral-200/60 pb-2">
+                DESIGN DETAILS
+              </h3>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Double-Stitched Seams
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Modular System
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Breathable Lining
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Premium Zipper Details
+                </li>
+              </ul>
+            </div>
+            
+            {/* Feature Highlights Grid */}
+            <div className="grid grid-cols-3 gap-0 border-t border-neutral-200/60 pt-5 text-center divide-x divide-neutral-200/60">
+              <div className="flex flex-col items-center justify-center py-1">
+                <svg className="w-5 h-5 text-neutral-900 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.129-1.125V11.25c0-.446-.26-.846-.662-1.025l-2.25-.945A1.125 1.125 0 0016.5 9.75H13.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v8.25" />
+                </svg>
+                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">FREE SHIPPING</span>
               </div>
-              {pincodeStatus && (
-                <p className={`text-[9px] font-extrabold uppercase tracking-wider ${pincodeStatus.includes("Available") ? "text-green-600" : "text-red-500"}`}>
-                  {pincodeStatus}
-                </p>
-              )}
+              <div className="flex flex-col items-center justify-center py-1">
+                <svg className="w-5 h-5 text-neutral-900 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+                </svg>
+                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">EXCHANGE STORE</span>
+              </div>
+              <div className="flex flex-col items-center justify-center py-1">
+                <svg className="w-5 h-5 text-neutral-900 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                <span className="text-[7.5px] font-extrabold tracking-widest text-neutral-800 uppercase mt-2.5 block">EASY RETURNS</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Check Delivery Status Card */}
+          <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
+            <div className="space-y-4">
+              <h3 className="text-[11px] font-extrabold text-neutral-900 tracking-[0.2em] uppercase border-b border-neutral-200/60 pb-2">
+                CHECK DELIVERY STATUS
+              </h3>
+              
+              <p className="text-[9.5px] font-semibold tracking-wider text-neutral-500 uppercase leading-relaxed">
+                ENTER YOUR DESTINATION PINCODE TO VERIFY SHIPPING AVAILABILITY AND ESTIMATED TRANSIT TIMELINES. DELIVERY TYPICALLY TAKES 2-6 WORKING DAYS.
+              </p>
+              
+              <div className="space-y-2 pt-1">
+                <div className="flex border border-neutral-300 bg-white rounded-none overflow-hidden w-full">
+                  <input
+                    type="text"
+                    placeholder="ENTER PINCODE"
+                    value={pincode}
+                    onChange={(e) => {
+                      setPincode(e.target.value);
+                      setPincodeStatus(null);
+                    }}
+                    className="flex-1 px-4 py-3 text-xs font-bold focus:outline-none placeholder-neutral-450 text-neutral-800 uppercase tracking-wider bg-white border-none"
+                  />
+                  <button
+                    onClick={() => {
+                      if (pincode.trim().length >= 5) {
+                        setPincodeStatus(`Available! Expected delivery in 2-4 working days.`);
+                      } else {
+                        setPincodeStatus("Enter a valid pincode.");
+                      }
+                    }}
+                    className="bg-black hover:bg-neutral-800 text-white text-[10px] font-extrabold tracking-widest px-8 uppercase border-none cursor-pointer transition-colors"
+                  >
+                    CHECK
+                  </button>
+                </div>
+                {pincodeStatus && (
+                  <p className={`text-[9px] font-extrabold uppercase tracking-widest mt-2 ${pincodeStatus.includes("Available") ? "text-green-600" : "text-red-500"}`}>
+                    {pincodeStatus}
+                  </p>
+                )}
+              </div>
             </div>
 
-
-
+            {/* Delivery highlights matching left column bullet design */}
+            <div className="border-t border-neutral-200/60 pt-5">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Fast Transit (2-6 Days)
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> COD Available
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Dispatch in 24 hrs
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-[#b2533e] font-extrabold">—</span> Secure Logistics
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -535,36 +572,52 @@ export function ProductDetail() {
       {/* Breakdown and Specs Section */}
       <section className="bg-white border-y border-neutral-200/60 py-8 mt-4">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-6 md:gap-8 border-b border-neutral-150 pb-4 mb-4 text-[10px] font-bold tracking-[0.2em] text-neutral-400 overflow-x-auto scrollbar-none">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-neutral-200/60 mb-8 text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30">
             <button
               onClick={() => setActiveTab("description")}
-              className={`pb-2 whitespace-nowrap cursor-pointer ${activeTab === "description" ? "text-neutral-900 border-b-2 border-neutral-900" : ""}`}
+              className={`py-4 px-6 text-center border-r md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                activeTab === "description" 
+                  ? "bg-[#030213] text-white font-extrabold" 
+                  : "hover:bg-neutral-100/50 hover:text-black"
+              }`}
             >
-              DESCRIPTION
+              01 / DESCRIPTION
             </button>
             <button
               onClick={() => setActiveTab("specifications")}
-              className={`pb-2 whitespace-nowrap cursor-pointer ${activeTab === "specifications" ? "text-neutral-900 border-b-2 border-neutral-900" : ""}`}
+              className={`py-4 px-6 text-center md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                activeTab === "specifications" 
+                  ? "bg-[#030213] text-white font-extrabold" 
+                  : "hover:bg-neutral-100/50 hover:text-black"
+              }`}
             >
-              SPECIFICATIONS
+              02 / SPECIFICATIONS
             </button>
             <button
               onClick={() => setActiveTab("shipping")}
-              className={`pb-2 whitespace-nowrap cursor-pointer ${activeTab === "shipping" ? "text-neutral-900 border-b-2 border-neutral-900" : ""}`}
+              className={`py-4 px-6 text-center border-r md:border-r-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                activeTab === "shipping" 
+                  ? "bg-[#030213] text-white font-extrabold" 
+                  : "hover:bg-neutral-100/50 hover:text-black"
+              }`}
             >
-              SHIPPING & RETURNS
+              03 / SHIPPING & RETURNS
             </button>
             <button
               onClick={() => setActiveTab("reviews")}
-              className={`pb-2 whitespace-nowrap cursor-pointer ${activeTab === "reviews" ? "text-neutral-900 border-b-2 border-neutral-900" : ""}`}
+              className={`py-4 px-6 text-center transition-all duration-300 cursor-pointer ${
+                activeTab === "reviews" 
+                  ? "bg-[#030213] text-white font-extrabold" 
+                  : "hover:bg-neutral-100/50 hover:text-black"
+              }`}
             >
-              REVIEWS (24)
+              04 / REVIEWS (24)
             </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Tab content panel */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-12 space-y-6">
               {activeTab === "description" && (
                 <div className="space-y-6">
                   <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
@@ -575,11 +628,11 @@ export function ProductDetail() {
                   </p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                    <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200/50">
+                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
                       <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">CONSTRUCTION</h4>
                       <p className="text-xs text-neutral-500 leading-relaxed">Reinforced structural seams. Anodized hardware components.</p>
                     </div>
-                    <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200/50">
+                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
                       <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">DIMENSIONS</h4>
                       <p className="text-xs text-neutral-500 leading-relaxed">20,000mm Hydrostatic head. Precision-molded modular attachment points.</p>
                     </div>
@@ -589,27 +642,27 @@ export function ProductDetail() {
 
               {activeTab === "specifications" && (
                 <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">TECHNICAL SPECIFICATIONS</h2>
-                  <div className="border border-neutral-250/60 rounded-lg overflow-hidden bg-white text-xs text-neutral-800">
+                  <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">PRODUCT SPECIFICATIONS</h2>
+                  <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
                     <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
                       <span className="font-extrabold text-neutral-400 tracking-wider">FABRIC</span>
-                      <span className="font-semibold text-neutral-800">85% GORE-TEX Nylon, 15% Kevlar Blend</span>
+                      <span className="font-semibold text-neutral-800">Premium Breathable Cotton-Nylon Blend</span>
                     </div>
                     <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
                       <span className="font-extrabold text-neutral-400 tracking-wider">FIT</span>
-                      <span className="font-semibold text-neutral-800">Oversized Silhouette / Relaxed Drop-Shoulder</span>
+                      <span className="font-semibold text-neutral-800">Oversized Fit / Relaxed Drop-Shoulder Style</span>
                     </div>
                     <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">WATERPROOFING</span>
-                      <span className="font-semibold text-neutral-800">20,000mm Hydrostatic Head Rating</span>
+                      <span className="font-extrabold text-neutral-400 tracking-wider">CLIMATE SUITABILITY</span>
+                      <span className="font-semibold text-neutral-800">Lightweight & Airy — Perfect for Summers, Monsoons & Layering</span>
                     </div>
                     <div className="grid grid-cols-2 border-b border-neutral-150 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">HARDWARE</span>
-                      <span className="font-semibold text-neutral-800">Cobra anodized quick-release aluminum buckles</span>
+                      <span className="font-extrabold text-neutral-400 tracking-wider">ZIPPER & DETAILS</span>
+                      <span className="font-semibold text-neutral-800">Premium Rust-Free Metallic Zippers & Heavy-Duty Stitching</span>
                     </div>
                     <div className="grid grid-cols-2 p-4">
-                      <span className="font-extrabold text-neutral-400 tracking-wider">POCKET DESIGN</span>
-                      <span className="font-semibold text-neutral-800">4 modular system chest pouches, 2 secret slip pockets</span>
+                      <span className="font-extrabold text-neutral-400 tracking-wider">WASH CARE</span>
+                      <span className="font-semibold text-neutral-800">Easy Machine Wash Cold / Dry in Shade (Do Not Bleach)</span>
                     </div>
                   </div>
                 </div>
@@ -622,14 +675,14 @@ export function ProductDetail() {
                     Every order from the Architectural Series is handled with custom premium packaging.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                    <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200/50">
+                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
                       <h4 className="text-xs font-bold tracking-widest text-[#b2533e] mb-2 uppercase">DELIVERY TIMES</h4>
                       <p className="text-xs text-neutral-500 leading-relaxed">
                         • Express Shipping: 2-3 working days (Free on order above ₹2,000)<br />
                         • Standard Shipping: 5-7 working days (Free on all orders)
                       </p>
                     </div>
-                    <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200/50">
+                    <div className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50">
                       <h4 className="text-xs font-bold tracking-widest text-[#b2533e] mb-2 uppercase">EASY EXCHANGES</h4>
                       <p className="text-xs text-neutral-500 leading-relaxed">
                         Enjoy a 7-day return window. Size exchanges are processed with complimentary home pickup across India.
@@ -644,7 +697,7 @@ export function ProductDetail() {
                   <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">CUSTOMER REVIEWS</h2>
                   
                   {/* Reviews Summary Stats */}
-                  <div className="flex flex-col sm:flex-row gap-6 items-center bg-neutral-50 p-6 rounded-lg border border-neutral-200/40">
+                  <div className="flex flex-col sm:flex-row gap-6 items-center bg-neutral-50 p-6 rounded-none border border-neutral-200/40">
                     <div className="text-center sm:border-r border-neutral-200 sm:pr-8">
                       <p className="text-4xl font-extrabold text-neutral-900">4.9</p>
                       <div className="flex gap-0.5 my-1.5 justify-center text-amber-500">
@@ -718,30 +771,6 @@ export function ProductDetail() {
               )}
             </div>
 
-            {/* In the box card */}
-            <div className="lg:col-span-4 bg-[#FAF8F5] border border-neutral-200/60 rounded-xl p-6">
-              <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">
-                IN THE BOX
-              </h3>
-              <ul className="space-y-3 text-xs font-semibold text-neutral-800">
-                <li className="flex justify-between">
-                  <span>Vanguard Vest</span>
-                  <span className="text-neutral-400">x1</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Standard Pouches</span>
-                  <span className="text-neutral-400">x4</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Large Utility Pouch</span>
-                  <span className="text-neutral-400">x2</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Carry Tote</span>
-                  <span className="text-neutral-400">x1</span>
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
       </section>
@@ -785,70 +814,25 @@ export function ProductDetail() {
       </section>
 
       {/* You May Also Like */}
-      <section className="max-w-7xl mx-auto px-6 py-10">
-        <h2 className="text-center text-xs font-extrabold tracking-[0.25em] mb-6 uppercase">
-          YOU MAY ALSO LIKE
-        </h2>
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex justify-between items-end mb-8 border-b border-neutral-200/60 pb-4">
+          <h2 className="text-xs font-extrabold tracking-[0.25em] uppercase text-neutral-900">
+            YOU MAY ALSO LIKE
+          </h2>
+          <Link to="/shop" className="text-[10px] font-extrabold tracking-[0.15em] text-[#b2533e] hover:text-black transition-colors flex items-center gap-1.5 uppercase">
+            <span>View All</span>
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
         
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1 */}
-          <div className="group cursor-pointer">
-            <div className="aspect-[3/4] bg-neutral-100 rounded-lg overflow-hidden mb-2.5">
-              <img src="https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=400" alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            </div>
-            <h3 className="text-[10px] font-bold tracking-tight mb-0.5 text-neutral-900 uppercase">APEX SHELL JACKET</h3>
-            <p className="text-[10px] text-neutral-500">₹320</p>
-          </div>
-          {/* Card 2 */}
-          <div className="group cursor-pointer">
-            <div className="aspect-[3/4] bg-neutral-100 rounded-lg overflow-hidden mb-2.5">
-              <img src="https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&q=80&w=400" alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            </div>
-            <h3 className="text-[10px] font-bold tracking-tight mb-0.5 text-neutral-900 uppercase">URBAN COMBAT BOOT</h3>
-            <p className="text-[10px] text-neutral-500">₹350</p>
-          </div>
-          {/* Card 3 */}
-          <div className="group cursor-pointer">
-            <div className="aspect-[3/4] bg-neutral-100 rounded-lg overflow-hidden mb-2.5">
-              <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400" alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            </div>
-            <h3 className="text-[10px] font-bold tracking-tight mb-0.5 text-neutral-900 uppercase">CORE HEAVYWEIGHT HOODIE</h3>
-            <p className="text-[10px] text-neutral-500">₹180</p>
-          </div>
-          {/* Card 4 */}
-          <div className="group cursor-pointer">
-            <div className="aspect-[3/4] bg-neutral-100 rounded-lg overflow-hidden mb-2.5">
-              <img src="https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=400" alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            </div>
-            <h3 className="text-[10px] font-bold tracking-tight mb-0.5 text-neutral-900 uppercase">MODULAR SLING BAG</h3>
-            <p className="text-[10px] text-neutral-500">₹210</p>
-          </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 border border-neutral-200 bg-white">
+          {recommendations.map((rec) => (
+            <RecommendationCard key={rec.id} product={rec} />
+          ))}
         </div>
       </section>
 
-      {/* Trust Badges Grid */}
-      <section className="bg-white border-y border-neutral-200/60 py-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-[10px] font-bold tracking-[0.15em] text-neutral-700">
-            <div className="space-y-2">
-              <Star className="mx-auto h-5 w-5 stroke-[1.5] text-neutral-800" />
-              <p>PREMIUM QUALITY</p>
-            </div>
-            <div className="space-y-2">
-              <Truck className="mx-auto h-5 w-5 stroke-[1.5] text-neutral-800" />
-              <p>FAST DELIVERY</p>
-            </div>
-            <div className="space-y-2">
-              <RefreshCw className="mx-auto h-5 w-5 stroke-[1.5] text-neutral-800" />
-              <p>EASY RETURNS</p>
-            </div>
-            <div className="space-y-2">
-              <Lock className="mx-auto h-5 w-5 stroke-[1.5] text-neutral-800" />
-              <p>SECURE PAYMENTS</p>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Join Community */}
       <section className="bg-black text-white py-24 text-center">
@@ -1224,6 +1208,212 @@ export function ProductDetail() {
         </div>
       )}
     </div>
+  );
+}
+
+interface RecProduct {
+  id: number;
+  brand: string;
+  name: string;
+  price: number;
+  originalPrice: number;
+  images: string[];
+}
+
+const recommendations: RecProduct[] = [
+  {
+    id: 10,
+    brand: "DRIP RECOMMENDED",
+    name: "Summer Linen Dress",
+    price: 3499,
+    originalPrice: 4999,
+    images: [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.2&fp-z=1.5",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.7&fp-z=1.3"
+    ]
+  },
+  {
+    id: 11,
+    brand: "DRIP RECOMMENDED",
+    name: "Sage Slip Dress",
+    price: 4299,
+    originalPrice: 5999,
+    images: [
+      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.3&fp-z=1.4",
+      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.6&fp-z=1.5"
+    ]
+  },
+  {
+    id: 12,
+    brand: "DRIP RECOMMENDED",
+    name: "Floral Wrap Dress",
+    price: 2899,
+    originalPrice: 3999,
+    images: [
+      "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.25&fp-z=1.5",
+      "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.6&fp-z=1.3"
+    ]
+  },
+  {
+    id: 13,
+    brand: "DRIP RECOMMENDED",
+    name: "Crimson Evening Gown",
+    price: 2199,
+    originalPrice: 2999,
+    images: [
+      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.25&fp-z=1.5",
+      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=400&auto=format&fit=crop&crop=focalpoint&fp-y=0.65&fp-z=1.3"
+    ]
+  }
+];
+
+function RecommendationCard({ product }: { product: RecProduct }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("wishlist");
+      const list = stored ? JSON.parse(stored) : [];
+      setIsFavorite(list.some((item: any) => item.id === product.id));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [product.id]);
+
+  useEffect(() => {
+    const handleWishlistUpdate = () => {
+      try {
+        const stored = localStorage.getItem("wishlist");
+        const list = stored ? JSON.parse(stored) : [];
+        setIsFavorite(list.some((item: any) => item.id === product.id));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    window.addEventListener("wishlist-updated", handleWishlistUpdate);
+    return () => window.removeEventListener("wishlist-updated", handleWishlistUpdate);
+  }, [product.id]);
+
+  useEffect(() => {
+    if (!isHovered) {
+      setActiveIdx(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % product.images.length);
+    }, 1500);
+
+    return () => clearInterval(timer);
+  }, [isHovered, product.images.length]);
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const stored = localStorage.getItem("wishlist");
+      let list = stored ? JSON.parse(stored) : [];
+      const exists = list.some((item: any) => item.id === product.id);
+      
+      if (exists) {
+        list = list.filter((item: any) => item.id !== product.id);
+        setIsFavorite(false);
+      } else {
+        list.push({
+          id: product.id,
+          brand: product.brand,
+          name: product.name,
+          price: product.price,
+          image: product.images[0]
+        });
+        setIsFavorite(true);
+      }
+      localStorage.setItem("wishlist", JSON.stringify(list));
+      window.dispatchEvent(new Event("wishlist-updated"));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <Link
+      to={`/product/${product.id}`}
+      className="group cursor-pointer p-4 border-r border-b lg:border-b-0 border-neutral-200 flex flex-col justify-between h-full hover:bg-neutral-50/50 transition-colors duration-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div>
+        <div className="aspect-[3/4] bg-neutral-100 rounded-none overflow-hidden mb-3.5 relative">
+          {product.images.map((imgSrc, idx) => (
+            <img
+              key={idx}
+              src={imgSrc}
+              alt={`${product.name} - View ${idx + 1}`}
+              style={{ transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)" }}
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-[750ms] ${
+                idx === activeIdx ? "opacity-100 scale-105" : "opacity-0 scale-100"
+              }`}
+            />
+          ))}
+
+          {isHovered && product.images.length > 1 && (
+            <div className="absolute top-3 inset-x-4 flex gap-1.5 z-10 transition-all duration-300">
+              {product.images.map((_, idx) => (
+                <div key={idx} className="h-[2px] flex-1 bg-white/20 rounded-none overflow-hidden relative">
+                  {idx === activeIdx ? (
+                    <div
+                      key={`progress-rec-${idx}`}
+                      style={{ animation: 'progressGrowRec 1.5s linear forwards' }}
+                      className="absolute left-0 top-0 h-full bg-white"
+                    />
+                  ) : (
+                    <div
+                      className={`absolute left-0 top-0 h-full bg-white/40 ${idx < activeIdx ? 'w-full' : 'w-0'}`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes progressGrowRec {
+              from { width: 0%; }
+              to { width: 100%; }
+            }
+          `}} />
+
+          <button
+            onClick={toggleFavorite}
+            className="absolute top-2.5 right-2.5 p-1.5 bg-[#FAF8F5]/90 text-neutral-800 hover:text-red-500 transition-colors z-10 rounded-none shadow-sm border border-neutral-200/50 cursor-pointer"
+          >
+            <Heart className={`h-3 w-3 stroke-[2] ${isFavorite ? "fill-red-500 stroke-red-500" : ""}`} />
+          </button>
+
+        </div>
+        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{product.brand}</span>
+        <h3 className="text-xs font-extrabold tracking-wider mt-1 mb-0.5 text-neutral-900 uppercase leading-snug line-clamp-1">
+          {product.name}
+        </h3>
+      </div>
+      <div className="flex items-baseline gap-2 mt-2">
+        <span className="text-xs font-bold text-neutral-800">
+          ₹{product.price.toFixed(2)}
+        </span>
+        <span className="text-[10px] font-semibold text-[#858383] line-through">
+          ₹{product.originalPrice.toFixed(2)}
+        </span>
+        <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
+          {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+        </span>
+      </div>
+    </Link>
   );
 }
 

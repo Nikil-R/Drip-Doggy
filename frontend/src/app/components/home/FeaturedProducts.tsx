@@ -243,22 +243,7 @@ function ProductCard({ product }: { product: Product }) {
             </Badge>
           )}
 
-          {/* Hover Action Overlay Container */}
-          <div className="absolute inset-x-3 bottom-3 flex flex-col gap-1.5 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-            <button
-              onClick={handleAddToBag}
-              className="w-full bg-[#030213] text-white py-2.5 text-[9px] font-extrabold tracking-[0.15em] hover:bg-neutral-800 transition-colors uppercase cursor-pointer border-none rounded-none"
-            >
-              ADD TO BAG
-            </button>
-            <button
-              onClick={handleBuyNow}
-              className="w-full bg-white text-[#030213] py-2.5 text-[9px] font-extrabold tracking-[0.15em] hover:bg-neutral-100 transition-colors uppercase cursor-pointer border border-[#030213] rounded-none flex items-center justify-center gap-1"
-            >
-              BUY NOW
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
+
         </div>
 
         <div className="p-3.5 flex flex-col flex-grow justify-between">
