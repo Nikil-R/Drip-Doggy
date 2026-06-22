@@ -634,23 +634,13 @@ export function Header() {
                       </button>
                     </>
                   ) : (
-                    <>
-                      {/* Unauthenticated */}
-                      <Link 
-                        to="/login" 
-                        onClick={() => setIsProfileOpen(false)}
-                        className="block px-5 py-4 hover:bg-neutral-100/60 transition-colors font-extrabold"
-                      >
-                        Sign In
-                      </Link>
-                      <Link 
-                        to="/register" 
-                        onClick={() => setIsProfileOpen(false)}
-                        className="block px-5 py-3 hover:bg-neutral-100/60 transition-colors border-t border-neutral-200/60"
-                      >
-                        Create Account
-                      </Link>
-                    </>
+                    <Link 
+                      to="/login" 
+                      onClick={() => setIsProfileOpen(false)}
+                      className="block px-5 py-4 hover:bg-neutral-100/60 transition-colors font-extrabold"
+                    >
+                      Enter The Portal
+                    </Link>
                   )}
                 </div>
               </div>

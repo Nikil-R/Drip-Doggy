@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation, Navigate } from "react-router";
+import { useNavigate, useLocation, Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { OtpVerificationStep } from "../components/auth/OtpVerificationStep";
 import { Mail, Smartphone, ArrowRight, ShoppingBag } from "lucide-react";
 import logoIcon from "../../assets/new_logo_icon.png";
 
-type LoginStep = "identifier" | "otp";
+type PortalStep = "identifier" | "otp";
 
 const BRAND_IMAGES = [
   "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1600&auto=format&fit=crop",
@@ -14,11 +14,11 @@ const BRAND_IMAGES = [
 ];
 
 export function Login() {
-  const { isAuthenticated, requestLoginOtp, verifyLoginOtp } = useAuth();
+  const { isAuthenticated, requestOtp, verifyOtp, pendingIdentifier } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [step, setStep] = useState<LoginStep>("identifier");
+  const [step, setStep] = useState<PortalStep>("identifier");
   const [identifier, setIdentifier] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +28,9 @@ export function Login() {
   const [resendTimer, setResendTimer] = useState(0);
   const [verifiedMethod, setVerifiedMethod] = useState<"email" | "phone" | null>(null);
 
-  // Detect if user came from checkout flow
   const fromPath = (location.state as { from?: { pathname: string } })?.from?.pathname;
   const isCheckoutFlow = fromPath?.includes("checkout");
 
-  // Rotating background images
   useEffect(() => {
     const timer = setInterval(() => {
       setIsFading(true);
@@ -44,14 +42,12 @@ export function Login() {
     return () => clearInterval(timer);
   }, []);
 
-  // Resend countdown timer
   useEffect(() => {
     if (resendTimer <= 0) return;
-    const interval = setInterval(() => setResendTimer(prev => prev - 1), 1000);
+    const interval = setInterval(() => setResendTimer((prev) => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [resendTimer]);
 
-  // If already authenticated, redirect to intended destination
   if (isAuthenticated) {
     return <Navigate to={fromPath || "/"} replace />;
   }
@@ -62,7 +58,7 @@ export function Login() {
     setIsSubmitting(true);
 
     try {
-      const result = await requestLoginOtp(identifier);
+      const result = await requestOtp(identifier);
       if (!result.success) {
         setError(result.message ?? "Something went wrong.");
         setIsSubmitting(false);
@@ -84,7 +80,7 @@ export function Login() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await requestLoginOtp(identifier);
+      await requestOtp(identifier);
       setResendTimer(30);
       setOtp("");
     } catch {
@@ -99,13 +95,18 @@ export function Login() {
     setIsSubmitting(true);
 
     try {
-      const result = await verifyLoginOtp(identifier, otp);
+      const result = await verifyOtp(identifier, otp);
       if (!result.success) {
         setError(result.message ?? "Invalid OTP.");
         setIsSubmitting(false);
         return;
       }
-      navigate(fromPath || "/", { replace: true });
+
+      if (result.userExists) {
+        navigate(fromPath || "/", { replace: true });
+      } else {
+        navigate("/onboarding", { replace: true });
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -126,31 +127,34 @@ export function Login() {
       {/* Left Panel — Brand Imagery */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-neutral-900">
         {BRAND_IMAGES.map((img, idx) => (
-          <div key={idx}
+          <div
+            key={idx}
             className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
               idx === bgIndex && !isFading ? "opacity-100" : "opacity-0"
             }`}
-            style={{ backgroundImage: `url(${img})` }} />
+            style={{ backgroundImage: `url(${img})` }}
+          />
         ))}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
         <div className="relative z-10 flex flex-col justify-between p-16 h-full">
           <div>
-            <img src={logoIcon} alt="DRIP DOGGY" className="h-14 w-auto object-contain brightness-0 invert" />
           </div>
           <div className="space-y-4 max-w-md">
             <div className="h-px w-16 bg-white/40 mb-6" />
             <h2 className="text-4xl font-extrabold tracking-[0.05em] text-white leading-tight uppercase">
-              {isCheckoutFlow ? "Almost There" : "Welcome Back"}
+              {isCheckoutFlow ? "Almost There" : "Access The Syndicate"}
             </h2>
             <p className="text-sm text-white/70 tracking-wide leading-relaxed font-light">
               {isCheckoutFlow
                 ? "Sign in to complete your order. Your cart items will be waiting for you."
-                : "Sign in to your DRIP DOGGY account to access exclusive drops, track orders, and curate your personal archive."}
+                : "Enter the portal. Your access to exclusive drops, early releases, and curated collections awaits."}
             </p>
             <div className="flex flex-wrap gap-3 pt-4">
               {["EXCLUSIVE DROPS", "EARLY ACCESS", "PERSONAL ARCHIVE"].map((feat) => (
-                <span key={feat}
-                  className="text-[9px] font-extrabold tracking-widest text-white/60 border border-white/20 px-3 py-1.5 uppercase">
+                <span
+                  key={feat}
+                  className="text-[9px] font-extrabold tracking-widest text-white/60 border border-white/20 px-3 py-1.5 uppercase"
+                >
                   {feat}
                 </span>
               ))}
@@ -162,12 +166,16 @@ export function Login() {
         </div>
       </div>
 
-      {/* Right Panel — Auth Form */}
+      {/* Right Panel — Smart Portal */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 lg:py-0 min-h-screen lg:min-h-0">
         <div className="w-full max-w-sm mx-auto">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <img src={logoIcon} alt="DRIP DOGGY" className="h-12 w-auto object-contain mix-blend-multiply" />
+            <img
+              src={logoIcon}
+              alt="DRIP DOGGY"
+              className="h-12 w-auto object-contain mix-blend-multiply"
+            />
           </div>
 
           {/* Checkout Flow Banner */}
@@ -184,23 +192,30 @@ export function Login() {
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-px flex-1 bg-neutral-200" />
-              <span className="text-[9px] font-extrabold tracking-[0.3em] text-neutral-400 uppercase">Sign In</span>
+              <span className="text-[9px] font-extrabold tracking-[0.3em] text-neutral-400 uppercase">
+                {step === "identifier" ? "Portal" : "Verification"}
+              </span>
               <div className="h-px flex-1 bg-neutral-200" />
             </div>
             {step === "identifier" ? (
               <>
-                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">Sign In</h1>
+                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">
+                  Access The Syndicate
+                </h1>
                 <p className="text-neutral-500 text-xs tracking-wide text-center mt-3 font-medium">
                   {isCheckoutFlow
                     ? "Enter your email or phone to verify and proceed"
-                    : "Enter your email or phone to receive a secure code"}
+                    : "Enter your email or phone number to get started"}
                 </p>
               </>
             ) : (
               <>
-                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">Enter Code</h1>
+                <h1 className="text-3xl font-extrabold tracking-[0.05em] text-center uppercase">
+                  Enter Code
+                </h1>
                 <p className="text-neutral-500 text-xs tracking-wide text-center mt-3 font-medium">
-                  We sent a code to <span className="text-[#030213] font-bold">{identifier}</span>
+                  We sent a code to{" "}
+                  <span className="text-[#030213] font-bold">{identifier}</span>
                 </p>
                 {verifiedMethod && (
                   <div className="flex items-center justify-center gap-1 mt-2">
@@ -225,12 +240,16 @@ export function Login() {
                     <Smartphone className="h-4 w-4 stroke-[1.5]" />
                   )}
                 </div>
-                <input type="text" id="identifier" required value={identifier}
+                <input
+                  type="text"
+                  id="identifier"
+                  required
+                  value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Email address or phone number"
+                  placeholder="ENTER EMAIL OR PHONE"
                   className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
-                  autoComplete="username" />
-                {/* Input type indicator */}
+                  autoComplete="username"
+                />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                   {identifier.length > 0 && (
                     <span className="text-[7px] font-extrabold tracking-widest text-neutral-400 uppercase">
@@ -242,17 +261,28 @@ export function Login() {
 
               {error && (
                 <div className="bg-red-50/50 border border-red-200/50 px-4 py-3">
-                  <p className="text-[11px] font-bold text-red-600 tracking-wider uppercase">{error}</p>
+                  <p className="text-[11px] font-bold text-red-600 tracking-wider uppercase">
+                    {error}
+                  </p>
                 </div>
               )}
 
-              <button type="submit" disabled={isSubmitting || !identifier.trim()}
-                className="group relative w-full bg-[#030213] text-white py-3.5 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer overflow-hidden">
+              <button
+                type="submit"
+                disabled={isSubmitting || !identifier.trim()}
+                className="group relative w-full bg-[#030213] text-white py-3.5 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer overflow-hidden"
+              >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isSubmitting ? (
-                    <><span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> SENDING OTP...</>
+                    <>
+                      <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />{" "}
+                      SENDING OTP...
+                    </>
                   ) : (
-                    <>{isCheckoutFlow ? "VERIFY & CONTINUE" : "SEND OTP"} <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" /></>
+                    <>
+                      {isCheckoutFlow ? "VERIFY & CONTINUE" : "SEND OTP"}{" "}
+                      <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" />
+                    </>
                   )}
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
@@ -284,29 +314,16 @@ export function Login() {
           {/* OTP actions (resend + change) */}
           {step === "otp" && (
             <div className="mt-6 space-y-3 text-center">
-              <button type="button" onClick={handleResendOtp} disabled={resendTimer > 0 || isSubmitting}
-                className="text-[10px] font-extrabold tracking-widest uppercase text-[#b2533e] hover:text-[#a04835] transition-colors bg-transparent border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendTimer > 0 || isSubmitting}
+                className="text-[10px] font-extrabold tracking-widest uppercase text-[#b2533e] hover:text-[#a04835] transition-colors bg-transparent border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 {resendTimer > 0 ? `Resend code in ${resendTimer}s` : "Resend Code"}
               </button>
-              <div>
-                <button type="button" onClick={handleBackToIdentifier}
-                  className="text-[9px] font-bold text-neutral-400 hover:text-neutral-600 underline underline-offset-2 bg-transparent border-none cursor-pointer">
-                  Change email / phone number
-                </button>
-              </div>
             </div>
           )}
-
-          {/* Footer Link */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-neutral-500 font-medium">
-              Don't have an account?{" "}
-              <Link to="/register"
-                className="text-[#030213] font-bold border-b border-[#030213] pb-0.5 hover:opacity-75 transition-opacity inline-flex items-center gap-1">
-                Create one <ArrowRight className="h-3 w-3 stroke-[2]" />
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -6,6 +6,8 @@ export interface StoredUser {
   phone: string;
   normalizedEmail: string;
   normalizedPhone: string;
+  gender?: string;
+  dateOfBirth?: string;
   createdAt: string;
 }
 
@@ -15,10 +17,13 @@ export interface AuthUser {
   lastName: string;
   email: string;
   phone: string;
+  gender?: string;
+  dateOfBirth?: string;
 }
 
 const REGISTERED_USERS_KEY = "dripdoggy_registered_users";
 const AUTH_SESSION_KEY = "dripdoggy_auth_session";
+const PENDING_IDENTIFIER_KEY = "dripdoggy_pending_identifier";
 const MOCK_OTP = "123456";
 const SEED_USER_ID = "test-user-1";
 
@@ -139,4 +144,39 @@ export function seedTestUser(): void {
   };
   users.push(testUser);
   saveRegisteredUsers(users);
+}
+
+export function savePendingIdentifier(identifier: string): void {
+  localStorage.setItem(PENDING_IDENTIFIER_KEY, identifier);
+}
+
+export function getPendingIdentifier(): string | null {
+  return localStorage.getItem(PENDING_IDENTIFIER_KEY);
+}
+
+export function clearPendingIdentifier(): void {
+  localStorage.removeItem(PENDING_IDENTIFIER_KEY);
+}
+
+export function updateUserProfile(
+  identifier: string,
+  profile: { firstName: string; lastName: string; gender: string; dateOfBirth: string }
+): StoredUser | null {
+  const users = getRegisteredUsers();
+  const isEmailInput = isEmail(identifier);
+  const normalized = isEmailInput ? normalizeEmail(identifier) : normalizePhone(identifier);
+  const idx = users.findIndex((u) =>
+    isEmailInput ? u.normalizedEmail === normalized : u.normalizedPhone === normalized
+  );
+  if (idx === -1) return null;
+
+  users[idx] = {
+    ...users[idx],
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    gender: profile.gender,
+    dateOfBirth: profile.dateOfBirth,
+  };
+  saveRegisteredUsers(users);
+  return users[idx];
 }

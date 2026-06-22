@@ -6,39 +6,33 @@ import {
   clearSessionUser,
   seedTestUser,
   findUserByIdentifier,
-  emailExists,
-  phoneExists,
-  createUser,
-  toAuthUser,
   getMockOtp,
+  savePendingIdentifier,
+  getPendingIdentifier,
+  clearPendingIdentifier,
+  updateUserProfile,
+  createUser,
 } from "../lib/auth-storage";
 
 type AuthActionResult = {
   success: boolean;
   message?: string;
+  userExists?: boolean;
 };
 
 type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  requestLoginOtp: (identifier: string) => Promise<AuthActionResult>;
-  verifyLoginOtp: (identifier: string, otp: string) => Promise<AuthActionResult>;
-  requestRegisterOtp: (payload: {
+  requestOtp: (identifier: string) => Promise<AuthActionResult>;
+  verifyOtp: (identifier: string, otp: string) => Promise<AuthActionResult>;
+  completeOnboarding: (profile: {
     firstName: string;
     lastName: string;
-    email: string;
-    phone: string;
+    gender: string;
+    dateOfBirth: string;
   }) => Promise<AuthActionResult>;
-  verifyRegisterOtp: (
-    payload: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone: string;
-    },
-    otp: string
-  ) => Promise<AuthActionResult>;
+  pendingIdentifier: string | null;
   logout: () => void;
 };
 
@@ -47,22 +41,24 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingIdentifier, setPendingIdentifier] = useState<string | null>(null);
 
-  // On mount, seed test user and hydrate session
   useEffect(() => {
     seedTestUser();
     const sessionUser = getSessionUser();
     if (sessionUser) {
       setUser(sessionUser);
     }
+    const pending = getPendingIdentifier();
+    if (pending) {
+      setPendingIdentifier(pending);
+    }
     setIsLoading(false);
   }, []);
 
-  const requestLoginOtp = useCallback(
+  const requestOtp = useCallback(
     async (identifier: string): Promise<AuthActionResult> => {
-      // Simulate network delay
       await new Promise((r) => setTimeout(r, 600));
-      // For mock mode, always succeed if identifier is non-empty
       if (!identifier.trim()) {
         return { success: false, message: "Please enter an email or phone number." };
       }
@@ -71,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const verifyLoginOtp = useCallback(
+  const verifyOtp = useCallback(
     async (identifier: string, otp: string): Promise<AuthActionResult> => {
       await new Promise((r) => setTimeout(r, 500));
 
@@ -80,82 +76,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const foundUser = findUserByIdentifier(identifier);
-      if (!foundUser) {
-        return {
-          success: false,
-          message:
-            "No account found for this email or phone number. Please create an account.",
+      if (foundUser) {
+        const authUser = {
+          id: foundUser.id,
+          firstName: foundUser.firstName,
+          lastName: foundUser.lastName,
+          email: foundUser.email,
+          phone: foundUser.phone,
+          gender: foundUser.gender,
+          dateOfBirth: foundUser.dateOfBirth,
         };
+        saveSessionUser(authUser);
+        setUser(authUser);
+        clearPendingIdentifier();
+        setPendingIdentifier(null);
+        return { success: true, userExists: true };
       }
 
-      const authUser = toAuthUser(foundUser);
-      saveSessionUser(authUser);
-      setUser(authUser);
-      return { success: true };
+      savePendingIdentifier(identifier);
+      setPendingIdentifier(identifier);
+      return { success: true, userExists: false };
     },
     []
   );
 
-  const requestRegisterOtp = useCallback(
-    async (payload: {
+  const completeOnboarding = useCallback(
+    async (profile: {
       firstName: string;
       lastName: string;
-      email: string;
-      phone: string;
+      gender: string;
+      dateOfBirth: string;
     }): Promise<AuthActionResult> => {
-      await new Promise((r) => setTimeout(r, 600));
-
-      if (emailExists(payload.email)) {
-        return {
-          success: false,
-          message: "An account with this email already exists.",
-        };
-      }
-      if (phoneExists(payload.phone)) {
-        return {
-          success: false,
-          message: "An account with this phone number already exists.",
-        };
-      }
-      return { success: true };
-    },
-    []
-  );
-
-  const verifyRegisterOtp = useCallback(
-    async (
-      payload: {
-        firstName: string;
-        lastName: string;
-        email: string;
-        phone: string;
-      },
-      otp: string
-    ): Promise<AuthActionResult> => {
       await new Promise((r) => setTimeout(r, 500));
 
-      if (otp !== getMockOtp()) {
-        return { success: false, message: "Invalid OTP. Please try again." };
+      const pending = getPendingIdentifier();
+      if (!pending) {
+        return { success: false, message: "No pending verification found. Please start over." };
       }
 
-      // Re-check duplicates before final creation
-      if (emailExists(payload.email)) {
-        return {
-          success: false,
-          message: "An account with this email already exists.",
-        };
-      }
-      if (phoneExists(payload.phone)) {
-        return {
-          success: false,
-          message: "An account with this phone number already exists.",
-        };
-      }
+      const isEmailInput = pending.includes("@");
+      const storedUser = createUser({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: isEmailInput ? pending : "",
+        phone: isEmailInput ? "" : pending,
+      });
 
-      const storedUser = createUser(payload);
-      const authUser = toAuthUser(storedUser);
+      const updatedUser = updateUserProfile(pending, {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        gender: profile.gender,
+        dateOfBirth: profile.dateOfBirth,
+      });
+
+      const finalUser = updatedUser || storedUser;
+      const authUser: AuthUser = {
+        id: finalUser.id,
+        firstName: finalUser.firstName,
+        lastName: finalUser.lastName,
+        email: finalUser.email,
+        phone: finalUser.phone,
+        gender: finalUser.gender,
+        dateOfBirth: finalUser.dateOfBirth,
+      };
+
       saveSessionUser(authUser);
       setUser(authUser);
+      clearPendingIdentifier();
+      setPendingIdentifier(null);
       return { success: true };
     },
     []
@@ -163,7 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearSessionUser();
+    clearPendingIdentifier();
     setUser(null);
+    setPendingIdentifier(null);
   }, []);
 
   return (
@@ -172,10 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
-        requestLoginOtp,
-        verifyLoginOtp,
-        requestRegisterOtp,
-        verifyRegisterOtp,
+        requestOtp,
+        verifyOtp,
+        completeOnboarding,
+        pendingIdentifier,
         logout,
       }}
     >

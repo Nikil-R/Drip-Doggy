@@ -10,7 +10,7 @@ import { ProductDetail } from "./pages/ProductDetail";
 import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
 import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
+import { Onboarding } from "./pages/Onboarding";
 import { Profile } from "./pages/Profile";
 import { Orders } from "./pages/Orders";
 import { Wishlist } from "./pages/Wishlist";
@@ -82,7 +82,7 @@ export default function App() {
 
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />

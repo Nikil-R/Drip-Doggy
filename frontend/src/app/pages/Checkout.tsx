@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuth } from "../context/AuthContext";
+import { OTPInput } from "input-otp";
 
 interface CartItem {
   id: number; brand: string; name: string; size: string; color: string;
@@ -116,20 +117,57 @@ export function Checkout() {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
-  const [email, setEmail] = useState(() => user?.email ?? "");
-  const [phone, setPhone] = useState(() => user?.phone ?? "");
+
+  const registeredEmail = user?.email || "";
+  const registeredPhone = user?.phone || "";
+
+  const isEmailPreVerified = !!registeredEmail;
+  const isPhonePreVerified = !!registeredPhone;
+
+  const [email, setEmail] = useState(() => registeredEmail);
+  const [phone, setPhone] = useState(() => registeredPhone);
+
+  const [isEmailVerifiedLocally, setIsEmailVerifiedLocally] = useState(isEmailPreVerified);
+  const [isPhoneVerifiedLocally, setIsPhoneVerifiedLocally] = useState(isPhonePreVerified);
+
+  // OTP Verification state
+  const [verifyingTarget, setVerifyingTarget] = useState<"email" | "phone" | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  // Delivery Phone Override state
+  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [sameAsRegisteredPhone, setSameAsRegisteredPhone] = useState(true);
+  const [deliveryPhoneError, setDeliveryPhoneError] = useState<string | null>(null);
 
   // Inline validation errors
   const [emailError, setEmailError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
 
+  // Sync with auth user on load/change
   useEffect(() => {
     if (user) {
-      setEmail(prev => prev ? prev : user.email);
-      setPhone(prev => prev ? prev : user.phone);
+      if (user.email) {
+        setEmail(user.email);
+        setIsEmailVerifiedLocally(true);
+      }
+      if (user.phone) {
+        setPhone(user.phone);
+        setIsPhoneVerifiedLocally(true);
+      }
     }
   }, [user]);
+
+  // Sync delivery phone with the verified phone if sameAsRegisteredPhone is enabled
+  useEffect(() => {
+    if (sameAsRegisteredPhone) {
+      const activePhone = isPhonePreVerified ? registeredPhone : (isPhoneVerifiedLocally ? phone : "");
+      setDeliveryPhone(activePhone);
+    }
+  }, [sameAsRegisteredPhone, registeredPhone, phone, isPhonePreVerified, isPhoneVerifiedLocally]);
+
 
   const [addresses, setAddresses] = useState<Address[]>(() => {
     try {
@@ -249,19 +287,86 @@ export function Checkout() {
     setEditingAddressId(null);
   };
 
+  const startVerification = (target: "email" | "phone") => {
+    if (target === "email") {
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setEmailError("Please enter a valid email address before verifying.");
+        return;
+      }
+      setEmailError(null);
+    } else {
+      if (!phone.trim() || phone.replace(/\D/g, "").length < 10) {
+        setPhoneError("Please enter a valid 10-digit phone number before verifying.");
+        return;
+      }
+      setPhoneError(null);
+    }
+    setVerifyingTarget(target);
+    setOtpCode("");
+    setOtpError(null);
+  };
+
+  const handleVerifyOtpLocal = () => {
+    setOtpError(null);
+    setIsVerifyingOtp(true);
+    setTimeout(() => {
+      if (otpCode === "123456") {
+        if (verifyingTarget === "email") {
+          setIsEmailVerifiedLocally(true);
+          setEmailError(null);
+        } else if (verifyingTarget === "phone") {
+          setIsPhoneVerifiedLocally(true);
+          setPhoneError(null);
+        }
+        setVerifyingTarget(null);
+      } else {
+        setOtpError("Invalid code. Please enter 123456 to verify.");
+      }
+      setIsVerifyingOtp(false);
+    }, 600);
+  };
+
   const validateStep1 = (): boolean => {
     let valid = true;
     setEmailError(null);
     setPhoneError(null);
+    setDeliveryPhoneError(null);
     setAddressError(null);
 
-    if (!email.trim()) { setEmailError("Email address is required."); valid = false; }
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setEmailError("Please enter a valid email address."); valid = false; }
+    if (!email.trim()) {
+      setEmailError("Email address is required.");
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError("Please enter a valid email address.");
+      valid = false;
+    } else if (!isEmailVerifiedLocally) {
+      setEmailError("Please verify your email using OTP first.");
+      valid = false;
+    }
 
-    if (!phone.trim()) { setPhoneError("Phone number is required."); valid = false; }
-    else if (phone.replace(/\D/g, "").length < 10) { setPhoneError("Please enter a valid 10-digit phone number."); valid = false; }
+    if (!phone.trim()) {
+      setPhoneError("Phone number is required.");
+      valid = false;
+    } else if (phone.replace(/\D/g, "").length < 10) {
+      setPhoneError("Please enter a valid 10-digit phone number.");
+      valid = false;
+    } else if (!isPhoneVerifiedLocally) {
+      setPhoneError("Please verify your phone number using OTP first.");
+      valid = false;
+    }
 
-    if (!activeAddress) { setAddressError("Please add and select a delivery address."); valid = false; }
+    if (!deliveryPhone.trim()) {
+      setDeliveryPhoneError("Delivery phone number is required.");
+      valid = false;
+    } else if (deliveryPhone.replace(/\D/g, "").length < 10) {
+      setDeliveryPhoneError("Please enter a valid 10-digit delivery phone number.");
+      valid = false;
+    }
+
+    if (!activeAddress) {
+      setAddressError("Please add and select a delivery address.");
+      valid = false;
+    }
 
     return valid;
   };
@@ -374,27 +479,259 @@ export function Checkout() {
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="border border-neutral-200 bg-white p-4">
-                        <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-1">{user ? "Registered Email" : "Email Address"}</span>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5 text-neutral-400 stroke-[1.5] flex-shrink-0" />
-                          <input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                            placeholder="Email address"
-                            className="w-full bg-transparent border-none p-0 text-xs font-bold tracking-wide text-[#030213] focus:outline-none placeholder-neutral-300 uppercase" />
+                      {/* Email block */}
+                      <div className="border border-neutral-200 bg-white p-4 flex flex-col justify-between min-h-[100px]">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase">
+                              {isEmailVerifiedLocally ? "Verified Email" : "Email Address"}
+                            </span>
+                            {isEmailVerifiedLocally && (
+                              <span className="text-[6px] font-black tracking-[0.15em] text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 uppercase">
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-neutral-400 stroke-[1.5] flex-shrink-0" />
+                            <input
+                              type="email"
+                              required
+                              value={email}
+                              onChange={(e) => {
+                                if (!isEmailVerifiedLocally) {
+                                  setEmail(e.target.value);
+                                  setEmailError(null);
+                                }
+                              }}
+                              placeholder="Email address"
+                              readOnly={isEmailVerifiedLocally}
+                              className={`w-full bg-transparent border-none p-0 text-xs font-bold tracking-wide text-[#030213] focus:outline-none placeholder-neutral-300 uppercase ${
+                                isEmailVerifiedLocally ? "opacity-75 cursor-not-allowed" : ""
+                              }`}
+                            />
+                            {!isEmailVerifiedLocally &&
+                              email.trim() &&
+                              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+                              verifyingTarget !== "email" && (
+                                <button
+                                  type="button"
+                                  onClick={() => startVerification("email")}
+                                  className="text-[9px] font-black tracking-widest text-[#b2533e] hover:text-[#030213] uppercase underline underline-offset-2 transition-colors cursor-pointer bg-transparent border-none flex-shrink-0"
+                                >
+                                  Verify
+                                </button>
+                              )}
+                          </div>
                         </div>
                         {emailError && <p className="text-[8px] font-extrabold text-red-600 mt-1 tracking-wider">{emailError}</p>}
-                        {user && <span className="text-[7px] text-neutral-400 font-medium mt-1.5 block">Auto-filled from your account</span>}
+                        {isEmailPreVerified && (
+                          <span className="text-[7px] text-neutral-400 font-medium mt-1.5 block">
+                            Auto-filled from your account
+                          </span>
+                        )}
+
+                        {verifyingTarget === "email" && (
+                          <div className="mt-4 pt-4 border-t border-neutral-100 space-y-3">
+                            <p className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider">
+                              Verify Email (OTP sent to {email})
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input
+                                type="text"
+                                maxLength={6}
+                                value={otpCode}
+                                onChange={(e) => {
+                                  setOtpCode(e.target.value);
+                                  setOtpError(null);
+                                }}
+                                placeholder="OTP (123456)"
+                                className="border border-neutral-200 px-2 py-1 text-xs font-mono font-bold w-28 focus:outline-none focus:border-[#030213] tracking-widest text-center"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyOtpLocal}
+                                disabled={isVerifyingOtp || otpCode.length !== 6}
+                                className="bg-[#030213] text-white text-[8px] font-extrabold tracking-widest px-3 py-1.5 uppercase hover:bg-neutral-800 disabled:opacity-40"
+                              >
+                                {isVerifyingOtp ? "..." : "Confirm"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setVerifyingTarget(null)}
+                                className="text-neutral-500 text-[8px] font-extrabold tracking-widest px-2 py-1.5 uppercase hover:text-[#030213]"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[7px] font-mono text-neutral-400 uppercase">Test OTP: 123456</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOtpCode("123456");
+                                  setOtpError(null);
+                                }}
+                                className="text-[7px] font-extrabold tracking-wider text-[#b2533e] uppercase hover:underline"
+                              >
+                                Auto-fill
+                              </button>
+                            </div>
+                            {otpError && <p className="text-[8px] font-extrabold text-red-600 tracking-wider">{otpError}</p>}
+                          </div>
+                        )}
                       </div>
-                      <div className="border border-neutral-200 bg-white p-4">
-                        <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-1">{user ? "Registered Mobile" : "Phone Number"}</span>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3.5 w-3.5 text-neutral-400 stroke-[1.5] flex-shrink-0" />
-                          <input type="tel" required value={phone} onChange={(e) => { setPhone(e.target.value); setPhoneError(null); }}
-                            placeholder="Phone number"
-                            className="w-full bg-transparent border-none p-0 text-xs font-bold tracking-wide text-[#030213] focus:outline-none placeholder-neutral-300" />
+
+                      {/* Phone block */}
+                      <div className="border border-neutral-200 bg-white p-4 flex flex-col justify-between min-h-[100px]">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase">
+                              {isPhoneVerifiedLocally ? "Verified Mobile" : "Phone Number"}
+                            </span>
+                            {isPhoneVerifiedLocally && (
+                              <span className="text-[6px] font-black tracking-[0.15em] text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 uppercase">
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-neutral-400 stroke-[1.5] flex-shrink-0" />
+                            <input
+                              type="tel"
+                              required
+                              value={phone}
+                              onChange={(e) => {
+                                if (!isPhoneVerifiedLocally) {
+                                  setPhone(e.target.value);
+                                  setPhoneError(null);
+                                }
+                              }}
+                              placeholder="Phone number"
+                              readOnly={isPhoneVerifiedLocally}
+                              className={`w-full bg-transparent border-none p-0 text-xs font-bold tracking-wide text-[#030213] focus:outline-none placeholder-neutral-300 ${
+                                isPhoneVerifiedLocally ? "opacity-75 cursor-not-allowed" : ""
+                              }`}
+                            />
+                            {!isPhoneVerifiedLocally &&
+                              phone.trim() &&
+                              phone.replace(/\D/g, "").length >= 10 &&
+                              verifyingTarget !== "phone" && (
+                                <button
+                                  type="button"
+                                  onClick={() => startVerification("phone")}
+                                  className="text-[9px] font-black tracking-widest text-[#b2533e] hover:text-[#030213] uppercase underline underline-offset-2 transition-colors cursor-pointer bg-transparent border-none flex-shrink-0"
+                                >
+                                  Verify
+                                </button>
+                              )}
+                          </div>
                         </div>
                         {phoneError && <p className="text-[8px] font-extrabold text-red-600 mt-1 tracking-wider">{phoneError}</p>}
-                        {user && <span className="text-[7px] text-neutral-400 font-medium mt-1.5 block">For delivery updates</span>}
+                        {isPhonePreVerified && (
+                          <span className="text-[7px] text-neutral-400 font-medium mt-1.5 block">
+                            Auto-filled from your account
+                          </span>
+                        )}
+
+                        {verifyingTarget === "phone" && (
+                          <div className="mt-4 pt-4 border-t border-neutral-100 space-y-3">
+                            <p className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider">
+                              Verify Phone (OTP sent to {phone})
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input
+                                type="text"
+                                maxLength={6}
+                                value={otpCode}
+                                onChange={(e) => {
+                                  setOtpCode(e.target.value);
+                                  setOtpError(null);
+                                }}
+                                placeholder="OTP (123456)"
+                                className="border border-neutral-200 px-2 py-1 text-xs font-mono font-bold w-28 focus:outline-none focus:border-[#030213] tracking-widest text-center"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyOtpLocal}
+                                disabled={isVerifyingOtp || otpCode.length !== 6}
+                                className="bg-[#030213] text-white text-[8px] font-extrabold tracking-widest px-3 py-1.5 uppercase hover:bg-neutral-800 disabled:opacity-40"
+                              >
+                                {isVerifyingOtp ? "..." : "Confirm"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setVerifyingTarget(null)}
+                                className="text-neutral-500 text-[8px] font-extrabold tracking-widest px-2 py-1.5 uppercase hover:text-[#030213]"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[7px] font-mono text-neutral-400 uppercase">Test OTP: 123456</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOtpCode("123456");
+                                  setOtpError(null);
+                                }}
+                                className="text-[7px] font-extrabold tracking-wider text-[#b2533e] uppercase hover:underline"
+                              >
+                                Auto-fill
+                              </button>
+                            </div>
+                            {otpError && <p className="text-[8px] font-extrabold text-red-600 tracking-wider">{otpError}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Delivery Phone Number override */}
+                    <div className="border border-neutral-200 bg-white p-4 mt-4">
+                      <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-1">
+                        Delivery Phone Number
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-neutral-400 stroke-[1.5] flex-shrink-0" />
+                        <input
+                          type="tel"
+                          required
+                          value={deliveryPhone}
+                          onChange={(e) => {
+                            if (!sameAsRegisteredPhone) {
+                              setDeliveryPhone(e.target.value);
+                              setDeliveryPhoneError(null);
+                            }
+                          }}
+                          placeholder="Phone number for courier / delivery"
+                          disabled={sameAsRegisteredPhone}
+                          className={`w-full bg-transparent border-none p-0 text-xs font-bold tracking-wide text-[#030213] focus:outline-none placeholder-neutral-300 ${
+                            sameAsRegisteredPhone ? "opacity-60 cursor-not-allowed" : ""
+                          }`}
+                        />
+                      </div>
+                      {deliveryPhoneError && (
+                        <p className="text-[8px] font-extrabold text-red-600 mt-1 tracking-wider">
+                          {deliveryPhoneError}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2.5 pt-2 border-t border-neutral-100">
+                        <input
+                          type="checkbox"
+                          id="sameAsRegistered"
+                          checked={sameAsRegisteredPhone}
+                          onChange={(e) => {
+                            setSameAsRegisteredPhone(e.target.checked);
+                            setDeliveryPhoneError(null);
+                          }}
+                          className="accent-[#030213] h-3.5 w-3.5 cursor-pointer"
+                        />
+                        <label
+                          htmlFor="sameAsRegistered"
+                          className="text-[8px] font-extrabold text-neutral-500 uppercase cursor-pointer tracking-wider select-none"
+                        >
+                          Same as registered phone number
+                        </label>
                       </div>
                     </div>
                   </section>
