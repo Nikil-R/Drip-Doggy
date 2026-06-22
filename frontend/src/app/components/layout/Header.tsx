@@ -576,7 +576,7 @@ export function Header() {
             </Sheet>
 
             <div 
-              className="relative hidden sm:block h-full flex items-center cursor-pointer"
+              className="relative hidden sm:block h-full flex items-center px-3 cursor-pointer"
               onMouseEnter={() => setIsProfileOpen(true)}
               onMouseLeave={() => setIsProfileOpen(false)}
             >
@@ -596,6 +596,7 @@ export function Header() {
                       <Link 
                         to="/account"
                         onClick={() => setIsProfileOpen(false)}
+                        title="User Profile"
                         className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
                       >
                         <span className="text-[13px] font-black tracking-[0.1em] text-neutral-900 uppercase">{user.firstName} {user.lastName.charAt(0)}.</span>
