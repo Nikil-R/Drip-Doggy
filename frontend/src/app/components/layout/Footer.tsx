@@ -36,7 +36,6 @@ const HOUSE_LINKS = [
   { label: "Terms of Service", to: "/terms" },
 ];
 
-const PAYMENT_METHODS = ["COD"];
 const SOCIAL_LINKS = [
   { icon: Instagram, label: "Instagram", href: "#" },
   { icon: Youtube, label: "YouTube", href: "#" },
@@ -172,17 +171,7 @@ export function Footer() {
               <p className="text-sm text-neutral-500 leading-relaxed font-light max-w-sm">
                 Architectural silhouettes, premium fabrication, and uncompromised street luxury for the modern wardrobe.
               </p>
-              <ul className="space-y-2 pt-2">
-                {[{ label: "Premium Fabrics", desc: "Japanese & Italian mills" }, { label: "Limited Capsules", desc: "Drop-based releases" }, { label: "Editorial Construction", desc: "Architectural precision" }].map((v) => (
-                  <li key={v.label} className="flex items-start gap-3">
-                    <div className="h-px w-5 bg-[#b2533e]/50 mt-2.5" />
-                    <div>
-                      <span className="block text-[10px] font-extrabold tracking-[0.15em] text-neutral-800 uppercase">{v.label}</span>
-                      <span className="text-[10px] text-neutral-400 font-medium">{v.desc}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+
               <div className="flex gap-2.5 pt-4">
                 {SOCIAL_LINKS.map((s) => <SocialButton key={s.label} {...s} />)}
               </div>
@@ -238,12 +227,7 @@ export function Footer() {
               &copy; {new Date().getFullYear()} Drip Doggy. All rights reserved.
             </p>
             <div className="flex items-center gap-4 order-1 md:order-2">
-              <div className="flex gap-2">
-                {PAYMENT_METHODS.map((method) => (
-                  <span key={method} className="text-[8px] font-extrabold tracking-[0.15em] text-white/50 border border-white/10 px-2.5 py-1 uppercase">{method}</span>
-                ))}
-              </div>
-              <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-white/10">
+              <div className="hidden sm:flex items-center gap-3">
                 <Link to="/privacy" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Privacy</Link>
                 <span className="text-white/10 text-[8px]">|</span>
                 <Link to="/terms" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Terms</Link>

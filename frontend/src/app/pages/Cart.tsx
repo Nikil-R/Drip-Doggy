@@ -336,10 +336,6 @@ export function Cart() {
                       {/* DESKTOP TOTAL */}
                       <div className="col-span-2 w-full flex md:flex-col items-center justify-between md:items-end md:justify-center gap-2 mt-4 md:mt-0 pt-4 md:pt-0 border-t border-neutral-100 md:border-none">
                         <div className="flex items-center gap-1.5 md:absolute md:top-6 md:right-0">
-                          <button onClick={() => toggleFavorite(item.cartItemId)}
-                            className="p-1 text-neutral-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer" aria-label="Favorite item">
-                            <Heart className={`h-4.5 w-4.5 stroke-[1.8] ${item.favorite ? "fill-red-500 stroke-red-500" : ""}`} />
-                          </button>
                           <button onClick={() => removeItem(item.cartItemId)}
                             className="p-1 text-[#b2533e] hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer" aria-label="Remove item">
                             <Trash2 className="h-4.5 w-4.5 stroke-[1.8]" />
