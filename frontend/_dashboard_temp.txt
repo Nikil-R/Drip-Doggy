@@ -1,0 +1,535 @@
+import { useState } from "react";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  ShoppingCart,
+  Users,
+  Package,
+  Eye,
+  MoreVertical,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Truck,
+  ArrowRightLeft,
+  ChevronRight,
+  Plus,
+  ArrowUpRight,
+  ExternalLink
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import { format, subDays } from "date-fns";
+
+const kpiData = [
+  {
+    label: "Total Sales",
+    value: "\u20b93,50,000",
+    change: "+10.4%",
+    trend: "up",
+    icon: DollarSign,
+    subtitle: "Previous 7days \u20b92,35,000",
+  },
+  {
+    label: "Total Orders",
+    value: "10,700",
+    change: "+14.4%",
+    trend: "up",
+    icon: ShoppingCart,
+    subtitle: "Previous 7days 7,600",
+  },
+  {
+    label: "Pending & Canceled",
+    value: "509 / 94",
+    change: "-14.4%",
+    trend: "down",
+    icon: XCircle,
+    subtitle: "Pending: 509 | Canceled: 94",
+  },
+];
+
+const revenueData = Array.from({ length: 30 }, (_, i) => ({
+  date: format(subDays(new Date(), 29 - i), "dd MMM"),
+  revenue: Math.floor(Math.random() * 80000) + 20000,
+  orders: Math.floor(Math.random() * 40) + 10,
+}));
+
+const weeklySalesData = [
+  { day: "Sun", sales: 20000, orders: 18 },
+  { day: "Mon", sales: 28000, orders: 25 },
+  { day: "Tue", sales: 25000, orders: 21 },
+  { day: "Wed", sales: 45000, orders: 36 },
+  { day: "Thu", sales: 40000, orders: 31 },
+  { day: "Fri", sales: 25000, orders: 22 },
+  { day: "Sat", sales: 35000, orders: 28 },
+];
+
+const recentOrders = [
+  { id: "#6545", customer: "Sarah Johnson", product: "Oversized Hoodie", amount: 64, status: "Paid", date: "01 Oct | 11:29 am" },
+  { id: "#5412", customer: "Mike Chen", product: "Cargo Pants Black", amount: 557, status: "Pending", date: "01 Oct | 11:29 am" },
+  { id: "#6622", customer: "Emma Williams", product: "Graphic Tee White", amount: 156, status: "Paid", date: "01 Oct | 11:29 am" },
+  { id: "#6462", customer: "James Brown", product: "Denim Jacket", amount: 265, status: "Paid", date: "01 Oct | 11:29 am" },
+  { id: "#6462", customer: "Lisa Davis", product: "Track Pants Grey", amount: 265, status: "Paid", date: "01 Oct | 11:29 am" },
+];
+
+const topProducts = [
+  { name: "Apple iPhone 13", sku: "#FXZ-4567", price: 999.00, image: "https://images.unsplash.com/photo-1610465299996-30f240a2b1ad?q=80&w=120&auto=format&fit=crop" },
+  { name: "Nike Air Jordan", sku: "#FXZ-4567", price: 72.40, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=120&auto=format&fit=crop" },
+  { name: "T-shirt", sku: "#FXZ-4567", price: 35.40, image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=120&auto=format&fit=crop" },
+  { name: "Assorted Cross Bag", sku: "#FXZ-4567", price: 80.00, image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=120&auto=format&fit=crop" }
+];
+
+const bestSellers = [
+  { name: "Apple iPhone 13", orders: 104, status: "Stock", price: 999.00, image: "https://images.unsplash.com/photo-1610465299996-30f240a2b1ad?q=80&w=120&auto=format&fit=crop" },
+  { name: "Nike Air Jordan", orders: 56, status: "Stock out", price: 999.00, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=120&auto=format&fit=crop" },
+  { name: "T-shirt", orders: 266, status: "Stock", price: 999.00, image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=120&auto=format&fit=crop" },
+  { name: "Cross Bag", orders: 506, status: "Stock", price: 999.00, image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=120&auto=format&fit=crop" }
+];
+
+const quickAddProducts = [
+  { name: "Smart Fitness Tracker", price: 39.99, image: "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?q=80&w=120&auto=format&fit=crop" },
+  { name: "Leather Wallet", price: 19.99, image: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=120&auto=format&fit=crop" },
+  { name: "Electric Hair Trimmer", price: 34.99, image: "https://images.unsplash.com/photo-1621607512214-68297480165e?q=80&w=120&auto=format&fit=crop" }
+];
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    Paid: "bg-green-50 text-green-700 border-green-200",
+    Stock: "bg-green-50 text-green-700 border-green-200",
+    Pending: "bg-amber-50 text-amber-700 border-amber-200",
+    "Stock out": "bg-red-50 text-red-700 border-red-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[8px] font-black tracking-widest border rounded-none uppercase ${
+        styles[status] || "bg-neutral-50 text-neutral-700 border-neutral-200"
+      }`}
+    >
+      <span className={`w-1 h-1 rounded-full ${status === 'Paid' || status === 'Stock' ? 'bg-green-600' : status === 'Pending' ? 'bg-amber-500' : 'bg-red-600'}`} />
+      {status}
+    </span>
+  );
+}
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-neutral-200 rounded-none shadow-md px-3.5 py-2.5 text-[10px] font-sans uppercase font-bold tracking-wider">
+      <p className="font-extrabold text-[#030213] mb-1.5">{label}</p>
+      {payload.map((entry: any, idx: number) => (
+        <div key={idx} className="flex items-center gap-2 text-neutral-500 leading-5">
+          <span
+            className="w-1.5 h-1.5 rounded-none"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="font-semibold">{entry.name}:</span>
+          <span className="text-[#030213] font-black">
+            {entry.name === "Revenue" || entry.name === "Sales"
+              ? `\u20b9${entry.value.toLocaleString()}`
+              : entry.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function DashboardPage() {
+  const [selectedPeriod, setSelectedPeriod] = useState("7d");
+
+  return (
+    <div className="space-y-8 font-sans">
+      
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">
+            Dashboard
+          </h1>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+            Overview and visual analytics for Drip Doggy
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {["7d", "30d", "90d"].map((period) => (
+            <button
+              key={period}
+              onClick={() => setSelectedPeriod(period)}
+              className={`px-3 py-1.5 text-[9px] font-extrabold tracking-widest border transition-all cursor-pointer rounded-none uppercase ${
+                selectedPeriod === period
+                  ? "bg-[#030213] text-white border-[#030213]"
+                  : "bg-white border-neutral-200 text-neutral-500 hover:border-[#030213] hover:text-[#030213]"
+              }`}
+            >
+              {period === "7d" ? "7 Days" : period === "30d" ? "30 Days" : "90 Days"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {kpiData.map((stat, idx) => (
+          <div
+            key={idx}
+            className="bg-white border border-neutral-200/80 p-5 flex flex-col justify-between min-h-[140px] rounded-none transition-shadow hover:shadow-sm"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">
+                  {stat.label}
+                </span>
+                <p className="text-[7px] text-neutral-400 font-bold uppercase mt-0.5">Last 7 days</p>
+              </div>
+              <button className="text-neutral-400 hover:text-[#030213] transition-colors p-1">
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl font-black tracking-tight text-[#030213]">
+                {stat.value}
+              </span>
+              <span
+                className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 border rounded-none uppercase tracking-wide ${
+                  stat.trend === "up"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                }`}
+              >
+                {stat.trend === "up" ? (
+                  <TrendingUp className="h-2.5 w-2.5" />
+                ) : (
+                  <TrendingDown className="h-2.5 w-2.5" />
+                )}
+                {stat.change}
+              </span>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
+              <span className="text-[8px] font-bold text-neutral-400 uppercase">
+                {stat.subtitle}
+              </span>
+              <button className="text-[8px] font-black tracking-widest uppercase text-[#b2533e] hover:underline bg-transparent border-none cursor-pointer">
+                Details
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Chart: Revenue Overview */}
+        <div className="lg:col-span-2 bg-white border border-neutral-200/80 p-6 flex flex-col justify-between min-h-[380px] rounded-none">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase block">
+                  Report for this week
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] bg-neutral-100 border border-neutral-200 px-2 py-1 font-bold text-[#030213] uppercase tracking-wider cursor-pointer">This week</span>
+                <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-wider cursor-pointer hover:text-[#030213] px-2 py-1">Last week</span>
+                <button className="text-neutral-400 hover:text-[#030213] p-1">
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Micro details panel */}
+            <div className="grid grid-cols-5 gap-2 mb-6 text-center border border-neutral-100 bg-[#faf8f5]/60 p-3 rounded-none">
+              {[
+                { label: "Customers", val: "52k" },
+                { label: "Total Products", val: "3.5k" },
+                { label: "Stock Products", val: "2.5k" },
+                { label: "Out of Stock", val: "0.5k" },
+                { label: "Revenue", val: "250k" }
+              ].map((sub, i) => (
+                <div key={i} className="min-w-0">
+                  <p className="text-[7px] font-black text-neutral-400 uppercase tracking-wider">{sub.label}</p>
+                  <p className="text-xs font-black text-[#030213] mt-0.5 uppercase tracking-wide">{sub.val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Recharts Area chart styled in Terracotta brand color */}
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={weeklySalesData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="terracottaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#b2533e" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#b2533e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: "#717182", fontWeight: 700, letterSpacing: "0.1em" }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: "#717182", fontWeight: 700 }} tickFormatter={(val) => `\u20b9${(val / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="sales" name="Sales" stroke="#b2533e" strokeWidth={2.5} fill="url(#terracottaGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel: Users Live & Sales by Country */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Active Users card */}
+          <div className="bg-white border border-neutral-200/80 p-5 flex flex-col justify-between flex-1 rounded-none">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">
+                  Users in last 30 minutes
+                </span>
+                <h3 className="text-2xl font-black tracking-tight text-[#030213] mt-2">21.5K</h3>
+                <p className="text-[8px] text-neutral-400 font-bold uppercase mt-0.5">Users per minute</p>
+              </div>
+              <button className="text-neutral-400 hover:text-[#030213] p-1">
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Users dynamic progress indicator chart */}
+            <div className="h-10 flex items-end gap-1 mt-4">
+              {[20, 40, 30, 50, 70, 45, 60, 35, 80, 55, 65, 40, 75, 30, 50, 60, 85, 40, 70, 90, 50].map((h, i) => (
+                <div
+                  key={i}
+                  style={{ height: `${h}%` }}
+                  className={`flex-1 ${i === 18 ? 'bg-[#b2533e]' : 'bg-[#030213]/25'} hover:bg-[#030213] transition-colors`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Sales by Country card */}
+          <div className="bg-white border border-neutral-200/80 p-5 flex flex-col justify-between flex-1 rounded-none">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">Sales by Country</span>
+              <span className="text-[8px] font-black tracking-widest text-[#030213] uppercase">Sales</span>
+            </div>
+
+            <div className="space-y-3.5 mt-3">
+              {[
+                { country: "US", flag: "🇺🇸", val: "30k", change: "+25.8%", positive: true, pct: "70%" },
+                { country: "Brazil", flag: "🇧🇷", val: "30k", change: "-15.8%", positive: false, pct: "55%" },
+                { country: "Australia", flag: "🇦🇺", val: "25k", change: "+35.6%", positive: true, pct: "45%" }
+              ].map((row, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-base flex-shrink-0">{row.flag}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase text-neutral-800 tracking-wide mb-1">
+                      <span>{row.country}</span>
+                      <span className={row.positive ? 'text-green-600' : 'text-red-500'}>
+                        {row.val} ({row.change})
+                      </span>
+                    </div>
+                    <div className="w-full h-1 bg-neutral-100">
+                      <div className="h-full bg-[#030213]" style={{ width: row.pct }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button className="w-full text-center border-t border-neutral-100 pt-3 text-[8px] font-black tracking-widest uppercase text-[#b2533e] hover:underline bg-transparent border-none cursor-pointer mt-4">
+              View Insights
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Transactions & Top Products List */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Recent Transactions Table */}
+        <div className="lg:col-span-8 bg-white border border-neutral-200/80 p-6 flex flex-col justify-between min-h-[350px] rounded-none">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">Transaction</span>
+              <button className="flex items-center gap-1 bg-[#faf8f5] border border-neutral-200 px-3 py-1.5 text-[8px] font-black tracking-widest uppercase text-neutral-600 hover:text-[#030213]">
+                Filter
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left uppercase text-[9px] font-bold tracking-wider divide-y divide-neutral-100">
+                <thead>
+                  <tr className="border-b border-neutral-100 text-neutral-400 text-[8px] tracking-[0.2em]">
+                    <th className="pb-3 font-black">No</th>
+                    <th className="pb-3 font-black">Id Customer</th>
+                    <th className="pb-3 font-black">Order Date</th>
+                    <th className="pb-3 font-black">Status</th>
+                    <th className="pb-3 font-black text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {recentOrders.map((order, i) => (
+                    <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                      <td className="py-3 text-neutral-400">{i + 1}.</td>
+                      <td className="py-3 font-black text-[#030213]">{order.id}</td>
+                      <td className="py-3 text-neutral-500 font-medium">{order.date}</td>
+                      <td className="py-3"><StatusBadge status={order.status} /></td>
+                      <td className="py-3 text-right font-black text-[#030213]">\u20b9{order.amount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="border-t border-neutral-100 pt-4 flex justify-end">
+            <button className="text-[8px] font-black tracking-widest uppercase text-[#b2533e] hover:underline bg-transparent border-none cursor-pointer">
+              Details
+            </button>
+          </div>
+        </div>
+
+        {/* Top products right sidebar card */}
+        <div className="lg:col-span-4 bg-white border border-neutral-200/80 p-6 flex flex-col justify-between min-h-[350px] rounded-none">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">Top Products</span>
+              <button className="text-[8px] font-black tracking-widest uppercase text-[#b2533e] hover:underline bg-transparent border-none cursor-pointer">All product</button>
+            </div>
+
+            <div className="space-y-3">
+              {topProducts.map((p, idx) => (
+                <div key={idx} className="flex gap-3 items-center border border-neutral-100 p-2 hover:bg-neutral-50/50 transition-all">
+                  <div className="w-10 h-10 overflow-hidden bg-neutral-100 flex-shrink-0">
+                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-[9px] font-black uppercase text-neutral-900 truncate leading-tight">{p.name}</h4>
+                    <span className="text-[7px] font-bold text-[#b2533e] uppercase tracking-widest block mt-0.5">{p.sku}</span>
+                  </div>
+                  <span className="text-[10px] font-black text-neutral-950">\u20b9{p.price.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Best Sellers & Quick Product Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Best Selling List */}
+        <div className="lg:col-span-8 bg-white border border-neutral-200/80 p-6 flex flex-col justify-between min-h-[350px] rounded-none">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">Best selling product</span>
+              <button className="flex items-center gap-1 bg-[#faf8f5] border border-neutral-200 px-3 py-1.5 text-[8px] font-black tracking-widest uppercase text-neutral-600 hover:text-[#030213]">
+                Filter
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left uppercase text-[9px] font-bold tracking-wider divide-y divide-neutral-100">
+                <thead>
+                  <tr className="border-b border-neutral-100 text-neutral-400 text-[8px] tracking-[0.2em]">
+                    <th className="pb-3 font-black">Product</th>
+                    <th className="pb-3 font-black">Total Order</th>
+                    <th className="pb-3 font-black">Status</th>
+                    <th className="pb-3 font-black text-right">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {bestSellers.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
+                      <td className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-neutral-100 overflow-hidden flex-shrink-0">
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <span className="font-black text-[#030213]">{item.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 text-neutral-500 font-medium">{item.orders}</td>
+                      <td className="py-3"><StatusBadge status={item.status === 'Stock' ? 'Stock' : 'Stock out'} /></td>
+                      <td className="py-3 text-right font-black text-neutral-900">\u20b9{item.price.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="border-t border-neutral-100 pt-4 flex justify-end">
+            <button className="text-[8px] font-black tracking-widest uppercase text-[#b2533e] hover:underline bg-transparent border-none cursor-pointer">
+              Details
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Add Product panel */}
+        <div className="lg:col-span-4 bg-white border border-neutral-200/80 p-6 flex flex-col justify-between min-h-[350px] rounded-none">
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase">Add New Product</span>
+                <button className="text-[8px] font-black tracking-widest uppercase text-[#b2533e] hover:underline flex items-center gap-0.5 bg-transparent border-none cursor-pointer">
+                  <Plus className="h-3 w-3" /> Add New
+                </button>
+              </div>
+              <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider mb-2.5">Categories</p>
+
+              <div className="space-y-2">
+                {["Electronic", "Fashion", "Home"].map(cat => (
+                  <button
+                    key={cat}
+                    className="w-full flex items-center justify-between border border-neutral-200 hover:border-[#030213] p-2.5 bg-white transition-all text-left uppercase text-[9px] font-black tracking-wide cursor-pointer"
+                  >
+                    <span>{cat}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider mb-2.5">Quick Add Product</p>
+              <div className="space-y-2">
+                {quickAddProducts.map((qp, i) => (
+                  <div key={i} className="flex gap-2.5 items-center border border-neutral-100 p-2">
+                    <div className="w-8 h-8 overflow-hidden bg-neutral-100 flex-shrink-0">
+                      <img src={qp.image} alt={qp.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h5 className="text-[8px] font-black uppercase text-neutral-900 truncate leading-tight">{qp.name}</h5>
+                      <span className="text-[9px] font-bold text-neutral-950 block mt-0.5">\u20b9{qp.price}</span>
+                    </div>
+                    <button className="bg-[#030213] hover:bg-neutral-800 text-white text-[7px] font-extrabold tracking-widest px-2.5 py-1 uppercase flex-shrink-0 cursor-pointer">
+                      Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
