@@ -18,7 +18,10 @@ import {
   Upload,
   Download,
   X,
-  Plus
+  Plus,
+  Coins,
+  ShieldCheck,
+  CalendarDays
 } from "lucide-react";
 
 const RS = "₹";
@@ -53,10 +56,10 @@ const initialCODTransactions: CODTransaction[] = [
 ];
 
 const courierStatsInitial = [
-  { partner: "Delhivery", transactions: 442, revenue: 824000, percentage: 44, color: "bg-emerald-600" },
-  { partner: "Blue Dart", transactions: 245, revenue: 580000, percentage: 31, color: "bg-blue-600" },
-  { partner: "Xpressbees", transactions: 112, revenue: 310000, percentage: 16, color: "bg-amber-600" },
-  { partner: "Shadowfax", transactions: 43, revenue: 150000, percentage: 9, color: "bg-rose-600" }
+  { partner: "Delhivery", transactions: 442, revenue: 824000, percentage: 44, color: "bg-[#224870]" },
+  { partner: "Blue Dart", transactions: 245, revenue: 580000, percentage: 31, color: "bg-[#8c6239]" },
+  { partner: "Xpressbees", transactions: 112, revenue: 310000, percentage: 16, color: "bg-[#717182]" },
+  { partner: "Shadowfax", transactions: 43, revenue: 150000, percentage: 9, color: "bg-amber-600" }
 ];
 
 function CodStatusBadge({ status }: { status: string }) {
@@ -108,10 +111,10 @@ export function TransactionsPage() {
     const failedRefused = transactions.filter(t => t.status === "Returned").reduce((sum, t) => sum + t.amount, 0);
 
     return [
-      { label: "Total COD Shipped", value: RS + totalCODVolume.toLocaleString("en-IN"), subtitle: "Cumulative COD volume" },
-      { label: "Cash Settled (Bank)", value: RS + cashSettled.toLocaleString("en-IN"), subtitle: "Remitted to bank" },
-      { label: "With Couriers", value: RS + withCouriers.toLocaleString("en-IN"), subtitle: "Awaiting bank deposits" },
-      { label: "Failed / Refused (RTO)", value: RS + failedRefused.toLocaleString("en-IN"), subtitle: "Failed returns total" }
+      { label: "Total COD Shipped", value: RS + totalCODVolume.toLocaleString("en-IN"), trend: "up", change: "+14.2%", subtitle: "Cumulative COD volume" },
+      { label: "Cash Settled (Bank)", value: RS + cashSettled.toLocaleString("en-IN"), trend: "up", change: "+18.7%", subtitle: "Remitted to bank ledger" },
+      { label: "Pending with Couriers", value: RS + withCouriers.toLocaleString("en-IN"), trend: "down", change: "-5.4%", subtitle: "Awaiting bank deposits" },
+      { label: "Failed Returns (RTO)", value: RS + failedRefused.toLocaleString("en-IN"), trend: "up", change: "+2.1%", subtitle: "RTO parcel variance" }
     ];
   }, [transactions]);
 
@@ -156,7 +159,6 @@ export function TransactionsPage() {
     }));
     setReconcileTarget(null);
     setReconcileCashInput("");
-    alert("Reconciliation complete.");
   };
 
   // Submit dispute handler
@@ -179,7 +181,6 @@ export function TransactionsPage() {
     }));
     setDisputeTarget(null);
     setDisputeReasonInput("");
-    alert("Courier dispute raised successfully.");
   };
 
   // Submit adjustment entry
@@ -210,10 +211,6 @@ export function TransactionsPage() {
     if (files && files[0]) {
       const reader = new FileReader();
       reader.onload = (evt) => {
-        // Mock parsing transaction settlement IDs
-        const content = evt.target?.result as string;
-        alert(`Successfully imported bank statement file. Scanned and matched 4 settled entries against COD ledger.`);
-        // Toggle some Courier items to Settled
         setTransactions(prev => prev.map(t => {
           if (t.status === "Courier" && Math.random() > 0.4) {
             return {
@@ -245,121 +242,97 @@ export function TransactionsPage() {
   };
 
   return (
-    <div className="space-y-8 font-sans text-[#030213]">
+    <div className="space-y-8 font-sans text-[#382d24]">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">
-            COD Reconciliation
+          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2">
+            <Coins className="w-5 h-5 text-[#224870]" /> Payments Ledger
           </h1>
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
             Monitor Cash on Delivery collections, courier deposits, and bank settlements
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* CSV statement import */}
+        <div className="flex flex-wrap items-center gap-2">
           <input type="file" ref={fileInputRef} onChange={handleBankCSVImport} accept=".csv" className="hidden" />
-          <button onClick={() => fileInputRef.current?.click()} className="bg-card border border-neutral-200 hover:border-[#030213] text-neutral-600 text-[9px] font-semibold tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none">
-            <Upload className="w-3.5 h-3.5" /> Import Bank Statement
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none transition-all"
+          >
+            <Upload className="w-3.5 h-3.5" /> Import Statement
           </button>
-          <button onClick={() => setIsAdjustmentOpen(true)} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none">
-            <Plus className="w-3.5 h-3.5" /> Manual Adjustment
+          <button 
+            onClick={() => setIsAdjustmentOpen(true)} 
+            className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" /> Manual Entry
           </button>
         </div>
       </div>
 
-      {/* Alert Warning for failed remittances */}
+      {/* Remittance Alert Warning */}
       {transactions.filter(t => t.status === "Returned").length > 0 && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-none flex items-start gap-3">
+        <div className="bg-red-50 border border-red-200/60 p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-[9px] font-bold text-red-800 uppercase tracking-widest">RTO Remittance Warning</h4>
-            <p className="text-[8px] text-red-700 font-bold uppercase tracking-wider mt-1">
-              There are failed courier parcel remittances. Courier fees for RTO (Return to Origin) must be reconciled within 7 business days to dispute charge penalties.
+            <h4 className="text-[10px] font-bold text-red-800 uppercase tracking-widest">RTO Reconciliation Action Required</h4>
+            <p className="text-[9px] text-red-700 font-bold uppercase tracking-wider mt-1">
+              There are failed courier parcel remittances. Courier fees for RTO (Return to Origin) must be audited within 7 business days to dispute charge penalties.
             </p>
           </div>
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+      {/* KPI Cards (Matches Dashboard style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {getKPIs.map((stat, idx) => (
-          <div key={idx} className="bg-card border border-neutral-200/80 p-5 flex flex-col justify-between min-h-[105px] rounded-none hover:shadow-sm transition-shadow">
-            <div>
-              <span className="text-[7px] font-bold tracking-[0.2em] text-neutral-400 uppercase block">{stat.label}</span>
-              <p className="text-[6.5px] text-neutral-400 font-bold uppercase mt-1">{stat.subtitle}</p>
+          <div key={idx} className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] hover:shadow-sm transition-shadow">
+            <div className="flex items-start justify-between">
+              <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">{stat.label}</span>
             </div>
-            <div className="mt-2">
-              <span className="text-2xl font-bold tracking-tight text-[#030213]">{stat.value}</span>
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-2xl font-bold tracking-tight text-[#382d24] whitespace-nowrap">{stat.value}</span>
+              <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 border rounded-sm whitespace-nowrap ${stat.trend === "up" ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}`}>
+                {stat.trend === "up" ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingUp className="h-2.5 w-2.5 rotate-180" />}
+                {stat.change}
+              </span>
             </div>
+            <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">{stat.subtitle}</p>
           </div>
         ))}
       </div>
 
-      {/* Courier Partners + Transaction Ledger */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* Left: Courier Partner Summary */}
-        <div className="lg:col-span-4 bg-card border border-neutral-200/80 p-6 rounded-none space-y-5">
-          <div className="flex items-center justify-between">
-            <span className="text-[8px] font-bold tracking-[0.2em] text-neutral-400 uppercase">Courier Partner Share</span>
-            <Truck className="w-4 h-4 text-neutral-400" />
-          </div>
-
-          <div className="space-y-4">
-            {courierStatsInitial.map((cs, idx) => (
-              <div key={idx} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
-                  <span className="font-semibold text-[#030213]">{cs.partner}</span>
-                  <span className="font-bold text-[#030213]">{RS}{cs.revenue.toLocaleString("en-IN")}</span>
-                </div>
-                <div className="flex items-center justify-between text-[8px] text-neutral-400 font-bold uppercase">
-                  <span>{cs.transactions.toLocaleString()} parcels</span>
-                  <span>{cs.percentage}%</span>
-                </div>
-                <div className="w-full h-1 bg-neutral-200 rounded-none overflow-hidden">
-                  <div className={`h-full rounded-none ${cs.color}`} style={{ width: `${cs.percentage}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Audit Info block */}
-          <div className="border-t border-neutral-200 pt-4 mt-2 text-[8px] font-bold tracking-wider text-neutral-400 uppercase space-y-1.5">
-            <div className="flex justify-between">
-              <span>Last Cash Audit</span>
-              <span className="text-[#030213] font-bold">22 Jun 2026</span>
+      {/* Workspace split columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Column: Ledger Table */}
+        <div className="lg:col-span-9 bg-card border border-neutral-200/80 p-5 space-y-4">
+          
+          <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-neutral-200/60">
+            <div>
+              <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase block">COD Settlement Ledger</span>
+              <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-0.5">{filteredTransactions.length} items matching</p>
             </div>
-            <div className="flex justify-between">
-              <span>Audit Cycle</span>
-              <span className="text-[#030213] font-bold">Weekly (Friday)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Reconciliation Method</span>
-              <span className="text-[#030213] font-bold">NEFT Settlement</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: COD Ledger Table */}
-        <div className="lg:col-span-8 bg-card border border-neutral-200/80 p-6 rounded-none space-y-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <span className="text-[8px] font-bold tracking-[0.2em] text-neutral-400 uppercase">COD Settlement Ledger</span>
-            <button onClick={handleExportCSV} className="bg-card border border-neutral-200 hover:border-[#030213] text-neutral-600 text-[8px] font-bold uppercase px-2.5 py-1.5 cursor-pointer rounded-none">
+            <button 
+              onClick={handleExportCSV} 
+              className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[8.5px] font-bold uppercase px-3 py-1.5 cursor-pointer rounded-none transition-all flex items-center gap-1"
+            >
               <Download className="w-3.5 h-3.5" /> Export Ledger
             </button>
           </div>
 
           {/* Filters Toolbar */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <div className="flex bg-card border border-neutral-200 p-1 rounded-none shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+            
+            {/* Status Tabs */}
+            <div className="flex bg-background border border-neutral-200 p-1 rounded-full gap-0.5 flex-wrap">
               {["All", "Settled", "Courier", "Returned"].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 text-[8px] font-bold uppercase tracking-widest border-none cursor-pointer rounded-none ${
-                    activeTab === tab ? "bg-[#030213] text-white" : "bg-transparent text-neutral-400 hover:text-[#030213]"
+                  className={`px-3.5 py-1.5 text-[8.5px] font-bold uppercase tracking-widest border-none cursor-pointer rounded-full transition-all ${
+                    activeTab === tab ? "bg-[#224870] text-white shadow-sm" : "bg-transparent text-neutral-500 hover:text-[#224870]"
                   }`}
                 >
                   {tab}
@@ -368,76 +341,76 @@ export function TransactionsPage() {
             </div>
 
             {/* Date range picker */}
-            <div className="flex items-center gap-1.5 border border-neutral-200 px-2 py-1 bg-card">
-              <span className="text-[7px] font-bold text-neutral-400 uppercase tracking-widest mr-0.5">Dates:</span>
+            <div className="flex items-center gap-1.5 border border-neutral-200 px-2.5 py-1.5 bg-card rounded-sm flex-wrap">
+              <CalendarDays className="h-3.5 w-3.5 text-[#615e56] shrink-0" />
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent border-none text-[8px] font-semibold uppercase tracking-wider focus:outline-none w-[90px]"
+                className="bg-transparent border-none text-[9.5px] font-bold uppercase tracking-wider focus:outline-none w-[100px] text-[#382d24]"
               />
-              <span className="text-[8px] text-neutral-300 font-bold">-</span>
+              <span className="text-[10px] text-neutral-300 font-bold">-</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-transparent border-none text-[8px] font-semibold uppercase tracking-wider focus:outline-none w-[90px]"
+                className="bg-transparent border-none text-[9.5px] font-bold uppercase tracking-wider focus:outline-none w-[100px] text-[#382d24]"
               />
               {(startDate || endDate) && (
-                <button onClick={() => { setStartDate(""); setEndDate(""); }} className="bg-transparent border-none text-neutral-400 hover:text-[#030213] cursor-pointer">
-                  <X className="w-3 h-3" />
+                <button onClick={() => { setStartDate(""); setEndDate(""); }} className="bg-transparent border-none text-neutral-400 hover:text-[#382d24] cursor-pointer">
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
               <input
                 type="text"
                 placeholder="Search AWB, Order..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-card border border-neutral-200 pl-8 pr-3 py-1.5 text-[9px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#030213] placeholder-neutral-300 w-full md:w-44 rounded-none"
+                className="bg-card border border-neutral-200 pl-9 pr-3 py-2 text-[9.5px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#224870] placeholder-neutral-300 w-full rounded-none transition-all"
               />
             </div>
           </div>
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left uppercase text-[8.5px] font-bold tracking-wider divide-y divide-neutral-100 border border-neutral-200/60">
+            <table className="w-full text-left uppercase text-[9.5px] font-bold tracking-wider divide-y divide-neutral-100">
               <thead>
-                <tr className="border-b border-neutral-200 bg-card/60 text-[7px] text-neutral-400 tracking-[0.2em]">
-                  <th className="p-3 font-bold">Order ID</th>
+                <tr className="border-b border-neutral-200 bg-card/60 text-[9.5px] text-[#615e56] tracking-[0.15em] font-black">
+                  <th className="p-3 font-bold">Order Details</th>
                   <th className="p-3 font-bold">AWB / Courier</th>
                   <th className="p-3 font-bold">Date</th>
                   <th className="p-3 font-bold">Gross Amount</th>
                   <th className="p-3 font-bold">Reconciled</th>
-                  <th className="p-3 font-bold">Fulfillment</th>
-                  <th className="p-3 font-bold text-right">Audit</th>
+                  <th className="p-3 font-bold">Status</th>
+                  <th className="p-3 font-bold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200/60">
                 {filteredTransactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-neutral-100/50 transition-colors">
-                    <td className="p-3 font-mono text-[8px] text-[#030213] font-bold">
-                      <div>{tx.id}</div>
-                      <span className="text-[6.5px] text-neutral-400 font-bold lowercase tracking-normal block mt-0.5">{tx.customer}</span>
+                    <td className="p-3">
+                      <div className="font-black text-[#224870] text-[11px] whitespace-nowrap tracking-wide">{tx.id}</div>
+                      <span className="text-[10px] text-[#615e56] font-bold uppercase tracking-wider block mt-1">{tx.customer}</span>
                     </td>
-                    <td className="p-3 text-[#030213]">
-                      <div className="font-mono text-[8px] font-bold">{tx.awb}</div>
-                      <span className="text-[6.5px] text-neutral-400 font-semibold block mt-0.5">{tx.courier}</span>
+                    <td className="p-3 text-[#382d24]">
+                      <div className="font-mono text-[10px] font-bold">{tx.awb}</div>
+                      <span className="text-[8px] text-[#615e56] font-semibold block mt-0.5">{tx.courier}</span>
                     </td>
-                    <td className="p-3 text-neutral-500 font-mono text-[8px]">{tx.date}</td>
-                    <td className="p-3 font-bold text-[#030213]">{RS}{tx.amount.toLocaleString()}</td>
-                    <td className="p-3 font-bold text-green-700">
+                    <td className="p-3 text-neutral-500 font-mono text-[9.5px]">{tx.date}</td>
+                    <td className="p-3 font-black text-[#382d24] text-[11px]">{RS}{tx.amount.toLocaleString()}</td>
+                    <td className="p-3 font-black text-green-700 text-[11px]">
                       {tx.reconciledAmount ? `${RS}${tx.reconciledAmount.toLocaleString()}` : "—"}
                     </td>
                     <td className="p-3">
                       <div className="space-y-1">
                         <CodStatusBadge status={tx.status} />
                         {tx.disputeStatus === "Raised" && (
-                          <span className="text-[6px] font-bold text-red-700 bg-red-50 border border-red-200 px-1 uppercase tracking-widest block">
+                          <span className="text-[6.5px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 uppercase tracking-widest block text-center rounded-sm">
                             Disputed
                           </span>
                         )}
@@ -445,14 +418,24 @@ export function TransactionsPage() {
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => setReconcileTarget(tx)} className="text-[7.5px] font-bold border border-neutral-200 hover:border-[#030213] px-2 py-0.5 uppercase bg-card tracking-wider cursor-pointer rounded-none">
-                          Reconcile
+                        <button 
+                          onClick={() => setReconcileTarget(tx)} 
+                          className="text-[8px] font-bold border border-neutral-200 hover:border-[#224870] hover:text-[#224870] px-2 py-1 uppercase bg-card tracking-wider cursor-pointer rounded-sm transition-all"
+                        >
+                          Settle
                         </button>
-                        <button onClick={() => setDisputeTarget(tx)} className="text-[7.5px] font-bold border border-neutral-200 hover:border-[#b2533e] px-2 py-0.5 uppercase bg-card tracking-wider cursor-pointer rounded-none">
+                        <button 
+                          onClick={() => setDisputeTarget(tx)} 
+                          className="text-[8px] font-bold border border-neutral-200 hover:border-red-500 hover:text-red-600 px-2 py-1 uppercase bg-card tracking-wider cursor-pointer rounded-sm transition-all"
+                        >
                           Dispute
                         </button>
-                        <button onClick={() => setAuditTarget(tx)} className="text-neutral-400 hover:text-[#030213] p-1 cursor-pointer bg-transparent border-none">
-                          <FileCheck className="w-3.5 h-3.5" />
+                        <button 
+                          onClick={() => setAuditTarget(tx)} 
+                          className="text-neutral-400 hover:text-[#224870] hover:bg-[#224870]/10 p-1.5 cursor-pointer bg-transparent border-none rounded-sm transition-all"
+                          title="View audit logs"
+                        >
+                          <FileCheck className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -463,34 +446,82 @@ export function TransactionsPage() {
           </div>
         </div>
 
+        {/* Right Column: Courier Partner Share Analytics */}
+        <div className="lg:col-span-3 bg-card border border-neutral-200/80 p-5 space-y-5">
+          <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+            <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Courier Account Shares</span>
+            <Truck className="w-4 h-4 text-[#224870]" />
+          </div>
+
+          <div className="space-y-4">
+            {courierStatsInitial.map((cs, idx) => (
+              <div key={idx} className="space-y-2">
+                <div className="flex items-center justify-between text-[9.5px] uppercase tracking-wider font-bold">
+                  <span className="text-[#382d24]">{cs.partner}</span>
+                  <span className="text-[#382d24]">{RS}{cs.revenue.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex items-center justify-between text-[8px] text-neutral-400 font-bold uppercase">
+                  <span>{cs.transactions.toLocaleString()} parcels</span>
+                  <span>{cs.percentage}% share</span>
+                </div>
+                <div className="w-full h-1.5 bg-neutral-100 rounded-none overflow-hidden">
+                  <div className={`h-full ${cs.color} transition-all`} style={{ width: `${cs.percentage}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-neutral-200/60 pt-4 text-[9px] font-bold tracking-wider text-[#615e56] uppercase space-y-2">
+            <div className="flex justify-between">
+              <span>Last Cash Audit:</span>
+              <span className="text-[#382d24] font-black">22 Jun 2026</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Ledger Cycle:</span>
+              <span className="text-[#382d24] font-black">Weekly (NEFT remitted)</span>
+            </div>
+            <div className="flex justify-between items-center gap-1.5">
+              <span>Ledger Secure Guarantee:</span>
+              <span className="text-[#224870] font-black flex items-center gap-0.5"><ShieldCheck className="w-3.5 h-3.5 text-green-700" /> Active</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* ── Reconcile Cash Modal ─────────────────────────────────────── */}
       {reconcileTarget && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setReconcileTarget(null)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setReconcileTarget(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Reconcile COD Cash</span>
-              <button onClick={() => setReconcileTarget(null)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Reconcile Cash Remittance</span>
+              <button onClick={() => setReconcileTarget(null)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={submitReconciliation} className="space-y-3">
-              <div className="text-[8px] font-bold uppercase text-neutral-500 space-y-1">
-                <div>Order Ref: <span className="text-[#030213]">{reconcileTarget.id}</span></div>
-                <div>AWB: <span className="text-[#030213]">{reconcileTarget.awb}</span></div>
-                <div>Billed Amount: <span className="text-[#030213]">{RS}{reconcileTarget.amount}</span></div>
+            <form onSubmit={submitReconciliation} className="space-y-4">
+              <div className="text-[9px] font-bold uppercase text-neutral-500 space-y-1 bg-neutral-50 p-3 border border-neutral-200/60">
+                <div>Order Ref: <span className="text-[#382d24] font-black">{reconcileTarget.id}</span></div>
+                <div>AWB: <span className="text-[#382d24] font-mono font-black">{reconcileTarget.awb}</span></div>
+                <div>Gross Amount: <span className="text-[#382d24] font-black">{RS}{reconcileTarget.amount}</span></div>
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Actual Cash Remitted (INR)</label>
-                <input required type="number" value={reconcileCashInput} onChange={e => setReconcileCashInput(e.target.value)} placeholder={reconcileTarget.amount.toString()} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1.5">Actual Cash Remitted ({RS})</label>
+                <input 
+                  required 
+                  type="number" 
+                  value={reconcileCashInput} 
+                  onChange={e => setReconcileCashInput(e.target.value)} 
+                  placeholder={reconcileTarget.amount.toString()} 
+                  className="w-full bg-card border border-neutral-200 text-[10px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" 
+                />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => setReconcileTarget(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
-                <button type="submit" className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Submit Audit</button>
+              <div className="pt-2 flex justify-end gap-2 border-t border-neutral-100 pt-4">
+                <button type="button" onClick={() => setReconcileTarget(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">Submit Audit</button>
               </div>
             </form>
           </div>
@@ -499,33 +530,40 @@ export function TransactionsPage() {
 
       {/* ── Dispute Modal ────────────────────────────────────────────── */}
       {disputeTarget && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDisputeTarget(null)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDisputeTarget(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Raise Courier Dispute</span>
-              <button onClick={() => setDisputeTarget(null)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Raise Courier Dispute</span>
+              <button onClick={() => setDisputeTarget(null)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={submitDispute} className="space-y-3">
-              <div className="text-[8px] font-bold uppercase text-neutral-500">
-                Courier: <span className="text-[#030213] font-bold">{disputeTarget.courier}</span> | AWB: <span className="text-[#030213] font-mono">{disputeTarget.awb}</span>
+            <form onSubmit={submitDispute} className="space-y-4">
+              <div className="text-[9px] font-bold uppercase text-neutral-500 bg-neutral-50 p-3 border border-neutral-200/60">
+                Courier: <span className="text-[#382d24] font-black">{disputeTarget.courier}</span> | AWB: <span className="text-[#382d24] font-mono font-black">{disputeTarget.awb}</span>
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Dispute Reason Details</label>
-                <select name="reason" className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none cursor-pointer mb-2">
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1.5">Dispute Reason Details</label>
+                <select name="reason" className="w-full bg-card border border-neutral-200 text-[10px] font-bold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] mb-2.5 transition-all">
                   <option value="Amount Mismatch">Amount Mismatch / Remittance Mismatch</option>
                   <option value="Fake Delivery Attempt">Fake Delivery Attempt / Refused False report</option>
                   <option value="Weight Mismatch">Parcel Weight Mismatch Variance</option>
                 </select>
-                <textarea required rows={3} value={disputeReasonInput} onChange={e => setDisputeReasonInput(e.target.value)} placeholder="Type granular details of mismatch..." className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <textarea 
+                  required 
+                  rows={3} 
+                  value={disputeReasonInput} 
+                  onChange={e => setDisputeReasonInput(e.target.value)} 
+                  placeholder="Type details of mismatch variance..." 
+                  className="w-full bg-card border border-neutral-200 text-[10px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none text-[#382d24] transition-all" 
+                />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => setDisputeTarget(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
-                <button type="submit" className="bg-[#b2533e] text-white hover:bg-red-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">File Dispute</button>
+              <div className="pt-2 flex justify-end gap-2 border-t border-neutral-100 pt-4">
+                <button type="button" onClick={() => setDisputeTarget(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">File Dispute</button>
               </div>
             </form>
           </div>
@@ -534,33 +572,39 @@ export function TransactionsPage() {
 
       {/* ── Audit Timeline Log Details ───────────────────────────────── */}
       {auditTarget && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setAuditTarget(null)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setAuditTarget(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Audit Ledger Log</span>
-              <button onClick={() => setAuditTarget(null)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Audit Ledger Timeline</span>
+              <button onClick={() => setAuditTarget(null)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3">
-              <div className="text-[8.5px] font-semibold uppercase text-neutral-500 space-y-1">
-                <div>Order reference: <span className="text-[#030213]">{auditTarget.id}</span></div>
-                <div>Courier partner: <span className="text-[#030213]">{auditTarget.courier} ({auditTarget.awb})</span></div>
-                <div>Variance amount: <span className="text-red-700">{RS}{auditTarget.amount - (auditTarget.reconciledAmount || 0)}</span></div>
+            <div className="space-y-4">
+              <div className="text-[9px] font-bold uppercase text-neutral-500 space-y-1 bg-neutral-50 p-3 border border-neutral-200/60">
+                <div>Order reference: <span className="text-[#382d24] font-black">{auditTarget.id}</span></div>
+                <div>Courier partner: <span className="text-[#382d24] font-black">{auditTarget.courier} ({auditTarget.awb})</span></div>
+                <div>Variance amount: <span className="text-red-700 font-black">{RS}{auditTarget.amount - (auditTarget.reconciledAmount || 0)}</span></div>
               </div>
 
-              <div className="border border-neutral-200 p-3 bg-card max-h-48 overflow-y-auto space-y-2 text-[8px] font-mono text-neutral-500">
+              {/* Timeline layout */}
+              <div className="border border-neutral-200 p-4 bg-card max-h-48 overflow-y-auto space-y-3">
                 {auditTarget.auditLog && auditTarget.auditLog.length > 0 ? (
-                  auditTarget.auditLog.map((log, i) => <div key={i}>{log}</div>)
+                  auditTarget.auditLog.map((log, i) => (
+                    <div key={i} className="flex gap-2.5 items-start text-[8.5px] font-mono leading-relaxed text-neutral-500 border-l-2 border-[#224870]/20 pl-3 relative">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#224870] absolute -left-[6px] top-1" />
+                      <div>{log}</div>
+                    </div>
+                  ))
                 ) : (
-                  <div>No settlement log details found. Remittance currently {auditTarget.status}.</div>
+                  <div className="text-[9px] text-neutral-400 uppercase font-bold text-center">No settlement logs found. Remittance currently {auditTarget.status}.</div>
                 )}
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button onClick={() => setAuditTarget(null)} className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">
+            <div className="pt-2 flex justify-end border-t border-neutral-100 pt-4">
+              <button onClick={() => setAuditTarget(null)} className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer rounded-none border-none transition-all">
                 Dismiss
               </button>
             </div>
@@ -570,29 +614,29 @@ export function TransactionsPage() {
 
       {/* ── Manual Adjustment Modal ──────────────────────────────────── */}
       {isAdjustmentOpen && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsAdjustmentOpen(false)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsAdjustmentOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Post Manual Cash Adjustment</span>
-              <button onClick={() => setIsAdjustmentOpen(false)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Post Manual Cash Entry</span>
+              <button onClick={() => setIsAdjustmentOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={submitAdjustment} className="space-y-3">
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Order / Tx ID Ref (Optional)</label>
-                <input type="text" placeholder="e.g. DD-ORD-ADJUST" value={adjustmentForm.orderId} onChange={e => setAdjustmentForm({ ...adjustmentForm, orderId: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Order / Tx ID Ref (Optional)</label>
+                <input type="text" placeholder="e.g. DD-ORD-ADJUST" value={adjustmentForm.orderId} onChange={e => setAdjustmentForm({ ...adjustmentForm, orderId: e.target.value })} className="w-full bg-card border border-neutral-200 text-[10px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Adjustment Amount (₹)</label>
-                  <input required type="number" placeholder="e.g. -250" value={adjustmentForm.amount} onChange={e => setAdjustmentForm({ ...adjustmentForm, amount: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Adjustment Amount (₹)</label>
+                  <input required type="number" placeholder="e.g. -250" value={adjustmentForm.amount} onChange={e => setAdjustmentForm({ ...adjustmentForm, amount: e.target.value })} className="w-full bg-card border border-neutral-200 text-[10px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
                 <div>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Courier Partner</label>
-                  <select value={adjustmentForm.courier} onChange={e => setAdjustmentForm({ ...adjustmentForm, courier: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none cursor-pointer">
+                  <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Courier Partner</label>
+                  <select value={adjustmentForm.courier} onChange={e => setAdjustmentForm({ ...adjustmentForm, courier: e.target.value })} className="w-full bg-card border border-neutral-200 text-[10px] font-bold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
                     <option value="Delhivery">Delhivery</option>
                     <option value="Blue Dart">Blue Dart</option>
                     <option value="Xpressbees">Xpressbees</option>
@@ -602,13 +646,13 @@ export function TransactionsPage() {
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Adjustment Description</label>
-                <textarea required rows={2} placeholder="Settle shipping fee charge variation or bank charge adjustment..." value={adjustmentForm.desc} onChange={e => setAdjustmentForm({ ...adjustmentForm, desc: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Adjustment Description</label>
+                <textarea required rows={2} placeholder="Settle shipping fee charge variation or bank charge adjustment..." value={adjustmentForm.desc} onChange={e => setAdjustmentForm({ ...adjustmentForm, desc: e.target.value })} className="w-full bg-card border border-neutral-200 text-[10px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none text-[#382d24] transition-all" />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsAdjustmentOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
-                <button type="submit" className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Post Entry</button>
+              <div className="pt-2 flex justify-end gap-2 border-t border-neutral-100 pt-4">
+                <button type="button" onClick={() => setIsAdjustmentOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all">Post Entry</button>
               </div>
             </form>
           </div>
