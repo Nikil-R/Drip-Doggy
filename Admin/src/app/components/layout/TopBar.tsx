@@ -98,8 +98,10 @@ export function TopBar() {
     if (path.includes("/admin/categories")) return "Categories";
     if (path.includes("/admin/transactions")) return "Payments Ledger";
     if (path.includes("/admin/products/new")) return "Add Product";
+    if (path.includes("/admin/products/media")) return "Product Media";
+    if (path.includes("/admin/products/reviews")) return "Product Reviews";
     if (path.includes("/admin/products")) return "Product List";
-    if (path.includes("/admin/roles")) return "Admin role";
+    if (path.includes("/admin/roles")) return "Admin Roles";
     if (path.includes("/admin/authority")) return "Control Authority";
     if (path.includes("/admin/coupons")) return "Coupons & Promos";
     if (path.includes("/admin/brands")) return "Brands & Labels";
