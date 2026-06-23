@@ -29,7 +29,7 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: (e: Rea
       type="button"
       onClick={onClick}
       className={`relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer p-0 shrink-0 border-none outline-none ${
-        enabled ? "bg-[#030213]" : "bg-neutral-300"
+        enabled ? "bg-[#224870]" : "bg-neutral-300"
       }`}
     >
       <span
@@ -309,16 +309,20 @@ export function CategoriesPage() {
     return mockCatalogProducts.filter(p => p.category === drillDownCategory.id);
   }, [drillDownCategory]);
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
-    <div className="space-y-8 font-sans text-[#030213]">
+    <div className="space-y-8 font-sans text-[#382d24]">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">
+          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest">
             Categories
           </h1>
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
             Manage product collections, hierarchical subcategories and departments
           </p>
         </div>
@@ -335,7 +339,7 @@ export function CategoriesPage() {
               setCatSubText("");
               setIsAddCatOpen(true);
             }}
-            className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none border-none shadow-sm"
+            className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 transition-all cursor-pointer rounded-none border-none shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" /> Add Category
           </button>
@@ -344,8 +348,8 @@ export function CategoriesPage() {
 
       {/* Bulk actions selection overlay */}
       {selectedIds.length > 0 && (
-        <div className="bg-[#030213] text-white p-3.5 flex items-center justify-between border border-[#030213] rounded-none">
-          <span className="text-[8px] font-bold tracking-widest uppercase">{selectedIds.length} Categories Selected</span>
+        <div className="bg-[#224870] text-white p-3.5 flex items-center justify-between border border-[#224870] rounded-none">
+          <span className="text-[8.5px] font-bold tracking-widest uppercase">{selectedIds.length} Categories Selected</span>
           <div className="flex items-center gap-2">
             <button onClick={() => handleBulkStatusChange("Active")} className="bg-transparent border border-white/20 text-white hover:border-white text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer">
               Bulk Activate
@@ -366,10 +370,10 @@ export function CategoriesPage() {
       {/* ── Category Slider / Grid View ─────────────────────────────── */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <span className="text-[8px] font-bold tracking-[0.2em] text-neutral-400 uppercase">
+          <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">
             Collection Deck Workspace
           </span>
-          <button onClick={() => setLayoutMode(prev => prev === "carousel" ? "grid" : "carousel")} className="flex items-center gap-1.5 border border-neutral-200 bg-card hover:border-[#030213] text-neutral-600 text-[8px] font-bold uppercase px-2.5 py-1.5 cursor-pointer rounded-none">
+          <button onClick={() => setLayoutMode(prev => prev === "carousel" ? "grid" : "carousel")} className="flex items-center gap-1.5 border border-neutral-200 bg-card hover:border-[#224870] hover:text-[#224870] text-neutral-600 text-[8px] font-bold uppercase px-2.5 py-1.5 cursor-pointer rounded-none transition-all">
             <LayoutGrid className="w-3.5 h-3.5" /> {layoutMode === "carousel" ? "View Grid Layout" : "View Carousel Layout"}
           </button>
         </div>
@@ -383,16 +387,16 @@ export function CategoriesPage() {
                   key={cat.id} 
                   onClick={() => setSelectedCategoryId(cat.id)}
                   className={`border p-4 transition-all cursor-pointer min-h-[100px] flex flex-col justify-between ${
-                    isSelected ? "bg-[#030213] border-[#030213] text-white" : "bg-card border-neutral-200 hover:border-neutral-400 text-[#030213]"
+                    isSelected ? "bg-[#224870] border-[#224870] text-white" : "bg-card border-neutral-200 hover:border-[#224870] text-[#382d24]"
                   }`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className={`text-[7px] font-bold uppercase tracking-widest ${isSelected ? "text-neutral-400" : "text-neutral-400"}`}>{cat.parent}</span>
+                    <span className={`text-[7.5px] font-bold uppercase tracking-widest ${isSelected ? "text-white/60" : "text-neutral-400"}`}>{cat.parent}</span>
                     <ToggleSwitch enabled={cat.status === "Active"} onClick={(e) => handleToggleStatus(cat.id, e)} />
                   </div>
                   <div>
-                    <h3 className="text-[11px] font-bold uppercase tracking-wider">{cat.label}</h3>
-                    <p className={`text-[7px] mt-0.5 ${isSelected ? "text-neutral-300" : "text-neutral-400"}`}>{cat.sub}</p>
+                    <h3 className="text-[11px] font-black uppercase tracking-wider">{cat.label}</h3>
+                    <p className={`text-[7.5px] font-bold uppercase tracking-wide mt-0.5 ${isSelected ? "text-white/70" : "text-neutral-400"}`}>{cat.sub}</p>
                   </div>
                 </div>
               );
@@ -407,12 +411,12 @@ export function CategoriesPage() {
                   key={cat.id} 
                   onClick={() => setSelectedCategoryId(cat.id)}
                   className={`border p-3 transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
-                    isSelected ? "bg-[#030213] border-[#030213] text-white" : "bg-card border-neutral-200 hover:border-neutral-400 text-[#030213]"
+                    isSelected ? "bg-[#224870] border-[#224870] text-white" : "bg-card border-neutral-200 hover:border-[#224870] text-[#382d24]"
                   }`}
                 >
-                  <span className="text-[6px] font-bold uppercase tracking-widest text-neutral-400">{cat.parent}</span>
+                  <span className="text-[6.5px] font-bold uppercase tracking-widest text-neutral-400">{cat.parent}</span>
                   <div>
-                    <h3 className="text-[9px] font-bold uppercase tracking-wide truncate">{cat.label}</h3>
+                    <h3 className="text-[9px] font-black uppercase tracking-wide truncate">{cat.label}</h3>
                     <span className="text-[6.5px] font-bold block mt-1 uppercase text-neutral-500">{cat.count} Items</span>
                   </div>
                 </div>
@@ -426,14 +430,14 @@ export function CategoriesPage() {
             <button 
               disabled={sliderIndex === 0}
               onClick={handlePrevSlider}
-              className="w-7 h-7 flex items-center justify-center border border-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#030213] text-neutral-500 cursor-pointer bg-card rounded-none"
+              className="w-7 h-7 flex items-center justify-center border border-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#224870] text-neutral-500 cursor-pointer bg-card rounded-none transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button 
               disabled={sliderIndex + 4 >= categories.length}
               onClick={handleNextSlider}
-              className="w-7 h-7 flex items-center justify-center border border-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#030213] text-neutral-500 cursor-pointer bg-card rounded-none"
+              className="w-7 h-7 flex items-center justify-center border border-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#224870] text-neutral-500 cursor-pointer bg-card rounded-none transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -445,25 +449,25 @@ export function CategoriesPage() {
       {activeCategoryDetails && (
         <div className="bg-card border border-neutral-200/80 p-5 grid grid-cols-1 md:grid-cols-12 gap-5 rounded-none items-start">
           <div className="md:col-span-3">
-            <span className="text-[7px] font-bold tracking-[0.2em] text-neutral-400 uppercase block mb-2">Category Banner</span>
+            <span className="text-[8px] font-bold tracking-[0.15em] text-[#615e56] uppercase block mb-2">Category Banner</span>
             <div className="aspect-[4/3] bg-neutral-100 border border-neutral-200 overflow-hidden flex items-center justify-center">
               <img src={activeCategoryDetails.bannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=120&auto=format&fit=crop"} alt="Banner" className="w-full h-full object-cover" />
             </div>
           </div>
           <div className="md:col-span-5 space-y-3">
             <div>
-              <span className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase">Description</span>
-              <h3 className="text-sm font-bold uppercase text-[#030213] mt-0.5">{activeCategoryDetails.label}</h3>
-              <p className="text-[9px] text-neutral-500 font-bold uppercase mt-1 leading-relaxed">{activeCategoryDetails.sub}</p>
+              <span className="text-[8px] font-bold tracking-[0.15em] text-[#615e56] uppercase block">Description</span>
+              <h3 className="text-sm font-black uppercase text-[#382d24] mt-0.5">{activeCategoryDetails.label}</h3>
+              <p className="text-[9.5px] text-neutral-500 font-bold uppercase mt-1 leading-relaxed">{activeCategoryDetails.sub}</p>
             </div>
 
             {/* Hierarchical Subcategories View */}
             <div className="space-y-1.5 pt-2 border-t border-neutral-200/60">
-              <span className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase block">Subcategory Hierarchy</span>
+              <span className="text-[8px] font-bold tracking-[0.15em] text-[#615e56] uppercase block">Subcategory Hierarchy</span>
               <div className="flex flex-wrap gap-1.5">
                 {activeCategoryDetails.subCategories && activeCategoryDetails.subCategories.length > 0 ? (
                   activeCategoryDetails.subCategories.map(sub => (
-                    <span key={sub.id} className="bg-neutral-100 border border-neutral-200 text-[#030213] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider">
+                    <span key={sub.id} className="bg-[#224870]/10 text-[#224870] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider rounded-sm">
                       {sub.name}
                     </span>
                   ))
@@ -475,14 +479,14 @@ export function CategoriesPage() {
           </div>
 
           <div className="md:col-span-4 border-l border-neutral-200/60 pl-5 space-y-2 text-[8.5px] font-bold uppercase tracking-wider text-neutral-700">
-            <span className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase block mb-1">SEO settings</span>
+            <span className="text-[8px] font-bold tracking-[0.15em] text-[#615e56] uppercase block mb-1">SEO settings</span>
             <div className="flex justify-between">
               <span className="text-neutral-400">URL path</span>
-              <span className="font-mono text-[#030213] font-bold">/collections/{activeCategoryDetails.slug || activeCategoryDetails.id}</span>
+              <span className="font-mono text-[#382d24] font-bold">/collections/{activeCategoryDetails.slug || activeCategoryDetails.id}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-neutral-400">Meta Title</span>
-              <span className="text-[#030213] font-semibold max-w-[150px] truncate">{activeCategoryDetails.metaTitle || "—"}</span>
+              <span className="text-[#382d24] font-bold max-w-[150px] truncate">{activeCategoryDetails.metaTitle || "—"}</span>
             </div>
           </div>
         </div>
@@ -498,7 +502,7 @@ export function CategoriesPage() {
               placeholder="Search category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-card border border-neutral-200 pl-8 pr-3 py-1.5 text-[9px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#030213] placeholder-neutral-300 w-full rounded-none"
+              className="bg-card border border-neutral-200 pl-8 pr-3 py-1.5 text-[9.5px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#224870] placeholder-neutral-300 w-full rounded-none transition-all"
             />
           </div>
           
@@ -507,8 +511,8 @@ export function CategoriesPage() {
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
-                className={`px-3 py-1.5 text-[7px] font-semibold tracking-widest uppercase border-none cursor-pointer rounded-none ${
-                  activeTab === tab ? "bg-[#030213] text-white" : "bg-transparent text-neutral-400 hover:text-[#030213]"
+                className={`px-3 py-1.5 text-[8.5px] font-bold tracking-widest uppercase border-none cursor-pointer rounded-none transition-all ${
+                  activeTab === tab ? "bg-[#224870] text-white" : "bg-transparent text-neutral-400 hover:text-[#224870]"
                 }`}
               >
                 {tab}
@@ -520,7 +524,7 @@ export function CategoriesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left uppercase text-[9px] font-bold tracking-wider divide-y divide-neutral-100">
             <thead>
-              <tr className="border-b border-neutral-200 bg-card/60 text-[7px] text-neutral-400 tracking-[0.2em]">
+              <tr className="border-b border-neutral-200 bg-card/60 text-[8px] text-[#615e56] font-bold tracking-[0.2em]">
                 <th className="p-3 w-8">
                   <button
                     onClick={() => {
@@ -532,9 +536,9 @@ export function CategoriesPage() {
                         setSelectedIds(prev => Array.from(new Set([...prev, ...currentIds])));
                       }
                     }}
-                    className="bg-transparent border-none cursor-pointer text-neutral-400 hover:text-[#030213] p-0 flex items-center"
+                    className="bg-transparent border-none cursor-pointer text-neutral-400 hover:text-[#224870] p-0 flex items-center"
                   >
-                    <span className={`w-3.5 h-3.5 border border-neutral-300 inline-block flex items-center justify-center ${paginatedCategories.every(c => selectedIds.includes(c.id)) ? "bg-[#030213] border-[#030213]" : ""}`}>
+                    <span className={`w-3.5 h-3.5 border border-neutral-300 inline-block flex items-center justify-center ${paginatedCategories.every(c => selectedIds.includes(c.id)) ? "bg-[#224870] border-[#224870]" : ""}`}>
                       {paginatedCategories.every(c => selectedIds.includes(c.id)) && <Check className="w-2.5 h-2.5 text-white" />}
                     </span>
                   </button>
@@ -543,7 +547,7 @@ export function CategoriesPage() {
                 <th className="p-3 font-bold">Collection Category</th>
                 <th className="p-3 font-bold">Parent</th>
                 <th className="p-3 font-bold">Subcategories Count</th>
-                <th className="p-3 font-bold cursor-pointer hover:text-[#030213]">Products Count</th>
+                <th className="p-3 font-bold cursor-pointer hover:text-[#224870]">Products Count</th>
                 <th className="p-3 font-bold">Orders</th>
                 <th className="p-3 font-bold">Status</th>
                 <th className="p-3 font-bold text-right">Actions</th>
@@ -561,43 +565,43 @@ export function CategoriesPage() {
                     }`}
                   >
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => setSelectedIds(prev => prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id])} className="bg-transparent border-none cursor-pointer text-neutral-400 hover:text-[#030213] p-0 flex items-center">
-                        <span className={`w-3.5 h-3.5 border border-neutral-300 inline-block flex items-center justify-center ${selectedIds.includes(cat.id) ? "bg-[#030213] border-[#030213]" : ""}`}>
+                      <button onClick={() => setSelectedIds(prev => prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id])} className="bg-transparent border-none cursor-pointer text-neutral-400 hover:text-[#224870] p-0 flex items-center">
+                        <span className={`w-3.5 h-3.5 border border-neutral-300 inline-block flex items-center justify-center ${selectedIds.includes(cat.id) ? "bg-[#224870] border-[#224870]" : ""}`}>
                           {selectedIds.includes(cat.id) && <Check className="w-2.5 h-2.5 text-white" />}
                         </span>
                       </button>
                     </td>
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <button disabled={globalIndex === 0} onClick={() => moveCategory(globalIndex, "up")} className="p-1 border border-neutral-200 bg-card hover:border-[#030213] disabled:opacity-30 disabled:pointer-events-none cursor-pointer rounded-none">
+                        <button disabled={globalIndex === 0} onClick={() => moveCategory(globalIndex, "up")} className="p-1 border border-neutral-200 bg-card hover:border-[#224870] disabled:opacity-30 disabled:pointer-events-none cursor-pointer rounded-none transition-colors">
                           <ChevronLeft className="w-3 h-3 rotate-90" />
                         </button>
-                        <button disabled={globalIndex === categories.length - 1} onClick={() => moveCategory(globalIndex, "down")} className="p-1 border border-neutral-200 bg-card hover:border-[#030213] disabled:opacity-30 disabled:pointer-events-none cursor-pointer rounded-none">
+                        <button disabled={globalIndex === categories.length - 1} onClick={() => moveCategory(globalIndex, "down")} className="p-1 border border-neutral-200 bg-card hover:border-[#224870] disabled:opacity-30 disabled:pointer-events-none cursor-pointer rounded-none transition-colors">
                           <ChevronLeft className="w-3 h-3 -rotate-90" />
                         </button>
                       </div>
                     </td>
                     <td className="p-3">
-                      <div className="font-semibold text-[#030213] text-[9.5px]">{cat.label}</div>
-                      <span className="text-[6.5px] text-neutral-400 font-semibold tracking-wider">{cat.sub}</span>
+                      <div className="font-bold text-[#382d24] text-[9.5px]">{cat.label}</div>
+                      <span className="text-[7.5px] text-neutral-400 font-semibold tracking-wider">{cat.sub}</span>
                     </td>
                     <td className="p-3 text-neutral-500 font-bold">{cat.parent}</td>
                     <td className="p-3 font-bold text-neutral-500">{cat.subCategories ? cat.subCategories.length : 0}</td>
                     <td className="p-3" onClick={(e) => { e.stopPropagation(); setDrillDownCategory(cat); }}>
-                      <span className="font-bold text-[#030213] border-b border-[#030213]/40 pb-0.5 hover:text-[#b2533e] cursor-pointer">
+                      <span className="font-bold text-[#224870] border-b border-[#224870]/40 pb-0.5 hover:text-[#382d24] cursor-pointer">
                         {cat.count} Products
                       </span>
                     </td>
-                    <td className="p-3 font-bold text-[#030213]">{cat.orders}</td>
+                    <td className="p-3 font-bold text-[#382d24]">{cat.orders}</td>
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <ToggleSwitch enabled={cat.status === "Active"} onClick={(e) => handleToggleStatus(cat.id, e)} />
                     </td>
                     <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={(e) => handleOpenEditCategory(cat, e)} className="text-neutral-400 hover:text-[#030213] p-1.5 bg-transparent border-none cursor-pointer" title="Edit Category">
+                        <button onClick={(e) => handleOpenEditCategory(cat, e)} className="text-neutral-400 hover:text-[#224870] hover:bg-[#224870]/10 p-1.5 bg-transparent border-none cursor-pointer rounded-sm transition-all" title="Edit Category">
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={(e) => handleOpenDeleteCategory(cat, e)} className="text-neutral-400 hover:text-[#b2533e] p-1.5 bg-transparent border-none cursor-pointer" title="Delete Category">
+                        <button onClick={(e) => handleOpenDeleteCategory(cat, e)} className="text-neutral-400 hover:text-[#b2533e] hover:bg-red-50 p-1.5 bg-transparent border-none cursor-pointer rounded-sm transition-all" title="Delete Category">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -618,7 +622,7 @@ export function CategoriesPage() {
             <button 
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
-              className="flex items-center gap-1 border border-neutral-200 hover:border-[#030213] bg-card text-neutral-500 text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer disabled:opacity-30 disabled:pointer-events-none rounded-none"
+              className="flex items-center gap-1 border border-neutral-200 hover:border-[#224870] bg-card text-neutral-500 text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer disabled:opacity-30 disabled:pointer-events-none rounded-none transition-colors"
             >
               <ChevronLeft className="w-3 h-3" /> Prev
             </button>
@@ -626,7 +630,7 @@ export function CategoriesPage() {
               <button 
                 key={i}
                 onClick={() => handlePageChange(i + 1)}
-                className={`w-7 h-7 flex items-center justify-center text-[8px] font-semibold cursor-pointer border rounded-none ${currentPage === i + 1 ? "bg-[#030213] text-white border-[#030213]" : "bg-card border-neutral-200 text-neutral-500 hover:border-[#030213]"}`}
+                className={`w-7 h-7 flex items-center justify-center text-[8px] font-semibold cursor-pointer border rounded-none transition-colors ${currentPage === i + 1 ? "bg-[#224870] text-white border-[#224870]" : "bg-card border-neutral-200 text-neutral-500 hover:border-[#224870]"}`}
               >
                 {i + 1}
               </button>
@@ -634,7 +638,7 @@ export function CategoriesPage() {
             <button 
               disabled={currentPage === totalPages}
               onClick={() => handlePageChange(currentPage + 1)}
-              className="flex items-center gap-1 border border-neutral-200 hover:border-[#030213] bg-card text-neutral-500 text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer disabled:opacity-30 disabled:pointer-events-none rounded-none"
+              className="flex items-center gap-1 border border-neutral-200 hover:border-[#224870] bg-card text-neutral-500 text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer disabled:opacity-30 disabled:pointer-events-none rounded-none transition-colors"
             >
               Next <ChevronRight className="w-3 h-3" />
             </button>
@@ -644,11 +648,11 @@ export function CategoriesPage() {
 
       {/* ── Product count drill-down list modal ───────────────────────── */}
       {drillDownCategory && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDrillDownCategory(null)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDrillDownCategory(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Products in {drillDownCategory.label}</span>
-              <button onClick={() => setDrillDownCategory(null)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Products in {drillDownCategory.label}</span>
+              <button onClick={() => setDrillDownCategory(null)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -657,11 +661,11 @@ export function CategoriesPage() {
               {drillDownProducts.map(p => (
                 <div key={p.id} className="py-2.5 flex justify-between items-center text-[8.5px] font-semibold uppercase">
                   <div>
-                    <p className="text-[#030213]">{p.name}</p>
+                    <p className="text-[#382d24]">{p.name}</p>
                     <span className="text-[7px] text-neutral-400 font-mono block">{p.id}</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#030213]">{RS}{p.price.toLocaleString()}</p>
+                    <p className="text-[#382d24]">{RS}{p.price.toLocaleString()}</p>
                     <span className="text-[7.5px] text-neutral-400 font-bold block">{p.orders} Orders</span>
                   </div>
                 </div>
@@ -672,7 +676,7 @@ export function CategoriesPage() {
             </div>
 
             <div className="pt-2 flex justify-end">
-              <button onClick={() => setDrillDownCategory(null)} className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">
+              <button onClick={() => setDrillDownCategory(null)} className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">
                 Dismiss
               </button>
             </div>
@@ -682,29 +686,29 @@ export function CategoriesPage() {
 
       {/* ── Add Category Modal ───────────────────────────────────────── */}
       {isAddCatOpen && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsAddCatOpen(false)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsAddCatOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Add New Collection Category</span>
-              <button onClick={() => setIsAddCatOpen(false)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Add New Collection Category</span>
+              <button onClick={() => setIsAddCatOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleAddCategorySubmit} className="space-y-3">
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Category Title</label>
-                <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Category Title</label>
+                <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Slug Path</label>
-                  <input type="text" value={catSlug} onChange={e => setCatSlug(e.target.value)} placeholder="e.g. outerwear" className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Slug Path</label>
+                  <input type="text" value={catSlug} onChange={e => setCatSlug(e.target.value)} placeholder="e.g. outerwear" className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
                 <div>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Parent Hierarchy</label>
-                  <select value={catParent} onChange={e => setCatParent(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none cursor-pointer">
+                  <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Parent Hierarchy</label>
+                  <select value={catParent} onChange={e => setCatParent(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
                     <option value="Women">Women</option>
                     <option value="Men">Men</option>
                     <option value="Unisex">Unisex</option>
@@ -713,23 +717,23 @@ export function CategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Sub Description</label>
-                <input required type="text" value={catSub} onChange={e => setCatSub(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Sub Description</label>
+                <input required type="text" value={catSub} onChange={e => setCatSub(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               {/* Subcategories list */}
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Subcategories (Comma separated)</label>
-                <input type="text" value={catSubText} onChange={e => setCatSubText(e.target.value)} placeholder="e.g. Maxi, Midi, Mini" className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Subcategories (Comma separated)</label>
+                <input type="text" value={catSubText} onChange={e => setCatSubText(e.target.value)} placeholder="e.g. Maxi, Midi, Mini" className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               {/* Image upload banner */}
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Banner Image URL or Upload</label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Banner Image URL or Upload</label>
                 <input type="file" ref={fileInputRef} onChange={handleBannerUpload} accept="image/*" className="hidden" />
                 <div className="flex gap-2">
-                  <input type="text" value={catBannerImage} onChange={e => setCatBannerImage(e.target.value)} placeholder="Image link" className="flex-1 bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#030213] text-neutral-600 px-3 text-[8px] font-bold uppercase cursor-pointer rounded-none bg-card"><Upload className="w-3.5 h-3.5" /></button>
+                  <input type="text" value={catBannerImage} onChange={e => setCatBannerImage(e.target.value)} placeholder="Image link" className="flex-1 bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-neutral-600 px-3 text-[8px] font-bold uppercase cursor-pointer rounded-none bg-card transition-colors"><Upload className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
 
@@ -737,16 +741,16 @@ export function CategoriesPage() {
               <div className="border-t border-neutral-100 pt-2 space-y-2">
                 <span className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase block">SEO Metadata</span>
                 <div>
-                  <input type="text" placeholder="Meta Title" value={catMetaTitle} onChange={e => setCatMetaTitle(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <input type="text" placeholder="Meta Title" value={catMetaTitle} onChange={e => setCatMetaTitle(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
                 <div>
-                  <textarea rows={2} placeholder="Meta Description" value={catMetaDescription} onChange={e => setCatMetaDescription(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <textarea rows={2} placeholder="Meta Description" value={catMetaDescription} onChange={e => setCatMetaDescription(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
               </div>
 
               <div className="pt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsAddCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
-                <button type="submit" className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Create Category</button>
+                <button type="button" onClick={() => setIsAddCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">Create Category</button>
               </div>
             </form>
           </div>
@@ -755,29 +759,29 @@ export function CategoriesPage() {
 
       {/* ── Edit Category Modal ──────────────────────────────────────── */}
       {isEditCatOpen && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsEditCatOpen(false)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsEditCatOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Edit Category Collection</span>
-              <button onClick={() => setIsEditCatOpen(false)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+              <span className="text-[8px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Edit Category Collection</span>
+              <button onClick={() => setIsEditCatOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveCategoryEdit} className="space-y-3">
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Category Title</label>
-                <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Category Title</label>
+                <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Slug Path</label>
-                  <input type="text" value={catSlug} onChange={e => setCatSlug(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Slug Path</label>
+                  <input type="text" value={catSlug} onChange={e => setCatSlug(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
                 <div>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Parent Hierarchy</label>
-                  <select value={catParent} onChange={e => setCatParent(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none cursor-pointer">
+                  <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Parent Hierarchy</label>
+                  <select value={catParent} onChange={e => setCatParent(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
                     <option value="Women">Women</option>
                     <option value="Men">Men</option>
                     <option value="Unisex">Unisex</option>
@@ -786,27 +790,27 @@ export function CategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Sub Description</label>
-                <input required type="text" value={catSub} onChange={e => setCatSub(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Sub Description</label>
+                <input required type="text" value={catSub} onChange={e => setCatSub(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Subcategories (Comma separated)</label>
-                <input type="text" value={catSubText} onChange={e => setCatSubText(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Subcategories (Comma separated)</label>
+                <input type="text" value={catSubText} onChange={e => setCatSubText(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Banner Image URL</label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Banner Image URL</label>
                 <input type="file" ref={fileInputRef} onChange={handleBannerUpload} accept="image/*" className="hidden" />
                 <div className="flex gap-2">
-                  <input type="text" value={catBannerImage} onChange={e => setCatBannerImage(e.target.value)} className="flex-1 bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#030213] text-neutral-600 px-3 text-[8px] font-bold uppercase cursor-pointer rounded-none bg-card"><Upload className="w-3.5 h-3.5" /></button>
+                  <input type="text" value={catBannerImage} onChange={e => setCatBannerImage(e.target.value)} className="flex-1 bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-neutral-600 px-3 text-[8px] font-bold uppercase cursor-pointer rounded-none bg-card transition-colors"><Upload className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Fulfillment Status</label>
-                <select value={catStatus} onChange={e => setCatStatus(e.target.value as any)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none cursor-pointer">
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Fulfillment Status</label>
+                <select value={catStatus} onChange={e => setCatStatus(e.target.value as any)} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
@@ -816,16 +820,16 @@ export function CategoriesPage() {
               <div className="border-t border-neutral-100 pt-2 space-y-2">
                 <span className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase block">SEO Metadata</span>
                 <div>
-                  <input type="text" placeholder="Meta Title" value={catMetaTitle} onChange={e => setCatMetaTitle(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <input type="text" placeholder="Meta Title" value={catMetaTitle} onChange={e => setCatMetaTitle(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
                 <div>
-                  <textarea rows={2} placeholder="Meta Description" value={catMetaDescription} onChange={e => setCatMetaDescription(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+                  <textarea rows={2} placeholder="Meta Description" value={catMetaDescription} onChange={e => setCatMetaDescription(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
                 </div>
               </div>
 
               <div className="pt-2 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsEditCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
-                <button type="submit" className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Save Changes</button>
+                <button type="button" onClick={() => setIsEditCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">Save Changes</button>
               </div>
             </form>
           </div>
@@ -834,17 +838,17 @@ export function CategoriesPage() {
 
       {/* ── Delete Confirmation Modal ───────────────────────────────── */}
       {isDeleteCatOpen && (
-        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsDeleteCatOpen(false)}>
-          <div className="bg-card border-2 border-[#030213] p-6 max-w-xs w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsDeleteCatOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-xs w-full space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-[10px] font-bold tracking-[0.2em] text-[#b2533e] uppercase">Warning — Critical Action</h3>
-            <p className="text-[9px] text-neutral-500 uppercase font-bold leading-normal">
-              Are you sure you want to permanently delete category <strong className="text-[#030213]">{deleteCategoryTarget?.label}</strong>? This removes all subcategory links.
+            <p className="text-[9.5px] text-neutral-500 uppercase font-bold leading-normal">
+              Are you sure you want to permanently delete category <strong className="text-[#382d24]">{deleteCategoryTarget?.label}</strong>? This removes all subcategory links.
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">
-              <button onClick={() => setIsDeleteCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
+              <button onClick={() => setIsDeleteCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
               <button 
                 onClick={handleConfirmDeleteCategory} 
-                className="bg-[#b2533e] text-white hover:bg-red-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none"
+                className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all"
               >
                 Delete
               </button>
