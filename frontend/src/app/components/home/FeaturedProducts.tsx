@@ -3,12 +3,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
-
-// Pick a curated set — products that represent the brand silhouette best
-const NEW_IN: Product[] = products
-  .filter((p) => p.badge === "NEW")
-  .concat(products.filter((p) => p.rating && p.rating >= 4.8))
-  .slice(0, 4);
+import { getFeaturedProducts } from "../../lib/content-store";
 
 function ProductCard({ product }: { product: Product }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -94,17 +89,44 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 export function FeaturedProducts() {
+  const [config, setConfig] = useState(() => getFeaturedProducts());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setConfig(getFeaturedProducts());
+    };
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("dd-content-changed" as any, handleUpdate);
+    return () => {
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("dd-content-changed" as any, handleUpdate);
+    };
+  }, []);
+
+  if (!config.active) return null;
+
+  // Resolve dynamic product list
+  const displayedProducts = config.productIds
+    .map(id => products.find(p => p.id === id))
+    .filter((p): p is Product => !!p)
+    .slice(0, config.maxProducts);
+
+  const finalProducts = displayedProducts.length > 0 ? displayedProducts : products
+    .filter((p) => p.badge === "NEW")
+    .concat(products.filter((p) => p.rating && p.rating >= 4.8))
+    .slice(0, config.maxProducts || 4);
+
   return (
     <section id="new-in" className="pt-2 pb-16 lg:pt-6 lg:pb-20 bg-white">
-      <div className="max-w-7xl mx-auto px-2">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="mb-10">
           <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
-            New This Season
+            {config.sectionSubtitle || "New This Season"}
           </span>
           <div className="flex justify-between items-baseline">
             <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#030213] uppercase">
-              New In
+              {config.sectionTitle || "New In"}
             </h2>
             <Link
               to="/shop"
@@ -117,7 +139,7 @@ export function FeaturedProducts() {
 
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {NEW_IN.map((product, idx) => (
+          {finalProducts.map((product, idx) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 30 }}
@@ -125,7 +147,7 @@ export function FeaturedProducts() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
             >
-            <ProductCard product={product} />
+              <ProductCard product={product} />
             </motion.div>
           ))}
         </div>
