@@ -3,14 +3,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
-
-// Core brand-defining pieces — the "uniform" products
-const SIGNATURE_PIECES: Product[] = [
-  products.find((p) => p.id === 4)!, // Structured Canvas Utility Dress (ARCHIVE COLLECTION)
-  products.find((p) => p.id === 9)!, // Oversized French Terry Dress Hoodie (CORE COLLECTION)
-  products.find((p) => p.id === 1)!, // Sartorial Pleated Trench Dress (DRIP DOGGY COLLECTION)
-  products.find((p) => p.id === 6)!, // Architectural Drape Rib Dress (ESSENTIALS)
-].filter(Boolean);
+import { getSignaturePieces } from "../../lib/content-store";
 
 function SignatureCard({ product }: { product: Product }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -100,16 +93,42 @@ function SignatureCard({ product }: { product: Product }) {
 }
 
 export function SignaturePieces() {
+  const [config, setConfig] = useState(() => getSignaturePieces());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setConfig(getSignaturePieces());
+    };
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("dd-content-changed" as any, handleUpdate);
+    return () => {
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("dd-content-changed" as any, handleUpdate);
+    };
+  }, []);
+
+  if (!config.active) return null;
+
+  // Resolve dynamic product list
+  const displayedProducts = config.productIds
+    .map(id => products.find(p => p.id === id))
+    .filter((p): p is Product => !!p);
+
+  const fallbackIds = [4, 9, 1, 6];
+  const finalProducts = displayedProducts.length > 0 ? displayedProducts : fallbackIds
+    .map(id => products.find(p => p.id === id))
+    .filter((p): p is Product => !!p);
+
   return (
     <section id="signature-pieces" className="pt-2 pb-8 lg:pt-6 lg:pb-10 bg-white border-t border-neutral-100">
       <div className="max-w-7xl mx-auto px-6">
         <div className="mb-10">
           <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
-            Brand Uniform
+            {config.sectionSubtitle || "Brand Uniform"}
           </span>
           <div className="flex justify-between items-baseline">
             <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#030213] uppercase">
-              Signature Pieces
+              {config.sectionTitle || "Signature Pieces"}
             </h2>
             <Link
               to="/shop"
@@ -121,7 +140,7 @@ export function SignaturePieces() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SIGNATURE_PIECES.map((product, idx) => (
+          {finalProducts.map((product, idx) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 30 }}
@@ -129,7 +148,7 @@ export function SignaturePieces() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
             >
-            <SignatureCard product={product} />
+              <SignatureCard product={product} />
             </motion.div>
           ))}
         </div>
