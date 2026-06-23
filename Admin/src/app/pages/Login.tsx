@@ -40,10 +40,10 @@ export function LoginPage() {
 
         {/* ── Logo + Header ────────────────────────────────────────── */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white flex items-center justify-center mx-auto mb-5">
-            <span className="text-[#030213] font-black text-xl tracking-tight">DD</span>
+          <div className="w-16 h-16 bg-card flex items-center justify-center mx-auto mb-5">
+            <span className="text-[#030213] font-bold text-xl tracking-tight">DD</span>
           </div>
-          <h1 className="text-2xl font-black text-white uppercase tracking-widest">
+          <h1 className="text-2xl font-bold text-white uppercase tracking-widest">
             Drip Doggy
           </h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1.5">
@@ -52,19 +52,19 @@ export function LoginPage() {
         </div>
 
         {/* ── Login Card ───────────────────────────────────────────── */}
-        <div className="bg-white p-8 border border-neutral-200/80">
+        <div className="bg-card p-8 border border-neutral-200/80">
           <form onSubmit={handleSubmit} className="space-y-5">
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="block text-[8px] font-black text-neutral-500 uppercase tracking-widest">
+              <label className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
                 Email Address
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300 uppercase tracking-wider"
+                className="w-full px-3.5 py-2.5 bg-card border border-neutral-200 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300 uppercase tracking-wider"
                 placeholder="admin@dripdoggy.com"
                 required
               />
@@ -72,7 +72,7 @@ export function LoginPage() {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="block text-[8px] font-black text-neutral-500 uppercase tracking-widest">
+              <label className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
                 Password
               </label>
               <div className="relative">
@@ -80,7 +80,7 @@ export function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300 pr-10"
+                  className="w-full px-3.5 py-2.5 bg-card border border-neutral-200 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300 pr-10"
                   placeholder="••••••••"
                   required
                 />
@@ -105,14 +105,14 @@ export function LoginPage() {
                 />
                 Remember me
               </label>
-              <button type="button" className="text-[8px] font-extrabold text-neutral-400 hover:text-[#030213] uppercase tracking-wider bg-transparent border-none cursor-pointer">
+              <button type="button" className="text-[8px] font-semibold text-neutral-400 hover:text-[#030213] uppercase tracking-wider bg-transparent border-none cursor-pointer">
                 Forgot password?
               </button>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="border border-red-200 bg-red-50 text-red-700 text-[8px] font-extrabold px-3 py-2.5 uppercase tracking-wider">
+              <div className="border border-red-200 bg-red-50 text-red-700 text-[8px] font-semibold px-3 py-2.5 uppercase tracking-wider">
                 {error}
               </div>
             )}
@@ -121,7 +121,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest py-2.5 uppercase transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer border-none"
+              className="w-full bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest py-2.5 uppercase transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer border-none"
             >
               {loading ? (
                 <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

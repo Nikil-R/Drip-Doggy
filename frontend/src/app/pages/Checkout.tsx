@@ -174,7 +174,7 @@ export function Checkout() {
       const stored = localStorage.getItem("addresses");
       if (stored) {
         const list = JSON.parse(stored);
-        return list.filter((a: any) => a.name !== "Jeshwanth" && a.firstName !== "Jeshwanth");
+        return list.filter((a: any) => a.name !== "Nikil" && a.firstName !== "Nikil");
       }
     } catch { /* noop */ }
     return [];

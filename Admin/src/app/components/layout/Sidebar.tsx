@@ -2,6 +2,8 @@ import { NavLink } from "react-router";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/app/store/sidebar-store";
 import { useAuthStore } from "@/app/store/auth-store";
+import logo from "@/assets/logo.png";
+import logoIcon from "@/assets/new_logo_icon.png";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -50,16 +52,15 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/customers", label: "Customers", icon: Users },
       { to: "/admin/coupons", label: "Coupon Code", icon: Ticket },
       { to: "/admin/categories", label: "Categories", icon: FolderKanban },
-      { to: "/admin/transactions", label: "Transaction", icon: ArrowRightLeft },
+      { to: "/admin/transactions", label: "Payments Ledger", icon: ArrowRightLeft },
       { to: "/admin/brands", label: "Brand", icon: Crown },
     ]
   },
   {
     title: "Product",
     items: [
-      { to: "/admin/products/new", label: "Add Products", icon: PlusSquare },
-      { to: "/admin/products/media", label: "Product Media", icon: ImageIcon },
       { to: "/admin/products", label: "Product List", icon: ListCollapse },
+      { to: "/admin/products/media", label: "Product Media", icon: ImageIcon },
       { to: "/admin/products/reviews", label: "Product Reviews", icon: Star },
     ]
   },
@@ -76,7 +77,6 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/content/hero-slides", label: "Hero Slides", icon: ImageIcon },
       { to: "/admin/content/featured-products", label: "Featured Products", icon: Star },
       { to: "/admin/content/signature-pieces", label: "Signature Pieces", icon: Award },
-      { to: "/admin/content/collection-story", label: "Collection Story", icon: BookOpen },
       { to: "/admin/content/home-categories", label: "Home Categories", icon: LayoutList },
       { to: "/admin/content/newsletter", label: "Newsletter Config", icon: Mail },
       { to: "/admin/content/footer", label: "Footer Settings", icon: Copyright },
@@ -95,24 +95,22 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "h-screen bg-white border-r border-neutral-200/80 fixed left-0 top-0 z-30 flex flex-col transition-all duration-300 ease-in-out",
+        "h-screen bg-background font-sans text-foreground border-r border-neutral-200/80 fixed left-0 top-0 z-30 flex flex-col transition-all duration-300 ease-in-out",
         isCollapsed ? "w-[68px]" : "w-[260px]"
       )}
     >
       {/* Logo area */}
-      <div className="flex items-center h-16 px-5 border-b border-neutral-200/80 shrink-0">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-8 h-8 bg-[#030213] rounded-none flex items-center justify-center shrink-0">
-            <span className="text-white font-extrabold text-xs">DD</span>
+      <div className="flex items-center h-16 px-4 border-b border-neutral-200/80 shrink-0">
+        <div className="flex items-center w-full overflow-hidden">
+          <div className="flex items-center w-full">
+            <img src={logoIcon} alt="DD" className="w-18 h-20 object-contain mix-blend-multiply shrink-0" />
+            <div className={cn(
+              "transition-all duration-300 ease-in-out overflow-hidden flex items-center",
+              isCollapsed ? "max-w-0 opacity-0 pointer-events-none ml-0" : "max-w-[180px] opacity-100 ml-2"
+            )}>
+              <img src={logo} alt="Drip Doggy" className="h-26 w-auto object-contain mix-blend-multiply shrink-0" />
+            </div>
           </div>
-          <span
-            className={cn(
-              "font-black text-xs uppercase tracking-[0.2em] text-[#030213] whitespace-nowrap transition-opacity duration-200",
-              isCollapsed && "opacity-0 w-0 overflow-hidden"
-            )}
-          >
-            Drip Doggy
-          </span>
         </div>
       </div>
 
@@ -122,8 +120,8 @@ export function Sidebar() {
           <div key={idx} className="space-y-1">
             <span
               className={cn(
-                "px-3 text-[8px] font-black tracking-[0.25em] text-neutral-400 uppercase block mb-1.5 transition-opacity duration-200",
-                isCollapsed && "opacity-0 w-0 overflow-hidden"
+                "text-[8px] font-medium tracking-[0.25em] text-neutral-400 uppercase block transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap",
+                isCollapsed ? "max-w-0 opacity-0 px-0 mb-0 mt-0" : "max-w-[200px] opacity-100 px-3 mb-1.5 mt-1"
               )}
             >
               {section.title}
@@ -133,20 +131,21 @@ export function Sidebar() {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-150 group",
+                      "flex items-center px-3 py-2 text-[10px] font-medium uppercase tracking-widest transition-all duration-300 group rounded-md",
                       isActive
-                        ? "bg-[#030213] text-white"
-                        : "text-neutral-500 hover:text-[#030213] hover:bg-neutral-50"
+                        ? "bg-accent text-foreground font-semibold"
+                        : "text-neutral-500 hover:text-primary hover:bg-muted"
                     )
                   }
                 >
                   <item.icon className="w-4 h-4 shrink-0" />
                   <span
                     className={cn(
-                      "whitespace-nowrap transition-opacity duration-200",
-                      isCollapsed && "opacity-0 w-0 overflow-hidden"
+                      "whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden inline-block",
+                      isCollapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100 ml-3"
                     )}
                   >
                     {item.label}
@@ -160,29 +159,32 @@ export function Sidebar() {
 
       {/* Bottom Profile Area & External Link */}
       <div className="p-3 border-t border-neutral-200/80 shrink-0 space-y-3">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-8 h-8 rounded-none border border-neutral-200 overflow-hidden bg-neutral-100 flex-shrink-0">
+        <div className="flex items-center px-2">
+          <div className="w-8 h-8 rounded-full border border-neutral-200 overflow-hidden bg-background flex-shrink-0 flex items-center justify-center p-0.5">
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=120&auto=format&fit=crop"
+              src={logoIcon}
               alt="Profile"
-              className="w-full h-full object-cover grayscale"
+              className="w-full h-full object-contain mix-blend-multiply"
             />
           </div>
           <div
             className={cn(
-              "min-w-0 flex-1 transition-opacity duration-200",
-              isCollapsed && "opacity-0 w-0 overflow-hidden"
+              "min-w-0 flex-1 transition-all duration-300 ease-in-out overflow-hidden",
+              isCollapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100 ml-3"
             )}
           >
-            <p className="text-[10px] font-black uppercase tracking-wider truncate text-[#030213]">Drip Doggy</p>
-            <p className="text-[8px] font-bold text-neutral-400 truncate">admin@dripdoggy.com</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider truncate text-foreground">Nikil</p>
+            <p className="text-[8px] font-medium text-neutral-400 truncate">nikil@dripdoggy.com</p>
           </div>
           <button
             onClick={() => logout()}
-            className="text-neutral-400 hover:text-[#b2533e] transition-colors p-1 bg-transparent border-none cursor-pointer"
+            className={cn(
+              "text-neutral-400 hover:text-destructive transition-all duration-300 p-1 bg-transparent border-none cursor-pointer overflow-hidden",
+              isCollapsed ? "max-w-0 opacity-0 pointer-events-none ml-0" : "max-w-[30px] opacity-100 ml-auto"
+            )}
             aria-label="Logout"
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
           </button>
         </div>
 
@@ -190,28 +192,32 @@ export function Sidebar() {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 w-full bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-200 py-2.5 text-[8px] font-black tracking-widest uppercase transition-colors text-neutral-600"
+          className="flex items-center justify-center w-full bg-neutral-50 hover:bg-neutral-100/80 border border-neutral-200 py-2.5 text-[8px] font-medium tracking-widest uppercase transition-colors text-neutral-600 rounded-md overflow-hidden px-2"
         >
-          {isCollapsed ? <ExternalLink className="h-3 w-3" /> : (
-            <>
-              Your Shop <ArrowRightLeft className="h-3 w-3 rotate-45" />
-            </>
-          )}
+          <ExternalLink className="h-3 w-3 shrink-0" />
+          <span
+            className={cn(
+              "whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden text-center",
+              isCollapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[120px] opacity-100 ml-1.5"
+            )}
+          >
+            Drip Doggy Shop
+          </span>
         </a>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={toggle}
-          className="flex items-center justify-center w-full p-2 text-neutral-500 hover:text-[#030213] hover:bg-neutral-50 rounded-none transition-colors cursor-pointer bg-transparent border-none"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
       </div>
+
+      {/* Floating Middle Right Collapse toggle */}
+      <button
+        onClick={toggle}
+        className="absolute top-1/2 -translate-y-1/2 -right-3 z-40 bg-background border border-neutral-300 w-6 h-6 flex items-center justify-center text-neutral-500 hover:text-primary hover:bg-muted transition-colors cursor-pointer rounded-full shadow-sm"
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {isCollapsed ? (
+          <ChevronRight className="w-3.5 h-3.5" />
+        ) : (
+          <ChevronLeft className="w-3.5 h-3.5" />
+        )}
+      </button>
     </aside>
   );
 }

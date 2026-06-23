@@ -61,13 +61,13 @@ const monthlyTrend = [
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-neutral-200 shadow-md px-3.5 py-2.5 text-[9px] font-sans uppercase font-bold tracking-wider">
-      <p className="font-extrabold text-[#030213] mb-1">{label}</p>
+    <div className="bg-card border border-neutral-200 shadow-md px-3.5 py-2.5 text-[9px] font-sans uppercase font-bold tracking-wider">
+      <p className="font-semibold text-[#030213] mb-1">{label}</p>
       {payload.map((entry: any, idx: number) => (
         <div key={idx} className="flex items-center gap-1.5 text-neutral-500 leading-5">
           <span className="w-1.5 h-1.5" style={{ backgroundColor: entry.color }} />
           <span>{entry.name}:</span>
-          <span className="text-[#030213] font-black">{typeof entry.value === "number" ? entry.value.toLocaleString("en-IN") : entry.value}</span>
+          <span className="text-[#030213] font-bold">{typeof entry.value === "number" ? entry.value.toLocaleString("en-IN") : entry.value}</span>
         </div>
       ))}
     </div>
@@ -80,7 +80,7 @@ export function AnalyticsPage() {
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">Analytics</h1>
+        <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Analytics</h1>
         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
           Drip Doggy performance dashboard &amp; insights
         </p>
@@ -89,18 +89,18 @@ export function AnalyticsPage() {
       {/* ── Metrics Grid ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         {metrics.map((metric, idx) => (
-          <div key={idx} className="bg-white border border-neutral-200/80 p-4">
+          <div key={idx} className="bg-card border border-neutral-200/80 p-4">
             <div className="flex items-center justify-between mb-2">
               <metric.icon className="h-4 w-4 text-neutral-400" />
-              <span className={`inline-flex items-center gap-0.5 text-[7px] font-extrabold px-1.5 py-0.5 border ${
+              <span className={`inline-flex items-center gap-0.5 text-[7px] font-semibold px-1.5 py-0.5 border ${
                 metric.trend === "up" ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-600 border-red-200"
               }`}>
                 {metric.trend === "up" ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
                 {metric.change}
               </span>
             </div>
-            <p className="text-[7px] font-extrabold tracking-wider text-neutral-400 uppercase mb-0.5">{metric.label}</p>
-            <p className="text-sm font-black text-[#030213] tracking-tight">{metric.value}</p>
+            <p className="text-[7px] font-semibold tracking-wider text-neutral-400 uppercase mb-0.5">{metric.label}</p>
+            <p className="text-sm font-bold text-[#030213] tracking-tight">{metric.value}</p>
             <p className="text-[6.5px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">{metric.subtitle}</p>
           </div>
         ))}
@@ -110,13 +110,13 @@ export function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Weekly Revenue Area Chart */}
-        <div className="bg-white border border-neutral-200/80 p-5">
+        <div className="bg-card border border-neutral-200/80 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase">Weekly Revenue</h2>
-              <p className="text-lg font-black text-[#030213] mt-0.5">{RS}38,08,000</p>
+              <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase">Weekly Revenue</h2>
+              <p className="text-lg font-bold text-[#030213] mt-0.5">{RS}38,08,000</p>
             </div>
-            <div className="flex items-center gap-3 text-[7px] font-extrabold text-neutral-400 uppercase tracking-wider">
+            <div className="flex items-center gap-3 text-[7px] font-semibold text-neutral-400 uppercase tracking-wider">
               <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#030213]" /> Revenue</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 bg-[#b2533e]" /> Orders</span>
             </div>
@@ -141,11 +141,11 @@ export function AnalyticsPage() {
         </div>
 
         {/* Category Donut Chart */}
-        <div className="bg-white border border-neutral-200/80 p-5">
+        <div className="bg-card border border-neutral-200/80 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase">Sales by Category</h2>
-              <p className="text-lg font-black text-[#030213] mt-0.5">Outerwear Leads</p>
+              <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase">Sales by Category</h2>
+              <p className="text-lg font-bold text-[#030213] mt-0.5">Outerwear Leads</p>
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -169,7 +169,7 @@ export function AnalyticsPage() {
                     <span className="text-neutral-600 uppercase tracking-wider">{cat.name}</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-black text-[#030213]">{cat.value}%</span>
+                    <span className="font-bold text-[#030213]">{cat.value}%</span>
                     <span className="text-neutral-400 ml-2">{RS}{(cat.revenue / 100000).toFixed(1)}L</span>
                   </div>
                 </div>
@@ -179,11 +179,11 @@ export function AnalyticsPage() {
         </div>
 
         {/* Monthly Trend Line Chart */}
-        <div className="bg-white border border-neutral-200/80 p-5">
+        <div className="bg-card border border-neutral-200/80 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase">Monthly Trend</h2>
-              <p className="text-lg font-black text-[#030213] mt-0.5">+43.4% growth</p>
+              <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase">Monthly Trend</h2>
+              <p className="text-lg font-bold text-[#030213] mt-0.5">+43.4% growth</p>
             </div>
           </div>
           <div className="h-[200px]">
@@ -201,26 +201,26 @@ export function AnalyticsPage() {
         </div>
 
         {/* Top Products Table */}
-        <div className="bg-white border border-neutral-200/80 p-5">
+        <div className="bg-card border border-neutral-200/80 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase">Top Products</h2>
-              <p className="text-lg font-black text-[#030213] mt-0.5">By Revenue</p>
+              <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase">Top Products</h2>
+              <p className="text-lg font-bold text-[#030213] mt-0.5">By Revenue</p>
             </div>
           </div>
           <div className="space-y-3">
             {topProducts.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-[8px] font-black text-neutral-300 w-4">{idx + 1}</span>
+                  <span className="text-[8px] font-bold text-neutral-300 w-4">{idx + 1}</span>
                   <div>
-                    <p className="text-[9px] font-extrabold text-[#030213] truncate max-w-[180px]">{p.name}</p>
+                    <p className="text-[9px] font-semibold text-[#030213] truncate max-w-[180px]">{p.name}</p>
                     <p className="text-[7px] text-neutral-400 font-mono">{p.sku} &middot; {p.orders} orders</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-black text-[#030213]">{RS}{p.revenue.toLocaleString("en-IN")}</p>
-                  <p className="text-[7px] font-extrabold text-green-700">{p.growth}</p>
+                  <p className="text-[9px] font-bold text-[#030213]">{RS}{p.revenue.toLocaleString("en-IN")}</p>
+                  <p className="text-[7px] font-semibold text-green-700">{p.growth}</p>
                 </div>
               </div>
             ))}
@@ -237,10 +237,10 @@ export function AnalyticsPage() {
           { label: "Avg. Order Value", value: RS + "2,408", sub: "vs last week +3.7%" },
           { label: "Return Rate", value: "6.6%", sub: "vs last week -1.2%" },
         ].map((item, i) => (
-          <div key={i} className="bg-white border border-neutral-200/80 p-4 flex items-center gap-3">
+          <div key={i} className="bg-card border border-neutral-200/80 p-4 flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-[7px] font-extrabold tracking-wider text-neutral-400 uppercase">{item.label}</p>
-              <p className="text-sm font-black text-[#030213] mt-0.5">{item.value}</p>
+              <p className="text-[7px] font-semibold tracking-wider text-neutral-400 uppercase">{item.label}</p>
+              <p className="text-sm font-bold text-[#030213] mt-0.5">{item.value}</p>
               <p className="text-[7px] text-green-700 font-bold mt-0.5">{item.sub}</p>
             </div>
           </div>

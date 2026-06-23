@@ -54,33 +54,33 @@ export function FeaturedProductsEditorPage() {
     <div className="space-y-8 font-sans">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">Featured Products</h1>
+          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Featured Products</h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Select Drip Doggy products for the homepage featured section</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={reset} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer bg-white rounded-none">
+          <button onClick={reset} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer bg-card rounded-none">
             <RotateCcw className="w-3 h-3" /> Reset Defaults
           </button>
-          <button onClick={save} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none">
+          <button onClick={save} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none">
             <Check className="w-3.5 h-3.5" /> Save
           </button>
         </div>
       </div>
 
       {/* Settings */}
-      <div className="bg-white border border-neutral-200/80 p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-card border border-neutral-200/80 p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Section Title</label>
+          <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Section Title</label>
           <input value={config.sectionTitle} onChange={e => setConfigState({ ...config, sectionTitle: e.target.value })}
             className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold uppercase focus:outline-none focus:border-[#030213] rounded-none" />
         </div>
         <div>
-          <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Section Subtitle</label>
+          <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Section Subtitle</label>
           <input value={config.sectionSubtitle} onChange={e => setConfigState({ ...config, sectionSubtitle: e.target.value })}
             className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold uppercase focus:outline-none focus:border-[#030213] rounded-none" />
         </div>
         <div>
-          <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Max Products</label>
+          <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Max Products</label>
           <input type="number" value={config.maxProducts} onChange={e => setConfigState({ ...config, maxProducts: Number(e.target.value) })}
             className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold focus:outline-none focus:border-[#030213] rounded-none" />
         </div>
@@ -89,7 +89,7 @@ export function FeaturedProductsEditorPage() {
       {/* Product Selector */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[8px] font-black tracking-wider text-neutral-500 uppercase">Select Products ({selectedIds.length} selected)</span>
+          <span className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase">Select Products ({selectedIds.length} selected)</span>
           <span className="text-[8px] font-bold text-neutral-400">Max: {config.maxProducts}</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -98,10 +98,10 @@ export function FeaturedProductsEditorPage() {
             return (
               <button key={p.id} onClick={() => toggleProduct(p.id)}
                 className={`text-left p-4 border cursor-pointer transition-all ${
-                  selected ? "border-[#030213] bg-[#faf8f5]" : "border-neutral-200/80 bg-white hover:border-neutral-400"
+                  selected ? "border-[#030213] bg-card" : "border-neutral-200/80 bg-card hover:border-neutral-400"
                 }`}>
                 <div className="flex items-center justify-between">
-                  <span className={`text-[9px] font-black uppercase tracking-wide ${selected ? "text-[#030213]" : "text-neutral-600"}`}>{p.name}</span>
+                  <span className={`text-[9px] font-bold uppercase tracking-wide ${selected ? "text-[#030213]" : "text-neutral-600"}`}>{p.name}</span>
                   <div className={`w-4 h-4 border flex items-center justify-center ${selected ? "bg-[#030213] border-[#030213]" : "border-neutral-300"}`}>
                     {selected && <Check className="w-3 h-3 text-white" />}
                   </div>
@@ -114,7 +114,7 @@ export function FeaturedProductsEditorPage() {
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#030213] text-white text-[9px] font-extrabold tracking-widest px-4 py-3 uppercase z-50">
+        <div className="fixed bottom-6 right-6 bg-[#030213] text-white text-[9px] font-semibold tracking-widest px-4 py-3 uppercase z-50">
           {toast}
         </div>
       )}

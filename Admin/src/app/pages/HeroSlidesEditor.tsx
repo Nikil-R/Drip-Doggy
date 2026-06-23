@@ -7,13 +7,15 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
     <button
       type="button"
       onClick={onClick}
-      className={`relative w-9 h-[18px] rounded-full transition-colors duration-200 border-none cursor-pointer ${
-        enabled ? "bg-green-500" : "bg-neutral-300"
+      className={`relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer p-0 shrink-0 border-none outline-none ${
+        enabled ? "bg-[#030213]" : "bg-neutral-300"
       }`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-        enabled ? "translate-x-[18px]" : "translate-x-0"
-      }`} />
+      <span
+        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+          enabled ? "translate-x-4" : "translate-x-0"
+        }`}
+      />
     </button>
   );
 }
@@ -95,17 +97,17 @@ export function HeroSlidesEditorPage() {
     <div className="space-y-8 font-sans">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">Hero Slides</h1>
+          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Hero Slides</h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Manage Drip Doggy homepage hero banner slides</p>
         </div>
-        <button onClick={openAdd} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none">
+        <button onClick={openAdd} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none">
           <Plus className="w-3.5 h-3.5" /> Add Slide
         </button>
       </div>
 
       <div className="space-y-3">
         {sorted.map((s, idx) => (
-          <div key={s.id} className="bg-white border border-neutral-200/80 p-4 flex items-center gap-4">
+          <div key={s.id} className="bg-card border border-neutral-200/80 p-4 flex items-center gap-4">
             <div className="flex flex-col gap-1 text-neutral-300">
               <button onClick={() => moveUp(idx)} disabled={idx === 0} className="disabled:opacity-30 cursor-pointer bg-transparent border-none p-0.5"><ArrowUp className="w-3 h-3" /></button>
               <button onClick={() => moveDown(idx)} disabled={idx >= sorted.length - 1} className="disabled:opacity-30 cursor-pointer bg-transparent border-none p-0.5"><ArrowDown className="w-3 h-3" /></button>
@@ -115,10 +117,10 @@ export function HeroSlidesEditorPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-black text-neutral-400">#{s.order + 1}</span>
-                <span className="text-[8px] font-extrabold text-amber-600 bg-amber-50 px-1.5 py-0.5">{s.tagline}</span>
+                <span className="text-[9px] font-bold text-neutral-400">#{s.order + 1}</span>
+                <span className="text-[8px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5">{s.tagline}</span>
               </div>
-              <h3 className="text-[10px] font-black text-[#030213] uppercase tracking-wide truncate mt-1">{s.title}</h3>
+              <h3 className="text-[10px] font-bold text-[#030213] uppercase tracking-wide truncate mt-1">{s.title}</h3>
               <p className="text-[8px] text-neutral-400 truncate">{s.description}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -132,50 +134,50 @@ export function HeroSlidesEditorPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
-          <div className="bg-white border border-neutral-200 w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-card border border-neutral-200 w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-sm font-black text-[#030213] uppercase tracking-widest">{editSlide ? "Edit Slide" : "Add Slide"}</h2>
+              <h2 className="text-sm font-bold text-[#030213] uppercase tracking-widest">{editSlide ? "Edit Slide" : "Add Slide"}</h2>
               <button onClick={() => setShowModal(false)} className="text-neutral-400 hover:text-[#030213] cursor-pointer bg-transparent border-none"><X className="w-4 h-4" /></button>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Tagline</label>
+                  <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Tagline</label>
                   <input value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })}
                     className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold uppercase focus:outline-none focus:border-[#030213] rounded-none" />
                 </div>
                 <div>
-                  <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Title</label>
+                  <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Title</label>
                   <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                     className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold uppercase focus:outline-none focus:border-[#030213] rounded-none" />
                 </div>
               </div>
               <div>
-                <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Description</label>
+                <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Description</label>
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                   className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold focus:outline-none focus:border-[#030213] rounded-none h-16" />
               </div>
               <div>
-                <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">Background Image URL</label>
+                <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">Background Image URL</label>
                 <input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })}
                   className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold focus:outline-none focus:border-[#030213] rounded-none" placeholder="https://..." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">CTA Text</label>
+                  <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">CTA Text</label>
                   <input value={form.ctaText || ""} onChange={e => setForm({ ...form, ctaText: e.target.value })}
                     className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold uppercase focus:outline-none focus:border-[#030213] rounded-none" />
                 </div>
                 <div>
-                  <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase mb-1 block">CTA Link</label>
+                  <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1 block">CTA Link</label>
                   <input value={form.ctaLink || ""} onChange={e => setForm({ ...form, ctaLink: e.target.value })}
                     className="w-full border border-neutral-200/80 px-3 py-2 text-[9px] font-bold focus:outline-none focus:border-[#030213] rounded-none" />
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-neutral-100">
-              <button onClick={() => setShowModal(false)} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase bg-white cursor-pointer rounded-none">Cancel</button>
-              <button onClick={save} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">{editSlide ? "Update" : "Create"}</button>
+              <button onClick={() => setShowModal(false)} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-4 py-2 uppercase bg-card cursor-pointer rounded-none">Cancel</button>
+              <button onClick={save} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">{editSlide ? "Update" : "Create"}</button>
             </div>
           </div>
         </div>
@@ -183,20 +185,20 @@ export function HeroSlidesEditorPage() {
 
       {deleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setDeleteId(null)}>
-          <div className="bg-white border border-neutral-200 p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-card border border-neutral-200 p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
             <AlertTriangle className="w-8 h-8 text-[#b2533e] mb-3" />
-            <h3 className="text-sm font-black text-[#030213] uppercase tracking-widest mb-2">Delete Slide?</h3>
+            <h3 className="text-sm font-bold text-[#030213] uppercase tracking-widest mb-2">Delete Slide?</h3>
             <p className="text-[9px] text-neutral-500 mb-4">This will remove this hero slide permanently.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteId(null)} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase bg-white cursor-pointer rounded-none">Cancel</button>
-              <button onClick={remove} className="bg-[#b2533e] hover:bg-red-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Delete</button>
+              <button onClick={() => setDeleteId(null)} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-4 py-2 uppercase bg-card cursor-pointer rounded-none">Cancel</button>
+              <button onClick={remove} className="bg-[#b2533e] hover:bg-red-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Delete</button>
             </div>
           </div>
         </div>
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#030213] text-white text-[9px] font-extrabold tracking-widest px-4 py-3 uppercase z-50">
+        <div className="fixed bottom-6 right-6 bg-[#030213] text-white text-[9px] font-semibold tracking-widest px-4 py-3 uppercase z-50">
           {toast}
         </div>
       )}

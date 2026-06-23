@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drip Doggy Local Storage Bridge</title>
+  <script>
+    // Send all Drip Doggy content keys to the frontend on initial load
+    function sendAllContent() {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('dd_content_')) {
+          window.parent.postMessage({
+            type: 'sync-from-admin',
+            key: key,
+            value: localStorage.getItem(key)
+          }, '*');
+        }
+      }
+    }
+
+    // Wait for the parent to be ready, then send current state
+    window.addEventListener('load', () => {
+      sendAllContent();
+      
+      // Let the parent know the bridge is ready
+      window.parent.postMessage({ type: 'bridge-ready' }, '*');
+    });
+
+    // Listen for storage changes in the Admin origin (e.g. user updates slides)
+    window.addEventListener('storage', (e) => {
+      if (e.key && e.key.startsWith('dd_content_')) {
+        window.parent.postMessage({
+          type: 'sync-from-admin',
+          key: e.key,
+          value: e.newValue
+        }, '*');
+      }
+    });
+
+    // Listen for custom events dispatched inside Admin app (for immediate single-tab actions)
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'admin-content-updated') {
+        window.parent.postMessage({
+          type: 'sync-from-admin',
+          key: event.data.key,
+          value: localStorage.getItem(event.data.key)
+        }, '*');
+      }
+    });
+  </script>
+</head>
+<body>
+</body>
+</html>

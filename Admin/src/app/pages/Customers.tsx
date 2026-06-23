@@ -15,10 +15,16 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingBag,
-  Gift,
   Heart,
   Tag,
-  Clock
+  Clock,
+  X,
+  Mail,
+  Edit2,
+  Slash,
+  Download,
+  CheckCircle,
+  FileText
 } from "lucide-react";
 import {
   AreaChart,
@@ -30,40 +36,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const RS = "\u20B9";
-
-// ─── Drip Doggy Customer KPIs ─────────────────────────────────────────────
+const RS = "₹";
 
 const kpiStats = [
-  {
-    label: "Total Customers",
-    value: "18,450",
-    change: "+22.3%",
-    subtitle: "Lifetime registered"
-  },
-  {
-    label: "Active This Month",
-    value: "3,280",
-    change: "+15.7%",
-    subtitle: "Made a purchase in last 30 days"
-  },
-  {
-    label: "New This Week",
-    value: "845",
-    change: "+11.2%",
-    subtitle: "Joined in last 7 days"
-  },
-  {
-    label: "VIP Customers",
-    value: "2,140",
-    change: "+8.6%",
-    subtitle: "Lifetime spend > " + RS + "50,000"
-  }
+  { label: "Total Customers", value: "18,450", change: "+22.3%", subtitle: "Lifetime registered" },
+  { label: "Active This Month", value: "3,280", change: "+15.7%", subtitle: "Made purchase in last 30d" },
+  { label: "New This Week", value: "845", change: "+11.2%", subtitle: "Joined in last 7 days" },
+  { label: "Inactive Customers", value: "1,120", change: "-2.5%", subtitle: "No orders in last 90 days" }
 ];
 
-// ─── Weekly Activity Data ─────────────────────────────────────────────────
-
-const weeklyData = [
+const weeklyDataAll = [
   { day: "Mon", active: 1240, visitors: 18400, orders: 185 },
   { day: "Tue", active: 1380, visitors: 20100, orders: 212 },
   { day: "Wed", active: 1520, visitors: 22800, orders: 248 },
@@ -73,51 +55,184 @@ const weeklyData = [
   { day: "Sun", active: 1120, visitors: 15800, orders: 162 }
 ];
 
-// ─── Drip Doggy Customer Data ─────────────────────────────────────────────
-
-const initialCustomers = [
-  { id: "#DD-C001", name: "Ananya Sharma", email: "ananya.sharma@gmail.com", phone: "+91 98765 43210", orders: 28, spent: 62150, avgOrder: 2220, status: "VIP", address: "42, Bandra West, Mumbai, Maharashtra", registered: "12.01.2025", lastPurchase: "15.05.2025", segment: "Premium", favCategory: "Outerwear", lastProduct: "Sartorial Trench Coat" },
-  { id: "#DD-C002", name: "Rahul Verma", email: "rahul.verma@outlook.com", phone: "+91 87654 32109", orders: 15, spent: 28400, avgOrder: 1893, status: "Active", address: "78, Indiranagar, Bangalore, Karnataka", registered: "03.03.2025", lastPurchase: "12.05.2025", segment: "Standard", favCategory: "Knitwear", lastProduct: "Cashmere Blend Crew" },
-  { id: "#DD-C003", name: "Priya Kapoor", email: "priya.kapoor@yahoo.com", phone: "+91 76543 21098", orders: 42, spent: 98500, avgOrder: 2345, status: "VIP", address: "15, GK II, New Delhi, Delhi", registered: "20.11.2024", lastPurchase: "18.05.2025", segment: "Premium", favCategory: "Tops", lastProduct: "Signature Silk Blouse" },
-  { id: "#DD-C004", name: "Arjun Mehta", email: "arjun.mehta@gmail.com", phone: "+91 65432 10987", orders: 8, spent: 12450, avgOrder: 1556, status: "Active", address: "33, Jubilee Hills, Hyderabad, Telangana", registered: "10.04.2025", lastPurchase: "08.05.2025", segment: "Standard", favCategory: "Bottoms", lastProduct: "Pleated Wool Trousers" },
-  { id: "#DD-C005", name: "Neha Gupta", email: "neha.gupta@rediffmail.com", phone: "+91 54321 09876", orders: 3, spent: 4890, avgOrder: 1630, status: "New", address: "55, Anna Nagar, Chennai, Tamil Nadu", registered: "01.05.2025", lastPurchase: "05.05.2025", segment: "First-Time", favCategory: "Dresses", lastProduct: "Linen Midi Dress" },
-  { id: "#DD-C006", name: "Vikram Singh", email: "vikram.singh@gmail.com", phone: "+91 43210 98765", orders: 22, spent: 45200, avgOrder: 2055, status: "Active", address: "89, Koregaon Park, Pune, Maharashtra", registered: "05.02.2025", lastPurchase: "14.05.2025", segment: "Premium", favCategory: "Outerwear", lastProduct: "Structured Canvas Jacket" },
-  { id: "#DD-C007", name: "Ishita Patel", email: "ishita.patel@proton.me", phone: "+91 32109 87654", orders: 0, spent: 0, avgOrder: 0, status: "Inactive", address: "120, Navrangpura, Ahmedabad, Gujarat", registered: "28.04.2025", lastPurchase: "\u2014", segment: "New", favCategory: "\u2014", lastProduct: "\u2014" },
-  { id: "#DD-C008", name: "Aditya Joshi", email: "aditya.joshi@icloud.com", phone: "+91 21098 76543", orders: 35, spent: 73800, avgOrder: 2109, status: "VIP", address: "7, Salt Lake, Kolkata, West Bengal", registered: "10.10.2024", lastPurchase: "19.05.2025", segment: "Premium", favCategory: "Knitwear", lastProduct: "Merino Wool Cardigan" },
-  { id: "#DD-C009", name: "Sanya Malhotra", email: "sanya.m@hotmail.com", phone: "+91 10987 65432", orders: 12, spent: 23100, avgOrder: 1925, status: "Active", address: "66, Malviya Nagar, Jaipur, Rajasthan", registered: "15.03.2025", lastPurchase: "11.05.2025", segment: "Standard", favCategory: "Accessories", lastProduct: "Handwoven Silk Scarf" },
-  { id: "#DD-C010", name: "Karan Desai", email: "karan.desai@gmail.com", phone: "+91 19876 54321", orders: 6, spent: 11200, avgOrder: 1867, status: "Active", address: "22, Banjara Hills, Lucknow, Uttar Pradesh", registered: "22.04.2025", lastPurchase: "09.05.2025", segment: "Standard", favCategory: "Tops", lastProduct: "Relaxed Linen Shirt" },
-  { id: "#DD-C011", name: "Riya Nair", email: "riya.nair@outlook.com", phone: "+91 18765 43210", orders: 18, spent: 36100, avgOrder: 2006, status: "Active", address: "5, Panampilly Nagar, Kochi, Kerala", registered: "14.02.2025", lastPurchase: "16.05.2025", segment: "Premium", favCategory: "Bottoms", lastProduct: "Tailored Linen Trousers" },
-  { id: "#DD-C012", name: "Dhruv Agarwal", email: "dhruv.agarwal@yahoo.com", phone: "+91 17654 32109", orders: 1, spent: 2450, avgOrder: 2450, status: "New", address: "95, Civil Lines, Nagpur, Maharashtra", registered: "15.05.2025", lastPurchase: "15.05.2025", segment: "First-Time", favCategory: "Outerwear", lastProduct: "Drip Doggy Bomber Jacket" }
+const weeklyDataVIP = [
+  { day: "Mon", active: 240, visitors: 2800, orders: 120 },
+  { day: "Tue", active: 310, visitors: 3100, orders: 135 },
+  { day: "Wed", active: 420, visitors: 4200, orders: 180 },
+  { day: "Thu", active: 350, visitors: 3500, orders: 145 },
+  { day: "Fri", active: 500, visitors: 5800, orders: 230 },
+  { day: "Sat", active: 480, visitors: 5200, orders: 210 },
+  { day: "Sun", active: 290, visitors: 3300, orders: 110 }
 ];
 
-// ─── Sub-Components ───────────────────────────────────────────────────────
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  orders: number;
+  spent: number;
+  avgOrder: number;
+  status: "Active" | "Inactive" | "New" | "Blocked";
+  address: string;
+  registered: string;
+  lastPurchase: string;
+  favCategory: string;
+  lastProduct: string;
+  notes?: string;
+  wishlist?: string[];
+  abandonedCart?: string;
+  logins?: string[];
+}
+
+const mockCustomersData: Customer[] = [
+  { 
+    id: "#DD-C001", 
+    name: "Ananya Sharma", 
+    email: "ananya.sharma@gmail.com", 
+    phone: "+91 98765 43210", 
+    orders: 28, 
+    spent: 62150, 
+    avgOrder: 2220, 
+    status: "Active", 
+    address: "42, Bandra West, Mumbai, Maharashtra", 
+    registered: "2025-01-12", 
+    lastPurchase: "2026-05-15", 
+    favCategory: "Outerwear", 
+    lastProduct: "Sartorial Trench Coat",
+    notes: "VIP customer. Prefers minimal packaging.",
+    wishlist: ["Structured Canvas Jacket", "French Terry Hoodie"],
+    abandonedCart: "Signature Silk Blouse (Size M)",
+    logins: ["2026-06-22 14:30 - Mumbai, IN", "2026-06-20 11:15 - Mumbai, IN"]
+  },
+  { 
+    id: "#DD-C002", 
+    name: "Rahul Verma", 
+    email: "rahul.verma@outlook.com", 
+    phone: "+91 87654 32109", 
+    orders: 15, 
+    spent: 28400, 
+    avgOrder: 1893, 
+    status: "Active", 
+    address: "78, Indiranagar, Bangalore, Karnataka", 
+    registered: "2025-03-03", 
+    lastPurchase: "2026-05-12", 
+    favCategory: "Knitwear", 
+    lastProduct: "Cashmere Blend Crew",
+    wishlist: ["Merino Wool Cardigan"],
+    logins: ["2026-06-21 09:45 - Bangalore, IN"]
+  },
+  { 
+    id: "#DD-C003", 
+    name: "Priya Kapoor", 
+    email: "priya.kapoor@yahoo.com", 
+    phone: "+91 76543 21098", 
+    orders: 42, 
+    spent: 98500, 
+    avgOrder: 2345, 
+    status: "Active", 
+    address: "15, GK II, New Delhi, Delhi", 
+    registered: "2024-11-20", 
+    lastPurchase: "2026-05-18", 
+    favCategory: "Tops", 
+    lastProduct: "Signature Silk Blouse",
+    notes: "Requires fast shipping options.",
+    wishlist: ["Sartorial Trench Coat", "Tailored Linen Trousers"],
+    abandonedCart: "French Terry Hoodie (Size L)",
+    logins: ["2026-06-22 16:10 - Delhi, IN", "2026-06-18 10:20 - Delhi, IN"]
+  },
+  { 
+    id: "#DD-C004", 
+    name: "Arjun Mehta", 
+    email: "arjun.mehta@gmail.com", 
+    phone: "+91 65432 10987", 
+    orders: 8, 
+    spent: 12450, 
+    avgOrder: 1556, 
+    status: "Active", 
+    address: "33, Jubilee Hills, Hyderabad, Telangana", 
+    registered: "2025-04-10", 
+    lastPurchase: "2026-05-08", 
+    favCategory: "Bottoms", 
+    lastProduct: "Pleated Wool Trousers",
+    wishlist: []
+  },
+  { 
+    id: "#DD-C005", 
+    name: "Neha Gupta", 
+    email: "neha.gupta@rediffmail.com", 
+    phone: "+91 54321 09876", 
+    orders: 3, 
+    spent: 4890, 
+    avgOrder: 1630, 
+    status: "New", 
+    address: "55, Anna Nagar, Chennai, Tamil Nadu", 
+    registered: "2026-05-01", 
+    lastPurchase: "2026-05-05", 
+    favCategory: "Dresses", 
+    lastProduct: "Linen Midi Dress",
+    wishlist: ["Structured Canvas Jacket"]
+  },
+  { 
+    id: "#DD-C006", 
+    name: "Vikram Singh", 
+    email: "vikram.singh@gmail.com", 
+    phone: "+91 43210 98765", 
+    orders: 22, 
+    spent: 45200, 
+    avgOrder: 2055, 
+    status: "Active", 
+    address: "89, Koregaon Park, Pune, Maharashtra", 
+    registered: "2025-02-05", 
+    lastPurchase: "2026-05-14", 
+    favCategory: "Outerwear", 
+    lastProduct: "Structured Canvas Jacket"
+  },
+  { 
+    id: "#DD-C007", 
+    name: "Ishita Patel", 
+    email: "ishita.patel@proton.me", 
+    phone: "+91 32109 87654", 
+    orders: 0, 
+    spent: 0, 
+    avgOrder: 0, 
+    status: "Inactive", 
+    address: "120, Navrangpura, Ahmedabad, Gujarat", 
+    registered: "2026-04-28", 
+    lastPurchase: "—", 
+    favCategory: "—", 
+    lastProduct: "—"
+  },
+  { 
+    id: "#DD-C008", 
+    name: "Aditya Joshi", 
+    email: "aditya.joshi@icloud.com", 
+    phone: "+91 21098 76543", 
+    orders: 35, 
+    spent: 73800, 
+    avgOrder: 2109, 
+    status: "Active", 
+    address: "7, Salt Lake, Kolkata, West Bengal", 
+    registered: "2024-10-10", 
+    lastPurchase: "2026-05-19", 
+    favCategory: "Knitwear", 
+    lastProduct: "Merino Wool Cardigan"
+  }
+];
 
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { dot: string; text: string; label: string }> = {
-    Active: { dot: "bg-emerald-500", text: "text-emerald-700", label: "Active" },
-    Inactive: { dot: "bg-neutral-400", text: "text-neutral-500", label: "Inactive" },
-    VIP: { dot: "bg-amber-500", text: "text-amber-700", label: "VIP" },
-    New: { dot: "bg-blue-500", text: "text-blue-700", label: "New" }
+  const config: Record<string, { bg: string; text: string; label: string }> = {
+    Active: { bg: "bg-emerald-600", text: "text-emerald-700", label: "Active" },
+    Inactive: { bg: "bg-neutral-400", text: "text-neutral-500", label: "Inactive" },
+    New: { bg: "bg-blue-600", text: "text-blue-700", label: "New" },
+    Blocked: { bg: "bg-red-600", text: "text-red-700", label: "Blocked" }
   };
   const s = config[status] || config.Inactive;
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[8px] font-extrabold tracking-widest uppercase ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+    <span className={`inline-flex items-center gap-1.5 text-[8px] font-semibold tracking-widest uppercase ${s.text}`}>
+      {/* Square indicator dot instead of rounded-full */}
+      <span className={`w-1.5 h-1.5 ${s.bg}`} />
       {s.label}
-    </span>
-  );
-}
-
-function SegmentBadge({ segment }: { segment: string }) {
-  const colors: Record<string, string> = {
-    "Premium": "bg-neutral-50 text-[#030213] border-neutral-300",
-    "Standard": "bg-neutral-50 text-neutral-500 border-neutral-200",
-    "First-Time": "bg-blue-50 text-blue-700 border-blue-200"
-  };
-  const label = segment === "First-Time" ? "First Time" : segment;
-  return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 text-[7px] font-extrabold tracking-widest uppercase border ${colors[segment] || colors.Standard}`}>
-      {label}
     </span>
   );
 }
@@ -125,13 +240,13 @@ function SegmentBadge({ segment }: { segment: string }) {
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-neutral-200 shadow-md px-3.5 py-2.5 text-[9px] font-sans uppercase font-bold tracking-wider">
-      <p className="font-extrabold text-[#030213] mb-1.5">{label}</p>
+    <div className="bg-card border border-neutral-200 shadow-md px-3.5 py-2.5 text-[9px] font-sans uppercase font-bold tracking-wider rounded-none">
+      <p className="font-semibold text-[#030213] mb-1.5">{label}</p>
       {payload.map((entry: any, idx: number) => (
         <div key={idx} className="flex items-center gap-1.5 text-neutral-500 leading-5">
-          <span className="w-1.5 h-1.5" style={{ backgroundColor: entry.color }} />
+          <span className="w-1.5 h-1.5 rounded-none" style={{ backgroundColor: entry.color }} />
           <span>{entry.name}:</span>
-          <span className="text-[#030213] font-black">{entry.value.toLocaleString("en-IN")}</span>
+          <span className="text-[#030213] font-bold">{entry.value.toLocaleString("en-IN")}</span>
         </div>
       ))}
     </div>
@@ -140,11 +255,11 @@ function ChartTooltip({ active, payload, label }: any) {
 
 function CustomerAvatar({ name }: { name: string }) {
   const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-  const bgColors = ["#030213", "#b2533e", "#2563eb", "#d97706", "#059669", "#7c3aed", "#db2777", "#ea580c"];
+  const bgColors = ["#030213", "#b2533e", "#717182"];
   const colorIndex = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % bgColors.length;
   return (
     <div
-      className="w-8 h-8 flex items-center justify-center text-[10px] font-black text-white tracking-wide"
+      className="w-8 h-8 flex items-center justify-center text-[10px] font-bold text-white tracking-wide rounded-none shrink-0"
       style={{ backgroundColor: bgColors[colorIndex] }}
     >
       {initials}
@@ -153,29 +268,65 @@ function CustomerAvatar({ name }: { name: string }) {
 }
 
 export function CustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>(mockCustomersData);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  
+  // Segment state: "all" | "vip" | "atrisk" | "new"
+  const [segment, setSegment] = useState<"all" | "vip" | "atrisk" | "new">("all");
+
+  // Selection states
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Modals & inputs state
+  const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
+  const [campaignModal, setCampaignModal] = useState(false);
+  const [sendEmailText, setSendEmailText] = useState({ subject: "", body: "" });
+  const [panelNoteText, setPanelNoteText] = useState("");
 
   const selectedCustomer = useMemo(() => {
-    return initialCustomers.find(c => c.id === selectedCustomerId) || null;
-  }, [selectedCustomerId]);
+    return customers.find(c => c.id === selectedCustomerId) || null;
+  }, [customers, selectedCustomerId]);
 
+  const handleOpenPanel = (customer: Customer) => {
+    setSelectedCustomerId(customer.id);
+    setPanelNoteText(customer.notes || "");
+  };
+
+  const handleSavePanelNotes = () => {
+    if (!selectedCustomerId) return;
+    setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, notes: panelNoteText } : c));
+    alert("Internal customer notes updated.");
+  };
+
+  // Filter logic
   const filteredCustomers = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    let filtered = initialCustomers.filter(c =>
+    let list = customers.filter(c =>
       c.name.toLowerCase().includes(q) ||
       c.id.toLowerCase().includes(q) ||
       c.phone.includes(q) ||
       c.email.toLowerCase().includes(q)
     );
-    if (activeTab === "active") filtered = filtered.filter(c => c.status === "Active");
-    else if (activeTab === "vip") filtered = filtered.filter(c => c.status === "VIP");
-    else if (activeTab === "new") filtered = filtered.filter(c => c.status === "New");
-    else if (activeTab === "inactive") filtered = filtered.filter(c => c.status === "Inactive");
-    return filtered;
-  }, [searchQuery, activeTab]);
+
+    // Tab filters
+    if (activeTab === "active") list = list.filter(c => c.status === "Active");
+    else if (activeTab === "new") list = list.filter(c => c.status === "New");
+    else if (activeTab === "inactive") list = list.filter(c => c.status === "Inactive");
+
+    // Segment filters
+    if (segment === "vip") {
+      list = list.filter(c => c.spent >= 50000);
+    } else if (segment === "atrisk") {
+      list = list.filter(c => c.status === "Inactive" || c.status === "Blocked");
+    } else if (segment === "new") {
+      list = list.filter(c => c.status === "New" || c.registered >= "2026-05-01");
+    }
+
+    return list;
+  }, [customers, searchQuery, activeTab, segment]);
 
   const handleCopyEmail = (email: string) => {
     navigator.clipboard.writeText(email);
@@ -183,51 +334,100 @@ export function CustomersPage() {
     setTimeout(() => setCopiedEmail(null), 1500);
   };
 
+  // Toggle active/blocked status
+  const handleToggleBlock = (id: string) => {
+    setCustomers(prev => prev.map(c => {
+      if (c.id === id) {
+        const nextStatus = c.status === "Blocked" ? "Active" : "Blocked";
+        return { ...c, status: nextStatus };
+      }
+      return c;
+    }));
+  };
+
+  // Bulk Operations
+  const handleBulkDeactivate = () => {
+    setCustomers(prev => prev.map(c => selectedIds.includes(c.id) ? { ...c, status: "Inactive" } : c));
+    setSelectedIds([]);
+  };
+
+  const handleBulkCampaign = () => {
+    setCampaignModal(true);
+  };
+
+  const handleSendCampaign = (e: React.FormEvent) => {
+    e.preventDefault();
+    const count = selectedIds.length > 0 ? selectedIds.length : filteredCustomers.length;
+    alert(`Successfully launched email campaign "${sendEmailText.subject}" to ${count} target customers.`);
+    setCampaignModal(false);
+    setSendEmailText({ subject: "", body: "" });
+    setSelectedIds([]);
+  };
+
+  // Export Customer List CSV
+  const handleExportCSV = () => {
+    const listToExport = selectedIds.length > 0 ? customers.filter(c => selectedIds.includes(c.id)) : filteredCustomers;
+    const headers = ["Customer ID,Name,Email,Phone,Orders,Spent,Avg Order,Status,Registered,Address"];
+    const rows = listToExport.map(c => `"${c.id}","${c.name}","${c.email}","${c.phone}",${c.orders},${c.spent},${c.avgOrder},${c.status},${c.registered},"${c.address}"`);
+    const csv = [...headers, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customers-export-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Save Edit Modal
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editCustomer) return;
+    setCustomers(prev => prev.map(c => c.id === editCustomer.id ? editCustomer : c));
+    setEditCustomer(null);
+  };
+
   const tabs = [
-    { id: "all", label: "All Customers", count: initialCustomers.length },
-    { id: "active", label: "Active", count: initialCustomers.filter(c => c.status === "Active").length },
-    { id: "vip", label: "VIP", count: initialCustomers.filter(c => c.status === "VIP").length },
-    { id: "new", label: "New", count: initialCustomers.filter(c => c.status === "New").length },
-    { id: "inactive", label: "Inactive", count: initialCustomers.filter(c => c.status === "Inactive").length }
+    { id: "all", label: "All Customers", count: customers.length },
+    { id: "active", label: "Active", count: customers.filter(c => c.status === "Active").length },
+    { id: "new", label: "New", count: customers.filter(c => c.status === "New").length },
+    { id: "inactive", label: "Inactive", count: customers.filter(c => c.status === "Inactive").length }
   ];
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 font-sans text-[#030213]">
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">
-          Customers
-        </h1>
-        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
-          Drip Doggy customer profiles, order history, and shopping insights
-        </p>
+      <div className="flex items-center justify-between border-b border-neutral-200/60 pb-5">
+        <div>
+          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">
+            Customers
+          </h1>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+            Drip Doggy customer profiles &amp; marketing segments
+          </p>
+        </div>
+        <button onClick={handleExportCSV} className="bg-card border border-neutral-200 hover:border-[#030213] text-neutral-600 text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none">
+          <Download className="w-3.5 h-3.5" /> Export Customers
+        </button>
       </div>
 
       {/* ── KPI Cards Row ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {kpiStats.map((stat, idx) => (
-          <div
-            key={idx}
-            className="bg-white border border-neutral-200/80 p-5 flex flex-col justify-between min-h-[115px] hover:shadow-sm transition-shadow"
-          >
+          <div key={idx} className="bg-card border border-neutral-200/80 p-5 flex flex-col justify-between min-h-[115px] hover:shadow-sm transition-shadow rounded-none">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block">
+                <span className="text-[7px] font-bold tracking-[0.2em] text-neutral-400 uppercase block">
                   {stat.label}
                 </span>
                 <p className="text-[6.5px] text-neutral-400 font-bold uppercase mt-0.5">{stat.subtitle}</p>
               </div>
-              <button className="text-neutral-400 hover:text-[#030213] p-1 bg-transparent border-none cursor-pointer">
-                <MoreVertical className="h-4 w-4" />
-              </button>
+              <MoreVertical className="h-4 w-4 text-neutral-300" />
             </div>
-
             <div className="mt-2 flex items-baseline gap-2">
-              <span className={`text-2xl font-black tracking-tight $text-[#030213]`}>
-                {stat.value}
-              </span>
-              <span className="text-[7px] font-black px-1.5 py-0.5 border bg-green-50 text-green-700 border-green-200 uppercase tracking-wide">
+              <span className="text-2xl font-bold tracking-tight text-[#030213]">{stat.value}</span>
+              <span className="text-[7px] font-bold px-1.5 py-0.5 border bg-green-50 text-green-700 border-green-200 uppercase tracking-wide">
                 {stat.change}
               </span>
             </div>
@@ -236,32 +436,33 @@ export function CustomersPage() {
       </div>
 
       {/* ── Chart + Summary ─────────────────────────────────────────── */}
-      <div className="bg-white border border-neutral-200/80 p-6">
+      <div className="bg-card border border-neutral-200/80 p-6 rounded-none">
         <div className="flex items-center justify-between mb-5">
-          <div>
-            <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase block">
-              Customer Activity &mdash; This Week
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[7px] bg-neutral-100 border border-neutral-200 px-2 py-1 font-bold text-[#030213] uppercase tracking-wider cursor-pointer">This week</span>
-            <span className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider cursor-pointer hover:text-[#030213] px-2 py-1">Last week</span>
+          <span className="text-[8px] font-bold tracking-[0.2em] text-neutral-400 uppercase block">
+            Customer Activity Trends
+          </span>
+          <div className="flex items-center border border-neutral-200">
+            {["all", "vip"].map((t) => (
+              <button key={t} onClick={() => setSegment(t as any)}
+                className={`px-3 py-1.5 text-[8px] font-bold uppercase tracking-widest border-none cursor-pointer ${segment === t ? "bg-[#030213] text-white" : "bg-card text-neutral-400"}`}>
+                {t === "all" ? "All Accounts" : "VIP Focus"}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Summary chips */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {[
-            { label: "Avg. Session", value: "4m 32s", icon: Clock },
-            { label: "Repeat Rate", value: "68.4%", icon: ShoppingBag },
-            { label: "Avg. Order Value", value: RS + "2,045", icon: Tag },
-            { label: "Lifetime Value", value: RS + "32,800", icon: Gift }
+            { label: "Avg. Session Time", value: "4m 32s", icon: Clock },
+            { label: "Loyalty Repeat Rate", value: "68.4%", icon: ShoppingBag },
+            { label: "Customer Lifetime Value", value: RS + "32,800", icon: Tag }
           ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2.5 border border-neutral-100 bg-[#faf8f5]/60 p-3">
+            <div key={i} className="flex items-center gap-2.5 border border-neutral-200/60 bg-card p-3 rounded-none">
               <item.icon className="w-4 h-4 text-neutral-400 shrink-0" />
               <div>
-                <p className="text-[11px] font-black text-[#030213]">{item.value}</p>
-                <p className="text-[6.5px] text-neutral-400 font-extrabold uppercase tracking-wider">{item.label}</p>
+                <p className="text-[11px] font-bold text-[#030213]">{item.value}</p>
+                <p className="text-[6.5px] text-neutral-400 font-semibold uppercase tracking-wider">{item.label}</p>
               </div>
             </div>
           ))}
@@ -270,7 +471,7 @@ export function CustomersPage() {
         {/* Area Chart */}
         <div className="h-[170px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={weeklyData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+            <AreaChart data={segment === "all" ? weeklyDataAll : weeklyDataVIP} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="activeGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#b2533e" stopOpacity={0.2} />
@@ -287,277 +488,332 @@ export function CustomersPage() {
         </div>
       </div>
 
-      {/* ── Customer Table + Detail Panel ───────────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[9px] font-black tracking-[0.25em] text-neutral-400 uppercase">
-            {selectedCustomerId ? "Customer Details" : "All Customers"}
-          </span>
+      {/* ── Bulk Actions floating bar ─────────────────────────────────── */}
+      {selectedIds.length > 0 && (
+        <div className="bg-[#030213] text-white p-3.5 flex items-center justify-between border border-[#030213] rounded-none">
+          <span className="text-[8px] font-bold tracking-widest uppercase">{selectedIds.length} Customers Selected</span>
+          <div className="flex items-center gap-2">
+            <button onClick={handleBulkCampaign} className="bg-transparent border border-white/20 text-white hover:border-white text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer">
+              Send Campaign
+            </button>
+            <button onClick={handleBulkDeactivate} className="bg-[#b2533e] text-white text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer border-none">
+              Deactivate Accounts
+            </button>
+            <button onClick={() => setSelectedIds([])} className="bg-transparent border-none text-white/50 hover:text-white p-1 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-          {/* ── Table ────────────────────────────────────────────────── */}
-          <div className={selectedCustomerId ? "lg:col-span-7 bg-white border border-neutral-200/80 p-5" : "lg:col-span-12 bg-white border border-neutral-200/80 p-5"}>
-
-            {/* Search + Filter Bar */}
-            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
-                <input
-                  type="text"
-                  placeholder="Search name, ID, phone..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white border border-neutral-200 pl-8 pr-3 py-1.5 text-[9px] font-extrabold uppercase tracking-widest focus:outline-none focus:border-[#030213] placeholder-neutral-300 w-full"
-                />
-              </div>
-              <div className="flex items-center gap-1">
+      {/* ── Customer Grid / Layout ──────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* ── Table Column ──────────────────────────────────────────── */}
+        <div className={selectedCustomerId ? "lg:col-span-7 bg-card border border-neutral-200/80 p-5 rounded-none" : "lg:col-span-12 bg-card border border-neutral-200/80 p-5 rounded-none"}>
+          
+          {/* Controls */}
+          <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search name, email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-card border border-neutral-200 pl-8 pr-3 py-1.5 text-[9px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#030213] placeholder-neutral-300 w-full rounded-none"
+              />
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex bg-card border border-neutral-200 p-1">
                 {tabs.map(tab => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 text-[7px] font-extrabold tracking-widest uppercase border-none cursor-pointer ${
+                    onClick={() => { setActiveTab(tab.id); setSelectedCustomerId(null); }}
+                    className={`px-3 py-1.5 text-[7px] font-semibold tracking-widest uppercase border-none cursor-pointer rounded-none ${
                       activeTab === tab.id ? "bg-[#030213] text-white" : "bg-transparent text-neutral-400 hover:text-[#030213]"
                     }`}
                   >
-                    {tab.label} <span className="opacity-50">({tab.count})</span>
+                    {tab.label}
                   </button>
                 ))}
-                <button className="flex items-center gap-1 bg-[#faf8f5] border border-neutral-200 px-3 py-1.5 text-[8px] font-black tracking-widest uppercase text-neutral-600 hover:text-[#030213] cursor-pointer ml-2">
-                  <Filter className="w-3 h-3" /> Filter
-                </button>
               </div>
-            </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left uppercase text-[8.5px] font-bold tracking-wider divide-y divide-neutral-100">
-                <thead>
-                  <tr className="border-b border-neutral-100 bg-[#faf8f5]/60 text-[7px] text-neutral-400 tracking-[0.2em]">
-                    <th className="p-3 font-black">Customer</th>
-                    <th className="p-3 font-black">Phone</th>
-                    <th className="p-3 font-black">Orders</th>
-                    <th className="p-3 font-black">Total Spent</th>
-                    <th className="p-3 font-black">AOV</th>
-                    <th className="p-3 font-black">Segment</th>
-                    <th className="p-3 font-black">Status</th>
-                    <th className="p-3 font-black text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {filteredCustomers.map((c, i) => (
-                    <tr
-                      key={i}
-                      onClick={() => setSelectedCustomerId(c.id === selectedCustomerId ? null : c.id)}
-                      className={`hover:bg-neutral-50/50 transition-colors cursor-pointer ${
-                        selectedCustomerId === c.id ? "bg-[#faf8f5]" : ""
-                      }`}
-                    >
-                      <td className="p-3">
-                        <div className="flex items-center gap-2.5">
-                          <CustomerAvatar name={c.name} />
-                          <div>
-                            <p className="font-extrabold text-[#030213] text-[10px]">{c.name}</p>
-                            <span className="text-[7px] text-neutral-400 font-semibold tracking-wider lowercase">{c.id}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-3 text-neutral-500 font-medium">{c.phone}</td>
-                      <td className="p-3 font-extrabold text-[#030213]">{c.orders}</td>
-                      <td className="p-3 font-black text-[#030213]">{RS}{c.spent.toLocaleString("en-IN")}</td>
-                      <td className="p-3 text-neutral-600 font-bold">{c.orders > 0 ? RS + c.avgOrder.toLocaleString("en-IN") : "\u2014"}</td>
-                      <td className="p-3"><SegmentBadge segment={c.segment} /></td>
-                      <td className="p-3"><StatusBadge status={c.status} /></td>
-                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <button className="text-neutral-400 hover:text-[#030213] p-1.5 bg-transparent border-none cursor-pointer" title="Message">
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </button>
-                          <button className="text-neutral-400 hover:text-red-600 p-1.5 bg-transparent border-none cursor-pointer" title="Delete">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="pt-4 border-t border-neutral-100 flex items-center justify-between mt-4">
-              <button className="flex items-center gap-1 border border-neutral-200 hover:border-[#030213] bg-white text-neutral-500 text-[8px] font-extrabold tracking-widest px-3 py-1.5 uppercase transition-all cursor-pointer">
-                <ChevronLeft className="w-3 h-3" /> Prev
-              </button>
-              <div className="flex gap-1 items-center">
-                {[1, 2, 3].map(p => (
-                  <button
-                    key={p}
-                    className={`w-7 h-7 flex items-center justify-center text-[8px] font-extrabold border cursor-pointer ${
-                      p === 1 ? "bg-[#030213] text-white border-[#030213]" : "bg-white border-neutral-200 text-neutral-500"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-                <span className="text-[8px] text-neutral-400">...</span>
-                <button className="w-7 h-7 flex items-center justify-center text-[8px] font-extrabold border border-neutral-200 text-neutral-500 cursor-pointer">
-                  12
-                </button>
+              {/* Segment Dropdown */}
+              <div className="flex border border-neutral-200 bg-card px-2 py-1">
+                <span className="text-[7px] font-bold text-neutral-400 uppercase tracking-widest mr-1 self-center">Segment:</span>
+                <select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value as any)}
+                  className="bg-transparent border-none text-[8px] font-semibold uppercase tracking-widest focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Groups</option>
+                  <option value="vip">VIP (LTV &gt; 50k)</option>
+                  <option value="new">New Accounts</option>
+                  <option value="atrisk">At-Risk / Inactive</option>
+                </select>
               </div>
-              <button className="flex items-center gap-1 border border-neutral-200 hover:border-[#030213] bg-white text-neutral-500 text-[8px] font-extrabold tracking-widest px-3 py-1.5 uppercase transition-all cursor-pointer">
-                Next <ChevronRight className="w-3 h-3" />
-              </button>
             </div>
           </div>
 
-          {/* ── Customer Detail Side Panel ──────────────────────────────── */}
-          {selectedCustomer && (
-            <div className="lg:col-span-5 bg-white border border-neutral-200/80 p-5 space-y-5 sticky top-24">
-
-              {/* Profile Header */}
-              <div className="flex items-center gap-3.5 pb-4 border-b border-neutral-100">
-                <div className="w-14 h-14 border border-neutral-200 overflow-hidden bg-neutral-100">
-                  <img
-                    src={"https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=120&auto=format&fit=crop"}
-                    alt={selectedCustomer.name}
-                    className="w-full h-full object-cover grayscale"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-black uppercase text-[#030213] tracking-wide">{selectedCustomer.name}</h4>
-                    <StatusBadge status={selectedCustomer.status} />
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[8px] font-semibold text-neutral-400 truncate block lowercase">{selectedCustomer.email}</span>
+          {/* Table list */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left uppercase text-[8.5px] font-bold tracking-wider divide-y divide-neutral-100">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-card/60 text-[7px] text-neutral-400 tracking-[0.2em]">
+                  <th className="p-3 w-8">
                     <button
-                      onClick={() => handleCopyEmail(selectedCustomer.email)}
-                      className="text-neutral-400 hover:text-[#030213] p-0.5 bg-transparent border-none cursor-pointer shrink-0"
-                      title="Copy Email"
+                      onClick={() => {
+                        const currentIds = filteredCustomers.map(c => c.id);
+                        const allSelected = currentIds.every(id => selectedIds.includes(id));
+                        if (allSelected) {
+                          setSelectedIds(prev => prev.filter(id => !currentIds.includes(id)));
+                        } else {
+                          setSelectedIds(prev => Array.from(new Set([...prev, ...currentIds])));
+                        }
+                      }}
+                      className="bg-transparent border-none cursor-pointer text-neutral-400 hover:text-[#030213] p-0 flex items-center"
                     >
-                      <Copy className="w-2.5 h-2.5" />
+                      <span className={`w-3.5 h-3.5 border border-neutral-300 inline-block flex items-center justify-center ${filteredCustomers.every(c => selectedIds.includes(c.id)) ? "bg-[#030213] border-[#030213]" : ""}`}>
+                        {filteredCustomers.every(c => selectedIds.includes(c.id)) && <CheckCircle className="w-2.5 h-2.5 text-white" />}
+                      </span>
                     </button>
-                  </div>
-                  {copiedEmail === selectedCustomer.email && (
-                    <span className="text-[6px] text-green-600 font-extrabold uppercase tracking-widest block mt-0.5">Copied!</span>
-                  )}
-                </div>
-              </div>
+                  </th>
+                  <th className="p-3 font-bold">Customer</th>
+                  <th className="p-3 font-bold">Phone</th>
+                  <th className="p-3 font-bold">Orders</th>
+                  <th className="p-3 font-bold">Spent</th>
+                  <th className="p-3 font-bold">Status</th>
+                  <th className="p-3 font-bold text-right">Inspect</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200/60">
+                {filteredCustomers.map((c, i) => (
+                  <tr
+                    key={i}
+                    onClick={() => handleOpenPanel(c)}
+                    className={`hover:bg-neutral-100/50 transition-colors cursor-pointer ${
+                      selectedCustomerId === c.id ? "bg-neutral-100" : ""
+                    }`}
+                  >
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => setSelectedIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])} className="bg-transparent border-none cursor-pointer text-neutral-400 hover:text-[#030213] p-0 flex items-center">
+                        <span className={`w-3.5 h-3.5 border border-neutral-300 inline-block flex items-center justify-center ${selectedIds.includes(c.id) ? "bg-[#030213] border-[#030213]" : ""}`}>
+                          {selectedIds.includes(c.id) && <CheckCircle className="w-2.5 h-2.5 text-white" />}
+                        </span>
+                      </button>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2.5">
+                        <CustomerAvatar name={c.name} />
+                        <div>
+                          <p className="font-semibold text-[#030213] text-[9px]">{c.name}</p>
+                          <span className="text-[6.5px] text-neutral-400 font-semibold tracking-wider lowercase">{c.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-neutral-500 font-mono text-[8px]">{c.phone}</td>
+                    <td className="p-3 font-bold text-[#030213]">{c.orders}</td>
+                    <td className="p-3 font-bold text-[#030213]">{RS}{c.spent.toLocaleString("en-IN")}</td>
+                    <td className="p-3"><StatusBadge status={c.status} /></td>
+                    <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => setEditCustomer(c)} className="text-neutral-400 hover:text-[#030213] p-1.5 bg-transparent border-none cursor-pointer" title="Edit Profile">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleToggleBlock(c.id)} className="text-neutral-400 hover:text-[#b2533e] p-1.5 bg-transparent border-none cursor-pointer" title={c.status === "Blocked" ? "Activate" : "Block Customer"}>
+                          <Slash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredCustomers.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-6 text-center text-neutral-400 font-bold uppercase">No matching customers found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-              {/* Contact + ID */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2.5 border border-neutral-200 px-3 py-2 bg-white">
-                  <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                  <span className="text-[8.5px] font-bold text-[#030213]">{selectedCustomer.phone}</span>
-                </div>
-                <div className="flex items-center gap-2.5 border border-neutral-200 px-3 py-2 bg-white">
-                  <Tag className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                  <span className="text-[8.5px] font-bold text-[#030213] uppercase">{selectedCustomer.id}</span>
-                </div>
+        {/* ── Side Details Drawer ────────────────────────────────────── */}
+        {selectedCustomer && (
+          <div className="lg:col-span-5 bg-card border border-neutral-200/80 p-5 space-y-5 sticky top-24 rounded-none">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <div>
+                <span className="text-[7px] font-bold tracking-[0.2em] text-neutral-400 uppercase">Customer Profile</span>
+                <h3 className="text-[10px] font-bold uppercase text-[#030213] tracking-widest mt-1">{selectedCustomer.name}</h3>
               </div>
-              <div className="flex items-center gap-2.5 border border-neutral-200 px-3 py-2 bg-white">
-                <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                <span className="text-[8.5px] font-bold text-[#030213] uppercase tracking-wide">{selectedCustomer.address}</span>
-              </div>
+              <button onClick={() => setSelectedCustomerId(null)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              {/* Social Media */}
-              <div className="space-y-2">
-                <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider">Social Profiles</p>
-                <div className="flex items-center gap-2">
-                  {[Facebook, Instagram, Twitter, Linkedin].map((Social, i) => (
-                    <button
-                      key={i}
-                      className="w-7 h-7 bg-neutral-50 hover:bg-[#030213] hover:text-white border border-neutral-200 text-neutral-500 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <Social className="w-3 h-3" />
-                    </button>
+            {/* Profile detail tags */}
+            <div className="space-y-3">
+              <div className="border border-neutral-200 p-3 bg-card space-y-2 text-[8px] font-semibold uppercase tracking-wide">
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Account ID</span>
+                  <span className="font-mono text-[#030213]">{selectedCustomer.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Status</span>
+                  <StatusBadge status={selectedCustomer.status} />
+                </div>
+                <div className="flex justify-between border-t border-neutral-100 pt-2">
+                  <span className="text-neutral-400">Email</span>
+                  <a href={`mailto:${selectedCustomer.email}`} className="text-[#030213] lowercase hover:underline">{selectedCustomer.email}</a>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Mobile</span>
+                  <a href={`tel:${selectedCustomer.phone}`} className="text-[#030213] hover:underline">{selectedCustomer.phone}</a>
+                </div>
+                <div className="flex justify-between border-t border-neutral-100 pt-2">
+                  <span className="text-neutral-400">Address</span>
+                  <span className="text-right text-[#030213] max-w-[200px] truncate">{selectedCustomer.address}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Abandoned Cart & Wishlist Warnings */}
+            {selectedCustomer.abandonedCart && (
+              <div className="bg-amber-50 border border-amber-200 p-3 text-[8px] font-bold uppercase tracking-wider text-amber-800">
+                ⚠️ Abandoned Cart: {selectedCustomer.abandonedCart} (Awaiting checkout 24h)
+              </div>
+            )}
+
+            {/* Wishlist View */}
+            {selectedCustomer.wishlist && selectedCustomer.wishlist.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[7px] font-bold tracking-widest uppercase text-neutral-400 block">Wishlisted Styles</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCustomer.wishlist.map(w => (
+                    <span key={w} className="bg-neutral-100 border border-neutral-200 text-[#030213] px-2 py-0.5 text-[7px] font-bold uppercase tracking-wider">{w}</span>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Shopping Preferences */}
-              <div className="border-t border-neutral-100 pt-4 space-y-3">
-                <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider">Shopping Profile</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="border border-neutral-200 p-2.5 bg-white">
-                    <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider">Segment</p>
-                    <p className="text-[10px] font-black text-[#030213] mt-0.5"><SegmentBadge segment={selectedCustomer.segment} /></p>
-                  </div>
-                  <div className="border border-neutral-200 p-2.5 bg-white">
-                    <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider">Preferred</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <Heart className="w-3 h-3 text-[#b2533e]" />
-                      <span className="text-[10px] font-black text-[#030213]">{selectedCustomer.favCategory}</span>
-                    </div>
-                  </div>
+            {/* Logins history */}
+            {selectedCustomer.logins && (
+              <div className="space-y-1.5">
+                <span className="text-[7px] font-bold tracking-widest uppercase text-neutral-400 block">Recent Activity Log</span>
+                <div className="border border-neutral-200 bg-card p-2 space-y-1 text-[7px] font-mono text-neutral-500">
+                  {selectedCustomer.logins.map((log, index) => <div key={index}>{log}</div>)}
                 </div>
               </div>
+            )}
 
-              {/* Order Stats */}
-              <div className="border-t border-neutral-100 pt-4 space-y-3">
-                <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider">Order Overview</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="border border-neutral-200 p-2.5 text-center bg-white">
-                    <span className="text-sm font-black text-[#030213] block">{selectedCustomer.orders}</span>
-                    <span className="text-[6px] text-neutral-400 font-extrabold uppercase tracking-widest block mt-0.5">Total</span>
-                  </div>
-                  <div className="border border-neutral-200 p-2.5 text-center bg-white">
-                    <span className="text-sm font-black text-green-700 block">{selectedCustomer.orders > 0 ? Math.round(selectedCustomer.orders * 0.85) : 0}</span>
-                    <span className="text-[6px] text-neutral-400 font-extrabold uppercase tracking-widest block mt-0.5">Completed</span>
-                  </div>
-                  <div className="border border-neutral-200 p-2.5 text-center bg-white">
-                    <span className="text-sm font-black text-red-600 block">{selectedCustomer.orders > 0 ? Math.round(selectedCustomer.orders * 0.1) : 0}</span>
-                    <span className="text-[6px] text-neutral-400 font-extrabold uppercase tracking-widest block mt-0.5">Canceled</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Financial Overview */}
-              <div className="border-t border-neutral-100 pt-4 space-y-3">
-                <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider">Financial Summary</p>
-                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
-                  <span className="text-neutral-400 font-semibold">Lifetime Spend:</span>
-                  <span className="font-black text-[#030213]">
-                    {selectedCustomer.spent > 0 ? RS + selectedCustomer.spent.toLocaleString("en-IN") : "\u2014"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
-                  <span className="text-neutral-400 font-semibold">Avg. Order Value:</span>
-                  <span className="font-black text-[#030213]">
-                    {selectedCustomer.avgOrder > 0 ? RS + selectedCustomer.avgOrder.toLocaleString("en-IN") : "\u2014"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
-                  <span className="text-neutral-400 font-semibold">Registered:</span>
-                  <span className="font-extrabold text-[#030213]">{selectedCustomer.registered}</span>
-                </div>
-                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
-                  <span className="text-neutral-400 font-semibold">Last Purchase:</span>
-                  <span className="font-extrabold text-[#030213]">{selectedCustomer.lastPurchase}</span>
-                </div>
-              </div>
-
-              {/* Last Product */}
-              {selectedCustomer.lastProduct !== "\u2014" && (
-                <div className="border-t border-neutral-100 pt-4">
-                  <p className="text-[7px] text-neutral-400 font-extrabold uppercase tracking-wider mb-2">Last Purchased</p>
-                  <div className="flex items-center gap-2.5 border border-neutral-200 p-3 bg-white">
-                    <ShoppingBag className="w-4 h-4 text-neutral-400 shrink-0" />
-                    <div>
-                      <p className="text-[9px] font-extrabold text-[#030213] uppercase tracking-wide">{selectedCustomer.lastProduct}</p>
-                      <p className="text-[6.5px] text-neutral-400 font-bold uppercase tracking-widest">Drip Doggy</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+            {/* Internal Notes textarea */}
+            <div className="space-y-1.5 pt-2 border-t border-neutral-200/60">
+              <span className="text-[7px] font-bold tracking-widest uppercase text-neutral-400 block">Internal notes</span>
+              <textarea
+                value={panelNoteText}
+                onChange={(e) => setPanelNoteText(e.target.value)}
+                rows={2}
+                placeholder="Add VIP details or customer sizing preferences..."
+                className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none leading-normal"
+              />
+              <button onClick={handleSavePanelNotes} className="w-full bg-[#030213] text-white hover:bg-neutral-800 py-1.5 text-[8px] font-bold uppercase tracking-widest cursor-pointer rounded-none border-none">
+                Save Notes
+              </button>
             </div>
-          )}
 
-        </div>
+            {/* Customer Operations Panel */}
+            <div className="pt-3 border-t border-neutral-200/60 space-y-3">
+              <span className="text-[7px] font-bold tracking-widest uppercase text-neutral-400 block">Customer Actions</span>
+              <div className="flex gap-2">
+                <button onClick={() => setEditCustomer(selectedCustomer)} className="flex-1 bg-card border border-neutral-200 hover:border-[#030213] text-neutral-700 hover:text-[#030213] py-2 text-[8px] font-bold uppercase tracking-widest cursor-pointer rounded-none flex items-center justify-center gap-1">
+                  <Edit2 className="w-3 h-3" /> Edit Profile
+                </button>
+                <button onClick={() => handleToggleBlock(selectedCustomer.id)} className="flex-1 bg-card border border-neutral-200 hover:border-[#b2533e] text-neutral-700 hover:text-[#b2533e] py-2 text-[8px] font-bold uppercase tracking-widest cursor-pointer rounded-none flex items-center justify-center gap-1">
+                  <Slash className="w-3 h-3" /> {selectedCustomer.status === "Blocked" ? "Unblock Account" : "Block Account"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Edit Customer Modal ─────────────────────────────────────── */}
+      {editCustomer && (
+        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setEditCustomer(null)}>
+          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Edit Customer Profile</span>
+              <button onClick={() => setEditCustomer(null)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-3">
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Customer Name</label>
+                <input required type="text" value={editCustomer.name} onChange={e => setEditCustomer({ ...editCustomer, name: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+              </div>
+              
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Email Address</label>
+                <input required type="email" value={editCustomer.email} onChange={e => setEditCustomer({ ...editCustomer, email: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+              </div>
+
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Phone Number</label>
+                <input required type="text" value={editCustomer.phone} onChange={e => setEditCustomer({ ...editCustomer, phone: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+              </div>
+
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Shipping Address</label>
+                <textarea required rows={2} value={editCustomer.address} onChange={e => setEditCustomer({ ...editCustomer, address: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button type="button" onClick={() => setEditCustomer(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
+                <button type="submit" className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Send Campaign Email Modal ────────────────────────────── */}
+      {campaignModal && (
+        <div className="fixed inset-0 bg-[#030213]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setCampaignModal(false)}>
+          <div className="bg-card border-2 border-[#030213] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <span className="text-[8px] font-bold tracking-[0.2em] text-[#030213] uppercase">Launch Email Campaign</span>
+              <button onClick={() => setCampaignModal(false)} className="text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendCampaign} className="space-y-3">
+              <div className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">
+                Targeting: {selectedIds.length > 0 ? `${selectedIds.length} selected customers` : "All filtered listings"}
+              </div>
+
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Email Subject</label>
+                <input required type="text" placeholder="e.g. SS26 Exclusive Private Drop Access" value={sendEmailText.subject} onChange={e => setSendEmailText({ ...sendEmailText, subject: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-semibold uppercase p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+              </div>
+
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#030213] uppercase mb-1">Email Body Description</label>
+                <textarea required rows={4} placeholder="Write premium copy newsletter details..." value={sendEmailText.body} onChange={e => setSendEmailText({ ...sendEmailText, body: e.target.value })} className="w-full bg-card border border-neutral-200 text-[9px] font-bold p-2 focus:outline-none focus:border-[#030213] rounded-none" />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button type="button" onClick={() => setCampaignModal(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none">Cancel</button>
+                <button type="submit" className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Send Campaign</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

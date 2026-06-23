@@ -76,12 +76,12 @@ export function SettingsPage() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">Settings</h1>
+          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Settings</h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
             Drip Doggy store configuration &amp; preferences
           </p>
         </div>
-        <button className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none border-none">
+        <button className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none border-none">
           <Save className="h-3.5 w-3.5" />
           Save Changes
         </button>
@@ -93,13 +93,13 @@ export function SettingsPage() {
         {/* ── Left: Settings Sections ──────────────────────────────── */}
         <div className="lg:col-span-8 space-y-5">
           {settingSections.map((section) => (
-            <div key={section.title} className="bg-white border border-neutral-200/80 p-6">
+            <div key={section.title} className="bg-card border border-neutral-200/80 p-6">
               <div className="flex items-center gap-3 mb-5 pb-3 border-b border-neutral-100">
-                <div className="w-8 h-8 bg-[#faf8f5] border border-neutral-200 flex items-center justify-center">
+                <div className="w-8 h-8 bg-card border border-neutral-200 flex items-center justify-center">
                   <section.icon className="h-4 w-4 text-neutral-500" />
                 </div>
                 <div>
-                  <h2 className="text-[10px] font-black text-[#030213] uppercase tracking-widest">{section.title}</h2>
+                  <h2 className="text-[10px] font-bold text-[#030213] uppercase tracking-widest">{section.title}</h2>
                   <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider">Configure {section.title.toLowerCase()}</p>
                 </div>
               </div>
@@ -107,13 +107,13 @@ export function SettingsPage() {
                 {section.fields.map((field) => (
                   <div key={field.label} className="grid grid-cols-[160px_1fr] gap-4 items-start">
                     <div>
-                      <label className="text-[8px] font-black tracking-wider text-neutral-500 uppercase block">{field.label}</label>
+                      <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase block">{field.label}</label>
                       <p className="text-[6.5px] text-neutral-400 font-medium mt-0.5">{field.desc}</p>
                     </div>
                     <input
                       type={field.type}
                       defaultValue={field.value}
-                      className="w-full px-3 py-2 bg-white border border-neutral-200/80 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300"
+                      className="w-full px-3 py-2 bg-card border border-neutral-200/80 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300"
                     />
                   </div>
                 ))}
@@ -126,8 +126,8 @@ export function SettingsPage() {
         <div className="lg:col-span-4 space-y-5">
 
           {/* Quick Actions */}
-          <div className="bg-white border border-neutral-200/80 p-6">
-            <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-4">Quick Actions</h2>
+          <div className="bg-card border border-neutral-200/80 p-6">
+            <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {[
                 { label: "Notification Preferences", icon: Bell, desc: "Email & SMS alerts" },
@@ -139,7 +139,7 @@ export function SettingsPage() {
                   className="w-full flex items-center gap-3 px-3.5 py-3 border border-neutral-100 hover:border-neutral-200 transition-colors text-left bg-transparent cursor-pointer">
                   <action.icon className="h-4 w-4 text-neutral-400 shrink-0" />
                   <div>
-                    <span className="text-[8px] font-extrabold text-[#030213] uppercase tracking-wider block">{action.label}</span>
+                    <span className="text-[8px] font-semibold text-[#030213] uppercase tracking-wider block">{action.label}</span>
                     <span className="text-[7px] text-neutral-400 font-medium">{action.desc}</span>
                   </div>
                 </button>
@@ -148,11 +148,11 @@ export function SettingsPage() {
           </div>
 
           {/* Store Status Toggle */}
-          <div className="bg-white border border-neutral-200/80 p-6">
-            <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-4">Store Status</h2>
+          <div className="bg-card border border-neutral-200/80 p-6">
+            <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase mb-4">Store Status</h2>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[9px] font-extrabold text-green-700 uppercase tracking-wider">🟢 Live</p>
+                <p className="text-[9px] font-semibold text-green-700 uppercase tracking-wider">🟢 Live</p>
                 <p className="text-[7px] text-neutral-400 font-bold mt-0.5">Store is active and accepting orders</p>
               </div>
               <ToggleLeft className="w-8 h-8 text-green-600" />
@@ -160,28 +160,28 @@ export function SettingsPage() {
             <div className="space-y-2 pt-3 border-t border-neutral-100">
               <div className="flex items-center justify-between text-[8px]">
                 <span className="text-neutral-500 font-bold">Products Listed</span>
-                <span className="font-black text-[#030213]">24</span>
+                <span className="font-bold text-[#030213]">24</span>
               </div>
               <div className="flex items-center justify-between text-[8px]">
                 <span className="text-neutral-500 font-bold">Pending Orders</span>
-                <span className="font-black text-amber-600">12</span>
+                <span className="font-bold text-amber-600">12</span>
               </div>
               <div className="flex items-center justify-between text-[8px]">
                 <span className="text-neutral-500 font-bold">Active Coupons</span>
-                <span className="font-black text-[#030213]">6</span>
+                <span className="font-bold text-[#030213]">6</span>
               </div>
             </div>
           </div>
 
           {/* Danger Zone */}
-          <div className="bg-white border border-neutral-200/80 p-6">
-            <h2 className="text-[9px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-2">Danger Zone</h2>
+          <div className="bg-card border border-neutral-200/80 p-6">
+            <h2 className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase mb-2">Danger Zone</h2>
             <p className="text-[7px] text-neutral-400 font-bold mb-4">Irreversible actions — proceed with caution</p>
             <div className="space-y-2">
-              <button className="w-full px-3.5 py-2.5 bg-red-50 text-red-700 border border-red-200 text-[8px] font-extrabold tracking-widest uppercase hover:bg-red-100 transition-colors cursor-pointer">
+              <button className="w-full px-3.5 py-2.5 bg-red-50 text-red-700 border border-red-200 text-[8px] font-semibold tracking-widest uppercase hover:bg-red-100 transition-colors cursor-pointer">
                 Deactivate Store
               </button>
-              <button className="w-full px-3.5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-extrabold tracking-widest uppercase hover:bg-amber-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+              <button className="w-full px-3.5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-semibold tracking-widest uppercase hover:bg-amber-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5">
                 <AlertTriangle className="w-3 h-3" />
                 Clear All Data
               </button>

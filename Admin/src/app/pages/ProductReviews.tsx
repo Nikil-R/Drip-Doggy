@@ -79,7 +79,7 @@ export function ProductReviewsPage() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">Product Reviews</h1>
+          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Product Reviews</h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
             Drip Doggy customer feedback &amp; ratings
           </p>
@@ -98,23 +98,23 @@ export function ProductReviewsPage() {
             { label: "Avg Rating", value: stats.avgRating, color: "text-[#030213]" },
             { label: "Helpful Votes", value: stats.totalHelpful, color: "text-amber-600" },
           ].map(s => (
-            <div key={s.label} className="bg-white border border-neutral-200/80 p-4">
-              <p className="text-[7px] font-black tracking-widest text-neutral-400 uppercase">{s.label}</p>
-              <p className={`text-lg font-black ${s.color} mt-1`}>{s.value}</p>
+            <div key={s.label} className="bg-card border border-neutral-200/80 p-4">
+              <p className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase">{s.label}</p>
+              <p className={`text-lg font-bold ${s.color} mt-1`}>{s.value}</p>
             </div>
           ))}
         </div>
 
         {/* Rating distribution bar */}
-        <div className="lg:col-span-5 bg-white border border-neutral-200/80 p-4">
-          <p className="text-[7px] font-black tracking-widest text-neutral-400 uppercase mb-3">Rating Distribution</p>
+        <div className="lg:col-span-5 bg-card border border-neutral-200/80 p-4">
+          <p className="text-[7px] font-bold tracking-widest text-neutral-400 uppercase mb-3">Rating Distribution</p>
           <div className="space-y-1.5">
             {ratingDist.map((count, i) => {
               const stars = 5 - i;
               const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
               return (
                 <div key={stars} className="flex items-center gap-2">
-                  <span className="text-[9px] font-extrabold text-neutral-500 w-5">{stars}</span>
+                  <span className="text-[9px] font-semibold text-neutral-500 w-5">{stars}</span>
                   <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
                   <div className="flex-1 h-3 bg-neutral-100">
                     <div className="h-full bg-amber-400 transition-all" style={{ width: pct + "%" }} />
@@ -128,35 +128,35 @@ export function ProductReviewsPage() {
       </div>
 
       {/* ── Filters ────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-white border border-neutral-200/80 p-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-card border border-neutral-200/80 p-4">
         <div className="flex gap-1.5">
           {(["all", "approved", "pending", "rejected"] as const).map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 text-[9px] font-extrabold tracking-widest uppercase cursor-pointer rounded-none border-none ${
-                statusFilter === s ? "bg-[#030213] text-white" : "bg-[#faf8f5] text-neutral-400 hover:text-[#030213]"
+              className={`px-3 py-1.5 text-[9px] font-semibold tracking-widest uppercase cursor-pointer rounded-none border-none ${
+                statusFilter === s ? "bg-[#030213] text-white" : "bg-card text-neutral-400 hover:text-[#030213]"
               }`}>{s} {s === "all" ? `(${stats.total})` : `(${stats[s]})`}</button>
           ))}
         </div>
         <div className="relative ml-auto">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
           <input type="text" placeholder="Search name, product or city..." value={search} onChange={e => setSearch(e.target.value)}
-            className="border border-neutral-200/80 pl-8 pr-3 py-2 text-[9px] font-extrabold uppercase tracking-widest focus:outline-none focus:border-[#030213] placeholder-neutral-300 w-52 rounded-none" />
+            className="border border-neutral-200/80 pl-8 pr-3 py-2 text-[9px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#030213] placeholder-neutral-300 w-52 rounded-none" />
         </div>
       </div>
 
       {/* ── Reviews List ───────────────────────────────────────────── */}
       <div className="space-y-3">
         {filtered.map(r => (
-          <div key={r.id} className="bg-white border border-neutral-200/80 p-5">
+          <div key={r.id} className="bg-card border border-neutral-200/80 p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">
                   {/* Avatar with initials */}
-                  <div className="w-9 h-9 bg-[#030213] text-white flex items-center justify-center text-[10px] font-black shrink-0">
+                  <div className="w-9 h-9 bg-[#030213] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                     {r.customer.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h4 className="text-[10px] font-black text-[#030213] uppercase tracking-wide">{r.customer}</h4>
+                    <h4 className="text-[10px] font-bold text-[#030213] uppercase tracking-wide">{r.customer}</h4>
                     <p className="text-[7px] text-neutral-400 font-bold">
                       <span className="text-neutral-500">{r.location}</span> &middot;{" "}
                       on <span className="text-[#030213]">{r.productName}</span> &middot; {r.date}
@@ -166,8 +166,8 @@ export function ProductReviewsPage() {
 
                 {/* Size & Color chips */}
                 <div className="flex items-center gap-2 mt-2">
-                  {r.size && <span className="text-[7px] font-extrabold tracking-widest bg-neutral-50 border border-neutral-200 px-1.5 py-0.5 uppercase">{r.size}</span>}
-                  {r.color && <span className="text-[7px] font-extrabold tracking-widest bg-neutral-50 border border-neutral-200 px-1.5 py-0.5 uppercase">{r.color}</span>}
+                  {r.size && <span className="text-[7px] font-semibold tracking-widest bg-neutral-50 border border-neutral-200 px-1.5 py-0.5 uppercase">{r.size}</span>}
+                  {r.color && <span className="text-[7px] font-semibold tracking-widest bg-neutral-50 border border-neutral-200 px-1.5 py-0.5 uppercase">{r.color}</span>}
                   <span className="text-[7px] text-neutral-400 font-mono">{r.productSku}</span>
                 </div>
 
@@ -195,7 +195,7 @@ export function ProductReviewsPage() {
                     <button onClick={() => updateStatus(r.id, "rejected")} className="bg-red-50 hover:bg-red-100 text-red-600 p-2 cursor-pointer border-none" title="Reject"><X className="w-4 h-4" /></button>
                   </>
                 )}
-                <span className={`text-[7px] font-extrabold tracking-widest px-2 py-1 ${
+                <span className={`text-[7px] font-semibold tracking-widest px-2 py-1 ${
                   r.status === "approved" ? "bg-green-50 text-green-700" :
                   r.status === "pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
                 }`}>{r.status.toUpperCase()}</span>
@@ -209,13 +209,13 @@ export function ProductReviewsPage() {
       {/* ── Delete Confirmation ─────────────────────────────────────── */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setDeleteId(null)}>
-          <div className="bg-white border border-neutral-200 p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-card border border-neutral-200 p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
             <AlertTriangle className="w-8 h-8 text-[#b2533e] mb-3" />
-            <h3 className="text-sm font-black text-[#030213] uppercase tracking-widest mb-2">Delete Review?</h3>
+            <h3 className="text-sm font-bold text-[#030213] uppercase tracking-widest mb-2">Delete Review?</h3>
             <p className="text-[9px] text-neutral-500 mb-4">This cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteId(null)} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase bg-white cursor-pointer rounded-none">Cancel</button>
-              <button onClick={() => { setReviews(reviews.filter(r => r.id !== deleteId)); setDeleteId(null); }} className="bg-[#b2533e] hover:bg-red-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Delete</button>
+              <button onClick={() => setDeleteId(null)} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-4 py-2 uppercase bg-card cursor-pointer rounded-none">Cancel</button>
+              <button onClick={() => { setReviews(reviews.filter(r => r.id !== deleteId)); setDeleteId(null); }} className="bg-[#b2533e] hover:bg-red-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none">Delete</button>
             </div>
           </div>
         </div>

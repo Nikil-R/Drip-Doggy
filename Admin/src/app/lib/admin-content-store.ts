@@ -26,7 +26,44 @@ function setItem<T>(key: string, value: T): void {
 }
 
 export interface HeroSlide { id: string; tagline: string; title: string; description: string; image: string; ctaText?: string; ctaLink?: string; order: number; active: boolean; }
-export function getHeroSlides(): HeroSlide[] { return getItem<HeroSlide[]>(KEYS.heroSlides, []); }
+function defaultHeroSlides(): HeroSlide[] {
+  return [
+    {
+      id: "slide-1",
+      tagline: "TACTICAL SILHOUETTES",
+      title: "SS26 WOMEN'S COLLECTION",
+      description: "Engineered for the urban frontier. Utility meets attitude.",
+      image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1600&auto=format&fit=crop",
+      ctaText: "Explore Collection",
+      ctaLink: "/shop",
+      order: 0,
+      active: true,
+    },
+    {
+      id: "slide-2",
+      tagline: "DRIP DOGGY APPAREL",
+      title: "HIGH-END DRIP FOR THE BOLD",
+      description: "Precision-crafted streetwear for those who demand more. Every stitch, a statement.",
+      image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop",
+      ctaText: "Explore Collection",
+      ctaLink: "/shop",
+      order: 1,
+      active: true,
+    },
+    {
+      id: "slide-3",
+      tagline: "THE ARCHIVE SERIES",
+      title: "UNCOMPROMISED LUXURY",
+      description: "Rebels make the rules. Redefining luxury, one drop at a time.",
+      image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1600&auto=format&fit=crop",
+      ctaText: "Explore Collection",
+      ctaLink: "/shop",
+      order: 2,
+      active: true,
+    },
+  ];
+}
+export function getHeroSlides(): HeroSlide[] { return getItem<HeroSlide[]>(KEYS.heroSlides, defaultHeroSlides()); }
 export function setHeroSlides(slides: HeroSlide[]): void { setItem(KEYS.heroSlides, slides); }
 export function addHeroSlide(slide: HeroSlide): void { const s = getHeroSlides(); s.push(slide); setHeroSlides(s); }
 export function updateHeroSlide(id: string, updates: Partial<HeroSlide>): void {

@@ -1,29 +1,40 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion, useScroll, useTransform } from "motion/react";
+import { getHeroSlides } from "../../lib/content-store";
 
-const SLIDES = [
+const DEFAULT_SLIDES = [
   {
     tagline: "TACTICAL SILHOUETTES",
     title: "SS26 WOMEN'S COLLECTION",
     description: "Engineered for the urban frontier. Utility meets attitude.",
     image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1600&auto=format&fit=crop",
+    ctaText: "Explore Collection",
+    ctaLink: "/shop",
   },
   {
     tagline: "DRIP DOGGY APPAREL",
     title: "HIGH-END DRIP FOR THE BOLD",
     description: "Precision-crafted streetwear for those who demand more. Every stitch, a statement.",
     image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop",
+    ctaText: "Explore Collection",
+    ctaLink: "/shop",
   },
   {
     tagline: "THE ARCHIVE SERIES",
     title: "UNCOMPROMISED LUXURY",
     description: "Rebels make the rules. Redefining luxury, one drop at a time.",
     image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1600&auto=format&fit=crop",
+    ctaText: "Explore Collection",
+    ctaLink: "/shop",
   },
 ];
 
 export function Hero() {
+  const [slides, setSlides] = useState(() => {
+    const loaded = getHeroSlides().filter((s: any) => s.active);
+    return loaded.length > 0 ? loaded : DEFAULT_SLIDES;
+  });
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fade, setFade] = useState(true);
 
@@ -33,17 +44,37 @@ export function Hero() {
   const contentParallaxY = useTransform(scrollY, [0, 600], [0, -60]);
   const contentOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
+  // Dynamic slides update handler
   useEffect(() => {
+    const handleUpdate = () => {
+      const loaded = getHeroSlides().filter((s: any) => s.active);
+      setSlides(loaded.length > 0 ? loaded : DEFAULT_SLIDES);
+      setCurrentSlide(0);
+    };
+
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("dd-content-changed" as any, handleUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("dd-content-changed" as any, handleUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
         setFade(true);
       }, 600);
     }, 5000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
+
+  const activeSlide = slides[currentSlide] || DEFAULT_SLIDES[0];
 
   return (
     <section
@@ -51,7 +82,7 @@ export function Hero() {
       className="relative min-h-screen lg:h-screen overflow-hidden pt-[73px] lg:pt-[81px]"
     >
       {/* Background Slides with parallax */}
-      {SLIDES.map((slide, index) => (
+      {slides.map((slide, index) => (
         <motion.div
           key={index}
           style={{ y: index === currentSlide ? bgParallaxY : undefined }}
@@ -85,19 +116,19 @@ export function Hero() {
             }`}
           >
             <span className="text-[10px] font-bold tracking-[0.3em] text-white/70 uppercase block mb-4">
-              {SLIDES[currentSlide].tagline}
+              {activeSlide.tagline}
             </span>
             <h1 className="text-5xl lg:text-7xl mb-4 font-extrabold tracking-tight">
-              {SLIDES[currentSlide].title}
+              {activeSlide.title}
             </h1>
             <p className="text-sm lg:text-base text-white/60 font-medium tracking-wide mb-8 max-w-md leading-relaxed">
-              {SLIDES[currentSlide].description}
+              {activeSlide.description}
             </p>
             <Link
-              to="/shop"
+              to={activeSlide.ctaLink || "/shop"}
               className="inline-block bg-white text-[#030213] hover:bg-white/90 px-8 py-3.5 text-xs font-extrabold tracking-[0.2em] uppercase transition-colors"
             >
-              Explore Collection
+              {activeSlide.ctaText || "Explore Collection"}
             </Link>
           </div>
         </div>
@@ -105,7 +136,7 @@ export function Hero() {
 
       {/* Slide dots */}
       <div className="absolute bottom-8 left-6 z-20 flex gap-2">
-        {SLIDES.map((_, i) => (
+        {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => {

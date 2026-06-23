@@ -20,7 +20,6 @@ import { ControlAuthorityPage } from "./pages/ControlAuthority";
 import { HeroSlidesEditorPage } from "./pages/HeroSlidesEditor";
 import { FeaturedProductsEditorPage } from "./pages/FeaturedProductsEditor";
 import { SignaturePiecesEditorPage } from "./pages/SignaturePiecesEditor";
-import { CollectionStoryEditorPage } from "./pages/CollectionStoryEditor";
 import { HomeCategoriesEditorPage } from "./pages/HomeCategoriesEditor";
 import { NewsletterConfigEditorPage } from "./pages/NewsletterConfigEditor";
 import { FooterSettingsEditorPage } from "./pages/FooterSettingsEditor";
@@ -59,7 +58,6 @@ export default function App() {
           <Route path="content/hero-slides" element={<HeroSlidesEditorPage />} />
           <Route path="content/featured-products" element={<FeaturedProductsEditorPage />} />
           <Route path="content/signature-pieces" element={<SignaturePiecesEditorPage />} />
-          <Route path="content/collection-story" element={<CollectionStoryEditorPage />} />
           <Route path="content/home-categories" element={<HomeCategoriesEditorPage />} />
           <Route path="content/newsletter" element={<NewsletterConfigEditorPage />} />
           <Route path="content/footer" element={<FooterSettingsEditorPage />} />

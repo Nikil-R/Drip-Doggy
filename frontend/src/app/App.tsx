@@ -43,6 +43,23 @@ function FooterWrapper() {
 
 
 export default function App() {
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'sync-from-admin') {
+        const { key, value } = event.data;
+        if (value === null) {
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, value);
+        }
+        // Notify local components
+        window.dispatchEvent(new CustomEvent('dd-content-changed', { detail: { key } }));
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -98,6 +115,12 @@ export default function App() {
           </Routes>
           <FooterWrapper />
         </div>
+        {/* Hidden cross-origin localStorage sync bridge for dev */}
+        <iframe
+          src="http://localhost:5174/bridge.html"
+          style={{ display: 'none', width: 0, height: 0, border: 'none' }}
+          title="localstorage-bridge"
+        />
       </AuthProvider>
     </BrowserRouter>
   );

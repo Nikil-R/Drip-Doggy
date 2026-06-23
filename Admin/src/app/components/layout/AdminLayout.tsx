@@ -14,13 +14,13 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5]">
+    <div className="min-h-screen bg-background text-foreground">
       <Sidebar />
       <TopBar />
 
       <main
         className={cn(
-          "pt-16 min-h-screen transition-all duration-300",
+          "pt-16 min-h-screen transition-all duration-300 ease-in-out",
           isCollapsed ? "ml-[68px]" : "ml-[260px]"
         )}
       >

@@ -61,7 +61,7 @@ export function Profile() {
       const stored = localStorage.getItem("addresses");
       if (stored) {
         const list = JSON.parse(stored);
-        return list.filter((a: any) => a.firstName !== "Jeshwanth" && a.name !== "Jeshwanth");
+        return list.filter((a: any) => a.firstName !== "Nikil" && a.name !== "Nikil");
       }
     } catch { /* noop */ }
     return [

@@ -84,23 +84,23 @@ export function NavigationMenuEditorPage() {
     <div className="space-y-8 font-sans">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-[#030213] uppercase tracking-widest">Navigation Menu</h1>
+          <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Navigation Menu</h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Manage Drip Doggy header navigation structure</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={reset} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase cursor-pointer bg-white rounded-none"><RotateCcw className="w-3 h-3" /> Reset</button>
-          <button onClick={save} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none"><Check className="w-3.5 h-3.5" /> Save</button>
+          <button onClick={reset} className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-4 py-2 uppercase cursor-pointer bg-card rounded-none"><RotateCcw className="w-3 h-3" /> Reset</button>
+          <button onClick={save} className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none"><Check className="w-3.5 h-3.5" /> Save</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Desktop Nav */}
-        <div className="bg-white border border-neutral-200/80 p-6">
-          <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-4">Desktop Navigation</h3>
+        <div className="bg-card border border-neutral-200/80 p-6">
+          <h3 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-4">Desktop Navigation</h3>
           <div className="space-y-2">
             {config.desktopItems.map((item, idx) => (
               <div key={idx} className="border border-neutral-100">
-                <div className="flex items-center gap-2 p-3 bg-[#faf8f5]/40">
+                <div className="flex items-center gap-2 p-3 bg-card/40">
                   <button onClick={() => toggleExpand(idx)} className="text-neutral-400 cursor-pointer bg-transparent border-none">
                     {expanded.includes(idx) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                   </button>
@@ -108,7 +108,7 @@ export function NavigationMenuEditorPage() {
                     className="flex-1 border border-neutral-200/80 px-2 py-1 text-[8px] font-bold uppercase focus:outline-none focus:border-[#030213] rounded-none" placeholder="Label" />
                   <input value={item.to} onChange={e => updateDesktopItem(idx, { to: e.target.value })}
                     className="w-24 border border-neutral-200/80 px-2 py-1 text-[8px] font-bold focus:outline-none focus:border-[#030213] rounded-none" placeholder="Path" />
-                  <button onClick={() => addChild(idx)} className="text-[#030213] hover:text-neutral-600 text-[7px] font-extrabold cursor-pointer bg-transparent border-none">+ CHILD</button>
+                  <button onClick={() => addChild(idx)} className="text-[#030213] hover:text-neutral-600 text-[7px] font-semibold cursor-pointer bg-transparent border-none">+ CHILD</button>
                   <button onClick={() => setConfigState({ ...config, desktopItems: config.desktopItems.filter((_, i) => i !== idx) })}
                     className="text-neutral-300 hover:text-[#b2533e] cursor-pointer bg-transparent border-none"><Trash2 className="w-3 h-3" /></button>
                 </div>
@@ -131,7 +131,7 @@ export function NavigationMenuEditorPage() {
                               setConfigState({ ...config, desktopItems: items });
                             }
                           }} className="w-20 border border-neutral-200/80 px-2 py-1 text-[7px] font-bold focus:outline-none focus:border-[#030213] rounded-none" placeholder="Path" />
-                          <button onClick={() => addSubChild(idx, ci)} className="text-[#030213] text-[7px] font-extrabold cursor-pointer bg-transparent border-none">+ SUB</button>
+                          <button onClick={() => addSubChild(idx, ci)} className="text-[#030213] text-[7px] font-semibold cursor-pointer bg-transparent border-none">+ SUB</button>
                           <button onClick={() => {
                             const items = [...config.desktopItems];
                             if (items[idx].children) {
@@ -177,12 +177,12 @@ export function NavigationMenuEditorPage() {
             ))}
           </div>
           <button onClick={() => setConfigState({ ...config, desktopItems: [...config.desktopItems, { label: "", to: "" }] })}
-            className="mt-3 text-[7px] font-extrabold text-[#030213] hover:text-neutral-600 cursor-pointer bg-transparent border-none">+ Add Nav Item</button>
+            className="mt-3 text-[7px] font-semibold text-[#030213] hover:text-neutral-600 cursor-pointer bg-transparent border-none">+ Add Nav Item</button>
         </div>
 
         {/* Mobile Nav */}
-        <div className="bg-white border border-neutral-200/80 p-6">
-          <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-4">Mobile Navigation</h3>
+        <div className="bg-card border border-neutral-200/80 p-6">
+          <h3 className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-4">Mobile Navigation</h3>
           <div className="space-y-2">
             {config.mobileItems.map((item, idx) => (
               <div key={idx} className="flex items-center gap-2 p-2 border border-neutral-100">
@@ -202,11 +202,11 @@ export function NavigationMenuEditorPage() {
             ))}
           </div>
           <button onClick={() => setConfigState({ ...config, mobileItems: [...config.mobileItems, { label: "", to: "" }] })}
-            className="mt-3 text-[7px] font-extrabold text-[#030213] hover:text-neutral-600 cursor-pointer bg-transparent border-none">+ Add Mobile Item</button>
+            className="mt-3 text-[7px] font-semibold text-[#030213] hover:text-neutral-600 cursor-pointer bg-transparent border-none">+ Add Mobile Item</button>
         </div>
       </div>
 
-      {toast && <div className="fixed bottom-6 right-6 bg-[#030213] text-white text-[9px] font-extrabold tracking-widest px-4 py-3 uppercase z-50">{toast}</div>}
+      {toast && <div className="fixed bottom-6 right-6 bg-[#030213] text-white text-[9px] font-semibold tracking-widest px-4 py-3 uppercase z-50">{toast}</div>}
     </div>
   );
 }
