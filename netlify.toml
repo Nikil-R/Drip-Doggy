@@ -1,13 +1,20 @@
 [build]
-  base = "frontend"
-  command = "npm run build"
-  publish = "dist"
+  # We run the build from the root directory instead of just 'frontend'
+  base = ""
+  command = "cd frontend && npm install && npm run build && cd ../Admin && npm install && npm run build && cd .. && mkdir -p frontend/dist/admin && cp -r Admin/dist/* frontend/dist/admin/"
+  publish = "frontend/dist"
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
 
+# 1. First match admin routes and redirect to admin SPA entrypoint
 [[redirects]]
+  from = "/admin/*"
+  to = "/admin/index.html"
+  status = 200
 
+# 2. Match all other routes and redirect to user frontend SPA entrypoint
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
