@@ -76,8 +76,8 @@ export interface FeaturedProductsConfig { sectionTitle: string; sectionSubtitle:
 export function getFeaturedProducts(): FeaturedProductsConfig { return getItem(KEYS.featuredProducts, { sectionTitle: "New In", sectionSubtitle: "New This Season", productIds: [], maxProducts: 4, active: true }); }
 export function setFeaturedProducts(config: FeaturedProductsConfig): void { setItem(KEYS.featuredProducts, config); }
 
-export interface SignaturePiecesConfig { sectionTitle: string; sectionSubtitle: string; productIds: number[]; active: boolean; }
-export function getSignaturePieces(): SignaturePiecesConfig { return getItem(KEYS.signaturePieces, { sectionTitle: "Signature Pieces", sectionSubtitle: "Brand Uniform", productIds: [], active: true }); }
+export interface SignaturePiecesConfig { sectionTitle: string; sectionSubtitle: string; productIds: number[]; maxProducts: number; active: boolean; }
+export function getSignaturePieces(): SignaturePiecesConfig { return getItem(KEYS.signaturePieces, { sectionTitle: "Signature Pieces", sectionSubtitle: "Brand Uniform", productIds: [], maxProducts: 4, active: true }); }
 export function setSignaturePieces(config: SignaturePiecesConfig): void { setItem(KEYS.signaturePieces, config); }
 
 export interface HomeCategory { id: string; title: string; image: string; description: string; route: string; comingSoon: boolean; comingSeason?: string; order: number; active: boolean; }

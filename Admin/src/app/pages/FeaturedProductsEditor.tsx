@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, RotateCcw, Check, Sparkles, Eye, EyeOff } from "lucide-react";
+import { X, RotateCcw, Check, Sparkles, Eye, EyeOff, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { getFeaturedProducts, setFeaturedProducts, FeaturedProductsConfig } from "../lib/admin-content-store";
 
 // Product catalog reference (shared with frontend)
@@ -11,23 +11,17 @@ const PRODUCT_CATALOG = [
   { id: 5, name: "Moto Biker Jacket", price: 18999 },
   { id: 6, name: "Pleated Wide-Leg Trousers", price: 7499 },
   { id: 7, name: "Oversized Blazer Dress", price: 11499 },
-  { id: 8, name: "Slim-Fit Turtleneck", price: 5499 },
-  { id: 9, name: "Wool Cashmere Overcoat", price: 24999 },
-  { id: 10, name: "Drape Front Bodysuit", price: 4299 },
-  { id: 11, name: "Parachute Cargo Skirt", price: 6499 },
-  { id: 12, name: "Oversized Knit Cardigan", price: 9999 },
+  { id: 8, name: "Parachute Cargo Skirt", price: 6499 },
+  { id: 9, name: "Oversized Knit Cardigan", price: 9999 },
 ];
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer p-0 shrink-0 border-none outline-none ${
-        enabled ? "bg-[#224870]" : "bg-neutral-350"
+        enabled ? "bg-[#224870]" : "bg-neutral-300"
       }`}
     >
       <span
@@ -41,7 +35,7 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
 
 export function FeaturedProductsEditorPage() {
   const [config, setConfigState] = useState<FeaturedProductsConfig>({
-    sectionTitle: "Featured Drops", sectionSubtitle: "Curated by Drip Doggy", productIds: [], maxProducts: 4, active: true,
+    sectionTitle: "New In", sectionSubtitle: "New This Season", productIds: [], maxProducts: 4, active: true,
   });
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [toast, setToast] = useState("");
@@ -52,16 +46,17 @@ export function FeaturedProductsEditorPage() {
     setSelectedIds(c.productIds);
   }, []);
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   const save = () => {
     setFeaturedProducts({ ...config, productIds: selectedIds });
-    showToast("Featured products saved");
+    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_featured_products" } }));
+    showToast("New In configuration saved");
   };
 
   const reset = () => {
     const defaults: FeaturedProductsConfig = {
-      sectionTitle: "New In", sectionSubtitle: "New This Season", productIds: [3, 7, 4, 1], maxProducts: 4, active: true,
+      sectionTitle: "New In", sectionSubtitle: "New This Season", productIds: [3, 7, 8, 1], maxProducts: 4, active: true,
     };
     setConfigState(defaults);
     setSelectedIds(defaults.productIds);
@@ -69,88 +64,212 @@ export function FeaturedProductsEditorPage() {
   };
 
   const toggleProduct = (id: number) => {
+    const limit = config.maxProducts || 4;
+    if (!selectedIds.includes(id) && selectedIds.length >= limit) {
+      showToast(`Cannot select more than ${limit} products (Limit reached)`);
+      return;
+    }
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
+  const moveUp = (idx: number) => {
+    if (idx === 0) return;
+    const arr = [...selectedIds];
+    [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+    setSelectedIds(arr);
+  };
+
+  const moveDown = (idx: number) => {
+    if (idx >= selectedIds.length - 1) return;
+    const arr = [...selectedIds];
+    [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+    setSelectedIds(arr);
+  };
+
   return (
-    <div className="space-y-8 font-sans text-[#382d24]">
-      
+    <div className="space-y-6 font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-200/60 pb-5">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
-            <Sparkles className="w-5 h-5 text-[#224870]" /> Featured Products
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Select Drip Doggy products for the homepage featured section</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-4 h-4 text-[#224870]" />
+            <h1 className="text-[11px] font-black text-[#030213] uppercase tracking-[0.25em]">New In Editor</h1>
+          </div>
+          <p className="text-[9px] text-neutral-400 font-semibold uppercase tracking-wider">
+            Configure the "New In" section on the user homepage
+          </p>
         </div>
-        <div className="flex gap-2.5">
-          <button onClick={reset} className="border border-neutral-300 hover:border-[#224870] text-[#382d24] hover:text-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer bg-transparent rounded-none transition-colors">
-            <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={reset}
+            className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-3 py-2 uppercase cursor-pointer bg-white rounded-none flex items-center gap-1.5 transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" /> Reset Defaults
           </button>
-          <button onClick={save} className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-colors">
-            <Check className="w-3.5 h-3.5" /> Save Section
+          <button
+            onClick={save}
+            className="bg-[#224870] hover:bg-[#1a3a5c] text-white text-[9px] font-bold tracking-widest px-5 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-colors"
+          >
+            <Check className="w-3.5 h-3.5" /> Save Changes
           </button>
         </div>
       </div>
 
-      {/* Settings Grid */}
-      <div className="bg-card border border-neutral-200/80 p-6 space-y-5">
-        <span className="text-[10px] font-black tracking-widest uppercase text-[#382d24] block border-b border-neutral-200/60 pb-3">Section Metadata &amp; Configuration</span>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          <div className="space-y-1">
-            <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Section Title</label>
-            <input value={config.sectionTitle} onChange={e => setConfigState({ ...config, sectionTitle: e.target.value })}
-              className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2 text-xs font-bold uppercase focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Section Subtitle</label>
-            <input value={config.sectionSubtitle} onChange={e => setConfigState({ ...config, sectionSubtitle: e.target.value })}
-              className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2 text-xs font-bold uppercase focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Max Display Count</label>
-            <input type="number" value={config.maxProducts} onChange={e => setConfigState({ ...config, maxProducts: Number(e.target.value) })}
-              className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
-          </div>
-          <div className="flex items-center justify-between bg-[#faf8f5] border border-neutral-300 p-2.5 h-[38px]">
-            <span className="text-[8.5px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
-              {config.active ? <Eye className="w-3.5 h-3.5 text-[#224870]" /> : <EyeOff className="w-3.5 h-3.5 text-neutral-400" />}
-              Active on Home
-            </span>
-            <ToggleSwitch enabled={config.active} onClick={() => setConfigState({ ...config, active: !config.active })} />
-          </div>
-        </div>
-      </div>
+      {/* Editor Content Area */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        {/* Left Side: Inputs and Selections */}
+        <div className="xl:col-span-2 space-y-6">
+          
+          {/* Metadata Block */}
+          <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
+            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">Section Settings</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Section Title</label>
+                <input 
+                  value={config.sectionTitle} 
+                  onChange={e => setConfigState({ ...config, sectionTitle: e.target.value })}
+                  placeholder="e.g. New In"
+                  className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
+                />
+              </div>
+              <div>
+                <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Section Subtitle</label>
+                <input 
+                  value={config.sectionSubtitle} 
+                  onChange={e => setConfigState({ ...config, sectionSubtitle: e.target.value })}
+                  placeholder="e.g. New This Season"
+                  className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
+                />
+              </div>
+              <div>
+                <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Max Display Limit</label>
+                <input 
+                  type="number" 
+                  value={config.maxProducts} 
+                  onChange={e => setConfigState({ ...config, maxProducts: Number(e.target.value) })}
+                  className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
+                />
+              </div>
+            </div>
 
-      {/* Product Selector */}
-      <div className="bg-card border border-neutral-200/80 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-neutral-200/60 pb-3">
-          <span className="text-xs font-black uppercase tracking-widest text-[#382d24]">Select Products ({selectedIds.length} selected)</span>
-          <span className="text-[9.5px] font-black text-[#615e56] uppercase tracking-wider">Max Display Limit: {config.maxProducts}</span>
+            <div className="flex items-center gap-3 pt-2">
+              <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase">Section Active</label>
+              <ToggleSwitch enabled={config.active} onClick={() => setConfigState({ ...config, active: !config.active })} />
+              <span className="text-[7px] text-neutral-400">
+                {config.active ? "Section is visible on the home page" : "Section is hidden on the home page"}
+              </span>
+            </div>
+          </div>
+
+          {/* Product Grid Catalog Selector */}
+          <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
+            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">Select Products</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {PRODUCT_CATALOG.map(p => {
+                const selected = selectedIds.includes(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => toggleProduct(p.id)}
+                    className={`text-left p-3.5 border cursor-pointer transition-all duration-150 rounded-none flex flex-col justify-between h-20 ${
+                      selected 
+                        ? "border-[#224870] bg-[#224870]/5" 
+                        : "border-neutral-200 bg-white hover:border-neutral-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between w-full">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider line-clamp-2 mr-2 ${selected ? "text-[#224870]" : "text-neutral-800"}`}>
+                        {p.name}
+                      </span>
+                      <div className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 rounded-none ${selected ? "bg-[#224870] border-[#224870]" : "border-neutral-350"}`}>
+                        {selected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-extrabold text-neutral-400 mt-2">₹{p.price.toLocaleString("en-IN")}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {PRODUCT_CATALOG.map(p => {
-            const selected = selectedIds.includes(p.id);
-            return (
-              <button key={p.id} onClick={() => toggleProduct(p.id)}
-                className={`text-left p-4 border cursor-pointer transition-all rounded-none ${
-                  selected ? "border-[#224870] bg-[#224870]/5" : "border-neutral-200 bg-[#faf8f5]/20 hover:border-neutral-400"
-                }`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-black uppercase tracking-tight truncate mr-2 ${selected ? "text-[#224870]" : "text-[#382d24]"}`}>{p.name}</span>
-                  <div className={`w-4 h-4 border flex items-center justify-center shrink-0 rounded-none ${selected ? "bg-[#224870] border-[#224870]" : "border-neutral-300"}`}>
-                    {selected && <Check className="w-3 h-3 text-white stroke-[3]" />}
-                  </div>
-                </div>
-                <span className="text-[9px] text-[#382d24] font-black mt-1.5 block">₹{p.price.toLocaleString("en-IN")}</span>
-              </button>
-            );
-          })}
+
+        {/* Right Side: Order list and Live Preview */}
+        <div className="space-y-6">
+          {/* Order and Prioritization List */}
+          <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
+            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">
+              Item Display Order ({selectedIds.length} items)
+            </h3>
+            {selectedIds.length === 0 ? (
+              <p className="text-[8px] text-neutral-400 uppercase tracking-wider font-semibold py-4 text-center">No products selected. (Default fallback will apply on homepage)</p>
+            ) : (
+              <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                {selectedIds.map((id, index) => {
+                  const p = PRODUCT_CATALOG.find(prod => prod.id === id);
+                  if (!p) return null;
+                  return (
+                    <div key={id} className="flex items-center justify-between border border-neutral-200/80 bg-neutral-50/50 px-2.5 py-1.5">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <span className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider mr-1.5">#{index + 1}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-800 truncate inline-block max-w-[150px] align-middle">{p.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => moveUp(index)} disabled={index === 0} className="p-1 text-neutral-400 hover:text-[#224870] disabled:opacity-20 cursor-pointer bg-transparent border-none">
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => moveDown(index)} disabled={index === selectedIds.length - 1} className="p-1 text-neutral-400 hover:text-[#224870] disabled:opacity-20 cursor-pointer bg-transparent border-none">
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => toggleProduct(id)} className="p-1 text-neutral-400 hover:text-[#b2533e] cursor-pointer bg-transparent border-none ml-1">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Simple Live Preview Box */}
+          <div className="bg-[#FAF8F5] border border-neutral-200 p-5 space-y-4">
+            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-200/60 pb-2">Home Preview</h3>
+            
+            <div className="bg-white border border-neutral-200/80 p-4">
+              <span className="text-[6px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-1">
+                {config.sectionSubtitle || "New This Season"}
+              </span>
+              <h4 className="text-[12px] font-extrabold tracking-tight text-[#030213] uppercase mb-4">
+                {config.sectionTitle || "New In"}
+              </h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {selectedIds.slice(0, config.maxProducts || 4).map(id => {
+                  const p = PRODUCT_CATALOG.find(prod => prod.id === id);
+                  if (!p) return null;
+                  return (
+                    <div key={id} className="border border-neutral-100 p-2 bg-neutral-50/20">
+                      <div className="aspect-[3/4] bg-neutral-100 mb-1 flex items-center justify-center">
+                        <span className="text-[6px] font-black text-neutral-400 uppercase tracking-widest">Product Image</span>
+                      </div>
+                      <span className="text-[7px] font-bold uppercase tracking-wider text-neutral-800 line-clamp-1 block">{p.name}</span>
+                      <span className="text-[7px] font-black text-[#224870] mt-0.5 block">₹{p.price.toLocaleString("en-IN")}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#382d24] text-[#faf8f5] text-[9px] font-bold tracking-widest px-4.5 py-3.5 uppercase z-50 border border-neutral-700 shadow-2xl animate-fade-in">
+        <div className="fixed bottom-6 right-6 bg-[#224870] text-white text-[9px] font-bold tracking-widest px-5 py-3 uppercase z-50 flex items-center gap-2 shadow-xl">
+          <Check className="w-3.5 h-3.5" />
           {toast}
         </div>
       )}

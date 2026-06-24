@@ -34,6 +34,7 @@ import {
   Package,
   Settings2,
   Palette,
+  Sparkles,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -89,14 +90,12 @@ const menuSections: SidebarSection[] = [
     iconColor: "text-[#2d5a27]",
     items: [
       { to: "/admin/content/hero-slides",      label: "Hero Slides",         icon: ImageIcon },
-      { to: "/admin/content/featured-products",label: "Featured Products",   icon: Star },
+      { to: "/admin/content/featured-products",label: "New In",              icon: Sparkles },
       { to: "/admin/content/signature-pieces", label: "Signature Pieces",    icon: Award },
       { to: "/admin/content/home-categories",  label: "Home Categories",     icon: LayoutList },
-      { to: "/admin/content/newsletter",       label: "Newsletter Config",   icon: Mail },
       { to: "/admin/content/footer",           label: "Footer Settings",     icon: Copyright },
       { to: "/admin/content/navigation",       label: "Navigation Menu",     icon: Menu },
       { to: "/admin/content/site-pages",       label: "Site Pages",          icon: FileText },
-      { to: "/admin/content/collections",      label: "Curated Collections", icon: Grid3X3 },
     ],
   },
 ];

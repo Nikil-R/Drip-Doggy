@@ -112,12 +112,14 @@ export function SignaturePieces() {
   // Resolve dynamic product list
   const displayedProducts = config.productIds
     .map(id => products.find(p => p.id === id))
-    .filter((p): p is Product => !!p);
+    .filter((p): p is Product => !!p)
+    .slice(0, config.maxProducts || 4);
 
   const fallbackIds = [4, 9, 1, 6];
-  const finalProducts = displayedProducts.length > 0 ? displayedProducts : fallbackIds
+  const finalProducts = (displayedProducts.length > 0 ? displayedProducts : fallbackIds
     .map(id => products.find(p => p.id === id))
-    .filter((p): p is Product => !!p);
+    .filter((p): p is Product => !!p))
+    .slice(0, config.maxProducts || 4);
 
   return (
     <section id="signature-pieces" className="pt-2 pb-8 lg:pt-6 lg:pb-10 bg-white border-t border-neutral-100">
