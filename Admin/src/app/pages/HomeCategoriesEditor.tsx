@@ -112,6 +112,7 @@ export function HomeCategoriesEditorPage() {
       addHomeCategory({ ...form, id: "cat-" + idCounter++, order: categories.length }); 
       setCategories(getHomeCategories()); 
     }
+    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
     setShowModal(false); 
     showToast(editCat ? "Category updated" : "Category added");
   };
@@ -121,6 +122,7 @@ export function HomeCategoriesEditorPage() {
       deleteHomeCategory(deleteId); 
       setCategories(getHomeCategories()); 
       setDeleteId(null); 
+      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
       showToast("Category deleted"); 
     } 
   };
@@ -128,6 +130,7 @@ export function HomeCategoriesEditorPage() {
   const reset = () => {
     setHomeCategories(DEFAULT_CATEGORIES_DATA);
     setCategories(DEFAULT_CATEGORIES_DATA);
+    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
     showToast("Reset to brand defaults");
   };
 
@@ -136,6 +139,7 @@ export function HomeCategoriesEditorPage() {
     if (c) {
       updateHomeCategory(id, { active: !c.active });
       setCategories(getHomeCategories());
+      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
       showToast("Visibility toggled");
     }
   };

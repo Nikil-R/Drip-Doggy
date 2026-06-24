@@ -87,19 +87,18 @@ export function SignaturePiecesEditorPage() {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-8 font-sans text-[#382d24]">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between border-b border-neutral-200/60 pb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Star className="w-4 h-4 text-[#224870]" />
-            <h1 className="text-[11px] font-black text-[#030213] uppercase tracking-[0.25em]">Signature Pieces Editor</h1>
-          </div>
-          <p className="text-[9px] text-neutral-400 font-semibold uppercase tracking-wider">
+          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
+            <Star className="w-5 h-5 text-[#224870]" /> Signature Pieces Editor
+          </h1>
+          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
             Configure the "Signature Pieces" showcase on the home page
           </p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2.5">
           <button
             onClick={reset}
             className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-3 py-2 uppercase cursor-pointer bg-white rounded-none flex items-center gap-1.5 transition-colors"

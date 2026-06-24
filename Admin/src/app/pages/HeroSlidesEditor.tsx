@@ -41,6 +41,7 @@ export function HeroSlidesEditorPage() {
   const saveAll = (newSlides: HeroSlide[]) => {
     setHeroSlides(newSlides);
     setSlides(newSlides);
+    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
     showToast("Hero slides saved");
   };
 
@@ -80,12 +81,19 @@ export function HeroSlidesEditorPage() {
       addHeroSlide({ ...form, id: `slide-${idCounter++}`, order: slides.length });
       setSlides(getHeroSlides());
     }
+    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
     setShowModal(false);
     showToast(editSlide ? "Slide updated" : "Slide added");
   };
 
   const remove = () => {
-    if (deleteId) { deleteHeroSlide(deleteId); setSlides(getHeroSlides()); setDeleteId(null); showToast("Slide deleted"); }
+    if (deleteId) {
+      deleteHeroSlide(deleteId);
+      setSlides(getHeroSlides());
+      setDeleteId(null);
+      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
+      showToast("Slide deleted");
+    }
   };
 
   const moveUp = (idx: number) => {
@@ -104,7 +112,12 @@ export function HeroSlidesEditorPage() {
 
   const toggleActive = (id: string) => {
     const s = slides.find(x => x.id === id);
-    if (s) { updateHeroSlide(id, { active: !s.active }); setSlides(getHeroSlides()); showToast("Toggled visibility"); }
+    if (s) {
+      updateHeroSlide(id, { active: !s.active });
+      setSlides(getHeroSlides());
+      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
+      showToast("Toggled visibility");
+    }
   };
 
   return (
