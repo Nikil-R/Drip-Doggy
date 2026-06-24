@@ -270,6 +270,8 @@ function defaultSitePages(): SitePageData[] {
     { slug: "returns", title: "Returns & Size Guide", hero: { tag: "CLIENT SERVICES", heading: "Returns & Size Guide", description: "Hassle-free returns, complimentary exchanges, and detailed sizing guidance.", active: true }, active: true },
     { slug: "terms", title: "Terms of Service", hero: { tag: "THE HOUSE", heading: "Terms of Service", description: "Last updated: June 2026. Please read these terms carefully before using our website or making a purchase.", active: true }, active: true },
     { slug: "privacy", title: "Privacy Policy", hero: { tag: "THE HOUSE", heading: "Privacy Policy", description: "Last updated: June 2026. This policy describes how Drip Doggy Apparel collects, uses, and protects your personal information.", active: true }, active: true },
+    { slug: "help", title: "Help Center", hero: { tag: "SUPPORT HUB", heading: "Help & FAQs", description: "Shipping timelines, returns, size guides, and everything you need to know about your order.", active: true }, active: true },
+    { slug: "coming-soon", title: "Coming Soon", hero: { tag: "UPCOMING RELEASE", heading: "Men's Syndicate", description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.", active: true }, active: true },
   ];
 }
 

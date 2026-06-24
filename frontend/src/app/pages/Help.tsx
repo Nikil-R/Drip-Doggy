@@ -1,20 +1,47 @@
+import { useState, useEffect } from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../components/ui/accordion";
+import { getSitePages } from "../lib/content-store";
 
 export function Help() {
+  const [pageData, setPageData] = useState(() => getSitePages().find(p => p.slug === "help"));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setPageData(getSitePages().find(p => p.slug === "help"));
+    };
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("dd-content-changed" as any, handleUpdate);
+    return () => {
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("dd-content-changed" as any, handleUpdate);
+    };
+  }, []);
+
+  const hero = pageData?.hero || {
+    tag: "SUPPORT HUB",
+    heading: "Help & FAQs",
+    description: "Shipping timelines, returns, size guides, and everything you need to know about your order.",
+    active: true
+  };
+
+  if (pageData && !pageData.active) return null;
+
   return (
     <main className="min-h-screen bg-[#FAF8F5] text-[#030213] pb-20 font-sans antialiased selection:bg-neutral-200">
       {/* Page Header */}
-      <section className="relative py-20 text-center border-b border-neutral-200/80 max-w-7xl mx-auto px-6">
-        <span className="text-[9px] font-extrabold tracking-[0.3em] text-[#b2533e] uppercase block mb-3">
-          SUPPORT HUB
-        </span>
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-[0.05em] uppercase mb-4">
-          Help & FAQs
-        </h1>
-        <p className="text-neutral-500 max-w-xl mx-auto text-xs tracking-wide leading-relaxed font-medium">
-          Shipping timelines, returns, size guides, and everything you need to know about your order.
-        </p>
-      </section>
+      {hero.active && (
+        <section className="relative py-20 text-center border-b border-neutral-200/80 max-w-7xl mx-auto px-6">
+          <span className="text-[9px] font-extrabold tracking-[0.3em] text-[#b2533e] uppercase block mb-3">
+            {hero.tag}
+          </span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-[0.05em] uppercase mb-4">
+            {hero.heading}
+          </h1>
+          <p className="text-neutral-500 max-w-xl mx-auto text-xs tracking-wide leading-relaxed font-medium">
+            {hero.description}
+          </p>
+        </section>
+      )}
 
       {/* Quick Links Grid */}
       <section className="max-w-5xl mx-auto px-6 py-16">

@@ -87,6 +87,28 @@ const DEFAULT_PAGES: SitePageData[] = [
     },
     active: true,
   },
+  {
+    slug: "help",
+    title: "Help Center",
+    hero: {
+      tag: "SUPPORT HUB",
+      heading: "Help & FAQs",
+      description: "Shipping timelines, returns, size guides, and everything you need to know about your order.",
+      active: true,
+    },
+    active: true,
+  },
+  {
+    slug: "coming-soon",
+    title: "Coming Soon",
+    hero: {
+      tag: "UPCOMING RELEASE",
+      heading: "Men's Syndicate",
+      description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.",
+      active: true,
+    },
+    active: true,
+  },
 ];
 
 const PAGE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
@@ -96,6 +118,8 @@ const PAGE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   returns: { bg: "bg-violet-50/60 border-violet-200/50", text: "text-violet-700", dot: "bg-violet-500" },
   terms: { bg: "bg-neutral-50 border-neutral-200/80", text: "text-neutral-600", dot: "bg-neutral-400" },
   privacy: { bg: "bg-neutral-50 border-neutral-200/80", text: "text-neutral-600", dot: "bg-neutral-400" },
+  help: { bg: "bg-rose-50/60 border-rose-200/50", text: "text-rose-700", dot: "bg-rose-500" },
+  "coming-soon": { bg: "bg-blue-50/60 border-blue-200/50", text: "text-blue-700", dot: "bg-blue-500" },
 };
 
 export function SitePagesEditorPage() {

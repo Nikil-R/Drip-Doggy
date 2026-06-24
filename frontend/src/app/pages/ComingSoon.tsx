@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowRight, Bell, Check } from "lucide-react";
+import { getSitePages } from "../lib/content-store";
 
 const TEASER_CATEGORIES = [
   { name: "Outerwear", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=400", coming: "SS26" },
@@ -12,6 +13,19 @@ const TEASER_CATEGORIES = [
 export function ComingSoon() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [pageData, setPageData] = useState(() => getSitePages().find(p => p.slug === "coming-soon"));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setPageData(getSitePages().find(p => p.slug === "coming-soon"));
+    };
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("dd-content-changed" as any, handleUpdate);
+    return () => {
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("dd-content-changed" as any, handleUpdate);
+    };
+  }, []);
 
   const handleNotify = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +34,15 @@ export function ComingSoon() {
       setEmail("");
     }
   };
+
+  const hero = pageData?.hero || {
+    tag: "UPCOMING RELEASE",
+    heading: "Men's Syndicate",
+    description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.",
+    active: true
+  };
+
+  if (pageData && !pageData.active) return null;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200">
@@ -34,13 +57,12 @@ export function ComingSoon() {
           }} />
 
         <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
-          <span className="text-[8px] font-black tracking-[0.3em] text-white/40 uppercase block mb-6">Upcoming Release</span>
+          <span className="text-[8px] font-black tracking-[0.3em] text-white/40 uppercase block mb-6">{hero.tag}</span>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-[0.05em] text-white mb-6 uppercase">
-            Men's Syndicate
+            {hero.heading}
           </h1>
           <p className="text-sm text-white/60 leading-relaxed max-w-xl mx-auto mb-10 font-medium">
-            An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision.
-            The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.
+            {hero.description}
           </p>
 
           {/* Notify Form */}
