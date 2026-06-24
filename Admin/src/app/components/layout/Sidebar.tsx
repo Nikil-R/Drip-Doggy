@@ -96,6 +96,7 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/content/footer",           label: "Footer Settings",     icon: Copyright },
       { to: "/admin/content/navigation",       label: "Navigation Menu",     icon: Menu },
       { to: "/admin/content/site-pages",       label: "Site Pages",          icon: FileText },
+      { to: "/admin/content/coming-soon",      label: "Coming Soon",         icon: Zap },
     ],
   },
 ];

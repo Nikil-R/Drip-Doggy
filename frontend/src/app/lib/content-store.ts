@@ -31,6 +31,7 @@ const KEYS = {
   navigation: "dd_content_navigation",
   sitePages: "dd_content_site_pages",
   curatedCollections: "dd_content_collections",
+  comingSoonTeasers: "dd_content_coming_soon_teasers",
   lastUpdated: "dd_content_last_updated",
 } as const;
 
@@ -283,6 +284,15 @@ function defaultCuratedCollections(): CuratedCollection[] {
   ];
 }
 
+function defaultComingSoonTeasers(): ComingSoonTeaser[] {
+  return [
+    { id: "t-1", name: "Outerwear", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=400", coming: "SS26", order: 0, active: true },
+    { id: "t-2", name: "Knitwear", image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=400", coming: "SS26", order: 1, active: true },
+    { id: "t-3", name: "Tailoring", image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=400", coming: "FW26", order: 2, active: true },
+    { id: "t-4", name: "Accessories", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400", coming: "FW26", order: 3, active: true },
+  ];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC API — Getters & Setters
 // ═══════════════════════════════════════════════════════════════════════════
@@ -439,6 +449,20 @@ export function resetCuratedCollections(): void {
   setItem(KEYS.curatedCollections, defaultCuratedCollections());
 }
 
+// ─── Coming Soon Teasers ──────────────────────────────────────────────────
+
+export function getComingSoonTeasers(): ComingSoonTeaser[] {
+  return getItem(KEYS.comingSoonTeasers, defaultComingSoonTeasers());
+}
+
+export function setComingSoonTeasers(teasers: ComingSoonTeaser[]): void {
+  setItem(KEYS.comingSoonTeasers, teasers);
+}
+
+export function resetComingSoonTeasers(): void {
+  setItem(KEYS.comingSoonTeasers, defaultComingSoonTeasers());
+}
+
 // ─── Bulk Operations ──────────────────────────────────────────────────────
 
 export function getAllContent(): ContentConfig {
@@ -453,6 +477,7 @@ export function getAllContent(): ContentConfig {
     navigation: getNavConfig(),
     sitePages: getSitePages(),
     curatedCollections: getCuratedCollections(),
+    comingSoonTeasers: getComingSoonTeasers(),
     lastUpdated: localStorage.getItem(KEYS.lastUpdated) || now(),
   };
 }
@@ -470,6 +495,7 @@ export function seedAllContent(): void {
     setNavConfig(defaultNavigation());
     setSitePages(defaultSitePages());
     setCuratedCollections(defaultCuratedCollections());
+    setComingSoonTeasers(defaultComingSoonTeasers());
   }
 }
 
@@ -484,6 +510,7 @@ export function resetAllContent(): void {
   resetNavConfig();
   resetSitePages();
   resetCuratedCollections();
+  resetComingSoonTeasers();
 }
 
 export function getLastUpdated(): string {

@@ -161,6 +161,17 @@ export interface SitePageData {
   active: boolean;
 }
 
+// ─── Coming Soon Teasers ──────────────────────────────────────────────────
+
+export interface ComingSoonTeaser {
+  id: string;
+  name: string;
+  image: string;
+  coming: string;
+  order: number;
+  active: boolean;
+}
+
 // ─── Top-Level Content Config ─────────────────────────────────────────────
 
 export interface ContentConfig {
@@ -174,5 +185,6 @@ export interface ContentConfig {
   navigation: NavConfig;
   sitePages: SitePageData[];
   curatedCollections: CuratedCollection[];
+  comingSoonTeasers: ComingSoonTeaser[];
   lastUpdated: string;
 }

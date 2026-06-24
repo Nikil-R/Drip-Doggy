@@ -26,6 +26,7 @@ import { FooterSettingsEditorPage } from "./pages/FooterSettingsEditor";
 import { NavigationMenuEditorPage } from "./pages/NavigationMenuEditor";
 import { SitePagesEditorPage } from "./pages/SitePagesEditor";
 import { CuratedCollectionsEditorPage } from "./pages/CuratedCollectionsEditor";
+import { ComingSoonEditorPage } from "./pages/ComingSoonEditor";
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="content/navigation" element={<NavigationMenuEditorPage />} />
           <Route path="content/site-pages" element={<SitePagesEditorPage />} />
           <Route path="content/collections" element={<CuratedCollectionsEditorPage />} />
+          <Route path="content/coming-soon" element={<ComingSoonEditorPage />} />
         </Route>
 
         {/* Catch-all redirect to admin */}

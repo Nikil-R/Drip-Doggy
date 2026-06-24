@@ -12,6 +12,7 @@ const KEYS = {
   navigation: "dd_content_navigation",
   sitePages: "dd_content_site_pages",
   curatedCollections: "dd_content_collections",
+  comingSoonTeasers: "dd_content_coming_soon_teasers",
   lastUpdated: "dd_content_last_updated",
 } as const;
 
@@ -24,6 +25,31 @@ function setItem<T>(key: string, value: T): void {
   localStorage.setItem(key, JSON.stringify(value));
   localStorage.setItem(KEYS.lastUpdated, new Date().toISOString());
 }
+
+export interface ComingSoonTeaser {
+  id: string;
+  name: string;
+  image: string;
+  coming: string;
+  order: number;
+  active: boolean;
+}
+
+const DEFAULT_TEASERS: ComingSoonTeaser[] = [
+  { id: "t-1", name: "Outerwear", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=400", coming: "SS26", order: 0, active: true },
+  { id: "t-2", name: "Knitwear", image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=400", coming: "SS26", order: 1, active: true },
+  { id: "t-3", name: "Tailoring", image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=400", coming: "FW26", order: 2, active: true },
+  { id: "t-4", name: "Accessories", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400", coming: "FW26", order: 3, active: true },
+];
+
+export function getComingSoonTeasers(): ComingSoonTeaser[] { return getItem<ComingSoonTeaser[]>(KEYS.comingSoonTeasers, DEFAULT_TEASERS); }
+export function setComingSoonTeasers(teasers: ComingSoonTeaser[]): void { setItem(KEYS.comingSoonTeasers, teasers); }
+export function addComingSoonTeaser(teaser: ComingSoonTeaser): void { const t = getComingSoonTeasers(); t.push(teaser); setComingSoonTeasers(t); }
+export function updateComingSoonTeaser(id: string, updates: Partial<ComingSoonTeaser>): void {
+  const teasers = getComingSoonTeasers(); const idx = teasers.findIndex(t => t.id === id);
+  if (idx !== -1) { teasers[idx] = { ...teasers[idx], ...updates }; setComingSoonTeasers(teasers); }
+}
+export function deleteComingSoonTeaser(id: string): void { setComingSoonTeasers(getComingSoonTeasers().filter(t => t.id !== id)); }
 
 export interface HeroSlide { id: string; tagline: string; title: string; description: string; image: string; ctaText?: string; ctaLink?: string; order: number; active: boolean; }
 function defaultHeroSlides(): HeroSlide[] {

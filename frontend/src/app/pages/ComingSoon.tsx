@@ -1,23 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowRight, Bell, Check } from "lucide-react";
-import { getSitePages } from "../lib/content-store";
-
-const TEASER_CATEGORIES = [
-  { name: "Outerwear", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=400", coming: "SS26" },
-  { name: "Knitwear", image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=400", coming: "SS26" },
-  { name: "Tailoring", image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=400", coming: "FW26" },
-  { name: "Accessories", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400", coming: "FW26" },
-];
+import { getSitePages, getComingSoonTeasers } from "../lib/content-store";
 
 export function ComingSoon() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [pageData, setPageData] = useState(() => getSitePages().find(p => p.slug === "coming-soon"));
+  const [teasers, setTeasers] = useState(() => getComingSoonTeasers().filter(t => t.active));
 
   useEffect(() => {
     const handleUpdate = () => {
       setPageData(getSitePages().find(p => p.slug === "coming-soon"));
+      setTeasers(getComingSoonTeasers().filter(t => t.active));
     };
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("dd-content-changed" as any, handleUpdate);
@@ -87,47 +82,43 @@ export function ComingSoon() {
       </section>
 
       {/* Category Preview */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <span className="text-[8px] font-black tracking-[0.3em] text-neutral-400 uppercase block mb-3">Coming Collections</span>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-[0.05em] uppercase">What's Coming</h2>
-        </div>
+      {teasers.length > 0 && (
+        <section className="max-w-6xl mx-auto px-6 py-20">
+          <div className="text-center mb-12">
+            <span className="text-[8px] font-black tracking-[0.3em] text-neutral-400 uppercase block mb-3">Coming Collections</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-[0.05em] uppercase">What's Coming</h2>
+          </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {TEASER_CATEGORIES.map((cat) => (
-            <div key={cat.name} className="group relative aspect-[3/4] overflow-hidden bg-neutral-100 border border-neutral-200/60">
-              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <span className="text-white text-sm font-extrabold tracking-[0.05em] uppercase block">{cat.name}</span>
-                <span className="text-white/50 text-[9px] font-bold tracking-widest uppercase mt-1 block">{cat.coming}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {teasers.sort((a, b) => a.order - b.order).map((cat) => (
+              <div key={cat.id} className="group relative aspect-[3/4] overflow-hidden bg-neutral-100 border border-neutral-200/60">
+                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <span className="text-white text-sm font-extrabold tracking-[0.05em] uppercase block">{cat.name}</span>
+                  <span className="text-white/50 text-[9px] font-bold tracking-widest uppercase mt-1 block">{cat.coming}</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="max-w-3xl mx-auto px-6 pb-24 text-center">
         <div className="border border-neutral-200/80 bg-white p-10 md:p-14">
-          <span className="text-[8px] font-black tracking-[0.3em] text-[#b2533e] uppercase block mb-3">In the meantime</span>
-          <h3 className="text-xl md:text-2xl font-extrabold tracking-[0.05em] uppercase mb-4">Explore the Current Collection</h3>
-          <p className="text-xs text-neutral-500 font-medium mb-8 max-w-md mx-auto">
-            Our women's and accessories collections are available now. Discover architectural silhouettes, premium fabrication, and uncompromised luxury.
+          <span className="text-[8px] font-black tracking-[0.3em] text-neutral-400 uppercase block mb-4">MEMBER PRIVILEGES</span>
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-[0.05em] uppercase mb-4">DRIP DOGGY SYNDICATE</h2>
+          <p className="text-neutral-500 text-xs tracking-wide leading-relaxed max-w-lg mx-auto mb-8 font-medium">
+            Members receive priority allocations on all upcoming capsules, complimentary domestic shipping,
+            and exclusive access to private archive sales. Join the syndicate today.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/shop"
-              className="bg-[#030213] hover:bg-neutral-800 text-white px-8 py-3.5 text-[10px] font-extrabold tracking-[0.2em] uppercase transition-colors flex items-center gap-2">
-              Shop Now <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
-            </Link>
-            <Link to="/"
-              className="border border-neutral-200 hover:border-[#030213] text-neutral-600 hover:text-[#030213] px-8 py-3.5 text-[10px] font-extrabold tracking-[0.2em] uppercase transition-colors">
-              Back to Home
-            </Link>
-          </div>
+          <Link to="/shop" className="bg-[#030213] text-white hover:bg-neutral-800 text-[10px] font-extrabold tracking-widest uppercase px-6 py-4 inline-flex items-center gap-2 transition-colors">
+            Explore Current Collection
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
     </div>
   );
 }
-
