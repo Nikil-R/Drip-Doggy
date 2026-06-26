@@ -1,39 +1,12 @@
 import { useState, useMemo, useRef } from "react";
 import {
   Search,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   Edit2,
   Trash2,
-  Shirt,
-  Layers,
-  Tag,
-  Package,
-  Eye,
   X,
-  AlertTriangle,
-  Check,
-  LayoutGrid,
-  ArrowUpDown,
   Upload,
-  ChevronDown,
-  TrendingUp,
-  Globe,
-  PieChart as PieIcon
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
-
-const RS = "₹";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }) {
   return (
@@ -56,6 +29,10 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: (e: Rea
 interface SubCategory {
   id: string;
   name: string;
+  description: string;
+  imageUrl: string;
+  isActive: boolean;
+  categoryId: string;
 }
 
 interface Category {
@@ -63,54 +40,21 @@ interface Category {
   label: string;
   sub: string;
   parent: string;
-  count: number; // product count
-  orders: number; // total orders
+  count: number;
+  orders: number;
   status: "Active" | "Inactive";
   bannerImage?: string;
   metaTitle?: string;
   metaDescription?: string;
   slug?: string;
   subCategories?: SubCategory[];
-  revenueSales?: number; // Sales revenue
+  revenueSales?: number;
 }
 
 const initialCategoriesData: Category[] = [
-  { id: "women", label: "Women", sub: "Women's Collection", parent: "Women", count: 82, orders: 1812, status: "Active", bannerImage: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?q=80&w=400&auto=format&fit=crop", slug: "women", subCategories: [{ id: "women-dresses", name: "Dresses" }, { id: "women-tops", name: "Tops" }, { id: "women-knitwear", name: "Knitwear" }], revenueSales: 1089000 },
-  { id: "men", label: "Men", sub: "Men's Collection", parent: "Men", count: 48, orders: 1205, status: "Active", bannerImage: "https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?q=80&w=400&auto=format&fit=crop", slug: "men", subCategories: [{ id: "men-shirts", name: "Shirts" }, { id: "men-outerwear", name: "Outerwear" }], revenueSales: 785000 },
-  { id: "unisex", label: "Unisex", sub: "Genderless Curation", parent: "Unisex", count: 35, orders: 678, status: "Active", bannerImage: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=400&auto=format&fit=crop", slug: "unisex", subCategories: [{ id: "unisex-bags", name: "Bags" }, { id: "unisex-accessories", name: "Accessories" }], revenueSales: 450000 }
-];
-
-const mockCatalogProducts = [
-  { id: "#DD-P001", name: "Structured Canvas Jacket", price: 12999, orders: 342, category: "outerwear", sku: "DD-STR-001" },
-  { id: "#DD-P002", name: "Sartorial Trench Coat", price: 24999, orders: 198, category: "outerwear", sku: "DD-SAR-001" },
-  { id: "#DD-P003", name: "Cashmere Blend Crew", price: 8999, orders: 287, category: "knitwear", sku: "DD-CSH-001" },
-  { id: "#DD-P004", name: "Merino Wool Cardigan", price: 11999, orders: 167, category: "knitwear", sku: "DD-MRN-001" },
-  { id: "#DD-P005", name: "Signature Silk Blouse", price: 6999, orders: 312, category: "tops", sku: "DD-SIL-001" },
-  { id: "#DD-P006", name: "Relaxed Linen Shirt", price: 5499, orders: 256, category: "tops", sku: "DD-LIN-001" },
-];
-
-const categoryTrendMockData: Record<string, { month: string; sales: number }[]> = {
-  outerwear: [
-    { month: "Jan", sales: 24000 }, { month: "Feb", sales: 38000 }, { month: "Mar", sales: 45000 },
-    { month: "Apr", sales: 52000 }, { month: "May", sales: 78000 }, { month: "Jun", sales: 105000 }
-  ],
-  dresses: [
-    { month: "Jan", sales: 18000 }, { month: "Feb", sales: 29000 }, { month: "Mar", sales: 38000 },
-    { month: "Apr", sales: 49000 }, { month: "May", sales: 64000 }, { month: "Jun", sales: 100000 }
-  ],
-  knitwear: [
-    { month: "Jan", sales: 35000 }, { month: "Feb", sales: 42000 }, { month: "Mar", sales: 31000 },
-    { month: "Apr", sales: 28000 }, { month: "May", sales: 48000 }, { month: "Jun", sales: 70000 }
-  ],
-  tops: [
-    { month: "Jan", sales: 41000 }, { month: "Feb", sales: 48000 }, { month: "Mar", sales: 56000 },
-    { month: "Apr", sales: 68000 }, { month: "May", sales: 82000 }, { month: "Jun", sales: 100000 }
-  ]
-};
-
-const defaultTrendData = [
-  { month: "Jan", sales: 10000 }, { month: "Feb", sales: 15000 }, { month: "Mar", sales: 18000 },
-  { month: "Apr", sales: 22000 }, { month: "May", sales: 31000 }, { month: "Jun", sales: 40000 }
+  { id: "women", label: "Women", sub: "Women's Collection", parent: "Women", count: 82, orders: 1812, status: "Active", bannerImage: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?q=80&w=400&auto=format&fit=crop", slug: "women", subCategories: [{ id: "women-dresses", name: "Dresses", description: "Elegant dresses for women", imageUrl: "", isActive: true, categoryId: "women" }, { id: "women-tops", name: "Tops", description: "Stylish tops and blouses", imageUrl: "", isActive: true, categoryId: "women" }, { id: "women-knitwear", name: "Knitwear", description: "Premium knitwear pieces", imageUrl: "", isActive: true, categoryId: "women" }], revenueSales: 1089000 },
+  { id: "men", label: "Men", sub: "Men's Collection", parent: "Men", count: 48, orders: 1205, status: "Active", bannerImage: "https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?q=80&w=400&auto=format&fit=crop", slug: "men", subCategories: [{ id: "men-shirts", name: "Shirts", description: "Tailored shirts for the modern man", imageUrl: "", isActive: true, categoryId: "men" }, { id: "men-outerwear", name: "Outerwear", description: "Premium outerwear collections", imageUrl: "", isActive: true, categoryId: "men" }], revenueSales: 785000 },
+  { id: "unisex", label: "Unisex", sub: "Genderless Curation", parent: "Unisex", count: 35, orders: 678, status: "Active", bannerImage: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=400&auto=format&fit=crop", slug: "unisex", subCategories: [{ id: "unisex-bags", name: "Bags", description: "Versatile bags and carry-alls", imageUrl: "", isActive: true, categoryId: "unisex" }, { id: "unisex-accessories", name: "Accessories", description: "Signature accessories", imageUrl: "", isActive: true, categoryId: "unisex" }], revenueSales: 450000 }
 ];
 
 export function CategoriesPage() {
@@ -119,43 +63,167 @@ export function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All");
 
-  const [drillDownCategory, setDrillDownCategory] = useState<Category | null>(null);
-
-  // Modal Control States
+  // Modal states
   const [isAddCatOpen, setIsAddCatOpen] = useState(false);
   const [isEditCatOpen, setIsEditCatOpen] = useState(false);
   const [isDeleteCatOpen, setIsDeleteCatOpen] = useState(false);
+  const [isAddSubOpen, setIsAddSubOpen] = useState(false);
+  const [isEditSubOpen, setIsEditSubOpen] = useState(false);
+  const [isDeleteSubOpen, setIsDeleteSubOpen] = useState(false);
 
   // Targets
   const [editCategoryTarget, setEditCategoryTarget] = useState<Category | null>(null);
   const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<Category | null>(null);
+  const [editSubTarget, setEditSubTarget] = useState<SubCategory | null>(null);
+  const [deleteSubTarget, setDeleteSubTarget] = useState<SubCategory | null>(null);
 
-  // Form Inputs
+  // Category Form Inputs
   const [catLabel, setCatLabel] = useState("");
   const [catSub, setCatSub] = useState("");
-  const [catParent, setCatParent] = useState("Women");
-  const [catStatus, setCatStatus] = useState<"Active" | "Inactive">("Active");
   const [catBannerImage, setCatBannerImage] = useState("");
-  const [catMetaTitle, setCatMetaTitle] = useState("");
-  const [catMetaDescription, setCatMetaDescription] = useState("");
-  const [catSlug, setCatSlug] = useState("");
-  const [catSubText, setCatSubText] = useState("");
 
-  const [newSubCategoryName, setNewSubCategoryName] = useState("");
+  // SubCategory Form Inputs
+  const [subName, setSubName] = useState("");
+  const [subDescription, setSubDescription] = useState("");
+  const [subImageUrl, setSubImageUrl] = useState("");
 
-  const handleAddSubCategory = (categoryId: string, name: string) => {
-    if (!name.trim()) return;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const subFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setter(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(files[0]);
+    }
+  };
+
+  const resetCatForm = () => {
+    setCatLabel("");
+    setCatSub("");
+    setCatBannerImage("");
+  };
+
+  const openAddCategory = () => {
+    resetCatForm();
+    setIsAddCatOpen(true);
+  };
+
+  const handleAddCategorySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catLabel.trim()) return;
+
+    const id = catLabel.toLowerCase().replace(/\s+/g, "-");
+    const newCategory: Category = {
+      id,
+      label: catLabel.trim(),
+      sub: catSub.trim() || "Custom description",
+      count: 0,
+      orders: 0,
+      parent: "General",
+      status: "Active",
+      bannerImage: catBannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
+      slug: id,
+      metaTitle: "",
+      metaDescription: "",
+      subCategories: [],
+      revenueSales: 0,
+    };
+
+    setCategories(prev => [newCategory, ...prev]);
+    setSelectedCategoryId(id);
+    setIsAddCatOpen(false);
+  };
+
+  const openEditCategory = (cat: Category, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditCategoryTarget(cat);
+    setCatLabel(cat.label);
+    setCatSub(cat.sub);
+    setCatBannerImage(cat.bannerImage || "");
+    setIsEditCatOpen(true);
+  };
+
+  const handleSaveCategoryEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editCategoryTarget) return;
+
     setCategories(prev => prev.map(c => {
-      if (c.id === categoryId) {
-        const list = c.subCategories || [];
-        return {
-          ...c,
-          subCategories: [...list, { id: `${categoryId}-sub-${Date.now()}`, name: name.trim() }]
-        };
-      }
-      return c;
+      if (c.id !== editCategoryTarget.id) return c;
+      return {
+        ...c,
+        label: catLabel,
+        sub: catSub,
+        bannerImage: catBannerImage,
+      };
     }));
-    setNewSubCategoryName("");
+    setIsEditCatOpen(false);
+  };
+
+  const openDeleteCategory = (cat: Category, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteCategoryTarget(cat);
+    setIsDeleteCatOpen(true);
+  };
+
+  const handleConfirmDeleteCategory = () => {
+    if (!deleteCategoryTarget) return;
+    setCategories(prev => prev.filter(c => c.id !== deleteCategoryTarget.id));
+    if (selectedCategoryId === deleteCategoryTarget.id) {
+      setSelectedCategoryId(categories[0]?.id || null);
+    }
+    setIsDeleteCatOpen(false);
+  };
+
+  // ── SubCategory CRUD ──
+
+  const resetSubForm = () => {
+    setSubName("");
+    setSubDescription("");
+    setSubImageUrl("");
+  };
+
+  const openAddSubCategory = () => {
+    if (!selectedCategoryId) return;
+    resetSubForm();
+    setIsAddSubOpen(true);
+  };
+
+  const handleAddSubCategorySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subName.trim() || !selectedCategoryId) return;
+
+    const id = `${selectedCategoryId}-${subName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
+    const newSub: SubCategory = {
+      id,
+      name: subName.trim(),
+      description: subDescription.trim(),
+      imageUrl: subImageUrl,
+      isActive: true,
+      categoryId: selectedCategoryId,
+    };
+
+    setCategories(prev => prev.map(c => {
+      if (c.id !== selectedCategoryId) return c;
+      return { ...c, subCategories: [...(c.subCategories || []), newSub] };
+    }));
+    setIsAddSubOpen(false);
+  };
+
+  const handleToggleSubActive = (categoryId: string, subId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCategories(prev => prev.map(c => {
+      if (c.id !== categoryId) return c;
+      return {
+        ...c,
+        subCategories: c.subCategories?.map(s => s.id === subId ? { ...s, isActive: !s.isActive } : s) || [],
+      };
+    }));
   };
 
   const handleRemoveSubCategory = (categoryId: string, subId: string) => {
@@ -170,30 +238,52 @@ export function CategoriesPage() {
     }));
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const openEditSubCategory = (sub: SubCategory, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditSubTarget(sub);
+    setSubName(sub.name);
+    setSubDescription(sub.description);
+    setSubImageUrl(sub.imageUrl);
+    setIsEditSubOpen(true);
+  };
 
-  // Reorder sort adjuster
-  const moveCategory = (index: number, direction: "up" | "down") => {
-    const nextIndex = direction === "up" ? index - 1 : index + 1;
-    if (nextIndex < 0 || nextIndex >= categories.length) return;
-    
-    setCategories(prev => {
-      const list = [...prev];
-      const temp = list[index];
-      list[index] = list[nextIndex];
-      list[nextIndex] = temp;
-      return list;
-    });
+  const handleSaveSubCategoryEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSubTarget) return;
+
+    setCategories(prev => prev.map(c => {
+      if (c.id !== editSubTarget.categoryId) return c;
+      return {
+        ...c,
+        subCategories: c.subCategories?.map(s => s.id === editSubTarget.id ? {
+          ...s,
+          name: subName.trim(),
+          description: subDescription.trim(),
+          imageUrl: subImageUrl,
+        } : s) || [],
+      };
+    }));
+    setIsEditSubOpen(false);
+  };
+
+  const openDeleteSubCategory = (sub: SubCategory, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteSubTarget(sub);
+    setIsDeleteSubOpen(true);
+  };
+
+  const handleConfirmDeleteSubCategory = () => {
+    if (!deleteSubTarget) return;
+    setCategories(prev => prev.map(c => {
+      if (c.id !== deleteSubTarget.categoryId) return c;
+      return { ...c, subCategories: c.subCategories?.filter(s => s.id !== deleteSubTarget.id) || [] };
+    }));
+    setIsDeleteSubOpen(false);
   };
 
   const activeCategoryDetails = useMemo(() => {
     return categories.find(c => c.id === selectedCategoryId) || null;
   }, [categories, selectedCategoryId]);
-
-  const activeCategoryTrend = useMemo(() => {
-    if (!selectedCategoryId) return defaultTrendData;
-    return categoryTrendMockData[selectedCategoryId] || defaultTrendData;
-  }, [selectedCategoryId]);
 
   const filteredCategories = useMemo(() => {
     let list = categories;
@@ -215,114 +305,6 @@ export function CategoriesPage() {
     } : c));
   };
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setCatBannerImage(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(files[0]);
-    }
-  };
-
-  const handleAddCategorySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!catLabel) return;
-    
-    const id = catSlug.trim() || catLabel.toLowerCase().replace(/\s+/g, "-");
-    const subList = catSubText.split(",").map(s => s.trim()).filter(Boolean).map((s, idx) => ({
-      id: `${id}-sub-${idx}`,
-      name: s
-    }));
-
-    const newCategory: Category = {
-      id,
-      label: catLabel,
-      sub: catSub || "Custom description",
-      parent: catParent,
-      count: 0,
-      orders: 0,
-      status: "Active",
-      bannerImage: catBannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
-      slug: id,
-      metaTitle: catMetaTitle || `${catLabel} | Drip Doggy`,
-      metaDescription: catMetaDescription,
-      subCategories: subList,
-      revenueSales: 0
-    };
-
-    setCategories(prev => [newCategory, ...prev]);
-    setSelectedCategoryId(id);
-    setIsAddCatOpen(false);
-  };
-
-  const handleOpenEditCategory = (cat: Category, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditCategoryTarget(cat);
-    setCatLabel(cat.label);
-    setCatSub(cat.sub);
-    setCatParent(cat.parent);
-    setCatStatus(cat.status);
-    setCatBannerImage(cat.bannerImage || "");
-    setCatMetaTitle(cat.metaTitle || "");
-    setCatMetaDescription(cat.metaDescription || "");
-    setCatSlug(cat.slug || cat.id);
-    setCatSubText(cat.subCategories ? cat.subCategories.map(s => s.name).join(", ") : "");
-    setIsEditCatOpen(true);
-  };
-
-  const handleSaveCategoryEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editCategoryTarget) return;
-
-    const subList = catSubText.split(",").map(s => s.trim()).filter(Boolean).map((s, idx) => ({
-      id: `${catSlug}-sub-${idx}`,
-      name: s
-    }));
-
-    setCategories(prev => prev.map(c => {
-      if (c.id === editCategoryTarget.id) {
-        return {
-          ...c,
-          label: catLabel,
-          sub: catSub,
-          parent: catParent,
-          status: catStatus,
-          bannerImage: catBannerImage,
-          slug: catSlug,
-          metaTitle: catMetaTitle,
-          metaDescription: catMetaDescription,
-          subCategories: subList
-        };
-      }
-      return c;
-    }));
-    setIsEditCatOpen(false);
-  };
-
-  const handleOpenDeleteCategory = (cat: Category, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeleteCategoryTarget(cat);
-    setIsDeleteCatOpen(true);
-  };
-
-  const handleConfirmDeleteCategory = () => {
-    if (!deleteCategoryTarget) return;
-    setCategories(prev => prev.filter(c => c.id !== deleteCategoryTarget.id));
-    if (selectedCategoryId === deleteCategoryTarget.id) {
-      setSelectedCategoryId(categories[0]?.id || null);
-    }
-    setIsDeleteCatOpen(false);
-  };
-
-  const drillDownProducts = useMemo(() => {
-    if (!drillDownCategory) return [];
-    return mockCatalogProducts.filter(p => p.category === drillDownCategory.id);
-  }, [drillDownCategory]);
-
   const summaryStats = useMemo(() => {
     const totalCount = categories.length;
     const activeCount = categories.filter(c => c.status === "Active").length;
@@ -334,7 +316,7 @@ export function CategoriesPage() {
   return (
     <div className="space-y-6 font-sans text-[#382d24]">
 
-      {/* KPI Highlight Deck */}
+      {/* KPI Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Categories", value: summaryStats.totalCount.toString(), desc: "Categories in catalog" },
@@ -352,14 +334,14 @@ export function CategoriesPage() {
         ))}
       </div>
 
-      {/* Two-Column Interactive Workspace Layout */}
+      {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Left Side: Directory Workspace List */}
+
+        {/* Left: Category List */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-card border border-neutral-200/80 p-5 space-y-4">
-            
-            {/* Filter & Search Controls */}
+
+            {/* Search & Filters */}
             <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-neutral-200/60">
               <div className="flex items-center gap-3 flex-wrap flex-1 min-w-[280px]">
                 <div className="relative flex-1 max-w-[220px]">
@@ -372,7 +354,6 @@ export function CategoriesPage() {
                     className="bg-card border border-neutral-200 pl-9 pr-3 py-2 text-[9.5px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#224870] placeholder-neutral-300 w-full transition-all"
                   />
                 </div>
-                
                 <div className="flex items-center bg-card border border-neutral-200 p-1">
                   {["All", "Active", "Inactive"].map(tab => (
                     <button
@@ -388,25 +369,15 @@ export function CategoriesPage() {
                 </div>
               </div>
 
-              <button 
-                onClick={() => {
-                  setCatLabel("");
-                  setCatSub("");
-                  setCatParent("Women");
-                  setCatBannerImage("");
-                  setCatMetaTitle("");
-                  setCatMetaDescription("");
-                  setCatSlug("");
-                  setCatSubText("");
-                  setIsAddCatOpen(true);
-                }}
+              <button
+                onClick={openAddCategory}
                 className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-2 transition-all cursor-pointer border-none"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Category
               </button>
             </div>
 
-            {/* Interactive Grid of Collection Cards */}
+            {/* Category Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {filteredCategories.map((cat, idx) => {
                 const isSelected = selectedCategoryId === cat.id;
@@ -415,14 +386,12 @@ export function CategoriesPage() {
                     key={cat.id}
                     onClick={() => setSelectedCategoryId(cat.id)}
                     className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden ${
-                      isSelected 
-                        ? "border-[#224870] bg-[#224870]/5 shadow-sm" 
+                      isSelected
+                        ? "border-[#224870] bg-[#224870]/5 shadow-sm"
                         : "border-neutral-200/80 hover:border-[#224870]/60 hover:shadow-xs"
                     }`}
                   >
-                    {/* Small Color Bar */}
                     <div className={`h-1.5 w-full ${cat.status === "Active" ? "bg-[#224870]" : "bg-neutral-300"}`} />
-                    
                     <div className="p-4 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-[8px] font-bold tracking-widest uppercase text-neutral-400">{cat.parent}</span>
@@ -436,33 +405,24 @@ export function CategoriesPage() {
                         <p className="text-[9px] text-[#615e56] font-semibold tracking-wider mt-0.5 truncate">{cat.sub}</p>
                       </div>
 
-                      {/* Stats & Actions */}
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-100/60">
-                        <div className="flex items-center gap-4">
-                          <div 
-                            onClick={(e) => { e.stopPropagation(); setDrillDownCategory(cat); }}
-                            className="text-[9px] font-bold text-[#224870] hover:text-[#382d24] cursor-pointer"
+                        <span className="text-[9px] font-bold text-[#224870]">
+                          {cat.subCategories?.length || 0} Subcategor{(cat.subCategories?.length || 0) === 1 ? "y" : "ies"}
+                        </span>
+                        <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => openEditCategory(cat, e)}
+                            className="p-1.5 border border-neutral-200 hover:border-[#224870] cursor-pointer bg-card transition-colors"
+                            title="Edit"
                           >
-                            {cat.count} Products
-                          </div>
-                          <span className="text-[9px] text-[#615e56] font-bold">{cat.orders} Orders</span>
-                        </div>
-
-                        {/* Reorder Arrows */}
-                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                          <button 
-                            disabled={idx === 0}
-                            onClick={() => moveCategory(idx, "up")}
-                            className="p-1 border border-neutral-200 hover:border-[#224870] disabled:opacity-30 cursor-pointer bg-card transition-colors"
-                          >
-                            <ChevronLeft className="w-3 h-3 rotate-90" />
+                            <Edit2 className="w-3 h-3 text-neutral-500" />
                           </button>
-                          <button 
-                            disabled={idx === filteredCategories.length - 1}
-                            onClick={() => moveCategory(idx, "down")}
-                            className="p-1 border border-neutral-200 hover:border-[#224870] disabled:opacity-30 cursor-pointer bg-card transition-colors"
+                          <button
+                            onClick={(e) => openDeleteCategory(cat, e)}
+                            className="p-1.5 border border-neutral-200 hover:border-red-500 cursor-pointer bg-card transition-colors"
+                            title="Delete"
                           >
-                            <ChevronLeft className="w-3 h-3 -rotate-90" />
+                            <Trash2 className="w-3 h-3 text-neutral-500" />
                           </button>
                         </div>
                       </div>
@@ -471,7 +431,7 @@ export function CategoriesPage() {
                 );
               })}
             </div>
-            
+
             {filteredCategories.length === 0 && (
               <div className="py-8 text-center text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
                 No collections found matching your search.
@@ -481,17 +441,16 @@ export function CategoriesPage() {
           </div>
         </div>
 
-        {/* Right Side: Sticky Premium Inspector Panel */}
+        {/* Right: Selected Category + Subcategories */}
         <div className="lg:col-span-5 lg:sticky lg:top-8 space-y-4">
           {activeCategoryDetails ? (
             <div className="bg-card border border-neutral-200/80 p-5 space-y-5">
-              
-              {/* Card Banner Image Overlay */}
+
               <div className="relative aspect-[16/9] border border-neutral-200/80 overflow-hidden group">
-                <img 
-                  src={activeCategoryDetails.bannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop"} 
-                  alt="Banner" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                <img
+                  src={activeCategoryDetails.bannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop"}
+                  alt="Banner"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
                   <span className="text-[7.5px] font-bold tracking-[0.25em] text-white/70 uppercase">{activeCategoryDetails.parent} Category</span>
@@ -499,64 +458,76 @@ export function CategoriesPage() {
                 </div>
               </div>
 
-              {/* General Description */}
               <div className="space-y-1">
-                <span className="text-[8px] font-bold tracking-widest text-[#615e56] uppercase">Overview Description</span>
+                <span className="text-[8px] font-bold tracking-widest text-[#615e56] uppercase">Description</span>
                 <p className="text-[10px] font-semibold text-[#382d24] uppercase tracking-wide leading-relaxed">
                   {activeCategoryDetails.sub}
                 </p>
               </div>
 
-              {/* Subcategories tags */}
+              {/* Subcategories */}
               <div className="border-t border-neutral-100 pt-4 space-y-4">
-                <span className="text-[10px] font-extrabold tracking-widest text-[#615e56] uppercase block">Subcategories</span>
-                <div className="flex flex-wrap gap-2">
-                  {activeCategoryDetails.subCategories && activeCategoryDetails.subCategories.length > 0 ? (
-                    activeCategoryDetails.subCategories.map(sub => (
-                      <span key={sub.id} className="bg-[#224870]/10 text-[#224870] pl-3.5 pr-2.5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-md flex items-center gap-2">
-                        {sub.name}
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveSubCategory(activeCategoryDetails.id, sub.id)}
-                          className="hover:text-red-600 transition-colors p-0 border-none bg-transparent cursor-pointer flex items-center justify-center"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[9px] text-neutral-400 font-bold uppercase">No subcategories linked.</span>
-                  )}
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <input 
-                    type="text" 
-                    placeholder="Type new subcategory..." 
-                    value={newSubCategoryName} 
-                    onChange={e => setNewSubCategoryName(e.target.value)} 
-                    className="flex-1 bg-card border border-neutral-200 text-[10.5px] font-bold p-3 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => handleAddSubCategory(activeCategoryDetails.id, newSubCategoryName)}
-                    className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[10px] font-bold tracking-widest px-5 py-3 uppercase cursor-pointer rounded-none border-none transition-all"
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold tracking-widest text-[#615e56] uppercase">Subcategories ({activeCategoryDetails.subCategories?.length || 0})</span>
+                  <button
+                    onClick={openAddSubCategory}
+                    className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[8px] font-bold tracking-widest px-3 py-2 uppercase flex items-center gap-1.5 cursor-pointer border-none transition-all"
                   >
-                    Add Subcategory
+                    <Plus className="w-3 h-3" /> Add
                   </button>
                 </div>
+
+                {activeCategoryDetails.subCategories && activeCategoryDetails.subCategories.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeCategoryDetails.subCategories.map(sub => (
+                      <div key={sub.id} className="border border-neutral-200/80 p-3 space-y-2 hover:border-[#224870]/40 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h5 className="text-[10px] font-black text-[#382d24] uppercase tracking-wide truncate">{sub.name}</h5>
+                              <span className={`text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 shrink-0 ${
+                                sub.isActive ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                              }`}>
+                                {sub.isActive ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+                            <p className="text-[8.5px] text-[#615e56] font-semibold tracking-wider mt-0.5 truncate">{sub.description}</p>
+                          </div>
+                          {sub.imageUrl && (
+                            <div className="w-10 h-10 border border-neutral-200/60 overflow-hidden shrink-0 bg-neutral-50">
+                              <img src={sub.imageUrl} alt={sub.name} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                            <ToggleSwitch enabled={sub.isActive} onClick={(e) => handleToggleSubActive(activeCategoryDetails.id, sub.id, e)} />
+                            <button onClick={(e) => openEditSubCategory(sub, e)} className="p-1 border border-neutral-200 hover:border-[#224870] cursor-pointer bg-card transition-colors" title="Edit">
+                              <Edit2 className="w-3 h-3 text-neutral-500" />
+                            </button>
+                            <button onClick={(e) => openDeleteSubCategory(sub, e)} className="p-1 border border-neutral-200 hover:border-red-500 cursor-pointer bg-card transition-colors" title="Delete">
+                              <Trash2 className="w-3 h-3 text-neutral-500" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider text-center py-4">
+                    No subcategories. Click "Add" to create one.
+                  </p>
+                )}
               </div>
 
               {/* Inspector Buttons */}
               <div className="border-t border-neutral-100 pt-4 flex gap-3.5">
-                <button 
-                  onClick={(e) => handleOpenEditCategory(activeCategoryDetails, e)}
+                <button
+                  onClick={(e) => openEditCategory(activeCategoryDetails, e)}
                   className="flex-1 bg-[#224870] text-white hover:bg-[#224870]/85 text-[9px] font-bold tracking-widest py-2.5 uppercase cursor-pointer border-none transition-all flex items-center justify-center gap-1.5"
                 >
                   <Edit2 className="w-3 h-3" /> Edit Category
                 </button>
-                <button 
-                  onClick={(e) => handleOpenDeleteCategory(activeCategoryDetails, e)}
+                <button
+                  onClick={(e) => openDeleteCategory(activeCategoryDetails, e)}
                   className="border border-neutral-200 hover:border-red-500 hover:text-red-600 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2.5 uppercase bg-transparent cursor-pointer transition-all"
                 >
                   Delete
@@ -573,71 +544,40 @@ export function CategoriesPage() {
 
       </div>
 
-      {/* ── Product count drill-down list modal ───────────────────────── */}
-      {drillDownCategory && (
-        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDrillDownCategory(null)}>
-          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Products in {drillDownCategory.label}</span>
-              <button onClick={() => setDrillDownCategory(null)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="max-h-60 overflow-y-auto divide-y divide-neutral-100">
-              {drillDownProducts.map(p => (
-                <div key={p.id} className="py-2.5 flex justify-between items-center text-[9px] font-semibold uppercase">
-                  <div>
-                    <p className="text-[#382d24]">{p.name}</p>
-                    <span className="text-[8px] text-neutral-400 font-mono block mt-0.5">{p.sku}</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[#382d24]">{RS}{p.price.toLocaleString()}</p>
-                    <span className="text-[7.5px] text-neutral-400 font-bold block">{p.orders} Orders</span>
-                  </div>
-                </div>
-              ))}
-              {drillDownProducts.length === 0 && (
-                <p className="p-4 text-center text-neutral-400 text-[8px] font-bold uppercase">No physical products configured in this category.</p>
-              )}
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button onClick={() => setDrillDownCategory(null)} className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer rounded-none border-none transition-all">
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Add Category Modal ───────────────────────────────────────── */}
+      {/* ── Add Category Modal ── */}
       {isAddCatOpen && (
         <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsAddCatOpen(false)}>
           <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-                  <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Create Category</span>
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Add Category</span>
               <button onClick={() => setIsAddCatOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            <form onSubmit={handleAddCategorySubmit} className="space-y-3">
+            <form onSubmit={handleAddCategorySubmit} className="space-y-4">
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Category Title</label>
-                <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Category Name</label>
+                <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} placeholder="e.g. Women" className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
-
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Slug Path</label>
-                <input type="text" value={catSlug} onChange={e => setCatSlug(e.target.value)} placeholder="e.g. outerwear" className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Description</label>
+                <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} placeholder="Category description..." rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
-
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Sub Description</label>
-                <input required type="text" value={catSub} onChange={e => setCatSub(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
+                  </button>
+                  {catBannerImage && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage)} />
+                </div>
+                {catBannerImage && (
+                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
+                    <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
-
               <div className="pt-2 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsAddCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
                 <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all">Create</button>
@@ -647,41 +587,40 @@ export function CategoriesPage() {
         </div>
       )}
 
-      {/* ── Edit Category Modal ──────────────────────────────────────── */}
+      {/* ── Edit Category Modal ── */}
       {isEditCatOpen && (
         <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsEditCatOpen(false)}>
           <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Edit Category Settings</span>
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Edit Category</span>
               <button onClick={() => setIsEditCatOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            <form onSubmit={handleSaveCategoryEdit} className="space-y-3">
+            <form onSubmit={handleSaveCategoryEdit} className="space-y-4">
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Category Title</label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Category Name</label>
                 <input required type="text" value={catLabel} onChange={e => setCatLabel(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
               </div>
-
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Slug Path</label>
-                <input type="text" value={catSlug} onChange={e => setCatSlug(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Description</label>
+                <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
-
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Sub Description</label>
-                <input required type="text" value={catSub} onChange={e => setCatSub(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-bold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
+                  </button>
+                  {catBannerImage && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage)} />
+                </div>
+                {catBannerImage && (
+                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
+                    <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
-
-              <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Fulfillment Status</label>
-                <select value={catStatus} onChange={e => setCatStatus(e.target.value as any)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-
               <div className="pt-2 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsEditCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
                 <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all">Save Changes</button>
@@ -691,22 +630,119 @@ export function CategoriesPage() {
         </div>
       )}
 
-      {/* ── Delete Confirmation Modal ───────────────────────────────── */}
+      {/* ── Delete Category Confirmation ── */}
       {isDeleteCatOpen && (
         <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsDeleteCatOpen(false)}>
           <div className="bg-card border-2 border-[#224870] p-6 max-w-xs w-full space-y-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[10px] font-bold tracking-[0.2em] text-[#b2533e] uppercase">Warning — Critical Action</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.2em] text-[#b2533e] uppercase">Delete Category</h3>
             <p className="text-[9.5px] text-neutral-500 uppercase font-bold leading-normal">
-              Are you sure you want to permanently delete category <strong className="text-[#382d24]">{deleteCategoryTarget?.label}</strong>? This removes all subcategory links.
+              Are you sure you want to delete <strong className="text-[#382d24]">{deleteCategoryTarget?.label}</strong>? This removes all subcategories under it.
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button onClick={() => setIsDeleteCatOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
-              <button 
-                onClick={handleConfirmDeleteCategory} 
-                className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all"
-              >
-                Delete
+              <button onClick={handleConfirmDeleteCategory} className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Subcategory Modal ── */}
+      {isAddSubOpen && (
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsAddSubOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Add Subcategory</span>
+              <button onClick={() => setIsAddSubOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
               </button>
+            </div>
+            <form onSubmit={handleAddSubCategorySubmit} className="space-y-4">
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Subcategory Name</label>
+                <input required type="text" value={subName} onChange={e => setSubName(e.target.value)} placeholder="e.g. Dresses" className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+              </div>
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => subFileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
+                  </button>
+                  {subImageUrl && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
+                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl)} />
+                </div>
+                {subImageUrl && (
+                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
+                    <img src={subImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Description</label>
+                <textarea value={subDescription} onChange={e => setSubDescription(e.target.value)} placeholder="Subcategory description..." rows={2} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
+              </div>
+              <div className="pt-2 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsAddSubOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Subcategory Modal ── */}
+      {isEditSubOpen && (
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsEditSubOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Edit Subcategory</span>
+              <button onClick={() => setIsEditSubOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveSubCategoryEdit} className="space-y-4">
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Subcategory Name</label>
+                <input required type="text" value={subName} onChange={e => setSubName(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+              </div>
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => subFileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
+                  </button>
+                  {subImageUrl && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
+                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl)} />
+                </div>
+                {subImageUrl && (
+                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
+                    <img src={subImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Description</label>
+                <textarea value={subDescription} onChange={e => setSubDescription(e.target.value)} rows={2} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
+              </div>
+              <div className="pt-2 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsEditSubOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Subcategory Confirmation ── */}
+      {isDeleteSubOpen && (
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsDeleteSubOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-xs w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-[10px] font-bold tracking-[0.2em] text-[#b2533e] uppercase">Delete Subcategory</h3>
+            <p className="text-[9.5px] text-neutral-500 uppercase font-bold leading-normal">
+              Are you sure you want to delete <strong className="text-[#382d24]">{deleteSubTarget?.name}</strong>?
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button onClick={() => setIsDeleteSubOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+              <button onClick={handleConfirmDeleteSubCategory} className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-none border-none transition-all">Delete</button>
             </div>
           </div>
         </div>
