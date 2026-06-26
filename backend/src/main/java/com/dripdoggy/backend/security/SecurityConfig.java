@@ -23,7 +23,7 @@ public class SecurityConfig {
 
 				// Authorization Configuration
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**", "/api/categories/**", "/api/admin/categories/**").permitAll()
+						.requestMatchers("/api/auth/**", "/api/categories/**", "/api/admin/**").permitAll()
 
 						.requestMatchers("/error").permitAll().anyRequest().authenticated())
 

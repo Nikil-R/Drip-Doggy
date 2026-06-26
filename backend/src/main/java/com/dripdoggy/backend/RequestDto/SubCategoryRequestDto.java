@@ -1,34 +1,29 @@
-package com.dripdoggy.backend.ResponseDto;
+package com.dripdoggy.backend.RequestDto;
 
-public class SubCategoryResponseDto {
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.web.multipart.MultipartFile;
 
-    private Long subCategoryId;
+public class SubCategoryRequestDto {
+
+    @NotBlank(message = "Subcategory name is required")
     private String subcategoryName;
-    private String imageUrl;
+
+    @NotBlank(message = "Description is required")
     private String description;
-    private Boolean isActive;
+
+    private Boolean isActive = true;
+    private MultipartFile image;
     private Long categoryId;
 
-    // Constructors
-    public SubCategoryResponseDto() {
+    public SubCategoryRequestDto() {
     }
 
-    public SubCategoryResponseDto(Long subCategoryId, String subcategoryName, String imageUrl, String description, Boolean isActive, Long categoryId) {
-        this.subCategoryId = subCategoryId;
+    public SubCategoryRequestDto(String subcategoryName, String description, Boolean isActive, MultipartFile image, Long categoryId) {
         this.subcategoryName = subcategoryName;
-        this.imageUrl = imageUrl;
         this.description = description;
         this.isActive = isActive;
+        this.image = image;
         this.categoryId = categoryId;
-    }
-
-    // Getters and Setters
-    public Long getSubCategoryId() {
-        return subCategoryId;
-    }
-
-    public void setSubCategoryId(Long subCategoryId) {
-        this.subCategoryId = subCategoryId;
     }
 
     public String getSubcategoryName() {
@@ -37,14 +32,6 @@ public class SubCategoryResponseDto {
 
     public void setSubcategoryName(String subcategoryName) {
         this.subcategoryName = subcategoryName;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
     }
 
     public String getDescription() {
@@ -61,6 +48,14 @@ public class SubCategoryResponseDto {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public MultipartFile getImage() {
+        return image;
+    }
+
+    public void setImage(MultipartFile image) {
+        this.image = image;
     }
 
     public Long getCategoryId() {

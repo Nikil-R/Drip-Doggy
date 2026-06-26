@@ -202,10 +202,23 @@ public class CategoryService implements ICategoryService {
 
         List<SubCategoryResponseDto> subCategoryResponseDtos = category.getSubCategories() != null ?
                 category.getSubCategories().stream()
-                        .map(sub -> modelMapper.map(sub, SubCategoryResponseDto.class))
+                        .map(this::mapToSubCategoryResponseDto)
                         .collect(Collectors.toList()) : Collections.emptyList();
 
         dto.setSubCategories(subCategoryResponseDtos);
+        return dto;
+    }
+
+    private SubCategoryResponseDto mapToSubCategoryResponseDto(SubCategory sub) {
+        SubCategoryResponseDto dto = new SubCategoryResponseDto();
+        dto.setSubCategoryId(sub.getId());
+        dto.setSubcategoryName(sub.getSubcategoryName());
+        dto.setImageUrl(sub.getImageUrl());
+        dto.setDescription(sub.getDescription());
+        dto.setIsActive(sub.getIsActive());
+        if (sub.getCategory() != null) {
+            dto.setCategoryId(sub.getCategory().getId());
+        }
         return dto;
     }
 
