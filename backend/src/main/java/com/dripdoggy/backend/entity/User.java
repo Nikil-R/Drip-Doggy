@@ -29,10 +29,10 @@ public class User {
 
     private LocalDate dob;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String email;
 
-    @Column(name = "phone_no", unique = true, nullable = false)
+    @Column(name = "phone_no", unique = true)
     private String phoneNo;
 
     @Enumerated(EnumType.STRING)
