@@ -1,14 +1,17 @@
 package com.dripdoggy.backend.RequestDto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
 
 public class SubCategoryRequestDto {
 
     @NotBlank(message = "Subcategory name is required")
+    @Size(min = 2, max = 50, message = "Subcategory name must be between 2 and 50 characters")
     private String subcategoryName;
 
     @NotBlank(message = "Description is required")
+    @Size(min = 5, max = 255, message = "Description must be between 5 and 255 characters")
     private String description;
 
     private Boolean isActive = true;

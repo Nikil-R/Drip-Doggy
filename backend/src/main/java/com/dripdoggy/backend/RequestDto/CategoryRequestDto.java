@@ -1,26 +1,28 @@
 package com.dripdoggy.backend.RequestDto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.List;
 
 public class CategoryRequestDto {
 
     @NotBlank(message = "Category name is required")
+    @Size(min = 2, max = 50, message = "Category name must be between 2 and 50 characters")
     private String categoryName;
 
     @NotBlank(message = "Description is required")
+    @Size(min = 5, max = 255, message = "Description must be between 5 and 255 characters")
     private String description;
 
     private Boolean isActive = true;
-    private List<Long> subCategoryIds;
+    private String subCategoryIds;
     private MultipartFile image;
 
     // Constructors
     public CategoryRequestDto() {
     }
 
-    public CategoryRequestDto(String categoryName, String description, Boolean isActive, List<Long> subCategoryIds, MultipartFile image) {
+    public CategoryRequestDto(String categoryName, String description, Boolean isActive, String subCategoryIds, MultipartFile image) {
         this.categoryName = categoryName;
         this.description = description;
         this.isActive = isActive;
@@ -53,11 +55,11 @@ public class CategoryRequestDto {
         this.isActive = isActive;
     }
 
-    public List<Long> getSubCategoryIds() {
+    public String getSubCategoryIds() {
         return subCategoryIds;
     }
 
-    public void setSubCategoryIds(List<Long> subCategoryIds) {
+    public void setSubCategoryIds(String subCategoryIds) {
         this.subCategoryIds = subCategoryIds;
     }
 
