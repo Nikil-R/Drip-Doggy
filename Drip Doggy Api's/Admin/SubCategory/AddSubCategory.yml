@@ -1,0 +1,32 @@
+info:
+  name: AddSubCategory
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/admin/subcategories
+  body:
+    type: multipart-form
+    data:
+      - name: subcategoryName
+        type: text
+        value: Tshirt
+      - name: image
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\Gemini_Generated_Image_60yqt360yqt360yq.png
+        contentType: image/png
+      - name: description
+        type: text
+        value: for Mens super T-shirts are aviable
+      - name: categoryId
+        type: text
+        value: "300"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

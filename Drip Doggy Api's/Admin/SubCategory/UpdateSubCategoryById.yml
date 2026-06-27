@@ -1,0 +1,36 @@
+info:
+  name: UpdateSubCategoryById
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: http://localhost:8081/dripdoggy/api/admin/subcategories/1
+  body:
+    type: multipart-form
+    data:
+      - name: subcategoryName
+        type: text
+        value: tshirt
+      - name: image
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\bc8775e0d865b16ed58d26a5bf08c23e.jpg
+        contentType: image/jpeg
+      - name: description
+        type: text
+        value: uyyufy
+      - name: categoryId
+        type: text
+        value: "7"
+      - name: isActive
+        type: text
+        value: "false"
+        disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

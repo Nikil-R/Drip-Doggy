@@ -1,0 +1,7 @@
+info:
+  name: SubCategory
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
