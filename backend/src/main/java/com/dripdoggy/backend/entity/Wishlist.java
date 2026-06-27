@@ -2,15 +2,9 @@ package com.dripdoggy.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "wishlist")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Wishlist {
 
     @Id
@@ -29,4 +23,48 @@ public class Wishlist {
     @JoinColumn(name = "product_variant_size_id")
     @JsonIgnore
     private ProductVariantSize productVariantSize;
+
+    // Constructors
+    public Wishlist() {
+    }
+
+    public Wishlist(Long id, Boolean isActive, User user, ProductVariantSize productVariantSize) {
+        this.id = id;
+        this.isActive = isActive;
+        this.user = user;
+        this.productVariantSize = productVariantSize;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public ProductVariantSize getProductVariantSize() {
+        return productVariantSize;
+    }
+
+    public void setProductVariantSize(ProductVariantSize productVariantSize) {
+        this.productVariantSize = productVariantSize;
+    }
 }

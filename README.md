@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+the frontend developer: nikil
+the backend developer: vinay
+the deployment and team lead :jeshy
+=======
 # Drip Doggy 🐶
 
 A premium streetwear e-commerce platform.
@@ -53,3 +58,4 @@ npm run build  # Production build
 
 
 
+>>>>>>> origin/jeshy

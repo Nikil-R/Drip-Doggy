@@ -2,17 +2,11 @@ package com.dripdoggy.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
 
 import java.util.List;
 
 @Entity
 @Table(name = "product_variant_sizes")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class ProductVariantSize {
 
     @Id
@@ -38,4 +32,75 @@ public class ProductVariantSize {
 
     @OneToMany(mappedBy = "productVariantSize")
     private List<Cart> cartItems;
+
+    // Constructors
+    public ProductVariantSize() {
+    }
+
+    public ProductVariantSize(Long id, String sizeName, Boolean isActive, ProductVariant productVariant, List<OrderItem> orderItems, List<Wishlist> wishlistItems, List<Cart> cartItems) {
+        this.id = id;
+        this.sizeName = sizeName;
+        this.isActive = isActive;
+        this.productVariant = productVariant;
+        this.orderItems = orderItems;
+        this.wishlistItems = wishlistItems;
+        this.cartItems = cartItems;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getSizeName() {
+        return sizeName;
+    }
+
+    public void setSizeName(String sizeName) {
+        this.sizeName = sizeName;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public ProductVariant getProductVariant() {
+        return productVariant;
+    }
+
+    public void setProductVariant(ProductVariant productVariant) {
+        this.productVariant = productVariant;
+    }
+
+    public List<OrderItem> getOrderItems() {
+        return orderItems;
+    }
+
+    public void setOrderItems(List<OrderItem> orderItems) {
+        this.orderItems = orderItems;
+    }
+
+    public List<Wishlist> getWishlistItems() {
+        return wishlistItems;
+    }
+
+    public void setWishlistItems(List<Wishlist> wishlistItems) {
+        this.wishlistItems = wishlistItems;
+    }
+
+    public List<Cart> getCartItems() {
+        return cartItems;
+    }
+
+    public void setCartItems(List<Cart> cartItems) {
+        this.cartItems = cartItems;
+    }
 }

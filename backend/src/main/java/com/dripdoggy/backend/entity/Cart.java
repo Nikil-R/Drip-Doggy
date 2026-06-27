@@ -2,15 +2,9 @@ package com.dripdoggy.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "cart")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Cart {
 
     @Id
@@ -31,4 +25,57 @@ public class Cart {
     @JoinColumn(name = "product_variant_size_id")
     @JsonIgnore
     private ProductVariantSize productVariantSize;
+
+    // Constructors
+    public Cart() {
+    }
+
+    public Cart(Long id, Integer quantity, Boolean isActive, User user, ProductVariantSize productVariantSize) {
+        this.id = id;
+        this.quantity = quantity;
+        this.isActive = isActive;
+        this.user = user;
+        this.productVariantSize = productVariantSize;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public ProductVariantSize getProductVariantSize() {
+        return productVariantSize;
+    }
+
+    public void setProductVariantSize(ProductVariantSize productVariantSize) {
+        this.productVariantSize = productVariantSize;
+    }
 }
