@@ -17,15 +17,13 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  ExternalLink,
   Award,
   LayoutList,
-  Copyright,
-  Menu,
-  FileText,
   Zap,
   Sparkles,
 } from "lucide-react";
+
+
 
 interface SidebarItem {
   to: string;
@@ -60,7 +58,6 @@ const menuSections: SidebarSection[] = [
     iconColor: "text-[#382d24]",
     items: [
       { to: "/admin/products",         label: "Products",        icon: ListCollapse },
-      { to: "/admin/products/media",   label: "Product Media",   icon: ImageIcon },
       { to: "/admin/products/reviews", label: "Product Reviews", icon: Star },
     ],
   },
@@ -70,12 +67,9 @@ const menuSections: SidebarSection[] = [
     iconColor: "text-[#2d5a27]",
     items: [
       { to: "/admin/content/hero-slides",       label: "Hero Slides",      icon: ImageIcon },
-      { to: "/admin/content/featured-products", label: "New In",           icon: Sparkles },
-      { to: "/admin/content/signature-pieces",  label: "Signature Pieces", icon: Award },
       { to: "/admin/content/home-categories",   label: "Home Categories",  icon: LayoutList },
-      { to: "/admin/content/footer",            label: "Footer Settings",  icon: Copyright },
-      { to: "/admin/content/navigation",        label: "Navigation Menu",  icon: Menu },
-      { to: "/admin/content/site-pages",        label: "Site Pages",       icon: FileText },
+      { to: "/admin/content/signature-pieces",  label: "Signature Pieces", icon: Award },
+      { to: "/admin/content/featured-products", label: "New In",           icon: Sparkles },
       { to: "/admin/content/coming-soon",       label: "Coming Soon",      icon: Zap },
     ],
   },
@@ -117,24 +111,21 @@ export function Sidebar() {
     >
       {/* ── Logo ──────────────────────────────────────────────────────────── */}
       <div className={cn(
-        "flex items-center border-b border-neutral-200/70 shrink-0 overflow-hidden transition-all duration-300",
-        isCollapsed ? "h-16 px-3 justify-center" : "h-16 px-4"
+        "flex flex-col items-center justify-center border-b border-neutral-200/70 shrink-0 transition-all duration-300",
+        isCollapsed ? "h-16 py-1" : "pt-1 pb-1"
       )}>
         {isCollapsed ? (
-          <img src={logoIcon} alt="DD" className="w-10 h-20 object-contain mix-blend-multiply" />
+          <img src={logoIcon} alt="DD" className="w-9 h-9 object-contain mix-blend-multiply" />
         ) : (
-          <div className="flex items-center gap-2.5 w-full">
-            <img src={logoIcon} alt="DD" className="w-15 h-20 object-contain mix-blend-multiply shrink-0" />
-            <div className="overflow-hidden">
-              <img src={logo} alt="Drip Doggy" className="h-24 w-auto object-contain mix-blend-multiply" />
-              <p className="text-[7px] font-black tracking-[0.3em] text-neutral-400 uppercase mt-0.5">Admin Console</p>
-            </div>
+          <div className="flex flex-col items-center justify-center w-full">
+            <img src={logoIcon} alt="Drip Doggy" className="w-14 h-14 object-contain mix-blend-multiply block" />
+            <img src={logo} alt="Drip Doggy" className="h-22 w-auto max-w-[180px] object-contain mix-blend-multiply block -mt-10" />
           </div>
         )}
       </div>
 
       {/* ── Nav Sections ─────────────────────────────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-neutral-200">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-neutral-200 ">
         {menuSections.map((section, sIdx) => {
           const meta = SECTION_META[section.title];
           return (
@@ -218,63 +209,24 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* ── Bottom: Profile + View Store ──────────────────────────────────── */}
-      <div className="shrink-0 border-t border-neutral-200/70 bg-[#fef3df]">
-
-        {/* View Store Link */}
-        <div className="px-3 pt-3">
-          <a
-            href="https://dripdoggy.netlify.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={isCollapsed ? "View Storefront" : undefined}
-            className={cn(
-              "flex items-center gap-2 w-full rounded-lg border border-neutral-200 bg-white/60 hover:bg-white hover:border-[#224870]/40 transition-all duration-150 group",
-              isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5"
-            )}
-          >
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-400 group-hover:text-neutral-700 transition-colors" />
-            <span className={cn(
-              "text-[9px] font-bold tracking-widest uppercase text-neutral-500 group-hover:text-neutral-800 whitespace-nowrap transition-all duration-300 overflow-hidden",
-              isCollapsed ? "max-w-0 opacity-0" : "max-w-[150px] opacity-100"
-            )}>
-              View Storefront
-            </span>
-          </a>
-        </div>
-
-        {/* Profile Row */}
-        <div className={cn(
-          "flex items-center gap-3 p-3 mt-2",
-          isCollapsed ? "justify-center flex-col gap-2" : ""
-        )}>
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-[#224870]/10 border-2 border-[#224870]/20 flex items-center justify-center shrink-0 overflow-hidden">
-            <img src={logoIcon} alt="Profile" className="w-6 h-6 object-contain mix-blend-multiply" />
-          </div>
-
-          {/* Name + Email */}
-          <div className={cn(
-            "flex-1 min-w-0 transition-all duration-300 overflow-hidden",
-            isCollapsed ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
+      {/* ── Bottom: Sign Out ───────────────────────────────────────────────── */}
+      <div className="shrink-0 border-t border-neutral-200/70 p-3">
+        <button
+          onClick={() => logout()}
+          title="Sign Out"
+          className={cn(
+            "flex items-center gap-2 w-full px-3 py-2.5 text-[#b2533e] hover:text-white hover:bg-[#b2533e] border border-[#b2533e]/30 hover:border-[#b2533e] transition-all duration-150 cursor-pointer bg-transparent rounded-none",
+            isCollapsed ? "justify-center px-0" : ""
+          )}
+        >
+          <LogOut className="h-3.5 w-3.5 shrink-0" />
+          <span className={cn(
+            "text-[9px] font-black tracking-widest uppercase whitespace-nowrap transition-all duration-300 overflow-hidden",
+            isCollapsed ? "max-w-0 opacity-0" : "max-w-[150px] opacity-100"
           )}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-800 truncate">Nikil</p>
-            <p className="text-[8px] text-neutral-400 truncate font-medium">nikil@dripdoggy.com</p>
-          </div>
-
-          {/* Logout */}
-          <button
-            onClick={() => logout()}
-            title="Sign Out"
-            className={cn(
-              "p-1.5 rounded-md text-neutral-400 hover:text-[#b2533e] hover:bg-red-50 transition-all duration-150 bg-transparent border-none cursor-pointer shrink-0",
-              isCollapsed ? "" : "ml-auto"
-            )}
-            aria-label="Logout"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
-        </div>
+            Sign Out
+          </span>
+        </button>
       </div>
 
       {/* ── Collapse Toggle ────────────────────────────────────────────────── */}

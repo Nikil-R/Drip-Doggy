@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -7,6 +7,7 @@ import {
   X,
   Upload,
 } from "lucide-react";
+import { categoryApi, BackendCategory } from "../lib/category-api";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }) {
   return (
@@ -51,17 +52,12 @@ interface Category {
   revenueSales?: number;
 }
 
-const initialCategoriesData: Category[] = [
-  { id: "women", label: "Women", sub: "Women's Collection", parent: "Women", count: 82, orders: 1812, status: "Active", bannerImage: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?q=80&w=400&auto=format&fit=crop", slug: "women", subCategories: [{ id: "women-dresses", name: "Dresses", description: "Elegant dresses for women", imageUrl: "", isActive: true, categoryId: "women" }, { id: "women-tops", name: "Tops", description: "Stylish tops and blouses", imageUrl: "", isActive: true, categoryId: "women" }, { id: "women-knitwear", name: "Knitwear", description: "Premium knitwear pieces", imageUrl: "", isActive: true, categoryId: "women" }], revenueSales: 1089000 },
-  { id: "men", label: "Men", sub: "Men's Collection", parent: "Men", count: 48, orders: 1205, status: "Active", bannerImage: "https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?q=80&w=400&auto=format&fit=crop", slug: "men", subCategories: [{ id: "men-shirts", name: "Shirts", description: "Tailored shirts for the modern man", imageUrl: "", isActive: true, categoryId: "men" }, { id: "men-outerwear", name: "Outerwear", description: "Premium outerwear collections", imageUrl: "", isActive: true, categoryId: "men" }], revenueSales: 785000 },
-  { id: "unisex", label: "Unisex", sub: "Genderless Curation", parent: "Unisex", count: 35, orders: 678, status: "Active", bannerImage: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=400&auto=format&fit=crop", slug: "unisex", subCategories: [{ id: "unisex-bags", name: "Bags", description: "Versatile bags and carry-alls", imageUrl: "", isActive: true, categoryId: "unisex" }, { id: "unisex-accessories", name: "Accessories", description: "Signature accessories", imageUrl: "", isActive: true, categoryId: "unisex" }], revenueSales: 450000 }
-];
-
 export function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(initialCategoriesData);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>("women");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Modal states
   const [isAddCatOpen, setIsAddCatOpen] = useState(false);
@@ -81,18 +77,86 @@ export function CategoriesPage() {
   const [catLabel, setCatLabel] = useState("");
   const [catSub, setCatSub] = useState("");
   const [catBannerImage, setCatBannerImage] = useState("");
+  const [catImageFile, setCatImageFile] = useState<File | null>(null);
 
   // SubCategory Form Inputs
   const [subName, setSubName] = useState("");
   const [subDescription, setSubDescription] = useState("");
   const [subImageUrl, setSubImageUrl] = useState("");
+  const [subImageFile, setSubImageFile] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
+  // Load categories from API on mount
+  const loadCategories = async () => {
+    setIsLoading(true);
+    try {
+      const data = await categoryApi.getAllCategories();
+      const mapped: Category[] = data.map((bc: BackendCategory) => {
+        // Parse subCategoryIds back to subCategories list.
+        // Since we don't have separate subcategory table queries, we map subcategory data structures.
+        // We will seed / parse subcategory structures from JSON or ID arrays.
+        let subCats: SubCategory[] = [];
+        try {
+          if (bc.subCategoryIds) {
+            // Assume subCategoryIds holds comma separated names or stringified structures
+            const parsed = JSON.parse(bc.subCategoryIds);
+            if (Array.isArray(parsed)) {
+              subCats = parsed;
+            }
+          }
+        } catch {
+          // fallback to IDs mapping if not JSON
+          if (bc.subCategoryIds) {
+            subCats = bc.subCategoryIds.split(",").filter(Boolean).map(idOrName => ({
+              id: `${bc.categoryId}-${idOrName.trim()}`,
+              name: idOrName.trim(),
+              description: "Subcategory of " + bc.categoryName,
+              imageUrl: "",
+              isActive: true,
+              categoryId: String(bc.categoryId),
+            }));
+          }
+        }
+
+        return {
+          id: String(bc.categoryId),
+          label: bc.categoryName,
+          sub: bc.description,
+          parent: bc.categoryName,
+          count: 0,
+          orders: 0,
+          status: bc.isActive ? "Active" : "Inactive",
+          bannerImage: bc.imagePath || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
+          slug: bc.categoryName.toLowerCase().replace(/\s+/g, "-"),
+          subCategories: subCats,
+          revenueSales: 0,
+        };
+      });
+      setCategories(mapped);
+      if (mapped.length > 0 && !selectedCategoryId) {
+        setSelectedCategoryId(mapped[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to load categories", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void, isSub = false) => {
     const files = e.target.files;
     if (files && files[0]) {
+      if (isSub) {
+        setSubImageFile(files[0]);
+      } else {
+        setCatImageFile(files[0]);
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -107,6 +171,7 @@ export function CategoriesPage() {
     setCatLabel("");
     setCatSub("");
     setCatBannerImage("");
+    setCatImageFile(null);
   };
 
   const openAddCategory = () => {
@@ -114,30 +179,27 @@ export function CategoriesPage() {
     setIsAddCatOpen(true);
   };
 
-  const handleAddCategorySubmit = (e: React.FormEvent) => {
+  const handleAddCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!catLabel.trim()) return;
 
-    const id = catLabel.toLowerCase().replace(/\s+/g, "-");
-    const newCategory: Category = {
-      id,
-      label: catLabel.trim(),
-      sub: catSub.trim() || "Custom description",
-      count: 0,
-      orders: 0,
-      parent: "General",
-      status: "Active",
-      bannerImage: catBannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
-      slug: id,
-      metaTitle: "",
-      metaDescription: "",
-      subCategories: [],
-      revenueSales: 0,
-    };
-
-    setCategories(prev => [newCategory, ...prev]);
-    setSelectedCategoryId(id);
-    setIsAddCatOpen(false);
+    try {
+      const added = await categoryApi.addCategory(
+        catLabel.trim(),
+        catSub.trim(),
+        catImageFile,
+        ""
+      );
+      await loadCategories();
+      if (added && added.categoryId) {
+        setSelectedCategoryId(String(added.categoryId));
+      }
+      setIsAddCatOpen(false);
+      resetCatForm();
+    } catch (err) {
+      console.error("Error creating category", err);
+      alert("Failed to create category. Please ensure backend is running at http://localhost:8081.");
+    }
   };
 
   const openEditCategory = (cat: Category, e: React.MouseEvent) => {
@@ -146,23 +208,29 @@ export function CategoriesPage() {
     setCatLabel(cat.label);
     setCatSub(cat.sub);
     setCatBannerImage(cat.bannerImage || "");
+    setCatImageFile(null);
     setIsEditCatOpen(true);
   };
 
-  const handleSaveCategoryEdit = (e: React.FormEvent) => {
+  const handleSaveCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editCategoryTarget) return;
 
-    setCategories(prev => prev.map(c => {
-      if (c.id !== editCategoryTarget.id) return c;
-      return {
-        ...c,
-        label: catLabel,
-        sub: catSub,
-        bannerImage: catBannerImage,
-      };
-    }));
-    setIsEditCatOpen(false);
+    try {
+      const subIds = JSON.stringify(editCategoryTarget.subCategories || []);
+      await categoryApi.updateCategory(
+        Number(editCategoryTarget.id),
+        catLabel.trim(),
+        catSub.trim(),
+        catImageFile,
+        subIds,
+        editCategoryTarget.status === "Active"
+      );
+      await loadCategories();
+      setIsEditCatOpen(false);
+    } catch (err) {
+      console.error("Error updating category", err);
+    }
   };
 
   const openDeleteCategory = (cat: Category, e: React.MouseEvent) => {
@@ -171,13 +239,18 @@ export function CategoriesPage() {
     setIsDeleteCatOpen(true);
   };
 
-  const handleConfirmDeleteCategory = () => {
+  const handleConfirmDeleteCategory = async () => {
     if (!deleteCategoryTarget) return;
-    setCategories(prev => prev.filter(c => c.id !== deleteCategoryTarget.id));
-    if (selectedCategoryId === deleteCategoryTarget.id) {
-      setSelectedCategoryId(categories[0]?.id || null);
+    try {
+      await categoryApi.deleteCategory(Number(deleteCategoryTarget.id));
+      await loadCategories();
+      if (selectedCategoryId === deleteCategoryTarget.id) {
+        setSelectedCategoryId(null);
+      }
+      setIsDeleteCatOpen(false);
+    } catch (err) {
+      console.error("Error deleting category", err);
     }
-    setIsDeleteCatOpen(false);
   };
 
   // ── SubCategory CRUD ──
@@ -186,6 +259,7 @@ export function CategoriesPage() {
     setSubName("");
     setSubDescription("");
     setSubImageUrl("");
+    setSubImageFile(null);
   };
 
   const openAddSubCategory = () => {
@@ -194,9 +268,12 @@ export function CategoriesPage() {
     setIsAddSubOpen(true);
   };
 
-  const handleAddSubCategorySubmit = (e: React.FormEvent) => {
+  const handleAddSubCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subName.trim() || !selectedCategoryId) return;
+
+    const activeCat = categories.find(c => c.id === selectedCategoryId);
+    if (!activeCat) return;
 
     const id = `${selectedCategoryId}-${subName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
     const newSub: SubCategory = {
@@ -208,34 +285,66 @@ export function CategoriesPage() {
       categoryId: selectedCategoryId,
     };
 
-    setCategories(prev => prev.map(c => {
-      if (c.id !== selectedCategoryId) return c;
-      return { ...c, subCategories: [...(c.subCategories || []), newSub] };
-    }));
-    setIsAddSubOpen(false);
+    const updatedSubCategories = [...(activeCat.subCategories || []), newSub];
+    try {
+      await categoryApi.updateCategory(
+        Number(activeCat.id),
+        activeCat.label,
+        activeCat.sub,
+        null,
+        JSON.stringify(updatedSubCategories),
+        activeCat.status === "Active"
+      );
+      await loadCategories();
+      setIsAddSubOpen(false);
+    } catch (err) {
+      console.error("Error adding subcategory", err);
+    }
   };
 
-  const handleToggleSubActive = (categoryId: string, subId: string, e: React.MouseEvent) => {
+  const handleToggleSubActive = async (categoryId: string, subId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setCategories(prev => prev.map(c => {
-      if (c.id !== categoryId) return c;
-      return {
-        ...c,
-        subCategories: c.subCategories?.map(s => s.id === subId ? { ...s, isActive: !s.isActive } : s) || [],
-      };
-    }));
+    const activeCat = categories.find(c => c.id === categoryId);
+    if (!activeCat) return;
+
+    const updatedSubCategories = (activeCat.subCategories || []).map(s =>
+      s.id === subId ? { ...s, isActive: !s.isActive } : s
+    );
+
+    try {
+      await categoryApi.updateCategory(
+        Number(activeCat.id),
+        activeCat.label,
+        activeCat.sub,
+        null,
+        JSON.stringify(updatedSubCategories),
+        activeCat.status === "Active"
+      );
+      await loadCategories();
+    } catch (err) {
+      console.error("Error toggling subcategory", err);
+    }
   };
 
-  const handleRemoveSubCategory = (categoryId: string, subId: string) => {
-    setCategories(prev => prev.map(c => {
-      if (c.id === categoryId) {
-        return {
-          ...c,
-          subCategories: (c.subCategories || []).filter(s => s.id !== subId)
-        };
-      }
-      return c;
-    }));
+  const handleRemoveSubCategory = async (categoryId: string, subId: string) => {
+    const activeCat = categories.find(c => c.id === categoryId);
+    if (!activeCat) return;
+
+    const updatedSubCategories = (activeCat.subCategories || []).filter(s => s.id !== subId);
+
+    try {
+      await categoryApi.updateCategory(
+        Number(activeCat.id),
+        activeCat.label,
+        activeCat.sub,
+        null,
+        JSON.stringify(updatedSubCategories),
+        activeCat.status === "Active"
+      );
+      await loadCategories();
+    } catch (err) {
+      console.error("Error removing subcategory", err);
+    }
   };
 
   const openEditSubCategory = (sub: SubCategory, e: React.MouseEvent) => {
@@ -244,26 +353,40 @@ export function CategoriesPage() {
     setSubName(sub.name);
     setSubDescription(sub.description);
     setSubImageUrl(sub.imageUrl);
+    setSubImageFile(null);
     setIsEditSubOpen(true);
   };
 
-  const handleSaveSubCategoryEdit = (e: React.FormEvent) => {
+  const handleSaveSubCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editSubTarget) return;
 
-    setCategories(prev => prev.map(c => {
-      if (c.id !== editSubTarget.categoryId) return c;
-      return {
-        ...c,
-        subCategories: c.subCategories?.map(s => s.id === editSubTarget.id ? {
-          ...s,
-          name: subName.trim(),
-          description: subDescription.trim(),
-          imageUrl: subImageUrl,
-        } : s) || [],
-      };
-    }));
-    setIsEditSubOpen(false);
+    const activeCat = categories.find(c => c.id === editSubTarget.categoryId);
+    if (!activeCat) return;
+
+    const updatedSubCategories = (activeCat.subCategories || []).map(s =>
+      s.id === editSubTarget.id ? {
+        ...s,
+        name: subName.trim(),
+        description: subDescription.trim(),
+        imageUrl: subImageUrl,
+      } : s
+    );
+
+    try {
+      await categoryApi.updateCategory(
+        Number(activeCat.id),
+        activeCat.label,
+        activeCat.sub,
+        null,
+        JSON.stringify(updatedSubCategories),
+        activeCat.status === "Active"
+      );
+      await loadCategories();
+      setIsEditSubOpen(false);
+    } catch (err) {
+      console.error("Error updating subcategory", err);
+    }
   };
 
   const openDeleteSubCategory = (sub: SubCategory, e: React.MouseEvent) => {
@@ -272,13 +395,27 @@ export function CategoriesPage() {
     setIsDeleteSubOpen(true);
   };
 
-  const handleConfirmDeleteSubCategory = () => {
+  const handleConfirmDeleteSubCategory = async () => {
     if (!deleteSubTarget) return;
-    setCategories(prev => prev.map(c => {
-      if (c.id !== deleteSubTarget.categoryId) return c;
-      return { ...c, subCategories: c.subCategories?.filter(s => s.id !== deleteSubTarget.id) || [] };
-    }));
-    setIsDeleteSubOpen(false);
+    const activeCat = categories.find(c => c.id === deleteSubTarget.categoryId);
+    if (!activeCat) return;
+
+    const updatedSubCategories = (activeCat.subCategories || []).filter(s => s.id !== deleteSubTarget.id);
+
+    try {
+      await categoryApi.updateCategory(
+        Number(activeCat.id),
+        activeCat.label,
+        activeCat.sub,
+        null,
+        JSON.stringify(updatedSubCategories),
+        activeCat.status === "Active"
+      );
+      await loadCategories();
+      setIsDeleteSubOpen(false);
+    } catch (err) {
+      console.error("Error deleting subcategory", err);
+    }
   };
 
   const activeCategoryDetails = useMemo(() => {
@@ -297,12 +434,14 @@ export function CategoriesPage() {
     return list;
   }, [categories, activeTab, searchQuery]);
 
-  const handleToggleStatus = (id: string, e: React.MouseEvent) => {
+  const handleToggleStatus = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setCategories(prev => prev.map(c => c.id === id ? {
-      ...c,
-      status: c.status === "Active" ? "Inactive" : "Active"
-    } : c));
+    try {
+      await categoryApi.toggleCategoryStatus(Number(id));
+      await loadCategories();
+    } catch (err) {
+      console.error("Error toggling category status", err);
+    }
   };
 
   const summaryStats = useMemo(() => {
@@ -570,7 +709,7 @@ export function CategoriesPage() {
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
                   </button>
                   {catBannerImage && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage)} />
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage, false)} />
                 </div>
                 {catBannerImage && (
                   <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
@@ -613,7 +752,7 @@ export function CategoriesPage() {
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
                   </button>
                   {catBannerImage && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage)} />
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage, false)} />
                 </div>
                 {catBannerImage && (
                   <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
@@ -668,7 +807,7 @@ export function CategoriesPage() {
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
                   </button>
                   {subImageUrl && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
-                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl)} />
+                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl, true)} />
                 </div>
                 {subImageUrl && (
                   <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
@@ -711,7 +850,50 @@ export function CategoriesPage() {
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
                   </button>
                   {subImageUrl && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
-                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl)} />
+                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl, true)} />
+                </div>
+                {subImageUrl && (
+                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
+                    <img src={subImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Description</label>
+                <textarea value={subDescription} onChange={e => setSubDescription(e.target.value)} placeholder="Subcategory description..." rows={2} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
+              </div>
+              <div className="pt-2 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsAddSubOpen(false)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Subcategory Modal ── */}
+      {isEditSubOpen && (
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setIsEditSubOpen(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <span className="text-[8.5px] font-bold tracking-[0.2em] text-[#382d24] uppercase">Edit Subcategory</span>
+              <button onClick={() => setIsEditSubOpen(false)} className="text-neutral-400 hover:text-[#382d24] bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveSubCategoryEdit} className="space-y-4">
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Subcategory Name</label>
+                <input required type="text" value={subName} onChange={e => setSubName(e.target.value)} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold uppercase p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24]" />
+              </div>
+              <div>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => subFileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
+                  </button>
+                  {subImageUrl && <span className="text-[8px] text-green-600 font-bold uppercase">Image selected</span>}
+                  <input ref={subFileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setSubImageUrl, true)} />
                 </div>
                 {subImageUrl && (
                   <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
