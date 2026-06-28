@@ -60,7 +60,7 @@ interface ProductVariant {
   discountType: "percentage" | "value";
   discountValue: string;
   finalPrice: string;
-  stock: string;
+  sizeStock: Record<string, string>; // Maps size code to its quantity
   active: boolean;
   sizes: string[];
   images: string[];
@@ -172,7 +172,7 @@ export function AddProductPage() {
   };
 
 
-  // Custom image handling
+  // Custom image handling with 3:4 aspect checking (600x800 resolution)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
@@ -180,7 +180,17 @@ export function AddProductPage() {
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target?.result) {
-            setProductImages(prev => [...prev, event.target!.result as string]);
+            const base64Url = event.target.result as string;
+            const img = new Image();
+            img.onload = () => {
+              if (img.width !== 600 || img.height !== 800) {
+                alert(`Error: Cover image dimensions are ${img.width}x${img.height}px. Product cover images must be exactly 600x800 pixels (3:4 aspect ratio).`);
+                if (e.target) e.target.value = "";
+              } else {
+                setProductImages(prev => [...prev, base64Url]);
+              }
+            };
+            img.src = base64Url;
           }
         };
         reader.readAsDataURL(file);
@@ -338,13 +348,15 @@ export function AddProductPage() {
         {/* 2. Cover Image */}
         <div className="bg-[#faf8f5] border border-[#382d24]/15 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest">
-              2. Cover Image
-            </h3>
+            <div>
+              <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest">
+                2. Cover Image <span className="text-red-500 font-normal lowercase text-xs">(600x800 pixels)</span>
+              </h3>
+            </div>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
             {productImages.length > 0 ? (
               <div className="flex items-center gap-3">
-                <div className="w-16 h-16 border border-[#382d24]/15 overflow-hidden bg-neutral-50/50 flex-shrink-0">
+                <div className="w-[60px] h-[80px] border border-[#382d24]/15 overflow-hidden bg-neutral-50/50 flex-shrink-0">
                   <img src={productImages[0]} alt="Product" className="w-full h-full object-cover" />
                 </div>
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-transparent border border-[#382d24]/20 hover:border-[#224870] text-[#382d24] text-[9px] font-bold px-3 py-1.5 uppercase cursor-pointer transition-colors rounded-none">
@@ -379,7 +391,7 @@ export function AddProductPage() {
                 discountType: "percentage",
                 discountValue: "",
                 finalPrice: "",
-                stock: "",
+                sizeStock: {},
                 active: true,
                 sizes: [],
                 images: [],
@@ -424,11 +436,11 @@ export function AddProductPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {/* Image Upload */}
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Variant Images</label>
+                    <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Variant Images <span className="text-red-500 font-normal lowercase text-[9px]">(600x800 pixels)</span></label>
                     <div className="grid grid-cols-2 gap-2">
                       {variant.images.map((img, imgIdx) => (
-                        <div key={imgIdx} className="border border-[#382d24]/15 aspect-square relative bg-neutral-50 flex items-center justify-center p-1">
-                          <img src={img} alt="Variant asset" className="max-h-full max-w-full object-contain" />
+                        <div key={imgIdx} className="border border-[#382d24]/15 w-[75px] h-[100px] relative bg-neutral-50 flex items-center justify-center p-1 shadow-xs">
+                          <img src={img} alt="Variant asset" className="w-full h-full object-cover" />
                           <button
                             type="button"
                             onClick={() => {
@@ -455,10 +467,21 @@ export function AddProductPage() {
                               Array.from(files).forEach((file: any) => {
                                 const reader = new FileReader();
                                 reader.onload = (ev) => {
-                                  setVariants(prev => prev.map((v, i) => i === idx ? {
-                                    ...v,
-                                    images: [...v.images, ev.target?.result as string]
-                                  } : v));
+                                  if (ev.target?.result) {
+                                    const base64Url = ev.target.result as string;
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      if (img.width !== 600 || img.height !== 800) {
+                                        alert(`Error: Variant image dimensions are ${img.width}x${img.height}px. Variant images must be exactly 600x800 pixels (3:4 aspect ratio).`);
+                                      } else {
+                                        setVariants(prev => prev.map((v, i) => i === idx ? {
+                                          ...v,
+                                          images: [...v.images, base64Url]
+                                        } : v));
+                                      }
+                                    };
+                                    img.src = base64Url;
+                                  }
                                 };
                                 reader.readAsDataURL(file);
                               });
@@ -466,10 +489,10 @@ export function AddProductPage() {
                           };
                           input.click();
                         }}
-                        className="border-2 border-dashed border-[#382d24]/20 aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-[#224870] transition-colors"
+                        className="border-2 border-dashed border-[#382d24]/20 w-[75px] h-[100px] flex flex-col items-center justify-center cursor-pointer hover:border-[#224870] transition-colors"
                       >
-                        <Upload className="w-5 h-5 text-neutral-300 stroke-[1.5]" />
-                        <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">Add Image</span>
+                        <Upload className="w-4 h-4 text-neutral-300 stroke-[1.5]" />
+                        <span className="text-[7.5px] font-black text-neutral-400 uppercase tracking-wider mt-1 text-center leading-tight">Add 3:4</span>
                       </div>
                     </div>
                   </div>
@@ -601,19 +624,8 @@ export function AddProductPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Stock Qty</label>
-                      <input
-                        type="text"
-                        value={variant.stock}
-                        onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock: e.target.value } : v))}
-                        placeholder="0"
-                        className="w-full bg-[#faf8f5] border border-[#382d24]/20 px-3 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24] transition-all"
-                      />
-                    </div>
-
-                    {/* Sizes */}
-                    <div className="space-y-1.5 sm:col-span-2">
+                     {/* Sizes Selection */}
+                     <div className="space-y-1.5 sm:col-span-2">
                       <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Available Sizes</label>
                       <div className="flex flex-wrap gap-1.5">
                         {availableSizes.map(size => {
@@ -622,10 +634,26 @@ export function AddProductPage() {
                             <button
                               key={size}
                               type="button"
-                              onClick={() => setVariants(prev => prev.map((v, i) => i === idx ? {
-                                ...v,
-                                sizes: v.sizes.includes(size) ? v.sizes.filter(s => s !== size) : [...v.sizes, size]
-                              } : v))}
+                              onClick={() => setVariants(prev => prev.map((v, i) => {
+                                if (i !== idx) return v;
+                                const sizesList = v.sizes.includes(size) 
+                                  ? v.sizes.filter(s => s !== size) 
+                                  : [...v.sizes, size];
+                                
+                                // Create copy of sizeStock to initialize or clean values
+                                const newSizeStock = { ...v.sizeStock };
+                                if (v.sizes.includes(size)) {
+                                  delete newSizeStock[size];
+                                } else {
+                                  newSizeStock[size] = "";
+                                }
+
+                                return {
+                                  ...v,
+                                  sizes: sizesList,
+                                  sizeStock: newSizeStock
+                                };
+                              }))}
                               className={`px-3 py-1.5 text-[9px] font-bold uppercase border cursor-pointer transition-all ${
                                 isSelected ? "bg-[#224870] border-[#224870] text-white" : "bg-[#faf8f5] border-[#382d24]/20 text-[#615e56] hover:border-[#224870]"
                               }`}
@@ -636,6 +664,39 @@ export function AddProductPage() {
                         })}
                       </div>
                     </div>
+
+                    {/* Stock Inputs by Size */}
+                    {variant.sizes.length > 0 && (
+                      <div className="sm:col-span-2 space-y-2.5 border-t border-neutral-100 pt-3">
+                        <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Stock Quantity by Size</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {variant.sizes.map(size => (
+                            <div key={size} className="space-y-1">
+                              <span className="text-[10px] font-extrabold text-[#382d24] uppercase block">Size {size}</span>
+                              <input
+                                type="text"
+                                value={variant.sizeStock[size] || ""}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setVariants(prev => prev.map((v, i) => {
+                                    if (i !== idx) return v;
+                                    return {
+                                      ...v,
+                                      sizeStock: {
+                                        ...v.sizeStock,
+                                        [size]: val
+                                      }
+                                    };
+                                  }));
+                                }}
+                                placeholder="0"
+                                className="w-full bg-[#faf8f5] border border-[#382d24]/20 px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
