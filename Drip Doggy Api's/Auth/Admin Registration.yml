@@ -1,0 +1,24 @@
+info:
+  name: Admin Registration
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/auth/admin/register
+  body:
+    type: json
+    data: |
+      {
+        "identifier": "admin@gmail.com",
+      //  "identifier": "+911234567891",
+        "firstName": "Super",
+        "lastName": "Admin"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

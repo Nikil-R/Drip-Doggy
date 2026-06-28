@@ -1,0 +1,17 @@
+info:
+  name: Logout
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/auth/logout
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heTIwM0BnbWFpbC5jb20iLCJpYXQiOjE3ODI2MzM5MjIsImV4cCI6MTc4NDM2MTkyMn0.zO7ullyV9MljADs9ZjHJhBxkpFjhIjkDswjI3bFNfK2al5n0VIYVZsQcpi7Xeqnz6KQB7twLEK5Wh9zrwZmLIg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

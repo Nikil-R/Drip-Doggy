@@ -1,0 +1,25 @@
+info:
+  name: Customer Registration
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/auth/register
+  body:
+    type: json
+    data: |
+      {
+      //   "identifier": "+911234567891",
+      "email": "v@gmail.com",
+        "phoneNo":"+919856543210",
+        "firstName": "raja",
+        "lastName": "beja"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -5,13 +5,13 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8081/api/auth/verify-otp
+  url: http://localhost:8081/dripdoggy/api/auth/verify-otp
   body:
     type: json
     data: |-
       {
-        "identifier": "annamalajeshwanth@gmail.com",
-        "otpCode": "892387"
+        "identifier":"vi@gmail.com",
+        "otpCode": "385343"
       }
   auth: inherit
 
