@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8081/dripdoggy/api/admin";
+const BASE_URL = "/dripdoggy/api/admin";
 
 export interface BackendCategory {
   categoryId: number;

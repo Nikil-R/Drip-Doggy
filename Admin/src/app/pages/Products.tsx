@@ -46,11 +46,13 @@ interface ProductVariant {
   name: string;
   sku: string;
   mrp: number;
-  discountPrice: number | null;
-  stock: number;
+  discountType: "percentage" | "value";
+  discountValue: number;
+  finalPrice: number;
+  sizeStock: Record<string, number>; // Maps size to its quantity
   active: boolean;
   sizes: string[];
-  image: string | null;
+  images: string[];
 }
 
 interface Product {
@@ -60,7 +62,7 @@ interface Product {
   price: number;
   cost: number;
   stock: number;
-  status: "Active" | "Draft";
+  status: "Active" | "Inactive";
   sales: number;
   revenue: number;
   image: string;
@@ -73,56 +75,18 @@ interface Product {
 
 const sampleProducts: Product[] = [
   { id: "#DD-P001", name: "Structured Canvas Jacket", category: "Outerwear", price: 12999, cost: 5200, stock: 45, status: "Active", sales: 342, revenue: 4445658, image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop", sku: "DD-STR-001", season: "SS26", dateAdded: "2026-03-12", description: "Premium heavy-weight structured canvas utility jacket with signature hardware.", variants: [
-    { id: "VAR-001", name: "Black", sku: "DD-STR-001-BLK", mrp: 12999, discountPrice: null, stock: 20, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-002", name: "Camel", sku: "DD-STR-001-CML", mrp: 12999, discountPrice: 10999, stock: 15, active: true, sizes: ["M", "L", "XL"], image: null },
-    { id: "VAR-003", name: "Olive", sku: "DD-STR-001-OLV", mrp: 12999, discountPrice: null, stock: 10, active: true, sizes: ["S", "M", "L"], image: null },
+    { id: "VAR-001", name: "Black", sku: "DD-STR-001-BLK", mrp: 12999, discountType: "percentage", discountValue: 0, finalPrice: 12999, sizeStock: { "S": 10, "M": 5, "L": 5 }, active: true, sizes: ["S", "M", "L"], images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop"] },
+    { id: "VAR-002", name: "Camel", sku: "DD-STR-001-CML", mrp: 12999, discountType: "value", discountValue: 2000, finalPrice: 10999, sizeStock: { "M": 10, "L": 5 }, active: true, sizes: ["M", "L"], images: [] },
+    { id: "VAR-003", name: "Olive", sku: "DD-STR-001-OLV", mrp: 12999, discountType: "percentage", discountValue: 0, finalPrice: 12999, sizeStock: { "S": 5, "M": 5 }, active: true, sizes: ["S", "M"], images: [] },
   ] },
   { id: "#DD-P002", name: "Sartorial Trench Coat", category: "Outerwear", price: 24999, cost: 10000, stock: 18, status: "Active", sales: 198, revenue: 4949802, image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=120&auto=format&fit=crop", sku: "DD-SAT-001", season: "FW25", dateAdded: "2026-04-05", description: "Double-breasted oversized trench coat made of waterproof cotton gabardine.", variants: [
-    { id: "VAR-004", name: "Black", sku: "DD-SAT-001-BLK", mrp: 24999, discountPrice: 19999, stock: 8, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-005", name: "Ivory", sku: "DD-SAT-001-IVR", mrp: 24999, discountPrice: null, stock: 10, active: true, sizes: ["M", "L"], image: null },
+    { id: "VAR-004", name: "Black", sku: "DD-SAT-001-BLK", mrp: 24999, discountType: "value", discountValue: 5000, finalPrice: 19999, sizeStock: { "S": 4, "M": 4 }, active: true, sizes: ["S", "M"], images: ["https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=120&auto=format&fit=crop"] },
+    { id: "VAR-005", name: "Ivory", sku: "DD-SAT-001-IVR", mrp: 24999, discountType: "percentage", discountValue: 0, finalPrice: 24999, sizeStock: { "M": 10 }, active: true, sizes: ["M"], images: [] },
   ] },
   { id: "#DD-P003", name: "Cashmere Blend Crew", category: "Knitwear", price: 8999, cost: 3600, stock: 62, status: "Active", sales: 287, revenue: 2582713, image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=120&auto=format&fit=crop", sku: "DD-CAS-001", season: "FW25", dateAdded: "2026-04-18", description: "Minimalist crewneck sweater knitted in 7-gauge soft cashmere blend yarn.", variants: [
-    { id: "VAR-006", name: "Charcoal", sku: "DD-CAS-001-CHR", mrp: 8999, discountPrice: null, stock: 25, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-007", name: "Navy", sku: "DD-CAS-001-NVY", mrp: 8999, discountPrice: 7999, stock: 22, active: true, sizes: ["XS", "S", "M", "L"], image: null },
-    { id: "VAR-008", name: "Ivory", sku: "DD-CAS-001-IVR", mrp: 8999, discountPrice: null, stock: 15, active: false, sizes: ["S", "M"], image: null },
-  ] },
-  { id: "#DD-P004", name: "Merino Wool Cardigan", category: "Knitwear", price: 11999, cost: 4800, stock: 23, status: "Active", sales: 167, revenue: 2003833, image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=120&auto=format&fit=crop", sku: "DD-MER-001", season: "FW25", dateAdded: "2026-04-20", description: "Heavy knit luxury cardigan with branded horn buttons and patch pockets.", variants: [
-    { id: "VAR-009", name: "Burgundy", sku: "DD-MER-001-BRG", mrp: 11999, discountPrice: null, stock: 12, active: true, sizes: ["M", "L", "XL"], image: null },
-    { id: "VAR-010", name: "Camel", sku: "DD-MER-001-CML", mrp: 11999, discountPrice: null, stock: 11, active: true, sizes: ["S", "M", "L"], image: null },
-  ] },
-  { id: "#DD-P005", name: "Signature Silk Blouse", category: "Tops", price: 6999, cost: 2100, stock: 78, status: "Active", sales: 312, revenue: 2183688, image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop", sku: "DD-SIL-001", season: "SS26", dateAdded: "2026-05-01", description: "Relaxed fit standard blouse crafted in 100% mulberry silk.", variants: [
-    { id: "VAR-011", name: "Blush", sku: "DD-SIL-001-BLS", mrp: 6999, discountPrice: null, stock: 30, active: true, sizes: ["XS", "S", "M", "L"], image: null },
-    { id: "VAR-012", name: "Ivory", sku: "DD-SIL-001-IVR", mrp: 6999, discountPrice: 5999, stock: 28, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-013", name: "Black", sku: "DD-SIL-001-BLK", mrp: 6999, discountPrice: null, stock: 20, active: true, sizes: ["XS", "S", "M", "L", "XL"], image: null },
-  ] },
-  { id: "#DD-P006", name: "Relaxed Linen Shirt", category: "Tops", price: 5499, cost: 1650, stock: 54, status: "Active", sales: 256, revenue: 1407744, image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=120&auto=format&fit=crop", sku: "DD-LIN-001", season: "SS26", dateAdded: "2026-05-15", description: "Breathable airy linen button-down with raw edge details.", variants: [
-    { id: "VAR-014", name: "White", sku: "DD-LIN-001-WHT", mrp: 5499, discountPrice: null, stock: 30, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-015", name: "Navy", sku: "DD-LIN-001-NVY", mrp: 5499, discountPrice: null, stock: 24, active: true, sizes: ["M", "L", "XL"], image: null },
-  ] },
-  { id: "#DD-P007", name: "French Terry Hoodie", category: "Tops", price: 4499, cost: 1350, stock: 92, status: "Active", sales: 421, revenue: 1894079, image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=120&auto=format&fit=crop", sku: "DD-FTH-001", season: "SS26", dateAdded: "2026-05-22", description: "Oversized hoodie knitted in heavy-weight French terry loops.", variants: [
-    { id: "VAR-016", name: "Black", sku: "DD-FTH-001-BLK", mrp: 4499, discountPrice: 3999, stock: 40, active: true, sizes: ["S", "M", "L", "XL", "XXL"], image: null },
-    { id: "VAR-017", name: "Charcoal", sku: "DD-FTH-001-CHR", mrp: 4499, discountPrice: null, stock: 30, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-018", name: "Olive", sku: "DD-FTH-001-OLV", mrp: 4499, discountPrice: null, stock: 22, active: true, sizes: ["M", "L"], image: null },
-  ] },
-  { id: "#DD-P008", name: "Pleated Wool Trousers", category: "Bottoms", price: 9999, cost: 4000, stock: 31, status: "Active", sales: 145, revenue: 1449855, image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=120&auto=format&fit=crop", sku: "DD-PLE-001", season: "FW25", dateAdded: "2026-05-25", description: "Tailored wide-leg trousers built in fine Italian tropical wool fabric.", variants: [
-    { id: "VAR-019", name: "Black", sku: "DD-PLE-001-BLK", mrp: 9999, discountPrice: 8499, stock: 16, active: true, sizes: ["28", "30", "32", "34"], image: null },
-    { id: "VAR-020", name: "Charcoal", sku: "DD-PLE-001-CHR", mrp: 9999, discountPrice: null, stock: 15, active: true, sizes: ["30", "32", "34"], image: null },
-  ] },
-  { id: "#DD-P009", name: "Tailored Linen Trousers", category: "Bottoms", price: 7999, cost: 2400, stock: 0, status: "Draft", sales: 0, revenue: 0, image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop", sku: "DD-TLT-002", season: "SS26", dateAdded: "2026-06-01", description: "Minimal cream trousers in durable organic linen yarn.", variants: [
-    { id: "VAR-021", name: "Cream", sku: "DD-TLT-002-CRM", mrp: 7999, discountPrice: null, stock: 0, active: true, sizes: ["30", "32", "34"], image: null },
-  ] },
-  { id: "#DD-P010", name: "Handwoven Silk Scarf", category: "Accessories", price: 3999, cost: 1200, stock: 120, status: "Active", sales: 534, revenue: 2135466, image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=120&auto=format&fit=crop", sku: "DD-SCF-001", season: "All", dateAdded: "2026-06-05", description: "Custom jacquard patterned silk scarf with frayed edge details.", variants: [
-    { id: "VAR-022", name: "Multicolor", sku: "DD-SCF-001-MCL", mrp: 3999, discountPrice: null, stock: 60, active: true, sizes: ["One Size"], image: null },
-    { id: "VAR-023", name: "Black/Gold", sku: "DD-SCF-001-BGD", mrp: 3999, discountPrice: 3499, stock: 60, active: true, sizes: ["One Size"], image: null },
-  ] },
-  { id: "#DD-P011", name: "Drip Doggy Varsity Jacket", category: "Signature", price: 19999, cost: 8000, stock: 7, status: "Active", sales: 89, revenue: 1779911, image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=120&auto=format&fit=crop", sku: "DD-VAR-001", season: "FW25", dateAdded: "2026-06-10", description: "High contrast leather-sleeve varsity jacket with chenille embroidery.", variants: [
-    { id: "VAR-024", name: "Black/White", sku: "DD-VAR-001-BWH", mrp: 19999, discountPrice: null, stock: 4, active: true, sizes: ["M", "L", "XL"], image: null },
-    { id: "VAR-025", name: "Navy/Red", sku: "DD-VAR-001-NRD", mrp: 19999, discountPrice: 17999, stock: 3, active: true, sizes: ["L", "XL"], image: null },
-  ] },
-  { id: "#DD-P012", name: "SS26 Linen Blend Jacket", category: "New Arrivals", price: 14499, cost: 5800, stock: 15, status: "Draft", sales: 0, revenue: 0, image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=120&auto=format&fit=crop", sku: "DD-SS26-002", season: "SS26", dateAdded: "2026-06-18", description: "Single-button soft tailored jacket ideal for warm climates.", variants: [
-    { id: "VAR-026", name: "Natural Linen", sku: "DD-SS26-002-NTL", mrp: 14499, discountPrice: null, stock: 8, active: true, sizes: ["S", "M", "L", "XL"], image: null },
-    { id: "VAR-027", name: "Stone", sku: "DD-SS26-002-STN", mrp: 14499, discountPrice: 12999, stock: 7, active: true, sizes: ["M", "L", "XL"], image: null },
-  ] },
+    { id: "VAR-006", name: "Charcoal", sku: "DD-CAS-001-CHR", mrp: 8999, discountType: "percentage", discountValue: 0, finalPrice: 8999, sizeStock: { "S": 10, "M": 15 }, active: true, sizes: ["S", "M"], images: ["https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=120&auto=format&fit=crop"] },
+    { id: "VAR-007", name: "Navy", sku: "DD-CAS-001-NVY", mrp: 8999, discountType: "value", discountValue: 1000, finalPrice: 7999, sizeStock: { "S": 12, "M": 10 }, active: true, sizes: ["S", "M"], images: [] },
+  ] }
 ];
 
 const categories = ["All", "Outerwear", "Knitwear", "Tops", "Bottoms", "Accessories", "Signature", "New Arrivals"];
@@ -132,8 +96,9 @@ export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>(sampleProducts);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Draft">("all");
-  const [stockFilter, setStockFilter] = useState<"all" | "in" | "low" | "out">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
+  const [checkedStocks, setCheckedStocks] = useState<string[]>(["in", "low", "out"]);
+  const [genderFilter, setGenderFilter] = useState<string>("All");
   
   // Sort State
   const [sortKey, setSortKey] = useState<keyof Product>("name");
@@ -150,15 +115,32 @@ export function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  const kpiData = useMemo(() => [
-    { label: "Total Products", value: products.length.toString(), desc: "Products in catalog", color: "text-[#382d24]" },
-    { label: "Active Products", value: products.filter(p => p.status === "Active").length.toString(), desc: "Visible on store", color: "text-[#224870]" },
-    { label: "Inactive Products", value: products.filter(p => p.status === "Draft").length.toString(), desc: "Hidden drafts", color: "text-[#615e56]" },
-    { label: "Out of Stock", value: products.filter(p => p.stock === 0).length.toString(), desc: "Needs replenishment", color: "text-[#b2533e]" },
-  ], [products]);
+  const getProductStockSum = (p: Product) => {
+    let sum = 0;
+    if (p.variants && p.variants.length > 0) {
+      p.variants.forEach(v => {
+        if (v.sizeStock) {
+          Object.values(v.sizeStock).forEach(qty => { sum += (Number(qty) || 0); });
+        }
+      });
+    } else {
+      sum = p.stock;
+    }
+    return sum;
+  };
 
-  const handleToggleStatus = (id: string) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: p.status === "Active" ? "Draft" : "Active" } : p));
+  const kpiData = useMemo(() => {
+    return [
+      { id: "all", label: "Total Products", value: products.length.toString(), desc: "Click to reset active status filter", color: "text-[#382d24]" },
+      { id: "active", label: "Active Products", value: products.filter(p => p.status === "Active").length.toString(), desc: "Click to show active products", color: "text-[#224870]" },
+      { id: "inactive", label: "Inactive Products", value: products.filter(p => p.status === "Inactive").length.toString(), desc: "Click to show inactive products", color: "text-[#615e56]" },
+      { id: "outofstock", label: "Out of Stock", value: products.filter(p => getProductStockSum(p) === 0).length.toString(), desc: "Click to filter out-of-stock items", color: "text-[#b2533e]" },
+    ];
+  }, [products]);
+
+  const handleToggleStatus = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Stops preview product modal from opening
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: p.status === "Active" ? "Inactive" : "Active" } : p));
   };
 
   const handleSort = (key: keyof Product) => {
@@ -178,21 +160,41 @@ export function ProductsPage() {
       filtered = filtered.filter(p => p.category === activeCategory);
     }
 
+    // Gender Category Filter
+    if (genderFilter !== "All") {
+      filtered = filtered.filter(p => {
+        const nameClean = p.name.toLowerCase();
+        if (genderFilter === "Women") {
+          return nameClean.includes("silk") || nameClean.includes("trench") || nameClean.includes("blouse") || nameClean.includes("jacket") || p.id === "#DD-P001" || p.id === "#DD-P002";
+        }
+        if (genderFilter === "Men") {
+          return nameClean.includes("crew") || nameClean.includes("cardigan") || nameClean.includes("hoodie") || nameClean.includes("shirt") || p.id === "#DD-P003";
+        }
+        if (genderFilter === "Unisex") {
+          return nameClean.includes("scarf") || nameClean.includes("varsity") || nameClean.includes("trousers");
+        }
+        return true;
+      });
+    }
+
     // Status Filter
     if (statusFilter === "Active") {
       filtered = filtered.filter(p => p.status === "Active");
-    } else if (statusFilter === "Draft") {
-      filtered = filtered.filter(p => p.status === "Draft");
+    } else if (statusFilter === "Inactive") {
+      filtered = filtered.filter(p => p.status === "Inactive");
     }
 
     // Stock Filter
-    if (stockFilter === "in") {
-      filtered = filtered.filter(p => p.stock > 10);
-    } else if (stockFilter === "low") {
-      filtered = filtered.filter(p => p.stock > 0 && p.stock <= 10);
-    } else if (stockFilter === "out") {
-      filtered = filtered.filter(p => p.stock === 0);
-    }
+    filtered = filtered.filter(p => {
+      const totalStock = getProductStockSum(p);
+      let currentLevel = "in";
+      if (totalStock === 0) {
+        currentLevel = "out";
+      } else if (totalStock <= 10) {
+        currentLevel = "low";
+      }
+      return checkedStocks.includes(currentLevel);
+    });
 
     // Search Query
     if (search) {
@@ -215,7 +217,7 @@ export function ProductsPage() {
     });
 
     return filtered;
-  }, [products, search, activeCategory, statusFilter, stockFilter, sortKey, sortDir]);
+  }, [products, search, activeCategory, genderFilter, statusFilter, checkedStocks, sortKey, sortDir]);
 
   // Paginated Products
   const paginatedProducts = useMemo(() => {
@@ -246,7 +248,7 @@ export function ProductsPage() {
     }
   };
 
-  const handleBulkStatusChange = (status: "Active" | "Draft") => {
+  const handleBulkStatusChange = (status: "Active" | "Inactive") => {
     setProducts(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, status } : p));
     setSelectedIds([]);
   };
@@ -254,7 +256,10 @@ export function ProductsPage() {
   const handleExportCSV = () => {
     const listToExport = selectedIds.length > 0 ? products.filter(p => selectedIds.includes(p.id)) : filteredProducts;
     const headers = ["Product ID,Name,SKU,Category,Price,Stock,Status,Date Added"];
-    const rows = listToExport.map(p => `${p.id},"${p.name}","${p.sku}",${p.category},${p.price},${p.stock},${p.status},${p.dateAdded}`);
+    const rows = listToExport.map(p => {
+      const sumStock = getProductStockSum(p);
+      return `${p.id},"${p.name}","${p.sku}",${p.category},${p.price},${sumStock},${p.status},${p.dateAdded}`;
+    });
     const csv = [...headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -263,20 +268,58 @@ export function ProductsPage() {
     a.download = `products-export-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };  return (
+  };
+
+  // Helper to check if a specific KPI filter is currently active
+  const isKpiSelected = (id: string) => {
+    if (id === "active") return statusFilter === "Active";
+    if (id === "inactive") return statusFilter === "Inactive";
+    if (id === "outofstock") return checkedStocks.length === 1 && checkedStocks[0] === "out";
+    return false;
+  };
+
+  // Click handler for KPI Cards to apply statuses/stock filtering dynamically
+  const handleKpiClick = (id: string) => {
+    if (id === "all") return; // Non-interactive
+    setCurrentPage(1);
+
+    if (id === "active") {
+      setStatusFilter(prev => prev === "Active" ? "all" : "Active");
+      setCheckedStocks(["in", "low", "out"]);
+    } else if (id === "inactive") {
+      setStatusFilter(prev => prev === "Inactive" ? "all" : "Inactive");
+      setCheckedStocks(["in", "low", "out"]);
+    } else if (id === "outofstock") {
+      setStatusFilter("all");
+      setCheckedStocks(prev => prev.length === 1 && prev[0] === "out" ? ["in", "low", "out"] : ["out"]);
+    }
+  };
+
+  return (
     <div className="space-y-6 font-sans text-[#382d24]">
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Interactive Filters) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpiData.map((kpi, idx) => (
-          <div key={idx} className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[90px] hover:shadow-sm transition-shadow">
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">{kpi.label}</span>
-            <div className="mt-1">
-              <span className={`text-2xl font-bold tracking-tight ${kpi.color} whitespace-nowrap`}>{kpi.value}</span>
+        {kpiData.map((kpi) => {
+          const selected = isKpiSelected(kpi.id);
+          const isInteractive = kpi.id !== "all";
+          return (
+            <div
+              key={kpi.id}
+              onClick={() => isInteractive && handleKpiClick(kpi.id)}
+              className={`bg-card border p-5 flex flex-col justify-between min-h-[90px] transition-all duration-300 ${
+                isInteractive ? "cursor-pointer hover:shadow-md" : ""
+              } ${
+                selected ? "border-[#224870] border-2 shadow-xs bg-[#224870]/5" : "border-neutral-200/80"
+              }`}
+            >
+              <span className="text-[10px] font-black tracking-[0.15em] text-[#615e56] uppercase">{kpi.label}</span>
+              <div className="mt-2">
+                <span className={`text-3xl font-black tracking-tight ${kpi.color} whitespace-nowrap`}>{kpi.value}</span>
+              </div>
             </div>
-            <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1">{kpi.desc}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Bulk Actions / Selection Bar */}
@@ -289,8 +332,8 @@ export function ProductsPage() {
             <button onClick={() => handleBulkStatusChange("Active")} className="bg-transparent border border-white/30 text-white hover:border-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer transition-all">
               Bulk Activate
             </button>
-            <button onClick={() => handleBulkStatusChange("Draft")} className="bg-transparent border border-white/30 text-white hover:border-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer transition-all">
-              Bulk Draft
+            <button onClick={() => handleBulkStatusChange("Inactive")} className="bg-transparent border border-white/30 text-white hover:border-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer transition-all">
+              Bulk Deactivate
             </button>
             <button onClick={handleBulkDelete} className="bg-[#b2533e] hover:bg-red-800 text-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none transition-all">
               Bulk Delete
@@ -307,95 +350,129 @@ export function ProductsPage() {
         
         {/* Filter Section */}
         <div className="p-6 border-b border-neutral-200/60 space-y-6">
-          {/* Row 1: Collections Navigation */}
-          <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-[#615e56] uppercase tracking-widest mb-3">
-              <Tags className="w-3.5 h-3.5 text-[#224870]" /> Collections / Departments
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-3 border-b border-neutral-200/60 pb-3">
-              {categories.map(cat => {
-                const isActive = activeCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => { setActiveCategory(cat); setCurrentPage(1); }}
-                    className={`relative pb-2 text-[10px] font-black uppercase tracking-wider cursor-pointer border-none bg-transparent transition-all ${
-                      isActive ? "text-[#224870] font-black" : "text-[#615e56]/80 hover:text-[#382d24]"
-                    }`}
-                  >
-                    {cat}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#224870]" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Row 2: Search on the left, filters on the right (Highly visible layout) */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          
+          {/* Top Row: Search, Categories, Inventory dropdown, Export, and Add Product */}
+          <div className="flex flex-wrap items-center gap-4">
             
-            <div className="flex flex-wrap items-center gap-4 flex-1">
-              {/* Search Input (Left side, solid visible border) */}
-              <div className="relative w-full md:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#382d24]" />
-                <input
-                  type="text"
-                  placeholder="SEARCH CATALOG (NAME, SKU, ID)..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="bg-card border-2 border-neutral-300 focus:border-[#224870] pl-10 pr-4 py-2.5 text-[9.5px] font-black uppercase tracking-wider placeholder-[#736e64] w-full outline-none transition-all text-[#382d24]"
-                />
-              </div>
-
-              {/* Sub-attribute select drop-downs */}
-              <div className="flex flex-wrap gap-4 items-center">
-                {/* Status segment filter */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-bold text-[#615e56] uppercase tracking-widest">Status:</span>
-                  <div className="flex bg-card border border-neutral-300 p-0.5">
-                    {(["all", "Active", "Draft"] as const).map(s => (
-                      <button
-                        key={s}
-                        onClick={() => { setStatusFilter(s); setCurrentPage(1); }}
-                        className={`px-3 py-1.5 text-[8.5px] font-black tracking-widest uppercase border-none cursor-pointer transition-all ${
-                          statusFilter === s ? "bg-[#224870] text-white" : "bg-transparent text-[#615e56] hover:text-[#382d24]"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Stock Levels Filter (themed dropdown select) */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-bold text-[#615e56] uppercase tracking-widest">Inventory:</span>
-                  <select
-                    value={stockFilter}
-                    onChange={(e) => { setStockFilter(e.target.value as any); setCurrentPage(1); }}
-                    className="bg-card border-2 border-neutral-300 px-3 py-2 text-[9px] font-black uppercase tracking-widest focus:outline-none focus:border-[#224870] cursor-pointer text-[#382d24] transition-all"
-                  >
-                    <option value="all">All Levels</option>
-                    <option value="in">In Stock (&gt; 10)</option>
-                    <option value="low">Low Stock (1-10)</option>
-                    <option value="out">Out of Stock (0)</option>
-                  </select>
-                </div>
-              </div>
+            {/* 1. Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#382d24]" />
+              <input
+                type="text"
+                placeholder="Search catalog..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                className="bg-card border-2 border-neutral-300 focus:border-[#224870] pl-9 pr-3 py-2 text-[9.5px] font-black uppercase tracking-wider placeholder-[#736e64] w-full outline-none transition-all text-[#382d24]"
+              />
             </div>
 
-            {/* Action buttons inline */}
-            <div className="flex items-center gap-2 self-start xl:self-auto">
-              <button onClick={handleExportCSV} className="bg-card hover:bg-neutral-100 border border-neutral-200 text-[#382d24] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none">
+            {/* 2. Category Selector Dropdown */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-[#615e56] uppercase tracking-widest shrink-0">Category:</span>
+              <select
+                value={genderFilter}
+                onChange={(e) => {
+                  setGenderFilter(e.target.value);
+                  setActiveCategory("All");
+                  setCurrentPage(1);
+                }}
+                className="bg-card border-2 border-neutral-300 px-3 py-2 text-[9px] font-black uppercase tracking-widest focus:outline-none focus:border-[#224870] cursor-pointer text-[#382d24] transition-all"
+              >
+                <option value="All">All Categories</option>
+                <option value="Women">Women</option>
+                <option value="Men">Men</option>
+                <option value="Unisex">Unisex</option>
+              </select>
+            </div>
+
+            {/* 3. Stock Level Selector Dropdown */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-[#615e56] uppercase tracking-widest shrink-0">Inventory:</span>
+              <select
+                value={checkedStocks.length === 3 ? "all" : checkedStocks[0] || "all"}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "all") {
+                    setCheckedStocks(["in", "low", "out"]);
+                  } else {
+                    setCheckedStocks([val]);
+                  }
+                  setCurrentPage(1);
+                }}
+                className="bg-card border-2 border-neutral-300 px-3 py-2 text-[9px] font-black uppercase tracking-widest focus:outline-none focus:border-[#224870] cursor-pointer text-[#382d24] transition-all"
+              >
+                <option value="all">All Levels</option>
+                <option value="in">In Stock</option>
+                <option value="low">Low Stock</option>
+                <option value="out">Out of Stock</option>
+              </select>
+            </div>
+
+            {/* Spacer to push action buttons right on large screens */}
+            <div className="flex-1 min-w-0 md:block hidden" />
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={handleExportCSV} className="bg-card hover:bg-neutral-100 border border-neutral-200 text-[#382d24] text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none">
                 <Download className="w-3.5 h-3.5" /> Export CSV
               </button>
-              <button onClick={() => navigate("/admin/products/new")} className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none border-none">
+              <button onClick={() => navigate("/admin/products/new")} className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none border-none">
                 <Plus className="w-3.5 h-3.5" /> Add Product
               </button>
             </div>
 
+          </div>
+
+          {/* Bottom Row: Dynamic Subcategories Navigation based on Category selection */}
+          <div className="border-t border-neutral-200/40 pt-4 space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black text-[#615e56] uppercase tracking-widest shrink-0">Subcategories:</span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => { setActiveCategory("All"); setCurrentPage(1); }}
+                  className={`px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider cursor-pointer transition-all border ${
+                    activeCategory === "All"
+                      ? "bg-[#224870] border-[#224870] text-white"
+                      : "bg-transparent border-neutral-200 text-[#615e56] hover:border-neutral-400"
+                  }`}
+                >
+                  All 
+                </button>
+
+                {(() => {
+                  // Get subcategories map matching category Selection
+                  let list: string[] = [];
+                  if (genderFilter === "Women") {
+                    list = ["Dresses", "Tops", "Knitwear"];
+                  } else if (genderFilter === "Men") {
+                    list = ["Shirts", "Outerwear"];
+                  } else if (genderFilter === "Unisex") {
+                    list = ["Bags", "Accessories"];
+                  } else {
+                    list = ["Dresses", "Tops", "Knitwear", "Shirts", "Outerwear", "Bags", "Accessories"];
+                  }
+
+                  return list.map(sub => {
+                    const isActive = activeCategory === sub;
+                    return (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => { setActiveCategory(sub); setCurrentPage(1); }}
+                        className={`px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider cursor-pointer transition-all border ${
+                          isActive
+                            ? "bg-[#224870] border-[#224870] text-white"
+                            : "bg-transparent border-neutral-200 text-[#615e56] hover:border-neutral-400"
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -442,61 +519,61 @@ export function ProductsPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[12px] font-black text-[#382d24] tracking-wide truncate">{product.name}</p>
-                        <p className="text-[8px] text-[#736e64] font-mono tracking-wider mt-0.5 flex flex-wrap items-center gap-1.5">
-                          <span className="font-bold text-[#382d24]">{product.id}</span>
-                          <span className="w-1 h-1 rounded-full bg-neutral-300" />
-                          <span>{product.sku}</span>
-                          <span className="w-1 h-1 rounded-full bg-neutral-300" />
-                          <span className="text-neutral-400 font-bold uppercase">{product.category}</span>
-                          <span className="w-1 h-1 rounded-full bg-neutral-300" />
-                          <span className="text-neutral-400 font-bold uppercase">{product.season}</span>
+                        <p className="text-[9px] text-[#224870] font-black uppercase tracking-wider mt-1 flex items-center gap-1">
+                          <span>{product.variants?.length || 0} {product.variants?.length === 1 ? 'Variant' : 'Variants'}</span>
                         </p>
-                        {/* Variant Chips */}
-                        {product.variants && product.variants.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                            {product.variants.filter(v => v.active).map(v => (
-                              <span key={v.id} className="inline-flex items-center gap-1 text-[7.5px] font-bold tracking-wider bg-white border border-neutral-200 px-1.5 py-0.5 uppercase">
-                                <span className={`w-2 h-2 rounded-full border border-neutral-300 inline-block ${v.name === 'Black' ? 'bg-black' : v.name === 'Camel' ? 'bg-amber-600' : v.name === 'Olive' ? 'bg-green-700' : v.name === 'Ivory' ? 'bg-amber-50' : v.name === 'Charcoal' ? 'bg-gray-600' : v.name === 'Navy' ? 'bg-blue-900' : v.name === 'Burgundy' ? 'bg-red-900' : v.name === 'Blush' ? 'bg-pink-300' : v.name === 'White' ? 'bg-white' : v.name === 'Cream' ? 'bg-yellow-50' : v.name === 'Multicolor' ? 'bg-gradient-to-r from-red-400 via-blue-400 to-green-400' : v.name === 'Black/White' ? 'bg-gradient-to-r from-black to-white' : v.name === 'Navy/Red' ? 'bg-gradient-to-r from-blue-900 to-red-600' : v.name === 'Natural Linen' ? 'bg-yellow-100' : v.name === 'Stone' ? 'bg-stone-300' : v.name === 'Black/Gold' ? 'bg-gradient-to-r from-black to-yellow-500' : 'bg-neutral-400'}`} />
-                                {v.name}
-                                {v.sizes.length > 0 && (
-                                  <span className="text-[6.5px] text-neutral-400 font-mono ml-0.5">
-                                    ({v.sizes.join(", ")})
-                                  </span>
-                                )}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </td>
-                  <td className="py-5 px-3 font-black text-[#382d24] text-[11px]">{RS}{product.price.toLocaleString("en-IN")}</td>
-                  <td className="py-5 px-3">
-                    {product.stock === 0 ? (
-                      <span className="text-[7.5px] font-black tracking-widest bg-red-50 border border-red-200/80 px-2 py-0.5 text-red-700 rounded-sm">
-                        OUT OF STOCK
-                      </span>
-                    ) : product.stock < 10 ? (
-                      <span className="text-[7.5px] font-black tracking-widest bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-amber-700 rounded-sm">
-                        LOW ({product.stock})
-                      </span>
+                  <td className="py-5 px-3 font-black text-[#382d24] text-[11px]">
+                    {product.variants && product.variants.length > 0 ? (
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] text-neutral-400 font-bold"><span className="text-[#382d24]">{RS}{Math.min(...product.variants.map(v => v.finalPrice)).toLocaleString("en-IN")}</span></div>
+                        <div className="text-[7.5px] text-[#615e56]/80 font-bold uppercase tracking-wider">Starts From</div>
+                      </div>
                     ) : (
-                      <span className="font-bold text-[#382d24] bg-neutral-50 border border-neutral-200 px-2 py-0.5 text-[8px]">
-                        {product.stock} Units
-                      </span>
+                      <span>{RS}{product.price.toLocaleString("en-IN")}</span>
                     )}
                   </td>
                   <td className="py-5 px-3">
+                    {(() => {
+                      // Sum all quantities across all sizes for all variants
+                      let totalStock = 0;
+                      if (product.variants && product.variants.length > 0) {
+                        product.variants.forEach(v => {
+                          if (v.sizeStock) {
+                            Object.values(v.sizeStock).forEach(qty => {
+                              totalStock += (Number(qty) || 0);
+                            });
+                          }
+                        });
+                      } else {
+                        totalStock = product.stock;
+                      }
+
+                      return totalStock === 0 ? (
+                        <span className="text-[7.5px] font-black tracking-widest bg-red-50 border border-red-200/80 px-2 py-0.5 text-red-700 rounded-sm">
+                          OUT OF STOCK
+                        </span>
+                      ) : totalStock < 10 ? (
+                        <span className="text-[7.5px] font-black tracking-widest bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-amber-700 rounded-sm">
+                          LOW ({totalStock})
+                        </span>
+                      ) : (
+                        <span className="font-bold text-[#382d24] bg-neutral-50 border border-neutral-200 px-2 py-0.5 text-[8px]">
+                          {totalStock} Units
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className="py-5 px-3">
                     <div className="flex items-center gap-2">
-                      <ToggleSwitch enabled={product.status === "Active"} onClick={() => handleToggleStatus(product.id)} />
+                      <ToggleSwitch enabled={product.status === "Active"} onClick={(e) => handleToggleStatus(product.id, e)} />
                       <span className={`text-[8px] font-black tracking-widest ${product.status === "Active" ? "text-green-700" : "text-amber-700"}`}>{product.status}</span>
                     </div>
                   </td>
                   <td className="py-5 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); setPreviewProduct(product); }} title="Quick Preview" className="text-neutral-400 hover:text-[#224870] hover:bg-[#224870]/10 p-2 bg-transparent border-none cursor-pointer rounded-xs transition-all">
-                        <Eye className="w-4 h-4" />
-                      </button>
                       <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/products/edit/${product.id.replace("#", "")}`); }} title="Edit Product" className="text-neutral-400 hover:text-[#224870] hover:bg-[#224870]/10 p-2 bg-transparent border-none cursor-pointer rounded-xs transition-all">
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -644,58 +721,92 @@ export function ProductsPage() {
                   <h4 className="text-[10px] font-black text-[#615e56] uppercase tracking-widest mb-3">
                     Product Variants ({previewProduct.variants.length})
                   </h4>
-                  <div className="space-y-3">
-                    {previewProduct.variants.map(v => (
-                      <div key={v.id} className={`border ${v.active ? 'border-neutral-200' : 'border-neutral-200/50 bg-neutral-50/50'} p-4`}>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          {/* Variant Image */}
-                          <div className="w-16 h-16 bg-neutral-100 border border-neutral-200 overflow-hidden shrink-0">
-                            {v.image ? (
-                              <img src={v.image} alt={v.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-neutral-300 uppercase">No img</div>
-                            )}
-                          </div>
-                          
-                          {/* Variant Details */}
-                          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
-                            <div>
-                              <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Variant</span>
-                              <span className="text-[10px] font-bold text-[#382d24] flex items-center gap-1.5">
-                                {!v.active && <span className="text-[7px] text-amber-600 font-bold">(Inactive)</span>}
-                                {v.name}
-                              </span>
+                  <div className="space-y-4">
+                    {previewProduct.variants.map(v => {
+                      // Sum this variant's stock
+                      const totalVariantStock = v.sizeStock ? Object.values(v.sizeStock).reduce((sum, val) => sum + (Number(val) || 0), 0) : 0;
+                      return (
+                        <div key={v.id} className={`border ${v.active ? 'border-neutral-200' : 'border-neutral-200/50 bg-neutral-50/50'} p-5 space-y-4`}>
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            {/* Variant Gallery */}
+                            <div className="flex gap-1.5 overflow-x-auto shrink-0 py-0.5 max-w-full sm:max-w-[200px]">
+                              {v.images && v.images.length > 0 ? (
+                                v.images.map((img, imgIdx) => (
+                                  <div key={imgIdx} className="w-14 h-14 bg-neutral-100 border border-neutral-200 shrink-0">
+                                    <img src={img} alt={`${v.name} asset ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="w-14 h-14 bg-neutral-50 border border-neutral-200 shrink-0 flex items-center justify-center text-[7.5px] font-bold text-neutral-300 uppercase">No Img</div>
+                              )}
                             </div>
-                            <div>
-                              <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">SKU</span>
-                              <span className="text-[9px] font-bold text-[#382d24] font-mono">{v.sku}</span>
-                            </div>
-                            <div>
-                              <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">MRP</span>
-                              <span className="text-[10px] font-black text-[#382d24]">{RS}{v.mrp.toLocaleString("en-IN")}</span>
-                            </div>
-                            <div>
-                              <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Discount Price</span>
-                              <span className={`text-[10px] font-black ${v.discountPrice ? 'text-green-700' : 'text-neutral-400'}`}>
-                                {v.discountPrice ? `${RS}${v.discountPrice.toLocaleString("en-IN")}` : '—'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Stock</span>
-                              <span className={`text-[10px] font-black ${v.stock === 0 ? 'text-red-600' : 'text-[#382d24]'}`}>{v.stock}</span>
-                            </div>
-                            <div className="sm:col-span-2 lg:col-span-1">
-                              <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Available Sizes</span>
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {v.sizes.map(s => (
-                                  <span key={s} className="text-[8px] font-bold bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[#382d24]">{s}</span>
-                                ))}
+                            
+                            {/* Variant Details */}
+                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2.5">
+                              <div>
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Variant Name</span>
+                                <span className="text-[10px] font-bold text-[#382d24] flex items-center gap-1.5">
+                                  {!v.active && <span className="text-[7px] text-amber-600 font-bold">(Inactive)</span>}
+                                  {v.name}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">SKU</span>
+                                <span className="text-[9px] font-bold text-[#382d24] font-mono">{v.sku}</span>
+                              </div>
+                              <div>
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">MRP</span>
+                                <span className="text-[10px] font-black text-[#382d24]">{RS}{v.mrp.toLocaleString("en-IN")}</span>
+                              </div>
+                              <div>
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Discount</span>
+                                <span className="text-[9px] font-bold text-green-700">
+                                  {v.discountValue > 0 ? (
+                                    v.discountType === "percentage" ? `${v.discountValue}% Off` : `${RS}${v.discountValue} Off`
+                                  ) : "No discount"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Final Price</span>
+                                <span className="text-[10px] font-black text-[#224870]">{RS}{v.finalPrice.toLocaleString("en-IN")}</span>
+                              </div>
+                              <div>
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Total Stock</span>
+                                <span className={`text-[10px] font-black ${totalVariantStock === 0 ? 'text-red-600' : 'text-[#382d24]'}`}>{totalVariantStock} Units</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Available Sizes</span>
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {v.sizes.map(s => (
+                                    <span key={s} className="text-[8px] font-bold bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[#382d24]">{s}</span>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
+
+                          {/* Stock Breakdowns by Sizes */}
+                          {v.sizes.length > 0 && (
+                            <div className="border-t border-neutral-100 pt-3 bg-neutral-50/50 p-2.5 space-y-1.5">
+                              <span className="text-[8px] text-[#615e56] uppercase font-bold tracking-wider block">Inventory Breakdown by Size</span>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                {v.sizes.map(size => {
+                                  const sizeStockVal = v.sizeStock ? v.sizeStock[size] : 0;
+                                  return (
+                                    <div key={size} className="bg-white border border-neutral-200 px-2 py-1 flex items-center justify-between text-[8.5px]">
+                                      <span className="font-extrabold text-[#615e56]">{size}:</span>
+                                      <span className={`font-black ${Number(sizeStockVal) === 0 ? 'text-red-600' : 'text-[#382d24]'}`}>
+                                        {sizeStockVal !== undefined ? sizeStockVal : 0}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

@@ -152,18 +152,34 @@ export function CategoriesPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void, isSub = false) => {
     const files = e.target.files;
     if (files && files[0]) {
-      if (isSub) {
-        setSubImageFile(files[0]);
-      } else {
-        setCatImageFile(files[0]);
-      }
+      const file = files[0];
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          setter(event.target.result as string);
+          const base64Url = event.target.result as string;
+          if (isSub) {
+            // For subcategories, standard resolution mapping can be skipped or relaxed
+            setSubImageFile(file);
+            setter(base64Url);
+          } else {
+            // Validate Category Image banner matches 800x1000 pixels
+            const img = new Image();
+            img.onload = () => {
+              if (img.width !== 800 || img.height !== 1000) {
+                alert(`Error: Image dimensions are ${img.width}x${img.height}px. Category images must be exactly 800x1000 pixels.`);
+                if (e.target) e.target.value = ""; // clear file input
+                setter("");
+                setCatImageFile(null);
+              } else {
+                setCatImageFile(file);
+                setter(base64Url);
+              }
+            };
+            img.src = base64Url;
+          }
         }
       };
-      reader.readAsDataURL(files[0]);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -182,6 +198,10 @@ export function CategoriesPage() {
   const handleAddCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!catLabel.trim()) return;
+    if (!catBannerImage) {
+      alert("Please upload a category banner image matching 800x1000 pixels.");
+      return;
+    }
 
     try {
       const added = await categoryApi.addCategory(
@@ -703,7 +723,7 @@ export function CategoriesPage() {
                 <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} placeholder="Category description..." rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-normal lowercase">(800x1000 pixels)</span></label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
@@ -712,8 +732,11 @@ export function CategoriesPage() {
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage, false)} />
                 </div>
                 {catBannerImage && (
-                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
-                    <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="mt-3 flex flex-col items-center bg-neutral-50 p-2.5 border border-neutral-200">
+                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000)</span>
+                    <div className="w-[140px] h-[175px] border border-neutral-200 overflow-hidden shrink-0 relative bg-neutral-100 shadow-sm">
+                      <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
                   </div>
                 )}
               </div>
@@ -746,7 +769,7 @@ export function CategoriesPage() {
                 <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image</label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-normal lowercase">(800x1000 pixels)</span></label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
@@ -755,8 +778,11 @@ export function CategoriesPage() {
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCatBannerImage, false)} />
                 </div>
                 {catBannerImage && (
-                  <div className="mt-2 w-full aspect-[16/6] border border-neutral-200/60 overflow-hidden bg-neutral-50">
-                    <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="mt-3 flex flex-col items-center bg-neutral-50 p-2.5 border border-neutral-200">
+                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000)</span>
+                    <div className="w-[140px] h-[175px] border border-neutral-200 overflow-hidden shrink-0 relative bg-neutral-100 shadow-sm">
+                      <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
                   </div>
                 )}
               </div>
