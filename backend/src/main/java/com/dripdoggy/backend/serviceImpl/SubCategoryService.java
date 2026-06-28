@@ -46,6 +46,7 @@ public class SubCategoryService implements ISubCategoryService {
         subCategory.setSubcategoryName(subCategoryDto.getSubcategoryName());
         subCategory.setDescription(subCategoryDto.getDescription());
         subCategory.setIsActive(subCategoryDto.getIsActive() != null ? subCategoryDto.getIsActive() : true);
+        subCategory.setIsDeleted(false);
 
         if (subCategoryDto.getImage() != null && !subCategoryDto.getImage().isEmpty()) {
             try {
@@ -70,7 +71,7 @@ public class SubCategoryService implements ISubCategoryService {
 
     @Override
     public SubCategoryListResponseDto fetchAllSubCategories() {
-        List<SubCategory> subCategories = subCategoryRepository.findAll();
+        List<SubCategory> subCategories = subCategoryRepository.findAllActiveSubCategories();
         List<SubCategoryResponseDto> responseDtos = subCategories.stream()
                 .map(this::mapToSubCategoryResponseDto)
                 .collect(Collectors.toList());
@@ -81,6 +82,9 @@ public class SubCategoryService implements ISubCategoryService {
     public SubCategoryDetailsResponseDto fetchSubCategoryById(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
                 .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
+        if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
+            throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+        }
         SubCategoryResponseDto responseDto = mapToSubCategoryResponseDto(subCategory);
         return new SubCategoryDetailsResponseDto(200, "Subcategory fetched successfully", responseDto);
     }
@@ -89,6 +93,9 @@ public class SubCategoryService implements ISubCategoryService {
     public ResponseMsgDto updateSubCategory(Long id, SubCategoryRequestDto subCategoryDto) {
         SubCategory subCategory = subCategoryRepository.findById(id)
                 .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
+        if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
+            throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+        }
 
         if (subCategoryDto.getImage() != null && !subCategoryDto.getImage().isEmpty()) {
             try {
@@ -122,6 +129,7 @@ public class SubCategoryService implements ISubCategoryService {
     public ResponseMsgDto deleteSubCategory(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
                 .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found"));
+        subCategory.setIsDeleted(true);
         subCategory.setIsActive(false);
         subCategoryRepository.save(subCategory);
         return new ResponseMsgDto(200, subCategory.getSubcategoryName() + " Subcategory deleted successfully");
@@ -131,6 +139,9 @@ public class SubCategoryService implements ISubCategoryService {
     public ResponseMsgDto toggleSubCategoryIsActive(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
                 .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
+        if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
+            throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+        }
 
         boolean newActiveStatus = subCategory.getIsActive() == null || !subCategory.getIsActive();
         subCategory.setIsActive(newActiveStatus);

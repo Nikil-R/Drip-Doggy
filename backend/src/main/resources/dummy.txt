@@ -1,1 +1,20 @@
 dummy filee for aws testinggggggggggggggggg
+application.properties
+
+SMS is not working on MObile number pls check 
+
+
+
+We differentiate them cleanly at the routing (controller) level based on which API endpoint the frontend requests:
+
+Different URL Endpoints:
+
+Standard users register by calling: POST /api/auth/register
+Admin users register by calling: POST /api/auth/admin/register
+Role Injection at Controller: Inside 
+
+AuthController, the controller checks the endpoint requested and sets the corresponding enum value:
+
+In the /register handler: it forces request.setRole(UserRole.CUSTOMER);
+In the /admin/register handler: it forces request.setRole(UserRole.ADMIN);
+Unified Service Invocation: Both endpoints then call the same service method: authService.register(request).

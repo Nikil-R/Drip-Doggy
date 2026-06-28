@@ -36,10 +36,14 @@ public class SmsService {
     }
 
     public void sendOtpSms(String phoneNumber, String otpCode) {
+        String formattedPhoneNumber = phoneNumber;
+        if (!phoneNumber.startsWith("+")) {
+            formattedPhoneNumber = "+" + phoneNumber;
+        }
         String message = "Your OTP code is: " + otpCode;
         PublishRequest request = PublishRequest.builder()
                 .message(message)
-                .phoneNumber(phoneNumber)
+                .phoneNumber(formattedPhoneNumber)
                 .build();
         snsClient.publish(request);
     }

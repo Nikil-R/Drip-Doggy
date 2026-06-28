@@ -58,10 +58,34 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ResponseMsgDto> handleBadRequest(BadRequestException ex) {
+    @ExceptionHandler(DuplicateCategoryFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handleDuplicateCategoryFound(DuplicateCategoryFoundException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidCountryCodeException.class)
+    public ResponseEntity<ResponseMsgDto> handleInvalidCountryCode(InvalidCountryCodeException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EmailNotFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handleEmailNotFound(EmailNotFoundException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(PhoneNotFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handlePhoneNotFound(PhoneNotFoundException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ResponseMsgDto> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.CONFLICT.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(org.springframework.validation.BindException.class)
@@ -82,6 +106,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseMsgDto> handleFailedToUploadImage(FailedToUploadImageException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ResponseMsgDto> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+        String message = "Database error: constraint violation.";
+        if (ex.getRootCause() != null && ex.getRootCause().getMessage() != null) {
+            String rootMsg = ex.getRootCause().getMessage();
+            if (rootMsg.contains("Duplicate entry") || rootMsg.contains("ConstraintViolation") || rootMsg.contains("UK") || rootMsg.contains("duplicate key")) {
+                message = "A user with this email or phone number is already registered.";
+            }
+        }
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.CONFLICT.value(), message);
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(Exception.class)

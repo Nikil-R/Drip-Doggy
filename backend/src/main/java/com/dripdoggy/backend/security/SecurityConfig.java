@@ -33,7 +33,7 @@ public class SecurityConfig {
 
                 // Authorization Configuration
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").authenticated()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
