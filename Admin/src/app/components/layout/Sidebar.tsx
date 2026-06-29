@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/app/store/sidebar-store";
 import { useAuthStore } from "@/app/store/auth-store";
@@ -21,6 +21,7 @@ import {
   LayoutList,
   Zap,
   Sparkles,
+  Shield,
 } from "lucide-react";
 
 
@@ -47,7 +48,8 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/dashboard",    label: "Dashboard",       icon: LayoutDashboard },
       { to: "/admin/categories",   label: "Categories",      icon: FolderKanban },
       { to: "/admin/customers",    label: "Customers",       icon: Users },
-      { to: "/admin/orders",       label: "Orders",          icon: ShoppingBag },
+      { to: "/admin/roles",        label: "Members & Roles", icon: Shield },
+      { to: "/admin/orders",       icon: ShoppingBag,        label: "Orders" },
       { to: "/admin/coupons",      label: "Coupon Code",     icon: Ticket },
       { to: "/admin/transactions", label: "Payment Ledger",  icon: ArrowRightLeft },
     ],
@@ -100,6 +102,7 @@ const SECTION_META: Record<string, { bg: string; text: string; border: string; d
 export function Sidebar() {
   const { isCollapsed, toggle } = useSidebarStore();
   const { logout } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
     <aside
@@ -212,7 +215,10 @@ export function Sidebar() {
       {/* ── Bottom: Sign Out ───────────────────────────────────────────────── */}
       <div className="shrink-0 border-t border-neutral-200/70 p-3">
         <button
-          onClick={() => logout()}
+          onClick={() => {
+            logout();
+            navigate("/admin/login");
+          }}
           title="Sign Out"
           className={cn(
             "flex items-center gap-2 w-full px-3 py-2.5 text-[#b2533e] hover:text-white hover:bg-[#b2533e] border border-[#b2533e]/30 hover:border-[#b2533e] transition-all duration-150 cursor-pointer bg-transparent rounded-none",

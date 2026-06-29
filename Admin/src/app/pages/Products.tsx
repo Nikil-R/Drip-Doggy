@@ -528,8 +528,8 @@ export function ProductsPage() {
                   <td className="py-5 px-3 font-black text-[#382d24] text-[11px]">
                     {product.variants && product.variants.length > 0 ? (
                       <div className="space-y-0.5">
-                        <div className="text-[10px] text-neutral-400 font-bold"><span className="text-[#382d24]">{RS}{Math.min(...product.variants.map(v => v.finalPrice)).toLocaleString("en-IN")}</span></div>
                         <div className="text-[7.5px] text-[#615e56]/80 font-bold uppercase tracking-wider">Starts From</div>
+                        <div className="text-[10px] text-neutral-400 font-bold"><span className="text-[#382d24]">{RS}{Math.min(...product.variants.map(v => v.finalPrice)).toLocaleString("en-IN")}</span></div>
                       </div>
                     ) : (
                       <span>{RS}{product.price.toLocaleString("en-IN")}</span>

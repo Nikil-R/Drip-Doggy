@@ -1,149 +1,435 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuthStore } from "@/app/store/auth-store";
-import { LogIn, Eye, EyeOff, Shield } from "lucide-react";
+import { Shield, Key, Mail, Phone, Calendar, User, ArrowRight } from "lucide-react";
 
 export function LoginPage() {
-  const [email, setEmail] = useState("admin@dripdoggy.com");
-  const [password, setPassword] = useState("admin123");
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const { login } = useAuthStore();
-  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Form Fields
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState("Male");
+  const [dob, setDob] = useState("");
+
+  // OTP workflow flags
+  const [loginStep, setLoginStep] = useState<"email" | "otp">("email");
+  const [regStep, setRegStep] = useState<"email" | "email-otp" | "profile" | "phone-otp">("email");
+  const [emailOtp, setEmailOtp] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+
+  const handleSendEmailOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    if (!email) return;
     setLoading(true);
-    const success = await login(email, password);
-    setLoading(false);
-    if (success) {
-      navigate("/admin/dashboard");
-    } else {
-      setError("Invalid credentials. Try admin@dripdoggy.com / admin123");
+    setTimeout(() => {
+      setLoading(false);
+      if (activeTab === "login") {
+        setLoginStep("otp");
+      } else {
+        setRegStep("email-otp");
+      }
+    }, 800);
+  };
+
+  const handleVerifyEmailOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (emailOtp.length !== 6) {
+      setError("Please enter a valid 6-digit OTP.");
+      return;
     }
+    setLoading(true);
+    setTimeout(async () => {
+      setLoading(false);
+      setError("");
+      if (activeTab === "login") {
+        // Authenticate immediately
+        await login("admin@dripdoggy.com", "admin123");
+        navigate("/admin/dashboard");
+      } else {
+        setRegStep("profile");
+      }
+    }, 800);
+  };
+
+  const handleSendPhoneOtp = () => {
+    setError("");
+    if (!firstName.trim()) {
+      setError("First Name is required to complete profile.");
+      return;
+    }
+    if (!lastName.trim()) {
+      setError("Last Name is required to complete profile.");
+      return;
+    }
+    if (!dob) {
+      setError("Date of Birth is required to complete profile.");
+      return;
+    }
+    if (!phone.trim()) {
+      setError("Phone Number is required to complete profile.");
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setRegStep("phone-otp");
+    }, 800);
+  };
+
+  const handleVerifyPhoneOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phoneOtp.length !== 6) {
+      setError("Please enter a valid 6-digit SMS OTP.");
+      return;
+    }
+    setLoading(true);
+    setTimeout(async () => {
+      setLoading(false);
+      setError("");
+      // Perform mock registration and log in
+      await login("admin@dripdoggy.com", "admin123");
+      navigate("/admin/dashboard");
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-[#030213] flex items-center justify-center p-4 relative overflow-hidden">
-
-      {/* Decorative background pattern */}
-      <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute top-20 left-20 w-96 h-96 border border-white rounded-full" />
-        <div className="absolute bottom-20 right-20 w-64 h-64 border border-white rounded-full" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white rounded-full" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-6 font-sans text-foreground">
+      
+      {/* Decorative clean outline grid lines */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.05]">
+        <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(to right, var(--foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      <div className="w-full max-w-[420px] relative z-10">
-
-        {/* ── Logo + Header ────────────────────────────────────────── */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-card flex items-center justify-center mx-auto mb-5">
-            <span className="text-[#030213] font-bold text-xl tracking-tight">DD</span>
+      <div className="w-full max-w-[440px] relative z-10 space-y-8">
+        
+        {/* Logo Section */}
+        <div className="text-center space-y-3.5">
+          <div className="w-14 h-14 bg-card border border-border flex items-center justify-center mx-auto shadow-xs">
+            <span className="text-foreground font-black text-xl tracking-tighter">DD</span>
           </div>
-          <h1 className="text-2xl font-bold text-white uppercase tracking-widest">
-            Drip Doggy
-          </h1>
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1.5">
-            Admin Dashboard
-          </p>
+          <div>
+            <h1 className="text-xl font-[950] text-foreground uppercase tracking-widest">DRIP DOGGY</h1>
+            <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mt-1 block">Security Authority Portal</span>
+          </div>
         </div>
 
-        {/* ── Login Card ───────────────────────────────────────────── */}
-        <div className="bg-card p-8 border border-neutral-200/80">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Form Box */}
+        <div className="bg-card border border-border p-8 space-y-6 shadow-sm">
+          
+          {/* Top Tabs: Login vs Register */}
+          <div className="grid grid-cols-2 border-b border-border pb-3">
+            <button
+              onClick={() => {
+                setActiveTab("login");
+                setLoginStep("email");
+                setError("");
+              }}
+              className={`pb-2.5 text-[9.5px] font-black uppercase tracking-wider bg-transparent border-none cursor-pointer transition-all ${
+                activeTab === "login" ? "text-[#224870] border-b-2 border-[#224870]" : "text-muted-foreground/75"
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("register");
+                setRegStep("email");
+                setError("");
+              }}
+              className={`pb-2.5 text-[9.5px] font-black uppercase tracking-wider bg-transparent border-none cursor-pointer transition-all ${
+                activeTab === "register" ? "text-[#224870] border-b-2 border-[#224870]" : "text-muted-foreground/75"
+              }`}
+            >
+              Register
+            </button>
+          </div>
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-card border border-neutral-200 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300 uppercase tracking-wider"
-                placeholder="admin@dripdoggy.com"
-                required
-              />
+          {error && (
+            <div className="border border-red-200 bg-red-50/50 text-red-700 text-[8.5px] font-bold px-3.5 py-2.5 uppercase tracking-wider">
+              {error}
             </div>
+          )}
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="block text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-card border border-neutral-200 text-[9px] font-bold focus:outline-none focus:border-[#030213] transition-all placeholder-neutral-300 pr-10"
-                  placeholder="••••••••"
-                  required
-                />
+          {/* ────────────────── SIGN IN ────────────────── */}
+          {activeTab === "login" && (
+            <form onSubmit={loginStep === "email" ? handleSendEmailOtp : handleVerifyEmailOtp} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
+                  <input
+                    required
+                    disabled={loginStep === "otp"}
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="ENTER YOUR EMAIL..."
+                    className="w-full bg-background border border-border pl-10 pr-4 py-3 text-[10px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
+                  />
+                </div>
+              </div>
+
+              {loginStep === "otp" && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Enter 6-Digit OTP</label>
+                  <div className="relative">
+                    <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
+                    <input
+                      required
+                      autoFocus
+                      maxLength={6}
+                      type="text"
+                      value={emailOtp}
+                      onChange={e => setEmailOtp(e.target.value.replace(/\D/g, ""))}
+                      placeholder="E.G. 123456"
+                      className="w-full bg-background border border-border pl-10 pr-4 py-3 text-[10.5px] tracking-[0.45em] font-black focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none"
+                    />
+                  </div>
+                  <span className="text-[8px] text-muted-foreground/80 font-semibold block mt-1.5 uppercase">We sent a verification code to {email}.</span>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                {loginStep === "otp" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginStep("email");
+                      setEmailOtp("");
+                    }}
+                    className="border border-border hover:border-muted-foreground text-foreground text-[9.5px] font-bold tracking-widest px-4.5 py-3 uppercase bg-transparent cursor-pointer rounded-none transition-all"
+                  >
+                    Edit Email
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#030213] bg-transparent border-none cursor-pointer p-0"
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest py-3 uppercase transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer border-none rounded-none"
                 >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  {loading ? "Processing..." : loginStep === "email" ? "Verify OTP" : "Sign In"}
+                  {loginStep === "email" && <ArrowRight className="w-3.5 h-3.5" />}
                 </button>
               </div>
-            </div>
+            </form>
+          )}
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-[8px] font-bold text-neutral-500 uppercase tracking-wider cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="accent-[#030213] h-3 w-3"
-                />
-                Remember me
-              </label>
-              <button type="button" className="text-[8px] font-semibold text-neutral-400 hover:text-[#030213] uppercase tracking-wider bg-transparent border-none cursor-pointer">
-                Forgot password?
-              </button>
-            </div>
+          {/* ────────────────── REGISTER ────────────────── */}
+          {activeTab === "register" && (
+            <div className="space-y-4">
+              
+              {/* Step 1 & 2: Email and Email Verification OTP */}
+              {(regStep === "email" || regStep === "email-otp") && (
+                <form onSubmit={regStep === "email" ? handleSendEmailOtp : handleVerifyEmailOtp} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
+                      <input
+                        required
+                        disabled={regStep === "email-otp"}
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="ENTER REGISTRATION EMAIL..."
+                        className="w-full bg-background border border-border pl-10 pr-4 py-3 text-[10px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
+                      />
+                    </div>
+                  </div>
 
-            {/* Error */}
-            {error && (
-              <div className="border border-red-200 bg-red-50 text-red-700 text-[8px] font-semibold px-3 py-2.5 uppercase tracking-wider">
-                {error}
-              </div>
-            )}
+                  {regStep === "email-otp" && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Enter 6-Digit OTP</label>
+                      <div className="relative">
+                        <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
+                        <input
+                          required
+                          autoFocus
+                          maxLength={6}
+                          type="text"
+                          value={emailOtp}
+                          onChange={e => setEmailOtp(e.target.value.replace(/\D/g, ""))}
+                          placeholder="E.G. 123456"
+                          className="w-full bg-background border border-border pl-10 pr-4 py-3 text-[10.5px] tracking-[0.45em] font-black focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none"
+                        />
+                      </div>
+                    </div>
+                  )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest py-2.5 uppercase transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer border-none"
-            >
-              {loading ? (
-                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <LogIn className="h-3.5 w-3.5" />
+                  <div className="flex gap-2 pt-2">
+                    {regStep === "email-otp" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRegStep("email");
+                          setEmailOtp("");
+                        }}
+                        className="border border-border hover:border-muted-foreground text-foreground text-[9.5px] font-bold tracking-widest px-4.5 py-3 uppercase bg-transparent cursor-pointer rounded-none transition-all"
+                      >
+                        Edit Email
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest py-3 uppercase transition-colors disabled:opacity-50 cursor-pointer border-none rounded-none"
+                    >
+                      {loading ? "Processing..." : regStep === "email" ? "Verify OTP" : "Sign In"}
+                    </button>
+                  </div>
+                </form>
               )}
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
+
+              {/* Step 3 & 4: Profile Details & Phone OTP Verification */}
+              {(regStep === "profile" || regStep === "phone-otp") && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">First Name</label>
+                      <input
+                        required
+                        disabled={regStep === "phone-otp"}
+                        type="text"
+                        value={firstName}
+                        onChange={e => setFirstName(e.target.value)}
+                        placeholder="FIRST NAME"
+                        className="w-full bg-background border border-border px-3.5 py-2.5 text-[9.5px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Last Name</label>
+                      <input
+                        required
+                        disabled={regStep === "phone-otp"}
+                        type="text"
+                        value={lastName}
+                        onChange={e => setLastName(e.target.value)}
+                        placeholder="LAST NAME"
+                        className="w-full bg-background border border-border px-3.5 py-2.5 text-[9.5px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Gender</label>
+                      <select
+                        value={gender}
+                        disabled={regStep === "phone-otp"}
+                        onChange={e => setGender(e.target.value)}
+                        className="w-full bg-background border border-border px-3.5 py-2.5 text-[9.5px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground cursor-pointer rounded-none transition-all disabled:opacity-75"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Date of Birth</label>
+                      <input
+                        required
+                        disabled={regStep === "phone-otp"}
+                        type="date"
+                        value={dob}
+                        onChange={e => setDob(e.target.value)}
+                        className="w-full bg-background border border-border px-3.5 py-2 text-[9.5px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground rounded-none transition-all disabled:opacity-75"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Phone Number</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
+                        <input
+                          required
+                          disabled={regStep === "phone-otp"}
+                          type="tel"
+                          value={phone}
+                          onChange={e => setPhone(e.target.value)}
+                          placeholder="PHONE NUMBER"
+                          className="w-full bg-background border border-border pl-10 pr-4 py-2.5 text-[9.5px] font-bold focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
+                        />
+                      </div>
+                      {regStep === "profile" && (
+                        <button
+                          type="button"
+                          onClick={handleSendPhoneOtp}
+                          className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[8.5px] font-bold tracking-widest px-4.5 py-2.5 uppercase cursor-pointer border-none shrink-0 rounded-none transition-colors"
+                        >
+                          Verify Phone
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {regStep === "phone-otp" && (
+                    <form onSubmit={handleVerifyPhoneOtp} className="space-y-4 pt-2">
+                      <div className="space-y-1.5 animate-fade-in">
+                        <label className="block text-[8.5px] font-bold text-muted-foreground uppercase tracking-widest">Enter SMS Verification OTP</label>
+                        <div className="relative">
+                          <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
+                          <input
+                            required
+                            autoFocus
+                            maxLength={6}
+                            type="text"
+                            value={phoneOtp}
+                            onChange={e => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                            placeholder="ENTER SMS OTP..."
+                            className="w-full bg-background border border-border pl-10 pr-4 py-3 text-[10.5px] tracking-[0.45em] font-black focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none"
+                          />
+                        </div>
+                        <span className="text-[8px] text-muted-foreground/80 font-semibold block mt-1.5 uppercase">We sent a verification SMS to {phone}.</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRegStep("profile");
+                            setPhoneOtp("");
+                          }}
+                          className="border border-border hover:border-muted-foreground text-foreground text-[9.5px] font-bold tracking-widest px-4.5 py-3 uppercase bg-transparent cursor-pointer rounded-none transition-all"
+                        >
+                          Edit Profile
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex-1 bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest py-3 uppercase transition-colors disabled:opacity-50 cursor-pointer border-none rounded-none"
+                        >
+                          {loading ? "Verifying..." : "Sign In"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
+
+            </div>
+          )}
+
         </div>
 
-        {/* ── Security note ────────────────────────────────────────── */}
-        <div className="mt-6 flex items-center justify-center gap-2">
-          <Shield className="w-3 h-3 text-neutral-500" />
-          <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider">
-            Secured with OAuth 2.0 &amp; 256-bit encryption
+        {/* Security Info */}
+        <div className="flex items-center justify-center gap-2">
+          <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-[8.5px] text-muted-foreground font-bold uppercase tracking-wider">
+            Secured passwordless token-auth protocol
           </span>
         </div>
 
-        {/* ── Footer ───────────────────────────────────────────────── */}
-        <p className="text-center text-[8px] text-neutral-600 font-bold uppercase tracking-widest mt-4">
-          Drip Doggy Admin Panel &copy; 2026 &middot; Mumbai, India
+        {/* Footer */}
+        <p className="text-center text-[8.5px] text-muted-foreground/70 font-bold uppercase tracking-widest mt-4">
+          Drip Doggy Admin Panel &copy; 2026
         </p>
 
       </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuthStore } from "@/app/store/auth-store";
 import {
   Shield,
   ShieldAlert,
@@ -112,32 +113,14 @@ export function RolesPage() {
   // ─── Drip Doggy Admin Users ────────────────────────────────────────────
   const [admins, setAdmins] = useState<AdminUser[]>([
     { id: "DD-ADM-001", name: "Nikil", email: "nikil@dripdoggy.com", role: "Super Admin", status: "Active", lastActive: "Just now", lastLoginIP: "103.24.12.87", permissionsCount: 27, twoFactorEnabled: true, department: "Executive" },
-    { id: "DD-ADM-002", name: "Ananya Sharma", email: "ananya@dripdoggy.com", role: "Collections Manager", status: "Active", lastActive: "2 hours ago", lastLoginIP: "192.168.1.15", permissionsCount: 18, twoFactorEnabled: true, department: "Cataloging" },
-    { id: "DD-ADM-003", name: "Rahul Verma", email: "rahul@dripdoggy.com", role: "Order Ops", status: "Active", lastActive: "Yesterday", lastLoginIP: "103.45.98.201", permissionsCount: 12, twoFactorEnabled: false, department: "Operations" },
-    { id: "DD-ADM-004", name: "Priya Kapoor", email: "priya@dripdoggy.com", role: "Marketing", status: "Pending", lastActive: "Invited 1 day ago", lastLoginIP: "—", permissionsCount: 6, twoFactorEnabled: false, department: "Marketing" },
-    { id: "DD-ADM-005", name: "Aditya Joshi", email: "aditya@dripdoggy.com", role: "Order Ops", status: "Inactive", lastActive: "5 days ago", lastLoginIP: "122.160.8.44", permissionsCount: 12, twoFactorEnabled: false, department: "Operations" },
-    { id: "DD-ADM-006", name: "Neha Gupta", email: "neha@dripdoggy.com", role: "View Only", status: "Active", lastActive: "3 days ago", lastLoginIP: "192.168.1.48", permissionsCount: 9, twoFactorEnabled: true, department: "Tech" }
+    { id: "DD-ADM-002", name: "Vinay", email: "vinay@dripdoggy.com", role: "Admin", status: "Active", lastActive: "2 hours ago", lastLoginIP: "192.168.1.15", permissionsCount: 18, twoFactorEnabled: true, department: "Tech" },
+    { id: "DD-ADM-003", name: "Jeshwanth", email: "jeshwanth@dripdoggy.com", role: "Admin", status: "Active", lastActive: "Yesterday", lastLoginIP: "103.45.98.201", permissionsCount: 18, twoFactorEnabled: false, department: "Operations" }
   ]);
 
   // ─── Drip Doggy Role Permission Matrices ───────────────────────────────
   const [rolePermissions, setRolePermissions] = useState<Record<string, RolePermission[]>>({
     "Super Admin": customSections.map(s => ({ module: s, read: true, write: true, delete: true })),
-    "Collections Manager": customSections.map(s => ({
-      module: s, read: true,
-      write: ["Products Management", "Content Editor", "Media & Assets"].includes(s),
-      delete: s === "Content Editor"
-    })),
-    "Order Ops": customSections.map(s => ({
-      module: s, read: true,
-      write: ["Order Management", "Customer Base", "Reviews & Feedback"].includes(s),
-      delete: false
-    })),
-    "Marketing": customSections.map(s => ({
-      module: s, read: true,
-      write: ["Dashboard & Analytics", "Coupons & Promotions", "Content Editor"].includes(s),
-      delete: false
-    })),
-    "View Only": customSections.map(s => ({ module: s, read: true, write: false, delete: false }))
+    "Admin": customSections.map(s => ({ module: s, read: true, write: true, delete: false }))
   });
 
   const togglePermission = (role: string, moduleIndex: number, type: "read" | "write" | "delete") => {
@@ -201,20 +184,24 @@ export function RolesPage() {
   const handleInviteAdmin = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const name = formData.get("name") as string;
+    const firstName = formData.get("firstName") as string;
+    const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
     const role = formData.get("role") as string;
-    const dept = formData.get("department") as any;
+    
+    const name = `${firstName} ${lastName}`;
 
     const newAdmin: AdminUser = {
       id: `DD-ADM-00${admins.length + 1}`,
-      name, email, role,
-      status: "Pending",
-      lastActive: "Invited just now",
+      name, 
+      email, 
+      role,
+      status: "Active",
+      lastActive: "Just now",
       lastLoginIP: "—",
-      permissionsCount: rolePermissions[role]?.filter(p => p.write).length * 3 || 9,
+      permissionsCount: rolePermissions[role]?.filter(p => p.write).length * 3 || 18,
       twoFactorEnabled: false,
-      department: dept
+      department: "Tech"
     };
 
     setAdmins(prev => [...prev, newAdmin]);
@@ -222,8 +209,8 @@ export function RolesPage() {
     const newLog: AuditLog = {
       timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
       user: "Nikil (Super Admin)",
-      action: "INVITE_STAFF",
-      details: `Invited ${name} (${role}) to ${dept} team`
+      action: "ADD_ADMIN",
+      details: `Added new Admin ${name} (${role})`
     };
     setAuditLogs(prev => [newLog, ...prev]);
 
@@ -299,44 +286,21 @@ export function RolesPage() {
     admin.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const { user } = useAuthStore();
   const roleList = Object.keys(rolePermissions);
   const activeCount = admins.filter(a => a.status === "Active").length;
   const pendingCount = admins.filter(a => a.status === "Pending").length;
   const twoFaRate = Math.round((admins.filter(a => a.twoFactorEnabled).length / admins.length) * 100);
 
-  return (
-    <div className="space-y-8 font-sans text-[#382d24]">
+  // Check if currently logged in user is in the existing admin list
+  const isExistingAdmin = admins.some(admin => admin.email.toLowerCase() === user?.email.toLowerCase());
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-neutral-200/60">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
-            <Shield className="w-5 h-5 text-[#224870]" /> Admin Roles
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Drip Doggy team permissions &amp; security control
-          </p>
-        </div>
-        <div className="flex gap-2.5">
-          <button
-            onClick={() => setShowAuditLogs(true)}
-            className="border border-neutral-300 hover:border-[#224870] text-[#382d24] hover:text-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase transition-colors cursor-pointer rounded-none bg-transparent flex items-center gap-1.5"
-          >
-            <Clock className="h-3.5 w-3.5" />
-            Audit Logs
-          </button>
-          <button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase transition-colors cursor-pointer rounded-none border-none flex items-center gap-1.5"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            Invite Admin
-          </button>
-        </div>
-      </div>
+  return (
+    <div className="space-y-6 font-sans text-[#382d24]">
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] rounded-none hover:shadow-sm transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Total Staff</span>
@@ -352,40 +316,16 @@ export function RolesPage() {
             <Shield className="w-4 h-4 text-[#615e56]/70" />
           </div>
           <p className="text-2xl font-bold tracking-tight text-[#382d24] mt-2">{roleList.length}</p>
-          <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">{roleList.slice(0, 2).join(", ")}...</p>
+          <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">{roleList.join(", ")}</p>
         </div>
 
         <div className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] rounded-none hover:shadow-sm transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Pending Invites</span>
+            <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Inactive Staff</span>
             <Mail className="w-4 h-4 text-[#615e56]/70" />
           </div>
-          <p className="text-2xl font-bold tracking-tight text-amber-700 mt-2">{pendingCount}</p>
-          <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">Awaiting activation</p>
-        </div>
-
-        <div className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] rounded-none hover:shadow-sm transition-shadow relative">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase flex items-center gap-1">
-              Security Score
-              <HelpCircle className="w-3.5 h-3.5 text-neutral-450 cursor-pointer" onClick={() => setShowSecurityTooltip(!showSecurityTooltip)} />
-            </span>
-            <ShieldAlert className="w-4 h-4 text-green-600" />
-          </div>
-          <p className="text-2xl font-bold tracking-tight text-green-700 mt-2">{twoFaRate}%</p>
-          <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">2FA Compliance Rate</p>
-
-          {showSecurityTooltip && (
-            <div className="absolute top-12 left-4 right-4 bg-[#382d24] text-[#faf8f5] text-[8.5px] uppercase tracking-wider p-4.5 z-10 border border-neutral-700 space-y-1.5">
-              <div className="flex justify-between font-bold border-b border-neutral-750 pb-1.5">
-                <span>Security matrix metadata</span>
-                <button onClick={() => setShowSecurityTooltip(false)} className="text-neutral-450 hover:text-white bg-transparent border-none p-0 cursor-pointer">✕</button>
-              </div>
-              <p>2FA active rate: {twoFaRate}%</p>
-              <p>Max Idle Session limit: 15m</p>
-              <p>IP restriction validation active</p>
-            </div>
-          )}
+          <p className="text-2xl font-bold tracking-tight text-neutral-500 mt-2">{admins.filter(a => a.status === "Inactive").length}</p>
+          <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">Revoked access entries</p>
         </div>
       </div>
 
@@ -394,13 +334,29 @@ export function RolesPage() {
 
         {/* Left Column: Admin Users Directory (Redesigned with Spacings and High-Contrast Actions) */}
         <div className="xl:col-span-8 bg-card border border-neutral-200/80 p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b border-neutral-200/60">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pb-4 border-b border-neutral-200/60">
             <span className="text-xs font-black uppercase tracking-widest text-[#382d24]">Team Directory</span>
-            <div className="relative">
-              <input type="text" placeholder="Search team..." value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#faf8f5] border border-neutral-300 focus:border-[#224870] pl-9.5 pr-4 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none placeholder-neutral-400 rounded-none w-56 text-[#382d24]" />
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#615e56]" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="relative">
+                <input type="text" placeholder="Search team..." value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-[#faf8f5] border border-neutral-300 focus:border-[#224870] pl-9.5 pr-4 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none placeholder-neutral-400 rounded-none w-56 text-[#382d24]" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#615e56]" />
+              </div>
+              <button
+                onClick={() => setShowAuditLogs(true)}
+                className="border border-neutral-300 hover:border-[#224870] text-[#382d24] hover:text-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase transition-colors cursor-pointer bg-transparent rounded-none flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                Audit Logs
+              </button>
+              <button
+                onClick={() => setIsInviteModalOpen(true)}
+                className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase transition-colors cursor-pointer rounded-none border-none flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                Add New Admin
+              </button>
             </div>
           </div>
 
@@ -408,11 +364,9 @@ export function RolesPage() {
             <table className="w-full text-left uppercase text-[9.5px] font-bold tracking-wider border-collapse">
               <thead>
                 <tr className="border-b border-neutral-200/60 bg-[#faf8f5]/60 text-[8.5px] text-[#615e56] tracking-[0.15em]">
-                  <th className="py-3.5 pl-4 pr-3 font-bold w-[32%]">User / Email</th>
-                  <th className="py-3.5 px-3 font-bold w-[23%]">Role &amp; Group</th>
-                  <th className="py-3.5 px-3 font-bold w-[15%]">2FA Status</th>
-                  <th className="py-3.5 px-3 font-bold w-[16%]">Last Active</th>
-                  <th className="py-3.5 pl-3 pr-4 font-bold text-right w-[14%]">Actions</th>
+                  <th className="py-3.5 pl-4 pr-3 font-bold w-[45%]">User / Email</th>
+                  <th className="py-3.5 px-3 font-bold w-[35%]">Role</th>
+                  <th className="py-3.5 pl-3 pr-4 font-bold text-right w-[20%]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200/40">
@@ -430,36 +384,14 @@ export function RolesPage() {
                       </div>
                     </td>
                     
-                    {/* Role & Group Column (Proper spacing between tags) */}
+                    {/* Role & Group Column */}
                     <td className="py-4.5 px-3 align-middle">
-                      <div className="flex flex-col items-start gap-2.5 py-1">
-                        <span className="inline-block text-[8.5px] font-extrabold tracking-wider bg-[#224870]/10 border border-[#224870]/20 px-2.5 py-1 uppercase text-[#224870] rounded-none">
-                          {admin.role}
-                        </span>
-                        <span className="text-[8px] text-[#615e56] font-black tracking-widest pl-0.5 block">
-                          {admin.department} Group
-                        </span>
-                      </div>
+                      <span className="inline-block text-[8.5px] font-extrabold tracking-wider bg-[#224870]/10 border border-[#224870]/20 px-2.5 py-1 uppercase text-[#224870] rounded-none">
+                        {admin.role}
+                      </span>
                     </td>
 
-                    <td className="py-4.5 px-3 align-middle">
-                      {admin.twoFactorEnabled ? (
-                        <span className="inline-block text-[8px] font-bold tracking-widest text-green-700 bg-green-50 border border-green-500/20 px-2.5 py-1.5 uppercase rounded-none">2FA Active</span>
-                      ) : (
-                        <span className="inline-block text-[8px] font-bold tracking-widest text-neutral-450 bg-[#faf8f5] border border-neutral-200 px-2.5 py-1.5 uppercase font-mono rounded-none">Inactive</span>
-                      )}
-                    </td>
-
-                    <td className="py-4.5 px-3 align-middle">
-                      <div className="space-y-1.5">
-                        <p className="text-[9.5px] font-bold text-[#382d24]">{admin.lastActive}</p>
-                        {admin.lastLoginIP !== "—" && (
-                          <p className="text-[7.5px] text-neutral-400 font-mono">IP: {admin.lastLoginIP}</p>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Actions Column (Highly visible controls with solid background colors) */}
+                    {/* Actions Column */}
                     <td className="py-4.5 pl-3 pr-4 text-right align-middle">
                       <div className="flex items-center justify-end gap-2">
                         {admin.status === "Active" && (
@@ -576,12 +508,12 @@ export function RolesPage() {
 
       </div>
 
-      {/* Invite Modal */}
+      {/* Add New Admin Modal */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setIsInviteModalOpen(false)}>
           <div className="bg-card border border-neutral-300 max-w-md w-full p-6 space-y-5 shadow-xl rounded-none animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest">Invite Admin</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-[#382d24]">Add New Admin</h3>
               <button onClick={() => setIsInviteModalOpen(false)}
                 className="text-neutral-450 hover:text-[#382d24] p-1 bg-transparent border-none cursor-pointer">
                 <X className="w-4 h-4" />
@@ -589,10 +521,17 @@ export function RolesPage() {
             </div>
 
             <form onSubmit={handleInviteAdmin} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Full Name</label>
-                <input type="text" name="name" required placeholder="e.g. Ananya Sharma"
-                  className="w-full bg-[#faf8f5] border border-neutral-300 px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">First Name</label>
+                  <input type="text" name="firstName" required placeholder="e.g. John"
+                    className="w-full bg-[#faf8f5] border border-neutral-300 px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Last Name</label>
+                  <input type="text" name="lastName" required placeholder="e.g. Doe"
+                    className="w-full bg-[#faf8f5] border border-neutral-300 px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -603,21 +542,32 @@ export function RolesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Gender</label>
+                  <select name="gender"
+                    className="w-full bg-[#faf8f5] border border-neutral-300 px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24]">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Date of Birth</label>
+                  <input type="date" name="dob" required
+                    className="w-full bg-[#faf8f5] border border-neutral-300 px-3.5 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Phone Number</label>
+                  <input type="tel" name="phone" required placeholder="e.g. +91 9876543210"
+                    className="w-full bg-[#faf8f5] border border-neutral-300 px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Role Group</label>
                   <select name="role"
                     className="w-full bg-[#faf8f5] border border-neutral-300 px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24]">
                     {roleList.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Department</label>
-                  <select name="department"
-                    className="w-full bg-[#faf8f5] border border-neutral-300 px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24]">
-                    <option value="Tech">Tech</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Cataloging">Cataloging</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Executive">Executive</option>
                   </select>
                 </div>
               </div>
@@ -629,7 +579,7 @@ export function RolesPage() {
                 </button>
                 <button type="submit"
                   className="bg-[#224870] hover:bg-[#224870]/90 text-white text-[9.5px] font-black tracking-widest px-5 py-2.5 uppercase cursor-pointer border-none rounded-none">
-                  Send Invite
+                  Save Admin
                 </button>
               </div>
             </form>

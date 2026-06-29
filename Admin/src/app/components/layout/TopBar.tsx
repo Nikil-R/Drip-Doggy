@@ -41,7 +41,7 @@ export function TopBar() {
     if (path.includes("/admin/products/new")) return "Add Product";
     if (path.includes("/admin/products/reviews")) return "Product Reviews";
     if (path.includes("/admin/products")) return "Products";
-    if (path.includes("/admin/roles")) return "Admin Roles";
+    if (path.includes("/admin/roles")) return "Members & Roles";
     if (path.includes("/admin/authority")) return "Control Authority";
     if (path.includes("/admin/coupons")) return "Coupons & Promos";
     if (path.includes("/admin/brands")) return "Brands & Labels";

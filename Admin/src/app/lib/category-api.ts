@@ -1,6 +1,7 @@
 import axios from "axios";
+import { API_CONFIG } from "../utils/api-config";
 
-const BASE_URL = "/dripdoggy/api/admin";
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export interface BackendCategory {
   categoryId: number;

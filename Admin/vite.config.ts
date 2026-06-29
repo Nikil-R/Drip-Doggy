@@ -18,7 +18,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/dripdoggy/api': {
-        target: 'http://localhost:8081',
+        target: 'http://13.206.205.251',
         changeOrigin: true,
         secure: false,
       }

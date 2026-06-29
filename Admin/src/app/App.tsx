@@ -32,6 +32,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Root redirect to admin */}
+        <Route path="/" element={<Navigate to="/admin" replace />} />
+
         {/* Public route - login */}
         <Route path="/admin/login" element={<LoginPage />} />
 
