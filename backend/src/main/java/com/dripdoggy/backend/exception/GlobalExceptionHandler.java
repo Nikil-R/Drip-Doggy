@@ -82,8 +82,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ResponseMsgDto> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+    @ExceptionHandler(CustomerAlreadyFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handleCustomerAlreadyFound(CustomerAlreadyFoundException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.CONFLICT.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
