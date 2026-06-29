@@ -5,12 +5,16 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8081/api/auth/send-otp
+  url: http://localhost:8081/dripdoggy/api/auth/send-otp
   body:
     type: json
     data: |-
       {
-        "identifier": "annamalajeshwanth@gmail.com"
+      // "identifier":"jeshwanthnote12pro@gmail.com"
+      "identifier":"nikilvijay46@gmail.com"
+      //  "identifier": "vinayunofficial2003@gmail.com"
+      //     "identifier":"vinayvinu94212@gmail.com"
+      //   "identifier": "+918884094554" not working
       }
   auth: inherit
 

@@ -6,7 +6,9 @@ info:
 http:
   method: GET
   url: http://localhost:8081/dripdoggy/api/admin/categories
-  auth: inherit
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MjczMDk2MCwiZXhwIjoxNzg0NDU4OTYwfQ.DhMOxgrwLfU9HkBIZOqt9fa5SKcd8482R7HskLyXdBmwxvSk42o5BildNKG9_4U9_2DfkWNvcCbIrCDvpxOmnw
 
 settings:
   encodeUrl: true

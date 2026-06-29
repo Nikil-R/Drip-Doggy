@@ -5,8 +5,10 @@ info:
 
 http:
   method: DELETE
-  url: http://localhost:8081/dripdoggy/api/admin/categories/100000
-  auth: inherit
+  url: http://localhost:8081/dripdoggy/api/admin/categories/1
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODI2MzYwNDEsImV4cCI6MTc4NDM2NDA0MX0.Jf6Gnsz9jpB4YLkyiIoUCDZ4aXOFHzLCL1gumYCl1Ts43u8A0ZjKJEyKpfJrdsfyZvGha2DKc6cDAxBZhhd5pQ
 
 settings:
   encodeUrl: true
