@@ -5,6 +5,7 @@ import com.dripdoggy.backend.RequestDto.SignupRequest;
 import com.dripdoggy.backend.RequestDto.VerifyOtpRequest;
 import com.dripdoggy.backend.RequestDto.RegisterRequest;
 import com.dripdoggy.backend.ResponseDto.AuthResponse;
+import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -39,10 +40,23 @@ public class AuthController {
     }
 
     @PostMapping("/admin/register")
-    public ResponseEntity<AuthResponse> registerAdmin(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ResponseMsgDto> registerAdmin(@Valid @RequestBody RegisterRequest request) {
         request.setRole(UserRole.ADMIN);
-        AuthResponse response = authService.register(request);
+        authService.register(request);
+        ResponseMsgDto response = new ResponseMsgDto(201, "Admin registered successfully.");
         return ResponseEntity.status(201).body(response);
+    }
+
+    @PostMapping("/admin/send-otp")
+    public ResponseEntity<AuthResponse> sendAdminOtp(@Valid @RequestBody SignupRequest request) {
+        AuthResponse response = authService.sendAdminOtp(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/admin/verify-otp")
+    public ResponseEntity<AuthResponse> verifyAdminOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        AuthResponse response = authService.verifyAdminOtp(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")

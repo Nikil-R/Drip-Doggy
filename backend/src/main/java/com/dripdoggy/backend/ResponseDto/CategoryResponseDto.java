@@ -13,7 +13,6 @@ public class CategoryResponseDto {
 
     // Frontend-expected fields
     private Long categoryId;
-    private String imagePath;
     private String subCategoryIds;
     private Boolean isDeleted;
 
@@ -29,10 +28,9 @@ public class CategoryResponseDto {
         this.isActive = isActive;
         this.subCategories = subCategories;
         this.categoryId = id;
-        this.imagePath = imageUrl;
     }
 
-    public CategoryResponseDto(Long id, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories, Long categoryId, String imagePath, String subCategoryIds, Boolean isDeleted) {
+    public CategoryResponseDto(Long id, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories, Long categoryId, String subCategoryIds, Boolean isDeleted) {
         this.id = id;
         this.categoryName = categoryName;
         this.imageUrl = imageUrl;
@@ -40,7 +38,6 @@ public class CategoryResponseDto {
         this.isActive = isActive;
         this.subCategories = subCategories;
         this.categoryId = categoryId;
-        this.imagePath = imagePath;
         this.subCategoryIds = subCategoryIds;
         this.isDeleted = isDeleted;
     }
@@ -69,7 +66,6 @@ public class CategoryResponseDto {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
-        this.imagePath = imageUrl;
     }
 
     public String getDescription() {
@@ -104,13 +100,7 @@ public class CategoryResponseDto {
         this.categoryId = categoryId;
     }
 
-    public String getImagePath() {
-        return imagePath;
-    }
 
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
-    }
 
     public String getSubCategoryIds() {
         return subCategoryIds;

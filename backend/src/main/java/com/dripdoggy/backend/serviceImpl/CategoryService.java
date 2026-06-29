@@ -348,7 +348,6 @@ public class CategoryService implements ICategoryService {
 
         // Populate custom frontend-expected fields
         dto.setCategoryId(category.getId());
-        dto.setImagePath(category.getImageUrl());
         dto.setIsDeleted(category.getIsDeleted() != null ? category.getIsDeleted() : false);
         dto.setSubCategoryIds(serializeSubCategories(category.getSubCategories()));
 

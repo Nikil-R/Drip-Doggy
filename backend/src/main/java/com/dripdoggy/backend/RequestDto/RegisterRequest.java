@@ -3,16 +3,11 @@ package com.dripdoggy.backend.RequestDto;
 import com.dripdoggy.backend.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 
 public class RegisterRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Provide a valid email address")
     private String email;
 
-    @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Provide a valid phone number")
     private String phoneNo;
 
     @NotBlank(message = "FirstName is required")
@@ -23,6 +18,12 @@ public class RegisterRequest {
     
     private UserRole role;
 
+    @NotBlank(message = "DOB is required")
+    private String dob;
+    
+    @NotBlank(message = "Gender is required")
+    private String gender;
+
     public RegisterRequest() {
     }
 
@@ -32,6 +33,16 @@ public class RegisterRequest {
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
+    }
+
+    public RegisterRequest(String email, String phoneNo, String firstName, String lastName, UserRole role, String dob, String gender) {
+        this.email = email;
+        this.phoneNo = phoneNo;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.role = role;
+        this.dob = dob;
+        this.gender = gender;
     }
 
     public String getEmail() {
@@ -72,5 +83,21 @@ public class RegisterRequest {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public String getDob() {
+        return dob;
+    }
+
+    public void setDob(String dob) {
+        this.dob = dob;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 }

@@ -11,4 +11,6 @@ public interface IAuthService {
     AuthResponse verifyOtp(VerifyOtpRequest request);
     AuthResponse register(RegisterRequest request);
     AuthResponse logout();
+    AuthResponse sendAdminOtp(SignupRequest request);
+    AuthResponse verifyAdminOtp(VerifyOtpRequest request);
 }
