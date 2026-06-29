@@ -8,7 +8,7 @@ http:
   url: http://localhost:8081/dripdoggy/api/auth/logout
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heTIwM0BnbWFpbC5jb20iLCJpYXQiOjE3ODI2MzM5MjIsImV4cCI6MTc4NDM2MTkyMn0.zO7ullyV9MljADs9ZjHJhBxkpFjhIjkDswjI3bFNfK2al5n0VIYVZsQcpi7Xeqnz6KQB7twLEK5Wh9zrwZmLIg
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuaWtpbHZlbm9tNDZAZ21haWwuY29tIiwiaWF0IjoxNzgyNzIyODUxLCJleHAiOjE3ODQ0NTA4NTF9.ZZI4dJb7B2d2qoKZBqA-PsY6x1Pq5slhmtZ9ig2LHW9QRizXYnAeJePXO6CY5I1Di2mmlEanrqa1Ca2ZgUxdGw
 
 settings:
   encodeUrl: true

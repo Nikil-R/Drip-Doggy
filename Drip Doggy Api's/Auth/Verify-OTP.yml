@@ -10,8 +10,10 @@ http:
     type: json
     data: |-
       {
-        "identifier":"vi@gmail.com",
-        "otpCode": "385343"
+      //   "identifier": "vinayunofficial2003@gmail.com",
+      //       "identifier": "nikilvenom46@gmail.com",
+        "identifier":"vinayvinu94212@gmail.com",
+        "otpCode": "410204"
       }
   auth: inherit
 

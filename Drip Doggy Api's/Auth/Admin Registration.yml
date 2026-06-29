@@ -8,14 +8,27 @@ http:
   url: http://localhost:8081/dripdoggy/api/auth/admin/register
   body:
     type: json
-    data: |
+    data: |-
+      // {
+      //   "email": "nikilvenom46@gmail.com",
+      //  "phoneNo": "+911234563891",
+      //   "firstName": "NikilSUPER",
+      //   "lastName": "Admin"
+      // //dob
+      // //Gender
+      // }
+
       {
-        "identifier": "admin@gmail.com",
-      //  "identifier": "+911234567891",
-        "firstName": "Super",
-        "lastName": "Admin"
+        "email": "vinayvinu94212@gmail.com",
+        "phoneNo":"+919820043210",
+        "firstName": "vinay",
+        "lastName": "raj",
+        "dob":"22/03/2022",
+        "gender":"MALE"
       }
-  auth: inherit
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuaWtpbHZlbm9tNDZAZ21haWwuY29tIiwiaWF0IjoxNzgyNzM1MDE5LCJleHAiOjE3ODQ0NjMwMTl9.LA3xx0aTxc0_xS-RRIJXP-LOXMxB6gZAC2yyl1nFnLMrcsKLGlzogE5EyHzagevv-MnO6vC_mtWgIsRM6YIVww
 
 settings:
   encodeUrl: true

@@ -11,7 +11,7 @@ http:
     data:
       - name: categoryName
         type: text
-        value: girlcloth
+        value: girlcloths
       - name: image
         type: file
         value:
@@ -23,7 +23,9 @@ http:
       - name: subCategoryIds
         type: text
         value: ""
-  auth: inherit
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MjczMDk2MCwiZXhwIjoxNzg0NDU4OTYwfQ.DhMOxgrwLfU9HkBIZOqt9fa5SKcd8482R7HskLyXdBmwxvSk42o5BildNKG9_4U9_2DfkWNvcCbIrCDvpxOmnw
 
 settings:
   encodeUrl: true

@@ -11,10 +11,13 @@ http:
     data: |
       {
       //   "identifier": "+911234567891",
-      "email": "v@gmail.com",
-        "phoneNo":"+919856543210",
-        "firstName": "raja",
-        "lastName": "beja"
+      "email": "vinayunofficial2003@gmail.com",
+      //   "phoneNo":"+911234567898",
+        "firstName": "vinay",
+        "lastName": "raj",
+        "dob":"22/03/2022",
+        "gender":"MALE"
+      //if new user
       }
   auth: inherit
 
