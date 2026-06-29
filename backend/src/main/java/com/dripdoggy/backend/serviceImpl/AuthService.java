@@ -4,9 +4,7 @@ import com.dripdoggy.backend.Iservice.IAuthService;
 import com.dripdoggy.backend.RequestDto.SignupRequest;
 import com.dripdoggy.backend.RequestDto.VerifyOtpRequest;
 import com.dripdoggy.backend.RequestDto.RegisterRequest;
-import com.dripdoggy.backend.RequestDto.CustomerRegisterRequest;
 import com.dripdoggy.backend.ResponseDto.AuthResponse;
-import com.dripdoggy.backend.ResponseDto.CustomerRegisterResponse;
 import com.dripdoggy.backend.entity.User;
 import com.dripdoggy.backend.entity.Token;
 import com.dripdoggy.backend.enums.OtpType;
@@ -85,87 +83,43 @@ public class AuthService implements IAuthService {
                         .or(() -> userRepository.findByPhoneNo(alternative));
             }
 
-            User user;
-            boolean userExistsFlag;
-
             if (userOpt.isPresent()) {
-                user = userOpt.get();
-                userExistsFlag = (user.getFirstName() != null);
-            } else {
-                user = new User();
-                if (identifier.contains("@")) {
-                    user.setEmail(identifier);
+                User user = userOpt.get();
+                if (user.getFirstName() != null) {
+                    String token = jwtUtil.generateToken(identifier);
+
+                    Token tokenEntity = new Token();
+                    tokenEntity.setUser(user);
+                    tokenEntity.setAccessToken(token);
+                    tokenEntity.setCreatedAt(LocalDateTime.now());
+                    tokenEntity.setExpiresAt(LocalDateTime.now().plusDays(365));
+                    tokenEntity.setIpAddress(getClientIp());
+                    tokenRepository.save(tokenEntity);
+
+                    Boolean userExistsFlag = (user.getRole() == UserRole.ADMIN) ? null : true;
+                    return new AuthResponse(200, "OTP Verified Successfully", token, userExistsFlag);
                 } else {
-                    user.setPhoneNo(identifier);
+                    return new AuthResponse(200, "OTP Verified. Redirecting to onboarding", null, false);
                 }
-                user.setRole(UserRole.CUSTOMER);
-                user = userRepository.save(user);
-                userExistsFlag = false;
+            } else {
+                User newUser = new User();
+                if (identifier.contains("@")) {
+                    newUser.setEmail(identifier);
+                } else {
+                    newUser.setPhoneNo(identifier);
+                }
+                newUser.setRole(UserRole.CUSTOMER);
+                userRepository.save(newUser);
+
+                return new AuthResponse(200, "OTP Verified. Redirecting to onboarding", null, false);
             }
-
-            String token = jwtUtil.generateToken(identifier);
-
-            Token tokenEntity = new Token();
-            tokenEntity.setUser(user);
-            tokenEntity.setAccessToken(token);
-            tokenEntity.setCreatedAt(LocalDateTime.now());
-            tokenEntity.setExpiresAt(LocalDateTime.now().plusDays(365));
-            tokenEntity.setIpAddress(getClientIp());
-            tokenRepository.save(tokenEntity);
-
-            Boolean responseUserExists = (user.getRole() == UserRole.ADMIN) ? null : userExistsFlag;
-            String message = userExistsFlag ? "OTP Verified Successfully" : "OTP Verified. Redirecting to onboarding";
-
-            return new AuthResponse(200, message, token, responseUserExists);
         }
 
         throw new InvalidCredentialsException("Invalid or Expired OTP");
     }
 
     @Override
-    public CustomerRegisterResponse registerCustomer(CustomerRegisterRequest request) {
-        org.springframework.security.core.Authentication authentication = 
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new InvalidCredentialsException("Access Denied: Customer registration requires a valid authentication token.");
-        }
-        String principalName = authentication.getName();
-        User user = loadUserByIdentifier(principalName);
-
-        // Check if they are already registered (i.e. firstName is not null)
-        if (user.getFirstName() != null) {
-            throw new CustomerAlreadyFoundException("Customer is already registered");
-        }
-
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setRole(UserRole.CUSTOMER);
-
-        if (request.getDob() != null && !request.getDob().trim().isEmpty()) {
-            user.setDob(parseDateOfBirth(request.getDob()));
-        }
-        if (request.getGender() != null && !request.getGender().trim().isEmpty()) {
-            try {
-                user.setGender(com.dripdoggy.backend.enums.Gender.valueOf(request.getGender().trim().toUpperCase()));
-            } catch (Exception e) {
-                // Handle mapping exception safely
-            }
-        }
-
-        userRepository.save(user);
-
-        // Return CustomerRegisterResponse with only the requested fields:
-        CustomerRegisterResponse response = new CustomerRegisterResponse();
-        response.setFirstName(user.getFirstName());
-        response.setLastName(user.getLastName());
-        response.setDob(user.getDob() != null ? user.getDob().toString() : null);
-        response.setGender(user.getGender() != null ? user.getGender().name() : null);
-
-        return response;
-    }
-
-    @Override
-    public CustomerRegisterResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request) {
         String email = request.getEmail();
         String phoneNo = request.getPhoneNo();
 
@@ -174,15 +128,12 @@ public class AuthService implements IAuthService {
             validatePhoneNumberCountryCode(phoneNo);
         }
 
-        User user;
-
-        // Admin registration path - keep original logic
         // Check if email already exists
         Optional<User> existingUserByEmail = Optional.empty();
         if (email != null && !email.trim().isEmpty()) {
             existingUserByEmail = userRepository.findByEmail(email);
             if (existingUserByEmail.isPresent() && existingUserByEmail.get().getFirstName() != null) {
-                throw new CustomerAlreadyFoundException("User is already registered with email: " + email);
+                throw new UserAlreadyExistsException("User is already registered with email: " + email);
             }
         }
 
@@ -193,10 +144,11 @@ public class AuthService implements IAuthService {
             existingUserByPhone = userRepository.findByPhoneNo(phoneNo)
                     .or(() -> userRepository.findByPhoneNo(alternativePhone));
             if (existingUserByPhone.isPresent() && existingUserByPhone.get().getFirstName() != null) {
-                throw new CustomerAlreadyFoundException("User is already registered with phone number: " + phoneNo);
+                throw new UserAlreadyExistsException("User is already registered with phone number: " + phoneNo);
             }
         }
 
+        User user;
         if (existingUserByEmail.isPresent()) {
             user = existingUserByEmail.get();
             if (phoneNo != null && !phoneNo.trim().isEmpty()) {
@@ -218,7 +170,11 @@ public class AuthService implements IAuthService {
         user.setRole(request.getRole() != null ? request.getRole() : UserRole.CUSTOMER);
 
         if (request.getDob() != null && !request.getDob().trim().isEmpty()) {
-            user.setDob(parseDateOfBirth(request.getDob()));
+            try {
+                user.setDob(java.time.LocalDate.parse(request.getDob().trim()));
+            } catch (Exception e) {
+                // If date parsing fails, we could log or throw, but let's parse standard ISO date format
+            }
         }
         if (request.getGender() != null && !request.getGender().trim().isEmpty()) {
             try {
@@ -234,9 +190,22 @@ public class AuthService implements IAuthService {
             if (email != null && !email.trim().isEmpty()) {
                 emailService.sendWelcomeAdminEmail(email);
             }
+            return new AuthResponse(201, "Admin registered successfully.", null, true);
         }
 
-        return new CustomerRegisterResponse();
+        // Generate and save token immediately after registration/onboarding completes
+        String tokenIdentifier = (email != null && !email.trim().isEmpty()) ? email : phoneNo;
+        String token = jwtUtil.generateToken(tokenIdentifier);
+
+        Token tokenEntity = new Token();
+        tokenEntity.setUser(user);
+        tokenEntity.setAccessToken(token);
+        tokenEntity.setCreatedAt(LocalDateTime.now());
+        tokenEntity.setExpiresAt(LocalDateTime.now().plusDays(365));
+        tokenEntity.setIpAddress(getClientIp());
+        tokenRepository.save(tokenEntity);
+
+        return new AuthResponse(201, "User registered successfully", token, true);
     }
 
     @Override
@@ -370,24 +339,7 @@ public class AuthService implements IAuthService {
             }
             throw new InvalidCredentialsException("Invalid or Expired OTP");
         }
- 
-        throw new InvalidAdminEmailException("INVALID ADMIN EMAIL");
-    }
 
-    private java.time.LocalDate parseDateOfBirth(String dobStr) {
-        if (dobStr == null || dobStr.trim().isEmpty()) {
-            return null;
-        }
-        String cleaned = dobStr.trim();
-        try {
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            return java.time.LocalDate.parse(cleaned, formatter);
-        } catch (java.time.format.DateTimeParseException e) {
-            try {
-                return java.time.LocalDate.parse(cleaned);
-            } catch (java.time.format.DateTimeParseException ex) {
-                return null;
-            }
-        }
+        throw new InvalidAdminEmailException("INVALID ADMIN EMAIL");
     }
 }

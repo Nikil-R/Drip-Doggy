@@ -4,9 +4,7 @@ import com.dripdoggy.backend.Iservice.IAuthService;
 import com.dripdoggy.backend.RequestDto.SignupRequest;
 import com.dripdoggy.backend.RequestDto.VerifyOtpRequest;
 import com.dripdoggy.backend.RequestDto.RegisterRequest;
-import com.dripdoggy.backend.RequestDto.CustomerRegisterRequest;
 import com.dripdoggy.backend.ResponseDto.AuthResponse;
-import com.dripdoggy.backend.ResponseDto.CustomerRegisterResponse;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +33,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<CustomerRegisterResponse> register(@Valid @RequestBody CustomerRegisterRequest request) {
-        CustomerRegisterResponse response = authService.registerCustomer(request);
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        request.setRole(UserRole.CUSTOMER);
+        AuthResponse response = authService.register(request);
         return ResponseEntity.status(201).body(response);
     }
 
