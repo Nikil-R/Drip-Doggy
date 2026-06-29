@@ -11,8 +11,8 @@ http:
     data: |-
       {
       // "identifier":"jeshwanthnote12pro@gmail.com"
-      "identifier":"nikilvijay46@gmail.com"
-      //  "identifier": "vinayunofficial2003@gmail.com"
+      // "identifier":"nikilvijay46@gmail.com"
+       "identifier": "vinayunofficial2003@gmail.com"
       //     "identifier":"vinayvinu94212@gmail.com"
       //   "identifier": "+918884094554" not working
       }

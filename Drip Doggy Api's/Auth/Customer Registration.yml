@@ -10,16 +10,15 @@ http:
     type: json
     data: |
       {
-      //   "identifier": "+911234567891",
-      "email": "vinayunofficial2003@gmail.com",
-      //   "phoneNo":"+911234567898",
+      //   "phoneNo":"+911234577898",no
         "firstName": "vinay",
         "lastName": "raj",
         "dob":"22/03/2022",
         "gender":"MALE"
-      //if new user
       }
-  auth: inherit
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4Mjc0NzE0NywiZXhwIjoxNzg0NDc1MTQ3fQ.9JCuu3xve6g6rPpVcd4nqzY6aNre96Pq-R6XgU5IFbQSC8R2aiGuCVby5MvXErOiY0wvU6swun2u2qMeUy83wg
 
 settings:
   encodeUrl: true
