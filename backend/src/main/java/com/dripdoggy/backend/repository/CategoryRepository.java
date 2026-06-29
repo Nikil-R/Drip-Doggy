@@ -12,4 +12,8 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     @Query("SELECT c FROM Category c WHERE c.isDeleted = false OR c.isDeleted IS NULL")
     List<Category> findAllActiveCategories();
+
+    boolean existsByCategoryNameIgnoreCase(String categoryName);
+
+    boolean existsByCategoryNameIgnoreCaseAndIdNot(String categoryName, Long id);
 }

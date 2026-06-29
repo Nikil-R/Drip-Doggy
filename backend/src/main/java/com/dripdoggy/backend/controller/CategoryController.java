@@ -5,7 +5,7 @@ import com.dripdoggy.backend.RequestDto.CategoryRequestDto;
 import com.dripdoggy.backend.ResponseDto.CategoryResponseDto;
 import com.dripdoggy.backend.ResponseDto.CategoryDetailsResponseDto;
 import com.dripdoggy.backend.ResponseDto.CategoryListResponseDto;
-import com.dripdoggy.backend.ResponseDto.CategoryDeleteResponseDto;
+import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,9 +26,9 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponseDto> createCategory(
+    public ResponseEntity<ResponseMsgDto> createCategory(
             @Valid @ModelAttribute CategoryRequestDto categoryDto) {
-        CategoryResponseDto response = categoryService.createCategory(categoryDto);
+        ResponseMsgDto response = categoryService.createCategory(categoryDto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -45,22 +45,22 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponseDto> updateCategory(
+    public ResponseEntity<ResponseMsgDto> updateCategory(
             @PathVariable Long id,
             @Valid @ModelAttribute CategoryRequestDto categoryDto) {
-        CategoryResponseDto response = categoryService.updateCategory(id, categoryDto);
+        ResponseMsgDto response = categoryService.updateCategory(id, categoryDto);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<CategoryDeleteResponseDto> deleteCategory(@PathVariable Long id) {
-        CategoryDeleteResponseDto response = categoryService.deleteCategory(id);
+    public ResponseEntity<ResponseMsgDto> deleteCategory(@PathVariable Long id) {
+        ResponseMsgDto response = categoryService.deleteCategory(id);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<CategoryResponseDto> toggleCategoryIsActive(@PathVariable Long id) {
-        CategoryResponseDto response = categoryService.updateCategoryIsActiveById(id);
+    public ResponseEntity<ResponseMsgDto> toggleCategoryIsActive(@PathVariable Long id) {
+        ResponseMsgDto response = categoryService.updateCategoryIsActiveById(id);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

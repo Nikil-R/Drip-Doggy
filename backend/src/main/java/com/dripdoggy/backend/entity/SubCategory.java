@@ -22,6 +22,9 @@ public class SubCategory {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     @JsonIgnore
@@ -87,5 +90,13 @@ public class SubCategory {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

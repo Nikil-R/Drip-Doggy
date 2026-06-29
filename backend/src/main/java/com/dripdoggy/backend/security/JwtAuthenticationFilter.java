@@ -15,11 +15,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.springframework.security.core.userdetails.UserDetails;
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -33,8 +38,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String identifier = jwtUtil.extractIdentifier(token);
                 if (identifier != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     if (jwtUtil.validateToken(token, identifier)) {
+                        UserDetails userDetails = customUserDetailsService.loadUserByUsername(identifier);
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                identifier, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
+                                userDetails, null, userDetails.getAuthorities());
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                     }

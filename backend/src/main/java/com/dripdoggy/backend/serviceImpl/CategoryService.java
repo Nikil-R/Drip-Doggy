@@ -11,6 +11,7 @@ import com.dripdoggy.backend.ResponseDto.CategoryDetailsResponseDto;
 import com.dripdoggy.backend.ResponseDto.CategoryDeleteResponseDto;
 import com.dripdoggy.backend.entity.Category;
 import com.dripdoggy.backend.entity.SubCategory;
+import com.dripdoggy.backend.exception.DuplicateCategoryFoundException;
 import com.dripdoggy.backend.exception.CategoryNotFoundException;
 import com.dripdoggy.backend.exception.FailedToUploadImageException;
 import com.dripdoggy.backend.exception.SubCategoryNotFoundException;
@@ -52,7 +53,10 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public CategoryResponseDto createCategory(CategoryRequestDto categoryReqDto) {
+    public ResponseMsgDto createCategory(CategoryRequestDto categoryReqDto) {
+        if (categoryrepo.existsByCategoryNameIgnoreCase(categoryReqDto.getCategoryName())) {
+            throw new DuplicateCategoryFoundException("Category with name '" + categoryReqDto.getCategoryName() + "' already exists");
+        }
         Category category = modelMapper.map(categoryReqDto, Category.class);
         category.setIsActive(categoryReqDto.getIsActive() != null ? categoryReqDto.getIsActive() : true);
         category.setIsDeleted(false);
@@ -73,7 +77,7 @@ public class CategoryService implements ICategoryService {
         }
 
         Category savedCategory = categoryrepo.save(category);
-        return mapToCategoryResponseDto(savedCategory);
+        return new ResponseMsgDto(201, savedCategory.getCategoryName() + " Category created successfully");
     }
 
     @Override
@@ -99,11 +103,15 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public CategoryResponseDto updateCategory(Long id, CategoryRequestDto categoryDto) {
+    public ResponseMsgDto updateCategory(Long id, CategoryRequestDto categoryDto) {
         Category category = categoryrepo.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + id));
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
             throw new CategoryNotFoundException("Category not found with ID: " + id);
+        }
+
+        if (categoryrepo.existsByCategoryNameIgnoreCaseAndIdNot(categoryDto.getCategoryName(), id)) {
+            throw new DuplicateCategoryFoundException("Category with name '" + categoryDto.getCategoryName() + "' already exists");
         }
 
         if (categoryDto.getImage() != null && !categoryDto.getImage().isEmpty()) {
@@ -140,38 +148,52 @@ public class CategoryService implements ICategoryService {
             }
         }
 
-        return mapToCategoryResponseDto(updatedCategory);
+        return new ResponseMsgDto(200, updatedCategory.getCategoryName() + " Category updated successfully");
     }
 
     @Override
-    public CategoryDeleteResponseDto deleteCategory(Long id) {
+    public ResponseMsgDto deleteCategory(Long id) {
         Category category = categoryrepo.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
 
-        // Build list of subcategories before deleting
-        List<CategoryDeleteResponseDto.SubCategoryInfo> subInfos = new ArrayList<>();
-        if (category.getSubCategories() != null) {
+        if (Boolean.TRUE.equals(category.getIsDeleted())) {
+            throw new CategoryNotFoundException(category.getCategoryName()+" "+"Category not found");
+        }
+
+        String originalName = category.getCategoryName();
+        if (originalName.contains("_deleted_")) {
+            originalName = originalName.substring(0, originalName.indexOf("_deleted_"));
+        }
+        
+        boolean hasSubCategories = false;
+
+        // Soft delete all associated subcategories in the database
+        if (category.getSubCategories() != null && !category.getSubCategories().isEmpty()) {
+            hasSubCategories = true;
             for (SubCategory sub : category.getSubCategories()) {
-                subInfos.add(new CategoryDeleteResponseDto.SubCategoryInfo(sub.getId(), sub.getSubcategoryName()));
                 sub.setIsActive(false);
+                sub.setIsDeleted(true);
                 subCategoryRepository.save(sub);
             }
         }
 
         category.setIsActive(false);
         category.setIsDeleted(true);
+        category.setCategoryName(originalName + "_deleted_" + System.currentTimeMillis());
         categoryrepo.save(category);
 
-        return new CategoryDeleteResponseDto(
-            200,
-            "It will be deleted if you click delete entire category",
-            category.getCategoryName(),
-            subInfos
-        );
+        String message;
+        if (!hasSubCategories) {
+            message = originalName + " Category deleted successfully.";
+        } else {
+            message = originalName + " Category and all its associated subcategories have been deleted successfully.";
+        }
+
+        return new ResponseMsgDto(200, message);
     }
 
     @Override
-    public CategoryResponseDto updateCategoryIsActiveById(Long categoryId) {
+    public ResponseMsgDto updateCategoryIsActiveById(Long categoryId) {
         Category category = categoryrepo.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
@@ -189,7 +211,10 @@ public class CategoryService implements ICategoryService {
         }
 
         Category saved = categoryrepo.save(category);
-        return mapToCategoryResponseDto(saved);
+        String message = saved.getIsActive() ?
+                saved.getCategoryName() + " Category activated successfully" :
+                saved.getCategoryName() + " Category deactivated successfully";
+        return new ResponseMsgDto(200, message);
     }
 
     private void saveOrUpdateSubCategories(Category category, String subIdsStr) {
@@ -291,6 +316,9 @@ public class CategoryService implements ICategoryService {
         ObjectMapper mapper = new ObjectMapper();
         List<Map<String, Object>> list = new ArrayList<>();
         for (SubCategory sub : subCategories) {
+            if (Boolean.TRUE.equals(sub.getIsDeleted())) {
+                continue;
+            }
             Map<String, Object> map = new HashMap<>();
             map.put("id", String.valueOf(sub.getId()));
             map.put("name", sub.getSubcategoryName());
@@ -312,6 +340,7 @@ public class CategoryService implements ICategoryService {
 
         List<SubCategoryResponseDto> subCategoryResponseDtos = category.getSubCategories() != null ?
                 category.getSubCategories().stream()
+                        .filter(sub -> !Boolean.TRUE.equals(sub.getIsDeleted()))
                         .map(this::mapToSubCategoryResponseDto)
                         .collect(Collectors.toList()) : Collections.emptyList();
 
@@ -319,7 +348,6 @@ public class CategoryService implements ICategoryService {
 
         // Populate custom frontend-expected fields
         dto.setCategoryId(category.getId());
-        dto.setImagePath(category.getImageUrl());
         dto.setIsDeleted(category.getIsDeleted() != null ? category.getIsDeleted() : false);
         dto.setSubCategoryIds(serializeSubCategories(category.getSubCategories()));
 
