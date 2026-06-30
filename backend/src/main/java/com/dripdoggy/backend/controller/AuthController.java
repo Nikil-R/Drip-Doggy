@@ -22,6 +22,7 @@ public class AuthController {
     @Autowired
     private IAuthService authService;
 
+    //Generic for ALL
     @PostMapping("/send-otp")
     public ResponseEntity<AuthResponse> sendOtp(@Valid @RequestBody SignupRequest request) {
         AuthResponse response = authService.sendOtp(request);
