@@ -10,7 +10,7 @@ import com.dripdoggy.backend.RequestDto.CustomerRegisterRequest;
 public interface IAuthService {
     AuthResponse sendOtp(SignupRequest request);
     AuthResponse verifyOtp(VerifyOtpRequest request);
-    CustomerRegisterResponse register(RegisterRequest request);
+    CustomerRegisterResponse register(RegisterRequest request); // i this not requried
     CustomerRegisterResponse registerCustomer(CustomerRegisterRequest request);
     AuthResponse logout();
     AuthResponse sendAdminOtp(SignupRequest request);
