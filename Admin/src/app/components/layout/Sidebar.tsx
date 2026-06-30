@@ -121,8 +121,8 @@ export function Sidebar() {
           <img src={logoIcon} alt="DD" className="w-9 h-9 object-contain mix-blend-multiply" />
         ) : (
           <div className="flex flex-col items-center justify-center w-full">
-            <img src={logoIcon} alt="Drip Doggy" className="w-14 h-14 object-contain mix-blend-multiply block" />
-            <img src={logo} alt="Drip Doggy" className="h-22 w-auto max-w-[180px] object-contain mix-blend-multiply block -mt-10" />
+            <img src={logoIcon} alt="Drip Doggy" className="w-22 h-22 object-contain mix-blend-multiply block" />
+            <img src={logo} alt="Drip Doggy" className="h-29 w-auto max-w-[180px] object-contain mix-blend-multiply block -mt-10 -mb-6" />
           </div>
         )}
       </div>

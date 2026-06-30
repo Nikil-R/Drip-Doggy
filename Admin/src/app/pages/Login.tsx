@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuthStore } from "@/app/store/auth-store";
-import { Shield, Key, Mail, Phone, Calendar, User, ArrowRight } from "lucide-react";
+import { Shield, Key, Mail, ArrowRight } from "lucide-react";
+import logo from "@/assets/logo.png";
+import logoIcon from "@/assets/new_logo_icon.png";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row font-sans text-foreground">
+    <div className="min-h-screen bg-[#faf8f5] flex flex-col md:flex-row font-sans text-foreground">
       
       {/* Left Column: Visual Brand Banner */}
       <div className="w-full md:w-5/12 bg-[#224870] flex flex-col justify-between p-8 md:p-14 text-white relative overflow-hidden select-none border-b md:border-b-0 md:border-r border-neutral-200/20">
@@ -52,26 +54,18 @@ export function LoginPage() {
           <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
         </div>
 
-        {/* Brand Icon Block */}
-        <div className="flex items-center gap-3 z-10">
-          <div className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-            <span className="text-white font-black text-base tracking-tighter">DD</span>
-          </div>
-          <div>
-            <h2 className="text-sm font-black tracking-widest uppercase text-white/90">Drip Doggy</h2>
-            <span className="text-[7.5px] text-white/55 font-bold uppercase tracking-wider block">Enterprise Suite</span>
-          </div>
-        </div>
+        {/* Brand Icon Block Placeholder or empty spacing */}
+        <div className="z-10" />
 
         {/* Central Core Message */}
-        <div className="my-auto py-12 space-y-4 z-10">
-          <span className="text-[9px] font-black tracking-[0.2em] text-[#faf8f5]/65 uppercase block">Security Authority Portal</span>
+        <div className="my-auto py-12 space-y-3.5 z-10">
+          <span className="text-[9px] font-black tracking-[0.2em] text-[#faf8f5]/65 uppercase block">Secure Admin Panel</span>
           <h1 className="text-3xl font-black uppercase tracking-widest leading-none text-white">
             ADMINISTRATOR<br/>
             DASHBOARD
           </h1>
-          <p className="text-[10px] text-white/60 uppercase leading-relaxed tracking-wider font-semibold max-w-sm pt-2">
-            Secure administrative control portal for Drip Doggy e-commerce directory cataloging, operations management, and analytical metrics.
+          <p className="text-[10.5px] text-white/70 uppercase leading-relaxed tracking-wider font-semibold max-w-sm pt-2">
+            Workspace access portal to manage product catalogs, view business analytics, and organize store settings.
           </p>
         </div>
 
@@ -79,13 +73,13 @@ export function LoginPage() {
         <div className="flex items-center gap-2 z-10 pt-4 md:pt-0">
           <Shield className="w-4 h-4 text-white/60" />
           <span className="text-[8px] text-white/60 font-bold uppercase tracking-widest">
-            Secured passwordless token-auth protocol
+            Secured admin credentials login session
           </span>
         </div>
       </div>
 
       {/* Right Column: Interaction Form */}
-      <div className="w-full md:w-7/12 flex items-center justify-center p-8 md:p-16 relative bg-[#fef9f0]">
+      <div className="w-full md:w-7/12 flex items-center justify-center p-8 md:p-16 relative bg-[#faf8f5]">
         
         {/* Clean outline grid lines */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]">
@@ -94,9 +88,15 @@ export function LoginPage() {
 
         <div className="w-full max-w-[400px] space-y-6 relative z-10">
           
+          {/* Centered Brand Logos Block */}
+          <div className="flex flex-col items-center justify-center space-y-0.5">
+            <img src={logoIcon} alt="Drip Doggy Icon" className="w-20 h-20 object-contain mix-blend-multiply" />
+            <img src={logo} alt="Drip Doggy Logo" className="h-29 w-auto max-w-[130px] object-contain mix-blend-multiply -mt-10 -mb-6" />
+          </div>
+
           <div className="space-y-1">
-            <h2 className="text-xl font-[950] text-[#382d24] uppercase tracking-wider">Sign In</h2>
-            <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">Please enter your workspace details below.</p>
+            <h2 className="text-xl font-[950] text-[#382d24] uppercase tracking-wider text-center">Sign In</h2>
+            <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest text-center">Please enter your workspace details below.</p>
           </div>
 
           <div className="bg-card border border-border p-8 space-y-6 shadow-sm">
