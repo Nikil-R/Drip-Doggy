@@ -7,6 +7,7 @@ public class AuthResponse {
 	private Integer statusCode;
 	private String message;
 	private String token;
+	private Boolean userExists;
 
 	public Integer getStatusCode() {
 		return statusCode;
@@ -32,11 +33,27 @@ public class AuthResponse {
 		this.token = token;
 	}
 
+	public Boolean getUserExists() {
+		return userExists;
+	}
+
+	public void setUserExists(Boolean userExists) {
+		this.userExists = userExists;
+	}
+
 	public AuthResponse(Integer statusCode, String message, String token) {
 		super();
 		this.statusCode = statusCode;
 		this.message = message;
 		this.token = token;
+	}
+
+	public AuthResponse(Integer statusCode, String message, String token, Boolean userExists) {
+		super();
+		this.statusCode = statusCode;
+		this.message = message;
+		this.token = token;
+		this.userExists = userExists;
 	}
 
 	public AuthResponse() {

@@ -22,8 +22,10 @@ http:
         value: for Mens super T-shirts are aviable
       - name: categoryId
         type: text
-        value: "300"
-  auth: inherit
+        value: "2"
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MjU5ODgyOSwiZXhwIjoxNzg0MzI2ODI5fQ.-twdbsXFqwuhsBhCGqB--ziTwVVYY2BKSJtWjEpIh3GoDkqG-B49HtOZgob0cNuvtMlCFxpkrXdqjqWZQZfALw
 
 settings:
   encodeUrl: true

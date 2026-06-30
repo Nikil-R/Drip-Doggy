@@ -11,6 +11,11 @@ public class CategoryResponseDto {
     private Boolean isActive;
     private List<SubCategoryResponseDto> subCategories;
 
+    // Frontend-expected fields
+    private Long categoryId;
+    private String subCategoryIds;
+    private Boolean isDeleted;
+
     // Constructors
     public CategoryResponseDto() {
     }
@@ -22,6 +27,19 @@ public class CategoryResponseDto {
         this.description = description;
         this.isActive = isActive;
         this.subCategories = subCategories;
+        this.categoryId = id;
+    }
+
+    public CategoryResponseDto(Long id, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories, Long categoryId, String subCategoryIds, Boolean isDeleted) {
+        this.id = id;
+        this.categoryName = categoryName;
+        this.imageUrl = imageUrl;
+        this.description = description;
+        this.isActive = isActive;
+        this.subCategories = subCategories;
+        this.categoryId = categoryId;
+        this.subCategoryIds = subCategoryIds;
+        this.isDeleted = isDeleted;
     }
 
     // Getters and Setters
@@ -31,6 +49,7 @@ public class CategoryResponseDto {
 
     public void setId(Long id) {
         this.id = id;
+        this.categoryId = id;
     }
 
     public String getCategoryName() {
@@ -71,5 +90,31 @@ public class CategoryResponseDto {
 
     public void setSubCategories(List<SubCategoryResponseDto> subCategories) {
         this.subCategories = subCategories;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+
+
+    public String getSubCategoryIds() {
+        return subCategoryIds;
+    }
+
+    public void setSubCategoryIds(String subCategoryIds) {
+        this.subCategoryIds = subCategoryIds;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

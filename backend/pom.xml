@@ -110,11 +110,21 @@
 			<scope>runtime</scope>
 		</dependency>
 		  <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-devtools</artifactId>
-      <scope>runtime</scope>
-      <optional>true</optional>
-    </dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-devtools</artifactId>
+       <scope>runtime</scope>
+       <optional>true</optional>
+     </dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+		<!-- Google libphonenumber for phone validation -->
+		<dependency>
+			<groupId>com.googlecode.libphonenumber</groupId>
+			<artifactId>libphonenumber</artifactId>
+			<version>8.13.35</version>
+		</dependency>
 	</dependencies>
 
 	<build>

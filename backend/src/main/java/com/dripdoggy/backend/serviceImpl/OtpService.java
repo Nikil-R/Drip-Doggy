@@ -23,6 +23,10 @@ public class OtpService {
     private SmsService smsService;
 
     public void generateAndSendOtp(String targetValue, OtpType otpType) {
+        generateAndSendOtp(targetValue, otpType, false);
+    }
+
+    public void generateAndSendOtp(String targetValue, OtpType otpType, boolean isLogin) {
         String otpCode = String.format("%06d", new Random().nextInt(999999));
         
         Otp otp = new Otp();
@@ -37,7 +41,7 @@ public class OtpService {
         otpRepository.save(otp);
 
         if (otpType == OtpType.EMAIL) {
-            emailService.sendOtpEmail(targetValue, otpCode);
+            emailService.sendOtpEmail(targetValue, otpCode, isLogin);
         } else if (otpType == OtpType.PHONE) {
             smsService.sendOtpSms(targetValue, otpCode);
         }
@@ -49,14 +53,15 @@ public class OtpService {
         if (otpOptional.isPresent()) {
             Otp otp = otpOptional.get();
             if (otp.getIsVerified()) return false;
-            if (otp.getExpiresAt().isBefore(LocalDateTime.now())) return false;
-            if (otp.getOtpCode().equals(otpCode)) {
+            
+            // Increment attempts for any verification try
+            otp.setAttempt(otp.getAttempt() + 1);
+            
+            if (otp.getExpiresAt().isAfter(LocalDateTime.now()) && otp.getOtpCode().equals(otpCode)) {
                 otp.setIsVerified(true);
                 otpRepository.save(otp);
                 return true;
             }
-            // Increment attempts
-            otp.setAttempt(otp.getAttempt() + 1);
             otpRepository.save(otp);
         }
         return false;

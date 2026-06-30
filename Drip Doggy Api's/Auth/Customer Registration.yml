@@ -1,0 +1,27 @@
+info:
+  name: Customer Registration
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/auth/register
+  body:
+    type: json
+    data: |
+      {
+      //   "phoneNo":"+911234577898",no
+        "firstName": "vinay",
+        "lastName": "raj",
+        "dob":"22/03/2022",
+        "gender":"MALE"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4Mjc0NzE0NywiZXhwIjoxNzg0NDc1MTQ3fQ.9JCuu3xve6g6rPpVcd4nqzY6aNre96Pq-R6XgU5IFbQSC8R2aiGuCVby5MvXErOiY0wvU6swun2u2qMeUy83wg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

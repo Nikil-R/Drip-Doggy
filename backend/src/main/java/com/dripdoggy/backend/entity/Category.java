@@ -12,7 +12,7 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "category_name")
+    @Column(name = "category_name", unique = true, nullable = false)
     private String categoryName;
 
     @Column(name = "image_url")
@@ -22,6 +22,9 @@ public class Category {
 
     @Column(name = "is_active")
     private Boolean isActive;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "category")
     private List<SubCategory> subCategories;
@@ -78,6 +81,14 @@ public class Category {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 
     public List<SubCategory> getSubCategories() {
