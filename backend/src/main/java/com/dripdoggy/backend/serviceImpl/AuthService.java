@@ -24,26 +24,27 @@ import java.util.Optional;
 
 @Service
 public class AuthService implements IAuthService {
-
-    @Autowired
+	
     private OtpService otpService;
-
-    @Autowired
     private UserRepository userRepository;
-
-    @Autowired
     private TokenRepository tokenRepository;
-
-    @Autowired
     private JwtUtil jwtUtil;
-
-    @Autowired
     private HttpServletRequest httpServletRequest;
-
-    @Autowired
     private EmailService emailService;
+    
+    @Autowired
+    public AuthService(OtpService otpService, UserRepository userRepository, TokenRepository tokenRepository,
+			JwtUtil jwtUtil, HttpServletRequest httpServletRequest, EmailService emailService) {
+		super();
+		this.otpService = otpService;
+		this.userRepository = userRepository;
+		this.tokenRepository = tokenRepository;
+		this.jwtUtil = jwtUtil;
+		this.httpServletRequest = httpServletRequest;
+		this.emailService = emailService;
+	}
 
-    @Override
+	@Override
     public AuthResponse sendOtp(SignupRequest request) {
         String identifier = request.getIdentifier();
         validatePhoneNumberCountryCode(identifier);
@@ -119,7 +120,7 @@ public class AuthService implements IAuthService {
             return new AuthResponse(200, message, token, responseUserExists);
         }
 
-        throw new InvalidCredentialsException("Invalid or Expired OTP");
+        throw new OtpNotFoundException("Invalid or Expired OTP");
     }
 
     @Override
@@ -131,6 +132,11 @@ public class AuthService implements IAuthService {
         }
         String principalName = authentication.getName();
         User user = loadUserByIdentifier(principalName);
+
+        // Ensure only CUSTOMER roles can perform onboarding
+        if (user.getRole() != UserRole.CUSTOMER) {
+            throw new InvalidCredentialsException("Access Denied: Customer registration is only allowed for customer accounts.");
+        }
 
         // Check if they are already registered (i.e. firstName is not null)
         if (user.getFirstName() != null) {
@@ -166,6 +172,17 @@ public class AuthService implements IAuthService {
 
     @Override
     public CustomerRegisterResponse register(RegisterRequest request) {
+        org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidCredentialsException("Access Denied: Admin registration requires a valid authentication token.");
+        }
+        String principalName = authentication.getName();
+        User currentUser = loadUserByIdentifier(principalName);
+        if (currentUser.getRole() != UserRole.ADMIN) {
+            throw new InvalidCredentialsException("Access Denied: Only an ADMIN can register another ADMIN.");
+        }
+
         String email = request.getEmail();
         String phoneNo = request.getPhoneNo();
 
@@ -340,38 +357,51 @@ public class AuthService implements IAuthService {
         String identifier = request.getIdentifier();
         validatePhoneNumberCountryCode(identifier);
 
-        // Check if user exists in DB and has role ADMIN
+        // Before verifying the OTP, check that the email or phone number is present in the database.
+        // If it is not present, or does not have the ADMIN role, throw the custom exception.
         Optional<User> userOpt;
         if (identifier.contains("@")) {
             userOpt = userRepository.findByEmail(identifier);
+            if (userOpt.isEmpty()) {
+                throw new EmailNotFoundException("Email address is not registered");
+            }
+            if (userOpt.get().getRole() != UserRole.ADMIN) {
+                throw new InvalidAdminEmailException("INVALID ADMIN EMAIL");
+            }
         } else {
             String alternative = identifier.startsWith("+") ? identifier.substring(1) : "+" + identifier;
             userOpt = userRepository.findByPhoneNo(identifier)
                     .or(() -> userRepository.findByPhoneNo(alternative));
-        }
-
-        if (userOpt.isPresent() && userOpt.get().getRole() == UserRole.ADMIN) {
-            OtpType otpType = identifier.contains("@") ? OtpType.EMAIL : OtpType.PHONE;
-            boolean verified = otpService.verifyOtp(identifier, otpType, request.getOtpCode());
-
-            if (verified) {
-                User user = userOpt.get();
-                String token = jwtUtil.generateToken(identifier);
-
-                Token tokenEntity = new Token();
-                tokenEntity.setUser(user);
-                tokenEntity.setAccessToken(token);
-                tokenEntity.setCreatedAt(LocalDateTime.now());
-                tokenEntity.setExpiresAt(LocalDateTime.now().plusDays(365));
-                tokenEntity.setIpAddress(getClientIp());
-                tokenRepository.save(tokenEntity);
-
-                return new AuthResponse(200, "OTP Verified Successfully", token, null);
+            if (userOpt.isEmpty()) {
+                throw new PhoneNotFoundException("Phone number is not registered");
             }
-            throw new InvalidCredentialsException("Invalid or Expired OTP");
+            if (userOpt.get().getRole() != UserRole.ADMIN) {
+                throw new AdminNotFoundException("Admin not found or unauthorized with the provided phone number");
+            }
         }
- 
-        throw new InvalidAdminEmailException("INVALID ADMIN EMAIL");
+
+        User user = userOpt.get();
+
+        OtpType otpType = identifier.contains("@") ? OtpType.EMAIL : OtpType.PHONE;
+        boolean verified = otpService.verifyOtp(identifier, otpType, request.getOtpCode());
+
+        if (verified) {
+            // Generate the token using the admin's email if available, otherwise the identifier.
+            String tokenSubject = (user.getEmail() != null && !user.getEmail().trim().isEmpty()) ? user.getEmail() : identifier;
+            String token = jwtUtil.generateToken(tokenSubject);
+
+            Token tokenEntity = new Token();
+            tokenEntity.setUser(user);
+            tokenEntity.setAccessToken(token);
+            tokenEntity.setCreatedAt(LocalDateTime.now());
+            tokenEntity.setExpiresAt(LocalDateTime.now().plusDays(365));
+            tokenEntity.setIpAddress(getClientIp());
+            tokenRepository.save(tokenEntity);
+
+            return new AuthResponse(200, "OTP Verified Successfully", token, null);
+        }
+
+        throw new OtpNotFoundException("Invalid or Expired OTP");
     }
 
     private java.time.LocalDate parseDateOfBirth(String dobStr) {
