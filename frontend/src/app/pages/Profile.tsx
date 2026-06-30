@@ -53,7 +53,23 @@ export function Profile() {
     lastName: user?.lastName || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    gender: user?.gender || "",
+    dateOfBirth: user?.dateOfBirth || "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        gender: user.gender || "",
+        dateOfBirth: user.dateOfBirth || "",
+      });
+    }
+  }, [user]);
+
   const [phoneVerified, setPhoneVerified] = useState(false);
 
   const [addresses, setAddresses] = useState<AddressItem[]>(() => {

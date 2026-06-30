@@ -127,41 +127,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dateOfBirth: string;
     }): Promise<AuthActionResult> => {
       const pending = getPendingIdentifier();
+      const token = getSessionToken();
       if (!pending) {
         return { success: false, message: "No pending verification found. Please start over." };
       }
+      if (!token) {
+        return { success: false, message: "Authentication session expired. Please verify again." };
+      }
 
-      const isEmailInput = pending.includes("@");
-      const storedUser = createUser({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        email: isEmailInput ? pending : "",
-        phone: isEmailInput ? "" : pending,
-      });
+      try {
+        // Convert yyyy-mm-dd to dd/MM/yyyy for backend compatibility
+        let formattedDob = profile.dateOfBirth;
+        if (profile.dateOfBirth && profile.dateOfBirth.includes("-")) {
+          const parts = profile.dateOfBirth.split("-"); // [yyyy, mm, dd]
+          if (parts.length === 3) {
+            formattedDob = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+        }
 
-      const updatedUser = updateUserProfile(pending, {
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        gender: profile.gender,
-        dateOfBirth: profile.dateOfBirth,
-      });
+        const backendUser = await authApi.registerCustomer(
+          profile.firstName,
+          profile.lastName,
+          formattedDob, // pass converted dd/MM/yyyy string
+          profile.gender,
+          token
+        );
 
-      const finalUser = updatedUser || storedUser;
-      const authUser: AuthUser = {
-        id: finalUser.id,
-        firstName: finalUser.firstName,
-        lastName: finalUser.lastName,
-        email: finalUser.email,
-        phone: finalUser.phone,
-        gender: finalUser.gender,
-        dateOfBirth: finalUser.dateOfBirth,
-      };
+        const authUser: AuthUser = {
+          id: String(backendUser.id || pending),
+          firstName: backendUser.firstName || profile.firstName,
+          lastName: backendUser.lastName || profile.lastName,
+          email: pending.includes("@") ? pending : "",
+          phone: pending.includes("@") ? "" : pending,
+          gender: backendUser.gender || profile.gender,
+          dateOfBirth: backendUser.dob || profile.dateOfBirth,
+        };
 
-      saveSessionUser(authUser);
-      setUser(authUser);
-      clearPendingIdentifier();
-      setPendingIdentifier(null);
-      return { success: true };
+        saveSessionUser(authUser);
+        setUser(authUser);
+        clearPendingIdentifier();
+        setPendingIdentifier(null);
+        return { success: true };
+      } catch (err: any) {
+        return {
+          success: false,
+          message: err?.response?.data?.message || "Failed to update onboarding profile. Please try again."
+        };
+      }
     },
     []
   );

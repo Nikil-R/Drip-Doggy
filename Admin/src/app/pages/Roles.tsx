@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "@/app/store/auth-store";
+import { authApi } from "@/app/lib/auth-api";
 import {
   Shield,
   Users,
@@ -43,30 +44,55 @@ export function RolesPage() {
     { id: "DD-ADM-003", name: "Jeshwanth", email: "jeshwanth@dripdoggy.com", role: "Admin", status: "Active", lastActive: "Yesterday", lastLoginIP: "103.45.98.201", permissionsCount: 18, twoFactorEnabled: false, department: "Operations" }
   ]);
 
-  const handleInviteAdmin = (e: React.FormEvent) => {
+  const { user, token } = useAuthStore();
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  const handleInviteAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInviteError(null);
     const formData = new FormData(e.currentTarget);
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
+    const gender = formData.get("gender") as string;
+    const dob = formData.get("dob") as string;
+    const phoneNo = formData.get("phone") as string;
     
     const name = `${firstName} ${lastName}`;
 
-    const newAdmin: AdminUser = {
-      id: `DD-ADM-00${admins.length + 1}`,
-      name, 
-      email, 
-      role: "Admin",
-      status: "Active",
-      lastActive: "Just now",
-      lastLoginIP: "—",
-      permissionsCount: 18,
-      twoFactorEnabled: false,
-      department: "Tech"
-    };
+    if (!token) {
+      setInviteError("Unauthorized: Session token is missing.");
+      return;
+    }
 
-    setAdmins(prev => [...prev, newAdmin]);
-    setIsInviteModalOpen(false);
+    try {
+      await authApi.registerAdmin(token, {
+        firstName,
+        lastName,
+        email,
+        phoneNo,
+        dob,
+        gender
+      });
+
+      const newAdmin: AdminUser = {
+        id: `DD-ADM-00${admins.length + 1}`,
+        name, 
+        email, 
+        role: "Admin",
+        status: "Active",
+        lastActive: "Just now",
+        lastLoginIP: "—",
+        permissionsCount: 18,
+        twoFactorEnabled: false,
+        department: "Tech"
+      };
+
+      setAdmins(prev => [...prev, newAdmin]);
+      setIsInviteModalOpen(false);
+    } catch (err: any) {
+      setInviteError(err?.response?.data?.message || "Failed to register admin. Please verify input data.");
+    }
   };
 
   const toggleUserStatus = (user: AdminUser) => {
@@ -97,7 +123,6 @@ export function RolesPage() {
     admin.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const { user } = useAuthStore();
   const activeCount = admins.filter(a => a.status === "Active").length;
   const isExistingAdmin = admins.some(admin => admin.email.toLowerCase() === user?.email.toLowerCase());
 
@@ -240,6 +265,11 @@ export function RolesPage() {
             </div>
 
             <form onSubmit={handleInviteAdmin} className="space-y-4">
+              {inviteError && (
+                <div className="border border-red-200 bg-red-50 text-red-700 text-[10px] font-bold p-3 uppercase tracking-wider">
+                  {inviteError}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">First Name</label>
