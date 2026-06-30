@@ -4,10 +4,11 @@ import { useAuthStore } from "@/app/store/auth-store";
 import { Shield, Key, Mail, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.png";
 import logoIcon from "@/assets/new_logo_icon.png";
+import { authApi } from "@/app/lib/auth-api";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { setSession } = useAuthStore();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,34 +19,50 @@ export function LoginPage() {
   const [loginStep, setLoginStep] = useState<"email" | "otp">("email");
   const [emailOtp, setEmailOtp] = useState("");
 
-  const handleSendEmailOtp = (e: React.FormEvent) => {
+  const handleSendEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      await authApi.sendOtp(email);
       setLoginStep("otp");
-    }, 800);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyEmailOtp = (e: React.FormEvent) => {
+  const handleVerifyEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (emailOtp.length !== 6) {
       setError("Please enter a valid 6-digit OTP.");
       return;
     }
     setLoading(true);
-    setTimeout(async () => {
+    setError("");
+    try {
+      const res = await authApi.verifyOtp(email, emailOtp);
+      if (res.token) {
+        setSession({
+          id: res.adminUser?.email || "admin",
+          email: res.adminUser?.email || email,
+          name: "Admin"
+        }, res.token);
+        navigate("/admin/dashboard");
+      } else {
+        setError("Invalid OTP response received from server.");
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Invalid OTP code. Please try again.");
+    } finally {
       setLoading(false);
-      setError("");
-      // Authenticate immediately
-      await login("admin@dripdoggy.com", "admin123");
-      navigate("/admin/dashboard");
-    }, 800);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] flex flex-col md:flex-row font-sans text-foreground">
+    <div className="min-h-screen bg-[#fef9f0] flex flex-col md:flex-row font-sans text-foreground">
       
       {/* Left Column: Visual Brand Banner */}
       <div className="w-full md:w-5/12 bg-[#224870] flex flex-col justify-between p-8 md:p-14 text-white relative overflow-hidden select-none border-b md:border-b-0 md:border-r border-neutral-200/20">
@@ -79,7 +96,7 @@ export function LoginPage() {
       </div>
 
       {/* Right Column: Interaction Form */}
-      <div className="w-full md:w-7/12 flex items-center justify-center p-8 md:p-16 relative bg-[#faf8f5]">
+      <div className="w-full md:w-7/12 flex items-center justify-center p-8 md:p-16 relative bg-[#fef9f0]">
         
         {/* Clean outline grid lines */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]">
@@ -118,7 +135,7 @@ export function LoginPage() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="name@dripdoggy.com"
-                    className="w-full bg-[#faf8f5] border border-border pl-10 pr-4 py-3 text-[10px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
+                    className="w-full bg-[#f9f3e8] border border-border pl-10 pr-4 py-3 text-[10px] font-bold uppercase focus:outline-none focus:border-[#224870] text-foreground transition-all rounded-none disabled:opacity-75"
                   />
                 </div>
               </div>
@@ -136,7 +153,7 @@ export function LoginPage() {
                       value={emailOtp}
                       onChange={e => setEmailOtp(e.target.value.replace(/\D/g, ""))}
                       placeholder="• • • • • •"
-                      className="w-full bg-[#faf8f5] border border-border pl-10 pr-4 py-3 text-[11px] tracking-[0.6em] font-black focus:outline-none focus:border-[#224870] text-foreground text-center transition-all rounded-none"
+                      className="w-full bg-[#f9f3e8] border border-border pl-10 pr-4 py-3 text-[11px] tracking-[0.6em] font-black focus:outline-none focus:border-[#224870] text-foreground text-center transition-all rounded-none"
                     />
                   </div>
                   <span className="text-[8px] text-muted-foreground/85 font-semibold block mt-1.5 uppercase">We sent a verification code to {email}.</span>

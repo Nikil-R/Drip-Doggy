@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/app/store/sidebar-store";
 import { useAuthStore } from "@/app/store/auth-store";
+import { authApi } from "@/app/lib/auth-api";
 import logo from "@/assets/logo.png";
 import logoIcon from "@/assets/new_logo_icon.png";
 import {
@@ -101,7 +102,7 @@ const SECTION_META: Record<string, { bg: string; text: string; border: string; d
 
 export function Sidebar() {
   const { isCollapsed, toggle } = useSidebarStore();
-  const { logout } = useAuthStore();
+  const { logout, token } = useAuthStore();
   const navigate = useNavigate();
 
   return (
@@ -215,7 +216,14 @@ export function Sidebar() {
       {/* ── Bottom: Sign Out ───────────────────────────────────────────────── */}
       <div className="shrink-0 border-t border-neutral-200/70 p-3">
         <button
-          onClick={() => {
+          onClick={async () => {
+            if (token) {
+              try {
+                await authApi.logout(token);
+              } catch (e) {
+                console.error("Logout request failed", e);
+              }
+            }
             logout();
             navigate("/admin/login");
           }}
