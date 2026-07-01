@@ -1,26 +1,101 @@
-import { ShoppingCart, CircleUser, Search, Heart, Trash2, ShieldCheck, RefreshCw, Truck, Tag, ChevronDown, ChevronUp } from "lucide-react";
+import { ShoppingCart, CircleUser, Search, Heart, Trash2, ShieldCheck, RefreshCw, Truck, Tag, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import logo from "../../../assets/logo.png";
-import logoIcon from "../../../assets/logo_icon.png";
+import logoIcon from "../../../assets/new_logo_icon.png";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "../ui/sheet";
 import { SearchOverlay } from "../search/SearchOverlay";
+import { useAuth } from "../../context/AuthContext";
 
 export function Header() {
+  const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [navSearchVal, setNavSearchVal] = useState("");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
 
   const [cartItems, setCartItems] = useState<any[]>(() => {
     try {
       const stored = localStorage.getItem("cart");
-      return stored ? JSON.parse(stored) : [];
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const hasOldJunk = parsed.some((item: any) => 
+          item.name === "Vanguard Tactical Vest" || 
+          item.name === "Heavyweight Hoodie" || 
+          item.name === "Apex Shell Jacket" || 
+          item.name === "Modular Sling Bag" ||
+          item.cartItemId.includes("coffee-brown") ||
+          item.cartItemId.includes("clay-sand") ||
+          item.cartItemId.includes("burnt-copper") ||
+          item.cartItemId.includes("editorial-ivory")
+        );
+        if (parsed.length > 0 && !hasOldJunk) return parsed;
+      }
+      const defaultItems = [
+        {
+          id: 1,
+          cartItemId: "1-Default-S",
+          brand: "DRIP DOGGY COLLECTION",
+          name: "SARTORIAL PLEATED TRENCH DRESS",
+          size: "S",
+          color: "Default",
+          price: 245.00,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=600"
+        },
+        {
+          id: 2,
+          cartItemId: "2-Default-S",
+          brand: "CORE COLLECTION",
+          name: "OVERSIZED KNIT SWEATER DRESS",
+          size: "S",
+          color: "Default",
+          price: 185.00,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=600"
+        },
+        {
+          id: 3,
+          cartItemId: "3-JET BLACK-M",
+          brand: "ARCHITECTURAL PRECISION SERIES",
+          name: "STRUCTURE TACTICAL LAYER",
+          size: "M",
+          color: "JET BLACK",
+          price: 485.00,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=600"
+        },
+        {
+          id: 4,
+          cartItemId: "4-Default-S",
+          brand: "ARCHIVE COLLECTION",
+          name: "STRUCTURED CANVAS UTILITY DRESS",
+          size: "S",
+          color: "Default",
+          price: 295.00,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=600"
+        }
+      ];
+      localStorage.setItem("cart", JSON.stringify(defaultItems));
+      return defaultItems;
     } catch {
       return [];
     }
   });
+
+  const [wishlistCount, setWishlistCount] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem("wishlist");
+      const list = stored ? JSON.parse(stored) : [];
+      return list.length;
+    } catch {
+      return 0;
+    }
+  });
+
 
   const [isLoading, setIsLoading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -97,14 +172,29 @@ export function Header() {
       }
     };
 
+    const handleWishlistUpdate = () => {
+      try {
+        const stored = localStorage.getItem("wishlist");
+        const list = stored ? JSON.parse(stored) : [];
+        setWishlistCount(list.length);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     window.addEventListener("cart-updated", handleCartUpdate);
+    window.addEventListener("wishlist-updated", handleWishlistUpdate);
     window.addEventListener("storage", handleCartUpdate);
+    window.addEventListener("storage", handleWishlistUpdate);
     
     return () => {
       window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("wishlist-updated", handleWishlistUpdate);
       window.removeEventListener("storage", handleCartUpdate);
+      window.removeEventListener("storage", handleWishlistUpdate);
     };
   }, []);
+
 
   const saveCart = (items: any[]) => {
     localStorage.setItem("cart", JSON.stringify(items));
@@ -183,7 +273,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-[#FAF8F5]/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-6">
         <div className="flex h-20 items-center justify-between">
           
@@ -262,7 +352,7 @@ export function Header() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 h-full">
             <button
               onClick={() => setIsSearchOpen(true)}
               className="hover:opacity-75 transition-opacity bg-transparent border-none p-0 cursor-pointer outline-none flex items-center"
@@ -271,14 +361,16 @@ export function Header() {
               <Search className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
             </button>
 
-            <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity" aria-label="Wishlist">
+            <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
               <Heart className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
-            
-            <Link to="/account" className="hidden sm:block hover:opacity-75 transition-opacity" aria-label="Profile">
-              <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
-            </Link>
-            
+
+
             <Sheet>
               <SheetTrigger asChild>
                 <button className="relative hover:opacity-75 transition-opacity flex items-center bg-transparent border-none p-0 cursor-pointer outline-none">
@@ -290,10 +382,15 @@ export function Header() {
                   )}
                 </button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md bg-[#FAF8F5] p-4 flex flex-col h-full border-l border-neutral-200/60 shadow-xl overflow-y-auto">
-                <SheetHeader className="p-0 pb-3 border-b border-neutral-200/60 flex flex-row items-center justify-between pr-8">
-                  <SheetTitle className="text-sm font-extrabold tracking-[0.2em] uppercase text-neutral-800 leading-none">
+              <SheetContent className="w-full sm:max-w-md bg-[#FAF8F5] p-4 flex flex-col h-full border-l border-neutral-200/60 shadow-xl overflow-hidden">
+                <SheetHeader className="p-0 pb-3 border-b border-neutral-200/60 flex flex-row items-center justify-between pr-8 flex-shrink-0">
+                  <SheetTitle className="text-sm font-extrabold tracking-[0.2em] uppercase text-neutral-800 leading-none flex items-center gap-2">
                     My Cart
+                    {totalItemCount > 0 && (
+                      <span className="text-[9px] font-extrabold text-[#b2533e] tracking-widest uppercase">
+                        // {totalItemCount} {totalItemCount === 1 ? 'ITEM' : 'ITEMS'} SELECTED
+                      </span>
+                    )}
                   </SheetTitle>
                   {isLoading && (
                     <span className="text-[9px] font-bold text-[#b2533e] tracking-widest uppercase animate-pulse">
@@ -302,64 +399,17 @@ export function Header() {
                   )}
                 </SheetHeader>
 
-                {/* Items List */}
-                <div className="space-y-3 py-3 flex-1">
+                {/* Items List - Scrollable */}
+                <div className="space-y-3 py-3 flex-1 overflow-y-auto pr-1">
                   {cartItems.length === 0 ? (
-                    <div className="py-6 flex flex-col justify-center">
-                      <div className="flex flex-col items-center justify-center text-center pb-4">
-                        <ShoppingCart className="h-10 w-10 text-neutral-300 mb-2.5 stroke-[1.5]" />
-                        <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Your cart is empty</p>
-                      </div>
-                      
-                      <div className="border-t border-neutral-200/50 pt-4 mt-2">
-                        <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-3 text-center">
-                          Complete The Look
-                        </h3>
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Recommended Extra 1 */}
-                          <div className="bg-white border border-neutral-200/50 p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
-                            <div>
-                              <img 
-                                src="https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=200" 
-                                alt="Apex Shell Jacket" 
-                                className="w-full h-24 object-cover rounded bg-neutral-50 mb-2"
-                              />
-                              <h4 className="text-[10px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Apex Shell Jacket</h4>
-                              <span className="text-[10px] font-extrabold text-neutral-500 mt-0.5 block">₹320.00</span>
-                            </div>
-                            <button 
-                              onClick={() => quickShop({ id: 10, name: "Apex Shell Jacket", price: 320, image: "https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=200" })}
-                              className="mt-2.5 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1.5 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
-                            >
-                              Add to bag
-                            </button>
-                          </div>
-
-                          {/* Recommended Extra 2 */}
-                          <div className="bg-white border border-neutral-200/50 p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
-                            <div>
-                              <img 
-                                src="https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=200" 
-                                alt="Modular Sling Bag" 
-                                className="w-full h-24 object-cover rounded bg-neutral-50 mb-2"
-                              />
-                              <h4 className="text-[10px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Modular Sling Bag</h4>
-                              <span className="text-[10px] font-extrabold text-neutral-500 mt-0.5 block">₹210.00</span>
-                            </div>
-                            <button 
-                              onClick={() => quickShop({ id: 11, name: "Modular Sling Bag", price: 210, image: "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=200" })}
-                              className="mt-2.5 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1.5 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
-                            >
-                              Add to bag
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="py-12 flex flex-col items-center justify-center text-center">
+                      <ShoppingCart className="h-10 w-10 text-neutral-300 mb-2.5 stroke-[1.5]" />
+                      <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Your cart is empty</p>
                     </div>
                   ) : (
                     cartItems.map(item => (
-                      <div key={item.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
-                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover rounded bg-neutral-100 flex-shrink-0" />
+                      <div key={item.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
+                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover bg-neutral-100 flex-shrink-0" />
                         <div className="flex-1 flex flex-col justify-between">
                           <div>
                             <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
@@ -374,7 +424,8 @@ export function Header() {
                                 <select 
                                   value={item.size}
                                   onChange={(e) => updateItemSize(item.cartItemId, e.target.value)}
-                                  className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none rounded-sm px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
+                                  className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
+                                  aria-label="Select size"
                                 >
                                   {["XS", "S", "M", "L", "XL", "XXL"].map(sz => (
                                     <option key={sz} value={sz}>{sz}</option>
@@ -393,7 +444,7 @@ export function Header() {
                                 </>
                               )}
                             </div>
-                            <div className="flex items-center border border-neutral-300 rounded-full px-2.5 py-1 bg-neutral-50 shadow-xs">
+                            <div className="flex items-center border border-neutral-300 px-2.5 py-1 bg-neutral-50 shadow-xs">
                               <button 
                                 onClick={() => updateQuantity(item.cartItemId, -1)} 
                                 className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
@@ -412,7 +463,7 @@ export function Header() {
                             </div>
                           </div>
                         </div>
-                        <button onClick={() => removeItem(item.cartItemId)} className="absolute top-4 right-4 text-neutral-300 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer">
+                        <button onClick={() => removeItem(item.cartItemId)} className="absolute top-4 right-4 text-[#b2533e] hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer" aria-label="Remove item">
                           <Trash2 className="h-4 w-4 stroke-[1.8]" />
                         </button>
                       </div>
@@ -420,165 +471,180 @@ export function Header() {
                   )}
                 </div>
 
-                {/* Promo Code Accordion */}
+                {/* Sticky Cart Footer Container */}
                 {totalItemCount > 0 && (
-                  <div className="border-t border-neutral-200/50 pt-3 mt-1 bg-white p-3 rounded-lg border border-neutral-200/30">
-                    <button 
-                      onClick={() => setIsPromoOpen(!isPromoOpen)}
-                      className="w-full flex items-center justify-between text-[9px] font-extrabold tracking-widest text-neutral-400 uppercase hover:text-neutral-900 transition-colors bg-transparent border-none cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Tag className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
-                        Apply Promo Code
-                      </span>
-                      {isPromoOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                    </button>
-                    {isPromoOpen && (
-                      <div className="pt-2.5 space-y-2">
-                        {appliedPromo ? (
-                          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-2.5 py-1.5 text-[9px] font-extrabold text-green-700 uppercase tracking-wider">
-                            <span>Applied: {appliedPromo} (-₹{promoDiscount})</span>
-                            <button 
-                              onClick={removePromo} 
-                              className="text-red-500 hover:text-red-700 font-extrabold underline text-[9px] bg-transparent border-none cursor-pointer"
-                            >
-                              REMOVE
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <input 
-                              type="text" 
-                              placeholder="TRY 'DRIP20'" 
-                              value={promoCode}
-                              onChange={(e) => setPromoCode(e.target.value)}
-                              className="flex-1 px-3 py-1.5 text-[11px] font-bold uppercase border border-neutral-300 rounded focus:outline-none placeholder-neutral-400 text-neutral-850 bg-white"
-                            />
-                            <button 
-                              onClick={applyPromo}
-                              className="bg-black hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-1.5 rounded-sm uppercase border-none cursor-pointer"
-                            >
-                              APPLY
-                            </button>
-                          </div>
-                        )}
-                        {promoError && (
-                          <p className="text-[9px] font-extrabold text-red-500 uppercase tracking-wider">{promoError}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
- 
-                {/* Bill Details */}
-                {totalItemCount > 0 && (
-                  <div className="pt-3 border-t border-neutral-200/60 space-y-2.5 mt-2 bg-white border border-neutral-200/50 p-4 rounded-lg">
-                    <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-0.5">
-                      Bill Summary
-                    </h3>
-                    <div className="space-y-1.5 text-[11px] font-medium tracking-wide">
-                      <div className="flex justify-between text-neutral-500">
-                        <span>Subtotal</span>
-                        <span className="font-extrabold text-neutral-900">₹{subtotal}.00</span>
-                      </div>
-                      {promoDiscount > 0 && (
-                        <div className="flex justify-between text-green-600 font-bold">
-                          <span>Promo Discount ({appliedPromo})</span>
-                          <span>-₹{promoDiscount}.00</span>
+                  <div className="border-t border-neutral-250 pt-2 mt-auto bg-[#FAF8F5] space-y-2 flex-shrink-0">
+                    {/* Promo Code Selector */}
+                    <div className="px-1">
+                      <button 
+                        onClick={() => setIsPromoOpen(!isPromoOpen)}
+                        className="w-full flex items-center justify-between text-[9px] font-extrabold tracking-[0.15em] text-neutral-800 uppercase hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer py-0.5"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Tag className="h-3 w-3 stroke-[1.8] text-neutral-800" />
+                          Apply Promo Code
+                        </span>
+                        {isPromoOpen ? <ChevronUp className="h-3 w-3 text-neutral-600" /> : <ChevronDown className="h-3 w-3 text-neutral-600" />}
+                      </button>
+                      {isPromoOpen && (
+                        <div className="pt-1.5">
+                          {appliedPromo ? (
+                            <div className="flex items-center justify-between bg-neutral-100 border border-neutral-200 px-2 py-1 text-[8.5px] font-extrabold text-neutral-800 uppercase tracking-widest rounded-none">
+                              <span>PROMO: {appliedPromo} (-₹{promoDiscount})</span>
+                              <button 
+                                onClick={removePromo} 
+                                className="text-[#b2533e] hover:opacity-75 font-extrabold underline text-[8.5px] bg-transparent border-none cursor-pointer"
+                              >
+                                REMOVE
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex border-b border-neutral-300 focus-within:border-neutral-900 transition-colors py-0.5">
+                              <input 
+                                type="text" 
+                                placeholder="ENTER PROMO CODE" 
+                                value={promoCode}
+                                onChange={(e) => setPromoCode(e.target.value)}
+                                className="flex-1 bg-transparent text-[10px] font-bold tracking-wider placeholder-neutral-400 focus:outline-none uppercase border-none py-0.5"
+                              />
+                              <button 
+                                onClick={applyPromo}
+                                className="text-[9px] font-extrabold tracking-widest text-neutral-900 hover:opacity-75 uppercase transition-colors px-1 bg-transparent border-none cursor-pointer"
+                              >
+                                APPLY
+                              </button>
+                            </div>
+                          )}
+                          {promoError && (
+                            <p className="text-[8px] font-extrabold text-[#ba1a1a] uppercase tracking-wider mt-0.5">{promoError}</p>
+                          )}
                         </div>
                       )}
-                      <div className="flex justify-between text-neutral-500">
-                        <span>Delivery Fee (Free on orders above ₹1999)</span>
-                        <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600 tracking-wider" : "text-neutral-900"}`}>
-                          {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue}.00`}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs font-extrabold text-neutral-900 border-t border-neutral-200/40 pt-2">
-                        <span>Total To Pay</span>
-                        <span className="text-sm">₹{totalToPay}.00</span>
-                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 pt-1">
-                      <SheetClose asChild>
-                        <Link to="/cart" className="w-full border border-neutral-900 text-neutral-950 bg-white hover:bg-neutral-900 hover:text-white py-2.5 rounded-sm text-[9px] font-extrabold tracking-widest text-center uppercase transition-colors">
-                          View Cart
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/checkout" className="w-full bg-[#030213] text-white py-2.5 rounded-sm text-[9px] font-extrabold tracking-widest text-center uppercase hover:bg-neutral-800 transition-colors shadow-lg shadow-neutral-950/5">
-                          Checkout
-                        </Link>
-                      </SheetClose>
-                    </div>
-
-                    {/* Trust Badges Grid */}
-                    <div className="grid grid-cols-3 gap-2 pt-3 border-t border-neutral-100 text-center text-[7.5px] font-bold text-neutral-400 tracking-wider uppercase">
-                      <div className="flex flex-col items-center gap-1">
-                        <ShieldCheck className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
-                        <span>SECURE PAYMENTS</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-1">
-                        <RefreshCw className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
-                        <span>EASY EXCHANGES</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-1">
-                        <Truck className="h-3.5 w-3.5 stroke-[1.8] text-neutral-500" />
-                        <span>EXPRESS DELIVERY</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* You May Also Like Suggestions (Rendered only if cart has items) */}
-                {totalItemCount > 0 && (
-                  <div className="border-t border-neutral-200/50 pt-3 mt-2">
-                    <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-2">
-                      Complete the Look
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Rec 1 */}
-                      <div className="bg-white border border-neutral-200/40 p-2 rounded-lg flex flex-col justify-between shadow-xs">
-                        <div>
-                          <img 
-                            src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=200" 
-                            alt="Flare Skirt" 
-                            className="w-full h-16 object-cover rounded bg-neutral-50 mb-1"
-                          />
-                          <h4 className="text-[9px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Flare Printed Skirt</h4>
-                          <span className="text-[9px] font-extrabold text-neutral-500 mt-0.5 block">₹699.00</span>
+ 
+                    {/* Bill Details */}
+                    <div className="border-t border-neutral-200/60 pt-2 px-1 space-y-2">
+                      <div className="space-y-1 text-[9px] font-bold tracking-wider text-neutral-600 uppercase">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span className="font-extrabold text-neutral-900">₹{subtotal}.00</span>
                         </div>
-                        <button 
-                          onClick={() => quickShop({ id: 101, name: "Flare Printed Skirt", price: 699, image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=200" })}
-                          className="mt-2 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
-                        >
-                          Add
-                        </button>
-                      </div>
-
-                      {/* Rec 2 */}
-                      <div className="bg-white border border-neutral-200/40 p-2 rounded-lg flex flex-col justify-between shadow-xs">
-                        <div>
-                          <img 
-                            src="https://images.unsplash.com/photo-1519242220831-09410926fbff?auto=format&fit=crop&q=80&w=200" 
-                            alt="Jacquard Sweat Tee" 
-                            className="w-full h-16 object-cover rounded bg-neutral-50 mb-1"
-                          />
-                          <h4 className="text-[9px] font-extrabold text-neutral-800 line-clamp-1 uppercase tracking-tight">Jacquard Sweat Tee</h4>
-                          <span className="text-[9px] font-extrabold text-neutral-500 mt-0.5 block">₹199.00</span>
+                        {promoDiscount > 0 && (
+                          <div className="flex justify-between text-green-600 font-extrabold">
+                            <span>Promo Discount ({appliedPromo})</span>
+                            <span>-₹{promoDiscount}.00</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Delivery</span>
+                          <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600" : "text-neutral-900"}`}>
+                            {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue}.00`}
+                          </span>
                         </div>
-                        <button 
-                          onClick={() => quickShop({ id: 102, name: "Jacquard Sweat Tee", price: 199, image: "https://images.unsplash.com/photo-1519242220831-09410926fbff?auto=format&fit=crop&q=80&w=200" })}
-                          className="mt-2 w-full bg-neutral-900 hover:bg-neutral-800 text-white text-[8px] font-extrabold py-1 rounded-sm uppercase tracking-wider transition-colors border-none cursor-pointer"
-                        >
-                          Add
-                        </button>
+                        <div className="flex justify-between text-[10px] font-extrabold text-neutral-950 border-t border-neutral-200 pt-1.5">
+                          <span>Total to Pay</span>
+                          <span className="text-xs">₹{totalToPay}.00</span>
+                        </div>
+                      </div>
+                      
+                      {/* Actions side-by-side */}
+                      <div className="grid grid-cols-2 gap-2 pt-1 pb-1">
+                        <SheetClose asChild>
+                          <button
+                            onClick={() => {
+                              if (isAuthenticated) {
+                                navigate('/checkout');
+                              } else {
+                                navigate('/login', { state: { from: { pathname: '/checkout' } } });
+                              }
+                            }}
+                            className="flex items-center justify-center w-full bg-black hover:bg-neutral-800 text-white py-2.5 rounded-none text-[9px] font-extrabold tracking-[0.15em] text-center uppercase transition-all duration-300 cursor-pointer border border-black"
+                          >
+                            CHECKOUT
+                          </button>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link to="/cart" className="flex items-center justify-center w-full border border-neutral-900 text-neutral-950 bg-white hover:bg-neutral-900 hover:text-white py-2.5 rounded-none text-[9px] font-extrabold tracking-[0.15em] text-center uppercase transition-all duration-300 cursor-pointer">
+                            VIEW CART
+                          </Link>
+                        </SheetClose>
                       </div>
                     </div>
                   </div>
                 )}
               </SheetContent>
             </Sheet>
+
+            <div 
+              className="relative hidden sm:block h-full flex items-center px-3 cursor-pointer"
+              onMouseEnter={() => setIsProfileOpen(true)}
+              onMouseLeave={() => setIsProfileOpen(false)}
+            >
+              <div 
+                className="hover:opacity-75 transition-opacity flex items-center h-full" 
+                aria-label="Profile"
+              >
+                <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+              </div>
+              <div className={`absolute right-0 top-full pt-1 w-60 transition-all duration-300 ease-in-out z-50 ${
+                isProfileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              }`}>
+                <div className="bg-[#FAF8F5] border border-neutral-250/90 shadow-[0_10px_30px_rgba(0,0,0,0.08)] py-3 rounded-none text-left flex flex-col text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-800">
+                  {isAuthenticated && user ? (
+                    <>
+                      {/* User Details Header */}
+                      <Link 
+                        to="/account"
+                        onClick={() => setIsProfileOpen(false)}
+                        title="User Profile"
+                        className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
+                      >
+                        <span className="text-[13px] font-black tracking-[0.1em] text-neutral-900 uppercase">{user.firstName} {user.lastName}</span>
+                        <span className="text-[10px] font-bold tracking-normal text-neutral-500 lowercase mt-1.5">{user.email}</span>
+                      </Link>
+                      
+                      {/* Navigation Links */}
+                      <Link 
+                        to="/account#orders" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:text-black hover:bg-neutral-150/60 transition-colors mt-2"
+                      >
+                        My Orders
+                      </Link>
+                      <Link 
+                        to="/account#addresses" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
+                      >
+                        Address
+                      </Link>
+                      <Link 
+                        to="/account#wishlist" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
+                      >
+                        Wishlist
+                      </Link>
+                      <button 
+                        onClick={() => { logout(); setIsProfileOpen(false); navigate('/login'); }}
+                        className="w-full flex items-center gap-2 text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/40 transition-colors border-t border-neutral-200/60 mt-2 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase bg-transparent border-none cursor-pointer"
+                      >
+                        <LogOut className="h-3.5 w-3.5 stroke-[1.8] text-red-600" />
+                        <span className="text-red-600">Sign Out</span>
+                      </button>
+                    </>
+                  ) : (
+                    <Link 
+                      to="/login" 
+                      onClick={() => setIsProfileOpen(false)}
+                      className="block px-5 py-4 hover:bg-neutral-100/60 transition-colors font-extrabold"
+                    >
+                      Enter The Portal
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <Button 
               variant="ghost" 
@@ -616,9 +682,15 @@ export function Header() {
               <Link to="/help" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 Help
               </Link>
-              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4">
-                Wishlist
+              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4 flex justify-between items-center">
+                <span>Wishlist</span>
+                {wishlistCount > 0 && (
+                  <span className="bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
               </Link>
+
               <Link to="/account" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 Account Settings
               </Link>

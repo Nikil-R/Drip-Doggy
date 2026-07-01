@@ -1,112 +1,71 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { ProductFilters } from "../components/shop/ProductFilters";
 import { ProductGrid } from "../components/shop/ProductGrid";
-import { CuratedCollections } from "../components/shop/CuratedCollections";
-import { Newsletter } from "../components/layout/Newsletter";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
+import { SlidersHorizontal } from "lucide-react";
 
 export function Shop() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const categories = [
-    {
-      name: "ALL PRODUCTS",
-      paramKey: "all",
-      paramVal: "",
-      img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=100"
-    },
-    {
-      name: "NEW ARRIVALS",
-      paramKey: "new",
-      paramVal: "true",
-      img: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=100"
-    },
-    {
-      name: "DRESSES",
-      paramKey: "category",
-      paramVal: "dresses",
-      img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=100"
-    },
-    {
-      name: "OUTERWEAR",
-      paramKey: "category",
-      paramVal: "outerwear",
-      img: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&q=80&w=100"
-    },
-    {
-      name: "ACCESSORIES",
-      paramKey: "gender",
-      paramVal: "accessories",
-      img: "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&q=80&w=100"
-    }
-  ];
-
-  const handleCategoryClick = (key: string, val: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (key === "all") {
-      newParams.delete("category");
-      newParams.delete("gender");
-      newParams.delete("collection");
-      newParams.delete("new");
-    } else {
-      newParams.delete("category");
-      newParams.delete("gender");
-      newParams.delete("collection");
-      newParams.delete("new");
-      newParams.set(key, val);
-    }
-    setSearchParams(newParams);
-  };
-
-  const checkIsActive = (key: string, val: string) => {
-    if (key === "all") {
-      return !searchParams.get("category") && !searchParams.get("gender") && !searchParams.get("collection") && !searchParams.get("new");
-    }
-    return searchParams.get(key) === val;
-  };
+  const totalFilters = getActiveFilterCount(searchParams);
 
   return (
     <main className="pt-8">
+      {/* Mobile Filter Bar */}
+      <div className="lg:hidden max-w-7xl mx-auto px-8 pb-4">
+        <button
+          onClick={() => setMobileFiltersOpen(true)}
+          className="w-full flex items-center justify-center gap-2 border border-neutral-200 bg-white py-3 text-[10px] font-extrabold tracking-[0.2em] uppercase hover:bg-neutral-50 transition-colors bg-transparent border-none cursor-pointer"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5 stroke-[1.8]" />
+          FILTERS
+          {totalFilters > 0 && (
+            <span className="bg-[#030213] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-sm ml-1">
+              {totalFilters}
+            </span>
+          )}
+        </button>
+      </div>
 
-      {/* Visual Category Navigation */}
-      <section className="max-w-7xl mx-auto px-8 mb-12">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none justify-start md:justify-center">
-          {categories.map((cat) => {
-            const isActive = checkIsActive(cat.paramKey, cat.paramVal);
-            return (
-              <button
-                key={cat.name}
-                onClick={() => handleCategoryClick(cat.paramKey, cat.paramVal)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-all duration-300 cursor-pointer whitespace-nowrap select-none ${
-                  isActive 
-                    ? "bg-[#030213] text-white border-[#030213] shadow-sm" 
-                    : "bg-white text-neutral-650 border-neutral-200 hover:border-neutral-400 hover:text-neutral-900"
-                }`}
-              >
-                <img 
-                  src={cat.img} 
-                  alt={cat.name} 
-                  className="w-6 h-6 rounded-full object-cover border border-neutral-200"
-                />
-                <span className="text-[10px] font-bold tracking-[0.1em] uppercase">{cat.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Mobile Filters Sheet */}
+      <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+        <SheetContent side="left" className="w-full sm:max-w-sm bg-[#FAF8F5] overflow-y-auto">
+          <SheetHeader className="p-0">
+            <SheetTitle className="sr-only">Filters</SheetTitle>
+          </SheetHeader>
+          <div className="pt-6 pb-8">
+            <ProductFilters isMobile />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Main Content */}
       <section id="products-section" className="max-w-7xl mx-auto px-8 pb-16">
         <div className="flex gap-8">
-          <ProductFilters />
-          <div className="flex-1">
+          {/* Desktop filters — hidden on mobile */}
+          <div className="hidden lg:block">
+            <ProductFilters />
+          </div>
+          <div className="flex-1 min-w-0">
             <ProductGrid />
           </div>
         </div>
       </section>
-
-      <CuratedCollections />
-      <Newsletter />
     </main>
   );
 }
 
+// ─── Helper ────────────────────────────────────────────────────────────────
+
+function getActiveFilterCount(params: URLSearchParams): number {
+  let count = 0;
+  if (params.get("category")) count++;
+  if (params.get("size")) count++;
+  if (params.get("color")) count++;
+  if (params.get("price")) count++;
+  if (params.get("collection")) count++;
+  if (params.get("new")) count++;
+  return count;
+}
