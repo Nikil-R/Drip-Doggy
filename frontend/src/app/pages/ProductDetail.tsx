@@ -567,12 +567,14 @@ function ProductDetailContent({ product }: { product: Product }) {
                 DESIGN DETAILS
               </h3>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
-                {(product.designDetails ?? [
-                  "Premium Construction",
-                  "Quality Materials",
-                  "Modern Fit",
-                  "Attention to Detail",
-                ]).map((detail) => (
+                {[
+                  "Elasticated Waistband",
+                  "Adjustable Drawstring Closure",
+                  "Dual Side-Seam Cross Pockets",
+                  "Reinforced Ribbed Detailing",
+                  "Premium Breathable Blend",
+                  "Anti-Pilling Soft Finish"
+                ].map((detail) => (
                   <li key={detail} className="flex items-center gap-2">
                     <span className="text-[#b2533e] font-extrabold">—</span>{" "}
                     {detail}
@@ -752,26 +754,29 @@ function ProductDetailContent({ product }: { product: Product }) {
                     </h2>
                     <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">
                       {product.description ??
-                        "A premium piece from our latest collection, designed with meticulous attention to detail and crafted from the finest materials."}
+                        "Experience unparalleled comfort with our signature loungewear garments. Crafted from a soft cotton-polyester blend, this collection promises a cozy and breathable feel, perfect for active lifestyle layers or a restful night's sleep. Classic styling cues offer a timeless look that suits any casual setting."}
                     </p>
 
-                    {(product.features ?? []).length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                        {(product.features ?? []).map((f) => (
-                          <div
-                            key={f.title}
-                            className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
-                          >
-                            <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
-                              {f.title}
-                            </h4>
-                            <p className="text-xs text-neutral-500 leading-relaxed">
-                              {f.content}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+                      {[
+                        { title: "Comfortable Fabric", content: "The premium blend of 80% cotton and 20% polyester ensures a soft touch against your skin, keeping you comfortable all day long." },
+                        { title: "Versatile Design", content: "With its solid pattern and clean fits, this range is perfect for both lounging at home and casual premium streetwear outings." },
+                        { title: "Practical Features", content: "Functional waist rise parameters paired with deep cross pockets allow you to carry everyday essentials with ease." },
+                        { title: "Effortless Style", content: "Constructed with half sleeves and a neat crew neck profile to offer a relaxed yet structured styling silhouette." }
+                      ].map((f) => (
+                        <div
+                          key={f.title}
+                          className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
+                        >
+                          <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
+                            {f.title}
+                          </h4>
+                          <p className="text-xs text-neutral-500 leading-relaxed">
+                            {f.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -781,31 +786,40 @@ function ProductDetailContent({ product }: { product: Product }) {
                     <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
                       PRODUCT SPECIFICATIONS
                     </h2>
-                    {(product.specs ?? []).length > 0 ? (
-                      <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
-                        {(product.specs ?? []).map((spec, idx) => (
-                          <div
-                            key={spec.label}
-                            className={`grid grid-cols-2 ${
-                              idx < (product.specs ?? []).length - 1
-                                ? "border-b border-neutral-150"
-                                : ""
-                            } p-4`}
-                          >
-                            <span className="font-extrabold text-neutral-400 tracking-wider">
-                              {spec.label}
-                            </span>
-                            <span className="font-semibold text-neutral-800">
-                              {spec.value}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-neutral-400 text-sm">
-                        Specifications coming soon.
-                      </p>
-                    )}
+                    {(() => {
+                      const isAcc = product.brand === "ACCESSORIES";
+                      const specsList = [
+                        { label: "Fabric Type", value: isAcc ? "100% Recycled Nylon (Ballistic Grade)" : "Premium Cotton Polyester Blend" },
+                        { label: "Fit / Size", value: isAcc ? "One Size (Adjustable Straps)" : "Regular Comfort Fit" },
+                        { label: "Pattern", value: "Solid Matte Finish" },
+                        { label: "Neck/Collar Type", value: isAcc ? "N/A" : "Classic Crew Neck" },
+                        { label: "Sleeve Type", value: isAcc ? "N/A" : "Half Sleeve" },
+                        { label: "Pockets", value: isAcc ? "Multi-Compartment Organizer Pockets" : "Concealed Side-Seam Cross Pockets" },
+                        { label: "Wash Care", value: "Machine Wash Cold at 40°C. Do Not Bleach. Warm Iron if needed." }
+                      ].filter(spec => spec.value !== "N/A");
+                      
+                      return (
+                        <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
+                          {specsList.map((spec, idx) => (
+                            <div
+                              key={spec.label}
+                              className={`grid grid-cols-2 ${
+                                idx < specsList.length - 1
+                                  ? "border-b border-neutral-150"
+                                  : ""
+                              } p-4`}
+                            >
+                              <span className="font-extrabold text-neutral-400 tracking-wider">
+                                {spec.label}
+                              </span>
+                              <span className="font-semibold text-neutral-800">
+                                {spec.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -819,18 +833,18 @@ function ProductDetailContent({ product }: { product: Product }) {
                       Every order is handled with custom premium packaging.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                      {(product.shippingInfo ?? [
+                      {[
                         {
-                          title: "DELIVERY TIMES",
+                          title: "DOMESTIC DISPATCH TIMELINES",
                           content:
-                            "• Express Shipping: 2-3 working days (Free on order above ₹2,000)\n• Standard Shipping: 5-7 working days (Free on all orders)",
+                            "• Metro Cities (Delhi, Mumbai, Bengaluru, etc.): 2-3 working days\n• Other Regions: 4-6 working days\n• Free shipping on all prepaid orders across India.",
                         },
                         {
-                          title: "EASY EXCHANGES",
+                          title: "7-DAY COMPLIMENTARY RETURN & EXCHANGE",
                           content:
-                            "Enjoy a 7-day return window. Size exchanges are processed with complimentary home pickup across India.",
+                            "Enjoy a 7-day hassle-free return window. Size exchanges are processed with complimentary doorstep home pickup across India.",
                         },
-                      ]).map((info) => (
+                      ].map((info) => (
                         <div
                           key={info.title}
                           className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"

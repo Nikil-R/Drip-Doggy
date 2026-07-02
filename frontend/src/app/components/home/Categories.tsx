@@ -20,20 +20,17 @@ const DEFAULT_CATEGORIES = [
     route: "/coming-soon",
     comingSoon: true,
     comingSeason: "FW26",
-    active: true
+    active: true,
+    hideBadge: true // Custom flag to hide the tag badge
   },
 ];
 
 export function Categories() {
-  const [categoriesList, setCategoriesList] = useState(() => {
-    const loaded = getHomeCategories().filter(c => c.active);
-    return loaded.length > 0 ? loaded : DEFAULT_CATEGORIES;
-  });
+  const [categoriesList, setCategoriesList] = useState(DEFAULT_CATEGORIES);
 
   useEffect(() => {
     const handleUpdate = () => {
-      const loaded = getHomeCategories().filter(c => c.active);
-      setCategoriesList(loaded.length > 0 ? loaded : DEFAULT_CATEGORIES);
+      setCategoriesList(DEFAULT_CATEGORIES);
     };
 
     window.addEventListener("storage", handleUpdate);
@@ -56,7 +53,7 @@ export function Categories() {
             Curatorial Categories
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           {categoriesList.map((category, idx) => (
             <motion.div
               key={category.title}
@@ -67,7 +64,7 @@ export function Categories() {
             >
               <Link
                 to={category.route}
-                className="group relative overflow-hidden min-h-[420px] lg:min-h-[500px] block"
+                className="group relative overflow-hidden min-h-[220px] sm:min-h-[420px] lg:min-h-[500px] block"
               >
                 <img
                   src={category.image}
@@ -83,19 +80,19 @@ export function Categories() {
                 />
 
                 {/* Coming Soon Badge */}
-                {category.comingSoon && (
-                  <div className="absolute top-6 right-6 border border-white/20 px-3 py-1.5 z-10 bg-[#382d24]/40 backdrop-blur-xs">
-                    <span className="text-white text-[8px] font-extrabold tracking-[0.25em] uppercase">
+                {category.comingSoon && !(category as any).hideBadge && (
+                  <div className="absolute top-4 right-4 sm:top-6 sm:right-6 border border-white/20 px-2 sm:px-3 py-1 sm:py-1.5 z-10 bg-[#382d24]/40 backdrop-blur-xs">
+                    <span className="text-white text-[6px] sm:text-[8px] font-extrabold tracking-[0.25em] uppercase">
                       COMING SOON // {category.comingSeason || "FW26"}
                     </span>
                   </div>
                 )}
 
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-10">
-                  <h3 className="text-xl lg:text-2xl font-extrabold tracking-tight mb-1 uppercase">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white z-10">
+                  <h3 className="text-xs sm:text-xl lg:text-2xl font-extrabold tracking-tight mb-1 uppercase">
                     {category.title}
                   </h3>
-                  <p className="text-white/70 text-xs font-medium tracking-wide">
+                  <p className="text-white/70 text-[9px] sm:text-xs font-medium tracking-wide">
                     {category.description}
                   </p>
                 </div>

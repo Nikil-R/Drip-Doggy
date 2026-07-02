@@ -27,6 +27,8 @@ import { NavigationMenuEditorPage } from "./pages/NavigationMenuEditor";
 import { SitePagesEditorPage } from "./pages/SitePagesEditor";
 import { CuratedCollectionsEditorPage } from "./pages/CuratedCollectionsEditor";
 import { ComingSoonEditorPage } from "./pages/ComingSoonEditor";
+import { ProfilePage } from "./pages/Profile";
+import { ChangePasswordPage } from "./pages/ChangePassword";
 
 export default function App() {
   return (
@@ -58,6 +60,8 @@ export default function App() {
           <Route path="content" element={<ContentPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="change-password" element={<ChangePasswordPage />} />
 
           {/* Content Editor Routes */}
           <Route path="content/hero-slides" element={<HeroSlidesEditorPage />} />
