@@ -85,15 +85,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (res.token) {
           saveSessionToken(res.token);
           
-          if (res.userExists && res.user) {
+          if (res.userExists) {
             const authUser: AuthUser = {
-              id: res.user.id,
-              firstName: res.user.firstName,
-              lastName: res.user.lastName,
-              email: res.user.email,
-              phone: res.user.phone,
-              gender: res.user.gender,
-              dateOfBirth: res.user.dateOfBirth,
+              id: res.user?.id || identifier,
+              firstName: res.user?.firstName || "",
+              lastName: res.user?.lastName || "",
+              email: identifier.includes("@") ? identifier : (res.user?.email || ""),
+              phone: identifier.includes("@") ? (res.user?.phone || "") : identifier,
+              gender: res.user?.gender || "",
+              dateOfBirth: res.user?.dateOfBirth || "",
             };
             saveSessionUser(authUser);
             setUser(authUser);

@@ -97,6 +97,19 @@ export function Header() {
   });
 
 
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".profile-menu-container")) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, [isProfileOpen]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
@@ -575,76 +588,77 @@ export function Header() {
               </SheetContent>
             </Sheet>
 
-            <div 
-              className="relative hidden sm:block h-full flex items-center px-3 cursor-pointer"
-              onMouseEnter={() => setIsProfileOpen(true)}
-              onMouseLeave={() => setIsProfileOpen(false)}
-            >
+            {isAuthenticated ? (
               <div 
-                className="hover:opacity-75 transition-opacity flex items-center h-full" 
-                aria-label="Profile"
+                className="relative hidden sm:block h-full flex items-center px-3 cursor-pointer profile-menu-container"
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
               >
-                <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
-              </div>
-              <div className={`absolute right-0 top-full pt-1 w-60 transition-all duration-300 ease-in-out z-50 ${
-                isProfileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-              }`}>
-                <div className="bg-[#FAF8F5] border border-neutral-250/90 shadow-[0_10px_30px_rgba(0,0,0,0.08)] py-3 rounded-none text-left flex flex-col text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-800">
-                  {isAuthenticated && user ? (
-                    <>
-                      {/* User Details Header */}
-                      <Link 
-                        to="/account"
-                        onClick={() => setIsProfileOpen(false)}
-                        title="User Profile"
-                        className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
-                      >
-                        <span className="text-[13px] font-black tracking-[0.1em] text-neutral-900 uppercase">{user.firstName} {user.lastName}</span>
-                        <span className="text-[10px] font-bold tracking-normal text-neutral-500 lowercase mt-1.5">{user.email}</span>
-                      </Link>
-                      
-                      {/* Navigation Links */}
-                      <Link 
-                        to="/account#orders" 
-                        onClick={() => setIsProfileOpen(false)}
-                        className="block px-5 py-3 hover:text-black hover:bg-neutral-150/60 transition-colors mt-2"
-                      >
-                        My Orders
-                      </Link>
-                      <Link 
-                        to="/account#addresses" 
-                        onClick={() => setIsProfileOpen(false)}
-                        className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
-                      >
-                        Address
-                      </Link>
-                      <Link 
-                        to="/account#wishlist" 
-                        onClick={() => setIsProfileOpen(false)}
-                        className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
-                      >
-                        Wishlist
-                      </Link>
-                      <button 
-                        onClick={() => { logout(); setIsProfileOpen(false); navigate('/login'); }}
-                        className="w-full flex items-center gap-2 text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/40 transition-colors border-t border-neutral-200/60 mt-2 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase bg-transparent border-none cursor-pointer"
-                      >
-                        <LogOut className="h-3.5 w-3.5 stroke-[1.8] text-red-600" />
-                        <span className="text-red-600">Sign Out</span>
-                      </button>
-                    </>
-                  ) : (
-                    <Link 
-                      to="/login" 
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-5 py-4 hover:bg-neutral-100/60 transition-colors font-extrabold"
-                    >
-                      Enter The Portal
-                    </Link>
-                  )}
+                <div 
+                  className="hover:opacity-75 transition-opacity flex items-center h-full" 
+                  aria-label="Profile"
+                >
+                  <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+                </div>
+                <div className={`absolute right-0 top-full pt-[10px] w-60 transition-all duration-300 ease-in-out z-50 ${
+                  isProfileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                }`} onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-[#FAF8F5] border border-neutral-250/90 shadow-[0_10px_30px_rgba(0,0,0,0.08)] py-3 rounded-none text-left flex flex-col text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-800">
+                    {user && (
+                      <>
+                        {/* User Details Header */}
+                        <Link 
+                          to="/account"
+                          onClick={() => setIsProfileOpen(false)}
+                          title="User Profile"
+                          className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
+                        >
+                          <span className="text-[13px] font-black tracking-[0.1em] text-neutral-900 uppercase">{user.firstName} {user.lastName}</span>
+                          <span className="text-[10px] font-bold tracking-normal text-neutral-500 lowercase mt-1.5">{user.email}</span>
+                        </Link>
+                        
+                        {/* Navigation Links */}
+                        <Link 
+                          to="/account#orders" 
+                          onClick={() => setIsProfileOpen(false)}
+                          className="block px-5 py-3 hover:text-black hover:bg-neutral-150/60 transition-colors mt-2"
+                        >
+                          My Orders
+                        </Link>
+                        <Link 
+                          to="/account#addresses" 
+                          onClick={() => setIsProfileOpen(false)}
+                          className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
+                        >
+                          Address
+                        </Link>
+                        <Link 
+                          to="/account#wishlist" 
+                          onClick={() => setIsProfileOpen(false)}
+                          className="block px-5 py-3 hover:text-black hover:bg-neutral-155/60 transition-colors"
+                        >
+                          Wishlist
+                        </Link>
+                        <button 
+                          onClick={() => { logout(); setIsProfileOpen(false); navigate('/login'); }}
+                          className="w-full flex items-center gap-2 text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/40 transition-colors border-t border-neutral-200/60 mt-2 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase bg-transparent border-none cursor-pointer"
+                        >
+                          <LogOut className="h-3.5 w-3.5 stroke-[1.8] text-red-600" />
+                          <span className="text-red-600">Sign Out</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="hidden sm:flex hover:opacity-75 transition-opacity items-center px-3 bg-transparent border-none cursor-pointer h-full"
+                aria-label="Login"
+              >
+                <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+              </button>
+            )}
 
             <Button 
               variant="ghost" 

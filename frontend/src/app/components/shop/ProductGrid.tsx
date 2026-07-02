@@ -588,7 +588,7 @@ export function ProductGrid() {
   return (
     <div>
       {/* Sorting bar */}
-      <div className="flex justify-between items-baseline mb-8 text-xs font-bold tracking-widest text-neutral-400 uppercase">
+      <div className="hidden lg:flex justify-between items-baseline mb-8 text-xs font-bold tracking-widest text-neutral-400 uppercase">
         <p>
           SHOWING {isLoading ? "..." : filteredProducts.length} PRODUCT
           {filteredProducts.length !== 1 ? "S" : ""}
@@ -617,7 +617,7 @@ export function ProductGrid() {
       </div>
 
       {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-16">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8 mb-16">
         {isLoading ? (
           [...Array(6)].map((_, i) => <ProductSkeleton key={i} />)
         ) : filteredProducts.length === 0 ? (

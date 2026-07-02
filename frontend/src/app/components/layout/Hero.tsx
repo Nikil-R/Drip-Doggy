@@ -79,7 +79,7 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative min-h-screen lg:h-screen overflow-hidden pt-[73px] lg:pt-[81px]"
+      className="relative h-screen overflow-hidden"
     >
       {/* Background Slides with parallax */}
       {slides.map((slide, index) => (
@@ -106,27 +106,27 @@ export function Hero() {
 
       {/* Content with parallax fade-out */}
       <motion.div
-        className="relative container mx-auto px-6 h-full flex items-center z-10"
+        className="relative container mx-auto px-6 h-full flex items-center justify-center sm:justify-start z-10"
         style={{ y: contentParallaxY, opacity: contentOpacity }}
       >
-        <div className="max-w-xl text-white">
+        <div className="max-w-xl text-white text-center sm:text-left">
           <div
             className={`transition-all duration-[600ms] ease-out transform ${
               fade ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
           >
-            <span className="text-[10px] font-bold tracking-[0.3em] text-white/70 uppercase block mb-4">
+            <span className="text-[8px] sm:text-[10px] font-bold tracking-[0.3em] text-white/70 uppercase block mb-3 sm:mb-4">
               {activeSlide.tagline}
             </span>
-            <h1 className="text-5xl lg:text-7xl mb-4 font-extrabold tracking-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl mb-3 sm:mb-4 font-extrabold tracking-tight uppercase leading-tight">
               {activeSlide.title}
             </h1>
-            <p className="text-sm lg:text-base text-white/60 font-medium tracking-wide mb-8 max-w-md leading-relaxed">
+            <p className="text-xs sm:text-sm lg:text-base text-white/60 font-medium tracking-wide mb-6 sm:mb-8 max-w-md mx-auto sm:mx-0 leading-relaxed">
               {activeSlide.description}
             </p>
             <Link
               to={activeSlide.ctaLink || "/shop"}
-              className="inline-block bg-white text-[#030213] hover:bg-white/90 px-8 py-3.5 text-xs font-extrabold tracking-[0.2em] uppercase transition-colors"
+              className="inline-block bg-white text-[#030213] hover:bg-white/90 px-6 sm:px-8 py-3 sm:py-3.5 text-[10px] sm:text-xs font-extrabold tracking-[0.2em] uppercase transition-colors"
             >
               {activeSlide.ctaText || "Explore Collection"}
             </Link>
