@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, X, RotateCcw, Check, AlertTriangle, ArrowUp, ArrowDown, Sparkles } from "lucide-react";
+import { Plus, Trash2, Edit2, X, RotateCcw, Check, AlertTriangle, ArrowUp, ArrowDown, Sparkles, Upload } from "lucide-react";
 import {
   getComingSoonTeasers,
   setComingSoonTeasers,
@@ -315,14 +315,91 @@ export function ComingSoonEditorPage() {
 
               <div>
                 <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">
-                  Image URL *
+                  Image Upload * <span className="text-red-500 font-normal lowercase text-[7px]">(600x800 pixels)</span>
                 </label>
-                <input
-                  value={form.image}
-                  onChange={e => setForm({ ...form, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/…"
-                  className="w-full border border-neutral-200 px-3 py-2 text-[9px] font-mono focus:outline-none focus:border-[#224870] rounded-none bg-white text-neutral-600"
-                />
+                <div className="flex items-center gap-3">
+                  {form.image ? (
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-[60px] h-[80px] border border-neutral-200 overflow-hidden bg-neutral-50 flex-shrink-0">
+                        <img src={form.image} alt="Coming Soon asset" className="w-full h-full object-cover" />
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = "image/*";
+                          input.onchange = (e: any) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                if (ev.target?.result) {
+                                  const base64Url = ev.target.result as string;
+                                  const img = new Image();
+                                  img.onload = () => {
+                                    if (img.width !== 600 || img.height !== 800) {
+                                      alert(`Error: Image dimensions are ${img.width}x${img.height}px. It must be exactly 600x800 pixels.`);
+                                    } else {
+                                      setForm(prev => ({ ...prev, image: base64Url }));
+                                    }
+                                  };
+                                  img.src = base64Url;
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }} 
+                        className="bg-white border border-neutral-250 hover:border-[#030213] text-[#030213] text-[8px] font-bold px-3 py-1.5 uppercase cursor-pointer transition-colors rounded-none"
+                      >
+                        Change Image
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => setForm(prev => ({ ...prev, image: "" }))} 
+                        className="bg-transparent border border-neutral-250 text-[#b2533e] text-[8px] font-bold px-3 py-1.5 uppercase cursor-pointer hover:border-[#b2533e] transition-colors rounded-none"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = "image/*";
+                        input.onchange = (e: any) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              if (ev.target?.result) {
+                                const base64Url = ev.target.result as string;
+                                const img = new Image();
+                                img.onload = () => {
+                                  if (img.width !== 600 || img.height !== 800) {
+                                    alert(`Error: Image dimensions are ${img.width}x${img.height}px. It must be exactly 600x800 pixels.`);
+                                  } else {
+                                    setForm(prev => ({ ...prev, image: base64Url }));
+                                  }
+                                };
+                                img.src = base64Url;
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        };
+                        input.click();
+                      }} 
+                      className="flex items-center gap-2 cursor-pointer px-4 py-2 border border-dashed border-neutral-250 hover:border-neutral-400 transition-colors rounded-none bg-white w-full justify-center"
+                    >
+                      <Upload className="w-4 h-4 text-neutral-300 stroke-[1.5]" />
+                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Upload 600x800px Image</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-3">

@@ -45,10 +45,48 @@ export function LoginPage() {
     try {
       const res = await authApi.verifyOtp(email, emailOtp);
       if (res.token) {
+        let resolvedName = res.adminUser
+          ? `${res.adminUser.firstName || res.adminUser.first_name || ""} ${res.adminUser.lastName || res.adminUser.last_name || ""}`.trim()
+          : "";
+
+        // Fallback: If backend verifyOtp only returns email/role, query the admin directory list to resolve the profile name
+        if (!resolvedName) {
+          try {
+            const listResponse = await fetch("/dripdoggy/api/auth/admin/list", {
+              headers: { Authorization: `Bearer ${res.token}` }
+            });
+            if (listResponse.ok) {
+              const listData = await listResponse.json();
+              if (Array.isArray(listData)) {
+                const matched = listData.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+                if (matched) {
+                  resolvedName = `${matched.first_name || matched.firstName || ""} ${matched.last_name || matched.lastName || ""}`.trim();
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Could not retrieve names from list, falling back to static mapping", e);
+          }
+        }
+
+        // Hard fallback parsing for the login credentials if the database fetch isn't working
+        if (!resolvedName) {
+          const lowerEmail = email.toLowerCase();
+          if (lowerEmail.includes("nikilvijay46")) {
+            resolvedName = "Nikil R";
+          } else if (lowerEmail.includes("vinayvinu94212")) {
+            resolvedName = "Vinay Raj";
+          } else if (lowerEmail.includes("annamalajeshwanth")) {
+            resolvedName = "Jeshwanth";
+          } else {
+            resolvedName = email.split("@")[0].toUpperCase();
+          }
+        }
+
         setSession({
           id: res.adminUser?.email || "admin",
           email: res.adminUser?.email || email,
-          name: "Admin"
+          name: resolvedName
         }, res.token);
         navigate("/admin/dashboard");
       } else {

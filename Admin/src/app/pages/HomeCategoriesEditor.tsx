@@ -98,7 +98,17 @@ export function HomeCategoriesEditorPage() {
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === "string") {
-        setForm(prev => ({ ...prev, image: reader.result as string }));
+        const base64Url = reader.result;
+        const img = new Image();
+        img.onload = () => {
+          if (img.width !== 800 || img.height !== 1000) {
+            alert(`Upload Rejected: Image dimensions are ${img.width}x${img.height}px. Category images must be exactly 800x1000px.`);
+            if (e.target) e.target.value = "";
+          } else {
+            setForm(prev => ({ ...prev, image: base64Url }));
+          }
+        };
+        img.src = base64Url;
       }
     };
     reader.readAsDataURL(file);
@@ -242,56 +252,12 @@ export function HomeCategoriesEditorPage() {
                   <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Category Banner Image</label>
                   <span className="text-[7.5px] text-[#b2533e] font-black uppercase tracking-wider bg-red-50 px-2 py-0.5 border border-red-200">Required Ratio: 800 x 1000 px</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#faf8f5] p-3.5 border border-neutral-300">
+                <div className="bg-[#faf8f5] p-3.5 border border-neutral-300">
                   <div className="space-y-1">
-                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-1">Option A: Image URL</span>
-                    <input 
-                      value={form.image} 
-                      onChange={e => {
-                        const val = e.target.value;
-                        setForm(prev => ({ ...prev, image: val }));
-                        if (val.startsWith("http")) {
-                          const img = new Image();
-                          img.onload = () => {
-                            if (img.width !== 800 || img.height !== 1000) {
-                              alert(`Warning: Image resolution is ${img.width}x${img.height}px. It should be exactly 800x1000px for optimal catalog fit.`);
-                            }
-                          };
-                          img.src = val;
-                        }
-                      }}
-                      className="w-full border border-neutral-300 bg-white px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" 
-                      placeholder="https://..." 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-1">Option B: Upload File</span>
+                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-1">Upload File</span>
                     <label className="w-full border border-neutral-300 hover:border-[#224870] bg-white px-3.5 py-2 text-xs font-bold text-[#382d24] flex items-center justify-center cursor-pointer transition-colors relative h-[38px]">
                       <span className="truncate">{form.image.startsWith("data:") ? "Image Loaded" : "Choose File..."}</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            if (typeof reader.result === "string") {
-                              const img = new Image();
-                              img.onload = () => {
-                                if (img.width !== 800 || img.height !== 1000) {
-                                  alert(`Upload Rejected: Image dimensions are ${img.width}x${img.height}px. Category images must be exactly 800x1000px.`);
-                                  return;
-                                }
-                                setForm(prev => ({ ...prev, image: reader.result as string }));
-                              };
-                              img.src = reader.result;
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        }} 
-                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                      />
+                      <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </label>
                   </div>
                 </div>
@@ -300,9 +266,6 @@ export function HomeCategoriesEditorPage() {
                     <span className="text-[8px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000 aspect)</span>
                     <div className="w-[160px] h-[200px] border border-neutral-300 overflow-hidden shrink-0 relative group shadow-sm">
                       <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-[#382d24]/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-white text-[8px] font-bold uppercase tracking-wider">Aspect Checked Preview</span>
-                      </div>
                     </div>
                   </div>
                 )}

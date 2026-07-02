@@ -132,6 +132,30 @@ export function AddProductPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [feedbackMsg, setFeedbackMsg] = useState("");
 
+  // PDP Rich Details: Specs and Design Details (New Section 4 states)
+  const [specs, setSpecs] = useState<{ label: string; value: string }[]>([
+    { label: "Fabric Type", value: "Premium Cotton Polyester Blend" },
+    { label: "Fit / Size", value: "Regular Comfort Fit" },
+    { label: "Pattern", value: "Solid Matte Finish" },
+    { label: "Neck/Collar Type", value: "Classic Crew Neck" },
+    { label: "Sleeve Type", value: "Half Sleeve" },
+    { label: "Pockets", value: "Concealed Side-Seam Cross Pockets" },
+    { label: "Wash Care", value: "Machine Wash Cold at 40°C. Do Not Bleach. Warm Iron if needed." }
+  ]);
+
+  const [designDetails, setDesignDetails] = useState<string[]>([
+    "Elasticated Waistband",
+    "Adjustable Drawstring Closure",
+    "Dual Side-Seam Cross Pockets",
+    "Reinforced Ribbed Detailing",
+    "Premium Breathable Blend",
+    "Anti-Pilling Soft Finish"
+  ]);
+
+  const [newSpecLabel, setNewSpecLabel] = useState("");
+  const [newSpecValue, setNewSpecValue] = useState("");
+  const [newDetailVal, setNewDetailVal] = useState("");
+
   // Load draft or edit product on mount
   useEffect(() => {
     if (isEdit && id) {
@@ -372,7 +396,11 @@ export function AddProductPage() {
                     key={t}
                     type="button"
                     onClick={() => {
-                      setSelectedTags([t]);
+                      if (isChecked) {
+                        setSelectedTags([]);
+                      } else {
+                        setSelectedTags([t]);
+                      }
                     }}
                     onContextMenu={(e) => {
                       e.preventDefault();
@@ -807,6 +835,193 @@ export function AddProductPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* 4. Product Details (Specs & Design Details) */}
+        <div className="bg-[#faf8f5] border border-[#382d24]/15 p-7 space-y-8">
+          <div className="border-b border-[#382d24]/15 pb-4">
+            <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest">
+              4. Product Details (Specs & Design Details)
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Col: Specifications */}
+            <div className="space-y-5">
+              <h4 className="text-[11px] font-black text-[#224870] uppercase tracking-widest border-b border-[#382d24]/10 pb-1.5">
+                Technical Specifications
+              </h4>
+              
+              {/* Predefined Standard Specs List with Checkboxes */}
+              <div className="space-y-3">
+                <span className="text-[9.5px] font-black text-[#615e56] uppercase tracking-wider block">Standard Specifications</span>
+                {[
+                  { key: "Fabric Type", placeholder: "e.g. Cotton Polyester Blend" },
+                  { key: "Fit / Size", placeholder: "e.g. Regular Fit" },
+                  { key: "Pattern", placeholder: "e.g. Solid Matte Finish" },
+                  { key: "Neck/Collar Type", placeholder: "e.g. Classic Crew Neck" },
+                  { key: "Sleeve Type", placeholder: "e.g. Half Sleeve" },
+                  { key: "Pockets", placeholder: "e.g. Cross Pocket" },
+                  { key: "Wash Care", placeholder: "e.g. Machine Wash Cold" }
+                ].map((std) => {
+                  const activeSpec = specs.find(s => s.label === std.key);
+                  const isChecked = !!activeSpec;
+                  return (
+                    <div key={std.key} className="flex gap-3 items-center bg-white border border-[#382d24]/10 p-3">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSpecs(prev => prev.filter(s => s.label !== std.key));
+                          } else {
+                            setSpecs(prev => [...prev, { label: std.key, value: "" }]);
+                          }
+                        }}
+                        className="w-4 h-4 cursor-pointer accent-[#224870]"
+                      />
+                      <span className="w-1/3 text-xs font-bold text-[#382d24] uppercase tracking-wider">{std.key}</span>
+                      <input
+                        type="text"
+                        disabled={!isChecked}
+                        placeholder={std.placeholder}
+                        value={activeSpec?.value || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSpecs(prev => prev.map(s => s.label === std.key ? { ...s, value: val } : s));
+                        }}
+                        className="flex-1 bg-[#faf8f5] disabled:opacity-50 border border-[#382d24]/20 px-2.5 py-1.5 text-xs font-bold text-[#382d24] disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Custom / Added Specs Section */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[9.5px] font-black text-[#615e56] uppercase tracking-wider block">Custom Specifications</span>
+                {specs.filter(s => ![
+                  "Fabric Type",
+                  "Fit / Size",
+                  "Pattern",
+                  "Neck/Collar Type",
+                  "Sleeve Type",
+                  "Pockets",
+                  "Wash Care"
+                ].includes(s.label)).map((spec, sIdx) => {
+                  return (
+                    <div key={spec.label} className="flex gap-2 items-center bg-white border border-[#382d24]/10 p-2.5">
+                      <span className="w-1/3 text-xs font-bold text-[#382d24] uppercase tracking-wider">{spec.label}</span>
+                      <input
+                        type="text"
+                        value={spec.value}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSpecs(prev => prev.map(s => s.label === spec.label ? { ...s, value: val } : s));
+                        }}
+                        className="flex-1 bg-[#faf8f5] border border-[#382d24]/20 px-2.5 py-1.5 text-xs font-bold text-[#382d24]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSpecs(prev => prev.filter(s => s.label !== spec.label))}
+                        className="text-[#b2533e] hover:text-red-700 bg-transparent border-none cursor-pointer p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Add New Custom Spec Form */}
+              <div className="flex gap-2 items-center border border-dashed border-[#382d24]/20 p-3 bg-white/50">
+                <input
+                  type="text"
+                  placeholder="CUSTOM LABEL"
+                  value={newSpecLabel}
+                  onChange={(e) => setNewSpecLabel(e.target.value)}
+                  className="w-1/3 bg-white border border-[#382d24]/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#382d24]"
+                />
+                <input
+                  type="text"
+                  placeholder="CUSTOM VALUE"
+                  value={newSpecValue}
+                  onChange={(e) => setNewSpecValue(e.target.value)}
+                  className="flex-1 bg-white border border-[#382d24]/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#382d24]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newSpecLabel.trim() && newSpecValue.trim()) {
+                      const cleanLabel = newSpecLabel.trim();
+                      if (specs.some(s => s.label.toLowerCase() === cleanLabel.toLowerCase())) {
+                        alert("A specification with this label already exists.");
+                        return;
+                      }
+                      setSpecs(prev => [...prev, { label: cleanLabel, value: newSpecValue.trim() }]);
+                      setNewSpecLabel("");
+                      setNewSpecValue("");
+                    }
+                  }}
+                  className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9px] font-bold tracking-widest px-3 py-1.5 uppercase border-none cursor-pointer transition-colors"
+                >
+                  ADD
+                </button>
+              </div>
+            </div>
+
+            {/* Right Col: Design Details */}
+            <div className="space-y-4">
+              <h4 className="text-[11px] font-black text-[#224870] uppercase tracking-widest border-b border-[#382d24]/10 pb-1.5">
+                Design Details Bullets
+              </h4>
+              <div className="space-y-2">
+                {designDetails.map((detail, dIdx) => (
+                  <div key={dIdx} className="flex gap-2 items-center bg-white border border-[#382d24]/10 p-2.5">
+                    <input
+                      type="text"
+                      value={detail}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDesignDetails(prev => prev.map((d, idx) => idx === dIdx ? val : d));
+                      }}
+                      className="flex-1 bg-[#faf8f5] border border-[#382d24]/20 px-2 py-1.5 text-xs font-bold text-[#382d24]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setDesignDetails(prev => prev.filter((_, idx) => idx !== dIdx))}
+                      className="text-[#b2533e] hover:text-red-700 bg-transparent border-none cursor-pointer p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New Detail Form */}
+              <div className="flex gap-2 items-center border border-dashed border-[#382d24]/20 p-3 bg-white/50">
+                <input
+                  type="text"
+                  placeholder="BULLET DETAIL (e.g. Drawstring Waist)"
+                  value={newDetailVal}
+                  onChange={(e) => setNewDetailVal(e.target.value)}
+                  className="flex-1 bg-white border border-[#382d24]/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#382d24]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newDetailVal.trim()) {
+                      setDesignDetails(prev => [...prev, newDetailVal.trim()]);
+                      setNewDetailVal("");
+                    }
+                  }}
+                  className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9px] font-bold tracking-widest px-3 py-1.5 uppercase border-none cursor-pointer transition-colors"
+                >
+                  ADD
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

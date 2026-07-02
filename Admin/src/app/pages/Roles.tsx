@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/app/store/auth-store";
 import { authApi } from "@/app/lib/auth-api";
 import {
@@ -46,6 +46,47 @@ export function RolesPage() {
 
   const { user, token } = useAuthStore();
   const [inviteError, setInviteError] = useState<string | null>(null);
+
+  // Fetch admin users on mount
+  useEffect(() => {
+    async function fetchAdmins() {
+      if (!token) return;
+      try {
+        // Fetch through local Vite server proxy to hit the database correctly
+        const response = await fetch("/dripdoggy/api/auth/admin/list", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            // Mapped keys directly matching the database user schema columns (first_name, last_name, role, dob, phone_no, gender)
+            const mapped: AdminUser[] = data.map((item: any, index: number) => ({
+              id: item.id ? `DD-ADM-${item.id}` : `DD-ADM-00${index + 1}`,
+              name: item.first_name && item.last_name 
+                ? `${item.first_name} ${item.last_name}` 
+                : (item.first_name || item.last_name || item.name || "Nikil"),
+              email: item.email || "nikil@dripdoggy.com",
+              role: item.role || "Admin",
+              status: item.status === "Active" || item.status === "Inactive" || item.status === "Pending" ? item.status : "Active",
+              lastActive: item.lastActive || "Just now",
+              lastLoginIP: item.lastLoginIP || "—",
+              permissionsCount: 18,
+              twoFactorEnabled: !!item.twoFactorEnabled,
+              department: item.department || "Tech"
+            }));
+            setAdmins(mapped);
+          }
+        } else {
+          throw new Error(`HTTP Error Status: ${response.status}`);
+        }
+      } catch (err) {
+        console.warn("Backend admin list query returned error, using fallback seed database.", err);
+      }
+    }
+    fetchAdmins();
+  }, [token]);
 
   const handleInviteAdmin = async (e: React.FormEvent) => {
     e.preventDefault();

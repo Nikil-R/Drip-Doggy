@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 
 export function TopBar() {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const { isCollapsed } = useSidebarStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,8 +48,18 @@ export function TopBar() {
     if (path.includes("/admin/content")) return "Content Manager";
     if (path.includes("/admin/analytics")) return "Analytics";
     if (path.includes("/admin/settings")) return "Settings";
+    if (path.includes("/admin/profile")) return "Admin Profile";
+    if (path.includes("/admin/change-password")) return "Change Password";
     return "Drip Doggy";
   };
+
+  // Extract initials for profile avatar
+  const userInitials = (user?.name || "Admin")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header
@@ -96,8 +106,8 @@ export function TopBar() {
             className="flex items-center gap-1.5 p-1.5 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 hover:border-neutral-300 transition-all duration-150 cursor-pointer rounded-none group"
             title="Profile"
           >
-            <div className="w-7 h-7 rounded-full bg-[#224870]/10 border border-[#224870]/20 flex items-center justify-center overflow-hidden">
-              <User className="w-3.5 h-3.5 text-[#224870]" />
+            <div className="w-7 h-7 rounded-none bg-[#224870]/10 border border-[#224870]/20 flex items-center justify-center overflow-hidden text-[9px] font-black tracking-wider text-[#224870]">
+              {userInitials}
             </div>
             <ChevronDown className={cn(
               "w-3 h-3 text-neutral-400 transition-transform duration-200",
@@ -110,8 +120,12 @@ export function TopBar() {
             <div className="absolute top-full right-0 mt-2 w-48 bg-background border border-neutral-200 shadow-xl z-50 py-1">
               {/* Header */}
               <div className="px-4 py-2.5 border-b border-neutral-100">
-                <p className="text-[10px] font-black uppercase tracking-wider text-[#382d24]">Nikil</p>
-                <p className="text-[9px] text-neutral-400 font-medium mt-0.5">nikil@dripdoggy.com</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#382d24]">
+                  {user?.email?.toLowerCase().includes("nikilvijay46") 
+                    ? "Nikil R" 
+                    : (user?.name && user.name !== "Admin" ? user.name : "Admin")}
+                </p>
+                <p className="text-[9px] text-neutral-400 font-semibold mt-0.5 lowercase">{user?.email || "admin@dripdoggy.com"}</p>
               </div>
 
               {/* Menu Items */}
