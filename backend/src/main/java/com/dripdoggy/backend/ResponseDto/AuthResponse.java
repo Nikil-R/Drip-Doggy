@@ -8,6 +8,7 @@ public class AuthResponse {
 	private String message;
 	private String token;
 	private Boolean userExists;
+	private UserDto user;
 
 	public Integer getStatusCode() {
 		return statusCode;
@@ -61,4 +62,11 @@ public class AuthResponse {
 		// TODO Auto-generated constructor stub
 	}
 
+	public UserDto getUser() {
+		return user;
+	}
+
+	public void setUser(UserDto user) {
+		this.user = user;
+	}
 }
