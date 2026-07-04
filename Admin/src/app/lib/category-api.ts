@@ -3,7 +3,8 @@ import { API_CONFIG } from "../utils/api-config";
 const BASE_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CATEGORIES}`;
 
 export interface BackendCategory {
-  id: number;
+  id?: number;
+  categoryId: number;
   categoryName: string;
   imageUrl: string;
   imagePath?: string;
@@ -15,6 +16,7 @@ export interface BackendCategory {
 
 export interface BackendSubCategory {
   subCategoryId: number;
+  categoryId?: number;
   subcategoryName: string;
   imageUrl: string;
   imagePath?: string;

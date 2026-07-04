@@ -1,6 +1,8 @@
 import { Slider } from "../ui/slider";
 import { Separator } from "../ui/separator";
 import { useSearchParams } from "react-router";
+import { useState, useEffect, useMemo } from "react";
+import { categoryApi, Category } from "../../lib/category-api";
 
 // ─── Helper to map hex → color name ────────────────────────────────────────
 function hexToColorName(hex: string): string | undefined {
@@ -27,25 +29,44 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
     searchParams.get("category")?.toUpperCase() ||
     (isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
   const selectedSize = searchParams.get("size")?.toUpperCase() || "";
-  const selectedColor = searchParams.get("color") || "";
 
   const priceRangeParam = searchParams.get("price");
   const priceRange = priceRangeParam
     ? priceRangeParam.split("-").map(Number)
-    : [0, 500];
+    : [0, 10000];
 
-  const categories = isAccessories
-    ? ["ALL ACCESSORIES", "BAGS", "CAPS", "BELTS"]
-    : ["ALL WOMEN'S", "DRESSES", "OUTERWEAR", "TOPS", "SKIRTS"];
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const list = await categoryApi.fetchCategories();
+        setDbCategories(list.filter(c => c.isActive !== false));
+      } catch (err) {
+        console.error("Error loading categories", err);
+      }
+    }
+    loadCategories();
+  }, []);
+
+  const activeSubcategories = useMemo(() => {
+    const subs = new Set<string>();
+    subs.add(isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
+    dbCategories.forEach(cat => {
+      if (cat.subCategories) {
+        cat.subCategories.forEach(sub => {
+          if (sub.isActive !== false) {
+            subs.add(sub.subcategoryName.toUpperCase());
+          }
+        });
+      }
+    });
+    return Array.from(subs);
+  }, [dbCategories, isAccessories]);
+
+  const categories = activeSubcategories;
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-  const colors = [
-    { name: "Black", value: "#000000" },
-    { name: "White", value: "#FFFFFF" },
-    { name: "Gray", value: "#9CA3AF" },
-    { name: "Brown", value: "#92400E" },
-    { name: "Beige", value: "#D4C5B9" },
-  ];
 
   const handleCategoryClick = (category: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -69,15 +90,7 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
     setSearchParams(newParams);
   };
 
-  const handleColorClick = (colorName: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (selectedColor.toLowerCase() === colorName.toLowerCase()) {
-      newParams.delete("color");
-    } else {
-      newParams.set("color", colorName.toLowerCase());
-    }
-    setSearchParams(newParams);
-  };
+
 
   const handlePriceChange = (val: number[]) => {
     const newParams = new URLSearchParams(searchParams);
@@ -103,7 +116,6 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
 
   const hasActiveFilters =
     selectedSize ||
-    selectedColor ||
     priceRange[0] > 0 ||
     priceRange[1] < 500 ||
     selectedCategory;
@@ -173,35 +185,6 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
           ))}
         </div>
       </div>
-
-      <Separator className="my-6 bg-neutral-200/60 h-px" />
-
-      {/* Colors */}
-      <div className="mb-8">
-        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">
-          COLOR
-        </h3>
-        <div className="flex flex-wrap gap-2.5">
-          {colors.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => handleColorClick(color.name)}
-              className={`w-8 h-8 rounded-full border border-neutral-200 p-0.5 transition-all hover:scale-105 bg-transparent cursor-pointer ${
-                selectedColor.toLowerCase() === color.name.toLowerCase()
-                  ? "ring-2 ring-neutral-900 ring-offset-2 scale-105"
-                  : ""
-              }`}
-              title={color.name}
-            >
-              <div
-                className="w-full h-full rounded-full border border-neutral-200/20"
-                style={{ backgroundColor: color.value }}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
       <Separator className="my-6 bg-neutral-200/60 h-px" />
 
       {/* Price Range */}
@@ -212,9 +195,9 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
         <div className="px-1 py-3">
           <Slider
             min={0}
-            max={500}
-            step={10}
-            defaultValue={[0, 500]}
+            max={10000}
+            step={100}
+            defaultValue={[0, 10000]}
             value={priceRange}
             onValueChange={handlePriceChange}
             className="w-full cursor-pointer accent-[#030213]"

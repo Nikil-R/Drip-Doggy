@@ -103,18 +103,18 @@ export function CategoriesPage() {
       const mapped: Category[] = categoriesData.map((bc: BackendCategory) => {
         // Filter subcategories that belong to this categoryId
         const subCats: SubCategory[] = subcategoriesData
-          .filter((bsc: BackendSubCategory) => Number(bsc.categoryId) === bc.id)
+          .filter((bsc: BackendSubCategory) => Number(bsc.categoryId) === bc.categoryId)
           .map((bsc: BackendSubCategory) => ({
             id: String(bsc.subCategoryId),
             name: bsc.subcategoryName,
             description: bsc.description || "",
             imageUrl: bsc.imageUrl || "",
             isActive: bsc.isActive,
-            categoryId: String(bc.id),
+            categoryId: String(bc.categoryId),
           }));
 
         return {
-          id: String(bc.id),
+          id: String(bc.categoryId),
           label: bc.categoryName,
           sub: bc.description,
           parent: bc.categoryName,
@@ -287,6 +287,11 @@ export function CategoriesPage() {
     e.preventDefault();
     if (!subName.trim() || !selectedCategoryId || !token) return;
 
+    if (subDescription.trim().length < 5 || subDescription.trim().length > 255) {
+      alert("Subcategory description must be between 5 and 255 characters.");
+      return;
+    }
+
     try {
       await subCategoryApi.createSubCategory(
         subName.trim(),
@@ -340,6 +345,11 @@ export function CategoriesPage() {
   const handleSaveSubCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editSubTarget || !token) return;
+
+    if (subDescription.trim().length < 5 || subDescription.trim().length > 255) {
+      alert("Subcategory description must be between 5 and 255 characters.");
+      return;
+    }
 
     try {
       await subCategoryApi.updateSubCategory(

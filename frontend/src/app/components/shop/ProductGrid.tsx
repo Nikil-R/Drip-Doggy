@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { products as catalogProducts } from "../../data/products";
 import type { Product } from "../../data/products";
+import { productApi } from "../../lib/product-api";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -156,44 +157,29 @@ function ProductCard({
 
       {/* Info */}
       <div className="flex flex-col gap-1.5 mt-1">
-        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">
-          {product.brand}
-        </span>
         <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1">
           {product.name}
         </h3>
 
-        <div className="flex items-baseline gap-2 mt-0.5">
-          <span className="text-sm font-extrabold text-neutral-900">
-            ₹{product.price.toFixed(2)}
-          </span>
-          {product.originalPrice && (
-            <>
-              <span className="text-xs font-semibold text-neutral-450 line-through">
-                ₹{product.originalPrice.toFixed(2)}
-              </span>
-              {discount > 0 && (
-                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
-                  {discount}% OFF
+        <div className="flex items-center justify-between mt-0.5">
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-extrabold text-neutral-900">
+              ₹{product.price.toFixed(2)}
+            </span>
+            {product.originalPrice && (
+              <>
+                <span className="text-xs font-semibold text-neutral-450 line-through">
+                  ₹{product.originalPrice.toFixed(2)}
                 </span>
-              )}
-            </>
-          )}
-        </div>
-
-        {product.colors && product.colors.length > 0 && (
-          <div className="flex gap-1.5">
-            {product.colors.map((c, i) => (
-              <div
-                key={i}
-                className="w-2.5 h-2.5 border border-neutral-200"
-                style={{ backgroundColor: c }}
-              />
-            ))}
+                {discount > 0 && (
+                  <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
+                    {discount}% OFF
+                  </span>
+                )}
+              </>
+            )}
           </div>
-        )}
 
-        {product.rating && (
           <div className="flex items-center text-neutral-800">
             {[...Array(5)].map((_, i) => (
               <Star
@@ -202,7 +188,7 @@ function ProductCard({
               />
             ))}
           </div>
-        )}
+        </div>
       </div>
     </Link>
   );
@@ -226,8 +212,19 @@ export function ProductGrid() {
   const [visibleCount, setVisibleCount] = useState(6);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  // Use shared catalog — no more hardcoded products
-  const [products] = useState<Product[]>(catalogProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const list = await productApi.fetchProducts();
+        setProducts(list);
+      } catch (err) {
+        console.error("Error loading products in shop page", err);
+      }
+    }
+    loadProducts();
+  }, []);
 
   // ─── Wishlist sync ────────────────────────────────────────────────────
   const [wishlistedIds, setWishlistedIds] = useState<Set<number>>(() => {
@@ -523,7 +520,7 @@ export function ProductGrid() {
       // Price range filter
       const [minPrice, maxPrice] = priceRangeParam
         ? priceRangeParam.split("-").map(Number)
-        : [0, 500];
+        : [0, 10000];
       if (product.price < minPrice || product.price > maxPrice) return false;
 
       return true;

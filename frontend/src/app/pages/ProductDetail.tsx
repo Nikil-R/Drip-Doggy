@@ -13,12 +13,43 @@ import {
 import { Link, useNavigate, useParams } from "react-router";
 import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
 import type { Product, ProductColorVariant } from "../data/products";
+import { productApi } from "../lib/product-api";
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productId = parseInt(id || "0", 10);
-  const product = getProductById(productId);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProduct() {
+      if (!productId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const item = await productApi.fetchProductById(productId);
+        setProduct(item);
+      } catch (err) {
+        console.error("Error loading product detail", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProduct();
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xs font-bold tracking-[0.2em] uppercase text-neutral-400 animate-pulse">Loading Product details...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ─── 404 State ──────────────────────────────────────────────────────────
   if (!product) {
@@ -564,17 +595,17 @@ function ProductDetailContent({ product }: { product: Product }) {
           <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-neutral-900 border-b border-neutral-200/60 pb-2">
-                DESIGN DETAILS
+                PRODUCT FEATURES
               </h3>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
-                {[
+                {((product.designDetails && product.designDetails.length > 0) ? product.designDetails : [
                   "Elasticated Waistband",
                   "Adjustable Drawstring Closure",
                   "Dual Side-Seam Cross Pockets",
                   "Reinforced Ribbed Detailing",
                   "Premium Breathable Blend",
                   "Anti-Pilling Soft Finish"
-                ].map((detail) => (
+                ]).map((detail) => (
                   <li key={detail} className="flex items-center gap-2">
                     <span className="text-[#b2533e] font-extrabold">—</span>{" "}
                     {detail}
@@ -788,7 +819,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     </h2>
                     {(() => {
                       const isAcc = product.brand === "ACCESSORIES";
-                      const specsList = [
+                      const specsList = (product.specs && product.specs.length > 0) ? product.specs : [
                         { label: "Fabric Type", value: isAcc ? "100% Recycled Nylon (Ballistic Grade)" : "Premium Cotton Polyester Blend" },
                         { label: "Fit / Size", value: isAcc ? "One Size (Adjustable Straps)" : "Regular Comfort Fit" },
                         { label: "Pattern", value: "Solid Matte Finish" },

@@ -7,6 +7,7 @@ import logoIcon from "../../../assets/new_logo_icon.png";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "../ui/sheet";
 import { SearchOverlay } from "../search/SearchOverlay";
 import { useAuth } from "../../context/AuthContext";
+import { categoryApi, Category } from "../../lib/category-api";
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -15,6 +16,20 @@ export function Header() {
   const [navSearchVal, setNavSearchVal] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const list = await categoryApi.fetchCategories();
+        setCategories(list.filter(c => c.isActive !== false));
+      } catch (err) {
+        console.error("Error loading categories in header", err);
+      }
+    }
+    loadCategories();
+  }, []);
 
   const [cartItems, setCartItems] = useState<any[]>(() => {
     try {
@@ -310,52 +325,43 @@ export function Header() {
               </span>
               
               <div className="absolute left-0 top-full pt-1 w-48 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 ease-in-out">
-                <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm">
-                  
-                  {/* Women Dropdown */}
-                  <div className="relative group/sub px-5 py-2 hover:bg-neutral-100/60 flex items-center justify-between">
-                    <Link to="/shop?gender=women" className="hover:text-black transition-colors w-full flex items-center justify-between">
-                      <span>Women</span>
-                      <svg className="w-2 h-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                    
-                    <div className="absolute left-full top-0 pl-1 w-48 opacity-0 pointer-events-none group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto transition-all duration-200 ease-in-out">
-                      <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
-                        <Link to="/shop?gender=women" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          All Women's
-                        </Link>
-                        <Link to="/shop?gender=women&category=dresses" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Dresses
-                        </Link>
-                        <Link to="/shop?gender=women&category=outerwear" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Outerwear
-                        </Link>
-                        <Link to="/shop?gender=women&category=tops" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Tops
-                        </Link>
-                        <Link to="/shop?gender=women&category=skirts" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Skirts
-                        </Link>
-                      </div>
+                <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
+                  {categories.map((cat) => (
+                    <div key={cat.categoryId} className="relative group/sub px-5 py-2 hover:bg-neutral-100/60 flex items-center justify-between">
+                      <Link to={`/shop?category=${cat.categoryName.toLowerCase()}`} className="hover:text-black transition-colors w-full flex items-center justify-between">
+                        <span>{cat.categoryName}</span>
+                        {cat.subCategories && cat.subCategories.length > 0 && (
+                          <svg className="w-2.5 h-2.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                          </svg>
+                        )}
+                      </Link>
+                      
+                      {cat.subCategories && cat.subCategories.length > 0 && (
+                        <div className="absolute left-full top-0 pl-1 w-48 opacity-0 pointer-events-none group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto transition-all duration-200 ease-in-out">
+                          <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
+                            <Link to={`/shop?category=${cat.categoryName.toLowerCase()}`} className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
+                              All {cat.categoryName}
+                            </Link>
+                            {cat.subCategories.filter(sub => sub.isActive !== false).map(sub => (
+                              <Link 
+                                key={sub.subCategoryId} 
+                                to={`/shop?category=${cat.categoryName.toLowerCase()}&subcategory=${sub.subcategoryName.toLowerCase()}`} 
+                                className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors"
+                              >
+                                {sub.subcategoryName}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Men */}
-                  <div className="px-5 py-2 hover:bg-neutral-100/60">
-                    <Link to="/coming-soon" className="block hover:text-black transition-colors">
-                      Men
-                    </Link>
-                  </div>
-
-                  {/* Accessories */}
-                  <div className="px-5 py-2 hover:bg-neutral-100/60">
-                    <Link to="/coming-soon" className="block hover:text-black transition-colors">
-                      Accessories
-                    </Link>
-                  </div>
-
+                  ))}
+                  {categories.length === 0 && (
+                    <div className="px-5 py-2 text-neutral-400 text-[9px]">
+                      No categories
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
