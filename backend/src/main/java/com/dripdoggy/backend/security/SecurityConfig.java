@@ -33,9 +33,9 @@ public class SecurityConfig {
 
                 // Authorization Configuration
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/admin/register").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/admin/register", "/api/auth/admin/list", "/api/auth/admin/me").hasRole("ADMIN")
                         .requestMatchers("/api/auth/register").hasRole("CUSTOMER")
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()

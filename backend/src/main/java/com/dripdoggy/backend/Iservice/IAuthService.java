@@ -7,6 +7,9 @@ import com.dripdoggy.backend.ResponseDto.CustomerRegisterResponse;
 import com.dripdoggy.backend.RequestDto.RegisterRequest;
 import com.dripdoggy.backend.RequestDto.CustomerRegisterRequest;
 
+import java.util.List;
+import com.dripdoggy.backend.ResponseDto.UserDto;
+
 public interface IAuthService {
     AuthResponse sendOtp(SignupRequest request);
     AuthResponse verifyOtp(VerifyOtpRequest request);
@@ -15,4 +18,6 @@ public interface IAuthService {
     AuthResponse logout();
     AuthResponse sendAdminOtp(SignupRequest request);
     AuthResponse verifyAdminOtp(VerifyOtpRequest request);
+    List<UserDto> fetchAllAdmins();
+    UserDto getAdminProfile();
 }

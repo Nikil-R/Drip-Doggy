@@ -8,7 +8,9 @@ import com.dripdoggy.backend.RequestDto.CustomerRegisterRequest;
 import com.dripdoggy.backend.ResponseDto.AuthResponse;
 import com.dripdoggy.backend.ResponseDto.CustomerRegisterResponse;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
+import com.dripdoggy.backend.ResponseDto.UserDto;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -64,6 +66,18 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<AuthResponse> logout() {
         AuthResponse response = authService.logout();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/admin/list")
+    public ResponseEntity<List<UserDto>> fetchAllAdmins() {
+        List<UserDto> response = authService.fetchAllAdmins();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/admin/me")
+    public ResponseEntity<UserDto> getAdminProfile() {
+        UserDto response = authService.getAdminProfile();
         return ResponseEntity.ok(response);
     }
 }

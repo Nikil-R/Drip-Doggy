@@ -7,8 +7,11 @@ import com.dripdoggy.backend.RequestDto.RegisterRequest;
 import com.dripdoggy.backend.RequestDto.CustomerRegisterRequest;
 import com.dripdoggy.backend.ResponseDto.AuthResponse;
 import com.dripdoggy.backend.ResponseDto.CustomerRegisterResponse;
+import com.dripdoggy.backend.ResponseDto.UserDto;
 import com.dripdoggy.backend.entity.User;
 import com.dripdoggy.backend.entity.Token;
+import java.util.List;
+import java.util.ArrayList;
 import com.dripdoggy.backend.enums.OtpType;
 import com.dripdoggy.backend.enums.UserRole;
 import com.dripdoggy.backend.exception.*;
@@ -117,7 +120,20 @@ public class AuthService implements IAuthService {
             Boolean responseUserExists = (user.getRole() == UserRole.ADMIN) ? null : userExistsFlag;
             String message = userExistsFlag ? "OTP Verified Successfully" : "OTP Verified. Redirecting to onboarding";
 
-            return new AuthResponse(200, message, token, responseUserExists);
+            AuthResponse authResponse = new AuthResponse(200, message, token, responseUserExists);
+            if (userExistsFlag) {
+                UserDto userDto = new UserDto();
+                userDto.setId(user.getId());
+                userDto.setFirstName(user.getFirstName());
+                userDto.setLastName(user.getLastName());
+                userDto.setEmail(user.getEmail());
+                userDto.setPhone(user.getPhoneNo());
+                userDto.setGender(user.getGender() != null ? user.getGender().name() : null);
+                userDto.setDob(user.getDob() != null ? user.getDob().toString() : null);
+                userDto.setRole(user.getRole() != null ? user.getRole().name() : null);
+                authResponse.setUser(userDto);
+            }
+            return authResponse;
         }
 
         throw new OtpNotFoundException("Invalid or Expired OTP");
@@ -398,7 +414,18 @@ public class AuthService implements IAuthService {
             tokenEntity.setIpAddress(getClientIp());
             tokenRepository.save(tokenEntity);
 
-            return new AuthResponse(200, "OTP Verified Successfully", token, null);
+            AuthResponse authResponse = new AuthResponse(200, "OTP Verified Successfully", token, null);
+            UserDto userDto = new UserDto();
+            userDto.setId(user.getId());
+            userDto.setFirstName(user.getFirstName());
+            userDto.setLastName(user.getLastName());
+            userDto.setEmail(user.getEmail());
+            userDto.setPhone(user.getPhoneNo());
+            userDto.setGender(user.getGender() != null ? user.getGender().name() : null);
+            userDto.setDob(user.getDob() != null ? user.getDob().toString() : null);
+            userDto.setRole(user.getRole() != null ? user.getRole().name() : null);
+            authResponse.setUser(userDto);
+            return authResponse;
         }
 
         throw new OtpNotFoundException("Invalid or Expired OTP");
@@ -419,5 +446,46 @@ public class AuthService implements IAuthService {
                 return null;
             }
         }
+    }
+
+    @Override
+    public List<UserDto> fetchAllAdmins() {
+        List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+        List<UserDto> adminDtos = new ArrayList<>();
+        for (User user : admins) {
+            UserDto userDto = new UserDto();
+            userDto.setId(user.getId());
+            userDto.setFirstName(user.getFirstName());
+            userDto.setLastName(user.getLastName());
+            userDto.setEmail(user.getEmail());
+            userDto.setPhone(user.getPhoneNo());
+            userDto.setGender(user.getGender() != null ? user.getGender().name() : null);
+            userDto.setDob(user.getDob() != null ? user.getDob().toString() : null);
+            userDto.setRole(user.getRole() != null ? user.getRole().name() : null);
+            adminDtos.add(userDto);
+        }
+        return adminDtos;
+    }
+
+    @Override
+    public UserDto getAdminProfile() {
+        org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidCredentialsException("Access Denied: Unauthenticated");
+        }
+        String principalName = authentication.getName();
+        User user = loadUserByIdentifier(principalName);
+
+        UserDto userDto = new UserDto();
+        userDto.setId(user.getId());
+        userDto.setFirstName(user.getFirstName());
+        userDto.setLastName(user.getLastName());
+        userDto.setEmail(user.getEmail());
+        userDto.setPhone(user.getPhoneNo());
+        userDto.setGender(user.getGender() != null ? user.getGender().name() : null);
+        userDto.setDob(user.getDob() != null ? user.getDob().toString() : null);
+        userDto.setRole(user.getRole() != null ? user.getRole().name() : null);
+        return userDto;
     }
 }
