@@ -19,6 +19,9 @@ public class ProductVariantSize {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_variant_id")
     @JsonIgnore
@@ -37,10 +40,11 @@ public class ProductVariantSize {
     public ProductVariantSize() {
     }
 
-    public ProductVariantSize(Long id, String sizeName, Boolean isActive, ProductVariant productVariant, List<OrderItem> orderItems, List<Wishlist> wishlistItems, List<Cart> cartItems) {
+    public ProductVariantSize(Long id, String sizeName, Boolean isActive, Integer stockQuantity, ProductVariant productVariant, List<OrderItem> orderItems, List<Wishlist> wishlistItems, List<Cart> cartItems) {
         this.id = id;
         this.sizeName = sizeName;
         this.isActive = isActive;
+        this.stockQuantity = stockQuantity;
         this.productVariant = productVariant;
         this.orderItems = orderItems;
         this.wishlistItems = wishlistItems;
@@ -70,6 +74,14 @@ public class ProductVariantSize {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public Integer getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(Integer stockQuantity) {
+        this.stockQuantity = stockQuantity;
     }
 
     public ProductVariant getProductVariant() {

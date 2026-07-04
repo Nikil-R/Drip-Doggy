@@ -7,11 +7,11 @@ export interface AdminUser {
   name: string;
   avatar?: string;
 }
-
 interface AuthState {
   user: AdminUser | null;
+  token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  setSession: (user: AdminUser, token: string) => void;
   logout: () => void;
 }
 
@@ -19,26 +19,19 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
 
-      login: async (email: string, password: string) => {
-        await new Promise((r) => setTimeout(r, 400));
-        if (email === "admin@dripdoggy.com" && password === "admin123") {
-          set({
-            user: {
-              id: "admin-1",
-              email: "admin@dripdoggy.com",
-              name: "Admin",
-            },
-            isAuthenticated: true,
-          });
-          return true;
-        }
-        return false;
+      setSession: (user: AdminUser, token: string) => {
+        set({
+          user,
+          token,
+          isAuthenticated: true
+        });
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {

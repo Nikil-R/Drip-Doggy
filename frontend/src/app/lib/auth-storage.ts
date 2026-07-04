@@ -21,11 +21,24 @@ export interface AuthUser {
   dateOfBirth?: string;
 }
 
+const AUTH_TOKEN_KEY = "dripdoggy_auth_token";
 const REGISTERED_USERS_KEY = "dripdoggy_registered_users";
 const AUTH_SESSION_KEY = "dripdoggy_auth_session";
 const PENDING_IDENTIFIER_KEY = "dripdoggy_pending_identifier";
 const MOCK_OTP = "123456";
 const SEED_USER_ID = "test-user-1";
+
+export function getSessionToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function saveSessionToken(token: string): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearSessionToken(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
 
 export function getMockOtp(): string {
   return MOCK_OTP;
@@ -71,6 +84,7 @@ export function saveSessionUser(user: AuthUser): void {
 
 export function clearSessionUser(): void {
   localStorage.removeItem(AUTH_SESSION_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
 export function findUserByIdentifier(identifier: string): StoredUser | null {

@@ -41,7 +41,7 @@ export function TopBar() {
     if (path.includes("/admin/products/new")) return "Add Product";
     if (path.includes("/admin/products/reviews")) return "Product Reviews";
     if (path.includes("/admin/products")) return "Products";
-    if (path.includes("/admin/roles")) return "Admin Roles";
+    if (path.includes("/admin/roles")) return "Members & Roles";
     if (path.includes("/admin/authority")) return "Control Authority";
     if (path.includes("/admin/coupons")) return "Coupons & Promos";
     if (path.includes("/admin/brands")) return "Brands & Labels";
@@ -77,7 +77,7 @@ export function TopBar() {
 
         {/* View Storefront */}
         <a
-          href="https://dripdoggy.netlify.app/"
+          href="https://admindrip.netlify.app/"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-2 px-3.5 py-2 border border-neutral-200 bg-white/60 hover:bg-white hover:border-[#224870]/40 text-[10px] font-bold uppercase tracking-widest text-neutral-600 hover:text-[#224870] transition-all duration-150 group rounded-none"

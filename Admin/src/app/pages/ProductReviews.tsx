@@ -16,17 +16,18 @@ interface Review {
   helpful: number;
   size?: string;
   color?: string;
+  image?: string;
 }
 
 const initialReviews: Review[] = [
-  { id: 1, productName: "Structured Canvas Jacket", productSku: "DD-STR-001", customer: "Ananya Sharma", location: "Mumbai", rating: 5, review: "Incredible quality and fit. The canvas material is premium and the stitching is flawless. Worth every rupee.", date: "2026-06-15", status: "approved", helpful: 24, size: "M", color: "Black" },
+  { id: 1, productName: "Structured Canvas Jacket", productSku: "DD-STR-001", customer: "Ananya Sharma", location: "Mumbai", rating: 5, review: "Incredible quality and fit. The canvas material is premium and the stitching is flawless. Worth every rupee.", date: "2026-06-15", status: "approved", helpful: 24, size: "M", color: "Black", image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=300&auto=format&fit=crop" },
   { id: 2, productName: "Sartorial Trench Coat", productSku: "DD-SAT-001", customer: "Rahul Verma", location: "Bangalore", rating: 4, review: "Beautiful coat, runs slightly large. Love the construction and the inner lining is exquisite.", date: "2026-06-14", status: "approved", helpful: 18, size: "L", color: "Camel" },
-  { id: 3, productName: "Cashmere Blend Crew", productSku: "DD-CAS-001", customer: "Priya Kapoor", location: "Delhi", rating: 5, review: "Softest cashmere I've ever owned! Perfect for Delhi winters. Already ordered another in grey.", date: "2026-06-13", status: "approved", helpful: 31, size: "S", color: "Ivory" },
+  { id: 3, productName: "Cashmere Blend Crew", productSku: "DD-CAS-001", customer: "Priya Kapoor", location: "Delhi", rating: 5, review: "Softest cashmere I've ever owned! Perfect for Delhi winters. Already ordered another in grey.", date: "2026-06-13", status: "approved", helpful: 31, size: "S", color: "Ivory", image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=300&auto=format&fit=crop" },
   { id: 4, productName: "French Terry Hoodie", productSku: "DD-FTH-001", customer: "Arjun Mehta", location: "Hyderabad", rating: 3, review: "Nice hoodie but the color is slightly different from the photos. The fabric is comfortable though.", date: "2026-06-10", status: "pending", helpful: 5, size: "XL", color: "Olive" },
   { id: 5, productName: "Signature Silk Blouse", productSku: "DD-SIL-001", customer: "Neha Gupta", location: "Chennai", rating: 2, review: "Expected better fabric quality for the price of " + RS + "6,999. The cut is flattering but the silk feels thin.", date: "2026-06-08", status: "pending", helpful: 8, size: "M", color: "Blush" },
   { id: 6, productName: "Structured Canvas Jacket", productSku: "DD-STR-001", customer: "Vikram Singh", location: "Pune", rating: 5, review: "My fifth Drip Doggy purchase and this jacket is by far the best. Gets compliments everywhere!", date: "2026-06-07", status: "approved", helpful: 42, size: "L", color: "Black" },
   { id: 7, productName: "Merino Wool Cardigan", productSku: "DD-MER-001", customer: "Ishita Patel", location: "Ahmedabad", rating: 4, review: "Elegant cardigan with beautiful stitch details. Perfect layering piece for evening events.", date: "2026-06-05", status: "approved", helpful: 12, size: "M", color: "Charcoal" },
-  { id: 8, productName: "Handwoven Silk Scarf", productSku: "DD-SCF-001", customer: "Sanya Malhotra", location: "Jaipur", rating: 5, review: "Absolutely stunning scarf! The handwoven texture is incredible and the color is so vibrant.", date: "2026-06-03", status: "approved", helpful: 27, size: "One Size", color: "Indigo" },
+  { id: 8, productName: "Handwoven Silk Scarf", productSku: "DD-SCF-001", customer: "Sanya Malhotra", location: "Jaipur", rating: 5, review: "Absolutely stunning scarf! The handwoven texture is incredible and the color is so vibrant.", date: "2026-06-03", status: "approved", helpful: 27, size: "One Size", color: "Indigo", image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=300&auto=format&fit=crop" },
   { id: 9, productName: "Relaxed Linen Shirt", productSku: "DD-LIN-001", customer: "Karan Desai", location: "Lucknow", rating: 1, review: "Spam review - fake account. Please remove.", date: "2026-06-02", status: "rejected", helpful: 0, size: "M", color: "White" },
   { id: 10, productName: "Pleated Wool Trousers", productSku: "DD-PLE-001", customer: "Riya Nair", location: "Kochi", rating: 4, review: "Great trousers with a perfect drape. The wool blend is warm but breathable — ideal for Kerala evenings.", date: "2026-05-28", status: "pending", helpful: 9, size: "S", color: "Navy" },
   { id: 11, productName: "Drip Doggy Varsity Jacket", productSku: "DD-VAR-001", customer: "Aditya Joshi", location: "Kolkata", rating: 5, review: "Iconic piece! The wool sleeves and leather body are top-notch. A true collector's item.", date: "2026-05-25", status: "approved", helpful: 36, size: "L", color: "Maroon & Cream" },
@@ -74,19 +75,7 @@ export function ProductReviewsPage() {
   }, [reviews]);
 
   return (
-    <div className="space-y-8 font-sans text-[#382d24]">
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
-            <MessageSquare className="w-5 h-5 text-[#224870]" /> Product Reviews
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Drip Doggy customer feedback &amp; ratings management
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans text-[#382d24]">
 
       {/* Stats + Rating Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -201,8 +190,15 @@ export function ProductReviewsPage() {
 
                   <p className="text-[11px] text-[#382d24] mt-2.5 leading-relaxed font-medium">{r.review}</p>
 
+                  {/* Review Image Attachment */}
+                  {r.image && (
+                    <div className="mt-3.5 max-w-[120px] border border-neutral-200 bg-white p-1 hover:shadow-sm transition-shadow">
+                      <img src={r.image} alt="User Uploaded Attachment" className="w-full h-[150px] object-cover" />
+                    </div>
+                  )}
+
                   {/* Helpful count */}
-                  <div className="flex items-center gap-2 mt-3.5 text-neutral-400">
+                  <div className="flex items-center gap-2 mt-3.5 text-neutral-450">
                     <ThumbsUp className="w-3.5 h-3.5 shrink-0" />
                     <span className="text-[8.5px] font-bold">{r.helpful} customers found this helpful</span>
                   </div>

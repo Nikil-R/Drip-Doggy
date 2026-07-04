@@ -4,7 +4,6 @@ import java.util.List;
 
 public class CategoryResponseDto {
 
-    private Long id;
     private String categoryName;
     private String imageUrl;
     private String description;
@@ -20,18 +19,16 @@ public class CategoryResponseDto {
     public CategoryResponseDto() {
     }
 
-    public CategoryResponseDto(Long id, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories) {
-        this.id = id;
+    public CategoryResponseDto(Long categoryId, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories) {
         this.categoryName = categoryName;
         this.imageUrl = imageUrl;
         this.description = description;
         this.isActive = isActive;
         this.subCategories = subCategories;
-        this.categoryId = id;
+        this.categoryId = categoryId;
     }
 
-    public CategoryResponseDto(Long id, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories, Long categoryId, String subCategoryIds, Boolean isDeleted) {
-        this.id = id;
+    public CategoryResponseDto(Long categoryId, String categoryName, String imageUrl, String description, Boolean isActive, List<SubCategoryResponseDto> subCategories, String subCategoryIds, Boolean isDeleted) {
         this.categoryName = categoryName;
         this.imageUrl = imageUrl;
         this.description = description;
@@ -43,15 +40,6 @@ public class CategoryResponseDto {
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-        this.categoryId = id;
-    }
-
     public String getCategoryName() {
         return categoryName;
     }
@@ -99,8 +87,6 @@ public class CategoryResponseDto {
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
     }
-
-
 
     public String getSubCategoryIds() {
         return subCategoryIds;

@@ -17,7 +17,8 @@ import {
   Package,
   Eye,
   SlidersHorizontal,
-  Tags
+  Tags,
+  Trash2
 } from "lucide-react";
 
 const availableSizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -110,6 +111,14 @@ export function AddProductPage() {
     }
   }, [selectedCategory]);
   const [selectedTags, setSelectedTags] = useState<string[]>(["Best Seller"]);
+  const [dynamicTags, setDynamicTags] = useState<string[]>(["New Arrival", "Limited Drop", "Best Seller", "Archive", "Signature Piece", "Seasonal", "Premium"]);
+  const [isAddingCustomTag, setIsAddingCustomTag] = useState(false);
+  const [customTagVal, setCustomTagVal] = useState("");
+  
+  // Custom tag right-click context menu and inline edits
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; targetTag: string } | null>(null);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editingTagVal, setEditingTagVal] = useState("");
 
   // Product Variants (color-based)
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -312,15 +321,66 @@ export function AddProductPage() {
 
           <div className="space-y-2">
             <label className="text-[13px] font-bold text-[#615e56] uppercase tracking-wider block">Tag Badge (Single Select)</label>
-            <div className="flex flex-wrap gap-2 p-3 bg-[#faf8f5] border border-[#382d24]/20 max-h-24 overflow-y-auto">
-              {tags.map(t => {
+            <div className="flex flex-wrap gap-2 p-3 bg-[#faf8f5] border border-[#382d24]/20 max-h-28 overflow-y-auto items-center">
+              {dynamicTags.map(t => {
                 const isChecked = selectedTags.includes(t);
+                const isEditingThis = editingTag === t;
+
+                if (isEditingThis) {
+                  return (
+                    <input
+                      key={t}
+                      type="text"
+                      autoFocus
+                      value={editingTagVal}
+                      onChange={(e) => setEditingTagVal(e.target.value)}
+                      className="border border-[#224870] bg-[#faf8f5] px-2 py-1 text-[8.5px] font-bold uppercase tracking-wider focus:outline-none w-24 text-[#382d24]"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = editingTagVal.trim();
+                          if (val) {
+                            setDynamicTags(prev => prev.map(old => old === t ? val : old));
+                            if (selectedTags.includes(t)) {
+                              setSelectedTags([val]);
+                            }
+                          }
+                          setEditingTag(null);
+                          setEditingTagVal("");
+                        } else if (e.key === "Escape") {
+                          setEditingTag(null);
+                          setEditingTagVal("");
+                        }
+                      }}
+                      onBlur={() => {
+                        const val = editingTagVal.trim();
+                        if (val) {
+                          setDynamicTags(prev => prev.map(old => old === t ? val : old));
+                          if (selectedTags.includes(t)) {
+                            setSelectedTags([val]);
+                          }
+                        }
+                        setEditingTag(null);
+                        setEditingTagVal("");
+                      }}
+                    />
+                  );
+                }
+
                 return (
                   <button
                     key={t}
                     type="button"
                     onClick={() => {
                       setSelectedTags([t]);
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        targetTag: t
+                      });
                     }}
                     className={`px-3 py-1.5 text-[9px] font-bold uppercase border cursor-pointer transition-all ${
                       isChecked ? "bg-[#224870] border-[#224870] text-white" : "bg-transparent border-[#382d24]/25 text-[#615e56]/90 hover:border-neutral-400"
@@ -330,6 +390,52 @@ export function AddProductPage() {
                   </button>
                 );
               })}
+
+              {/* Dotted Box custom tag creator */}
+              {isAddingCustomTag ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="TAG NAME..."
+                    value={customTagVal}
+                    onChange={(e) => setCustomTagVal(e.target.value)}
+                    className="border border-[#224870] bg-[#faf8f5] px-2 py-1 text-[8.5px] font-bold uppercase tracking-wider focus:outline-none w-24 text-[#382d24]"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = customTagVal.trim();
+                        if (val) {
+                          setDynamicTags(prev => [...prev, val]);
+                          setSelectedTags([val]);
+                        }
+                        setIsAddingCustomTag(false);
+                        setCustomTagVal("");
+                      } else if (e.key === "Escape") {
+                        setIsAddingCustomTag(false);
+                        setCustomTagVal("");
+                      }
+                    }}
+                    onBlur={() => {
+                      const val = customTagVal.trim();
+                      if (val) {
+                        setDynamicTags(prev => [...prev, val]);
+                        setSelectedTags([val]);
+                      }
+                      setIsAddingCustomTag(false);
+                      setCustomTagVal("");
+                    }}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCustomTag(true)}
+                  className="px-3 py-1.5 text-[9px] font-bold uppercase border border-dashed border-[#382d24]/40 hover:border-[#224870]/70 text-[#615e56]/90 hover:text-[#224870] bg-transparent cursor-pointer transition-all flex items-center gap-1 rounded-none"
+                >
+                  <Plus className="w-3 h-3" /> Add Custom Tag
+                </button>
+              )}
             </div>
           </div>
 
@@ -703,10 +809,52 @@ export function AddProductPage() {
             ))}
           </div>
         </div>
-
-
-
       </div>
+
+      {/* Right-click Context Menu for Tag Badges */}
+      {contextMenu && (
+        <div 
+          className="fixed z-50 bg-[#faf8f5] border border-[#382d24]/20 shadow-md py-1 min-w-[100px] uppercase text-[9px] font-bold tracking-wider"
+          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => {
+                setEditingTag(contextMenu.targetTag);
+                setEditingTagVal(contextMenu.targetTag);
+                setContextMenu(null);
+              }}
+              className="w-full text-left px-3.5 py-2 hover:bg-[#224870]/10 text-[#382d24] transition-colors border-none bg-transparent cursor-pointer font-sans text-[8.5px] font-black tracking-widest uppercase flex items-center gap-2"
+            >
+              <Edit2 className="w-3 h-3 text-[#615e56]" />
+              Edit Tag
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const target = contextMenu.targetTag;
+                setDynamicTags(prev => prev.filter(t => t !== target));
+                if (selectedTags.includes(target)) {
+                  setSelectedTags([]);
+                }
+                setContextMenu(null);
+              }}
+              className="w-full text-left px-3.5 py-2 hover:bg-[#b2533e]/10 text-[#b2533e] transition-colors border-none bg-transparent cursor-pointer font-sans text-[8.5px] font-black tracking-widest uppercase flex items-center gap-2"
+            >
+              <Trash2 className="w-3 h-3 text-[#b2533e]" />
+              Delete Tag
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dismiss context menu on click anywhere */}
+      <div 
+        className={`fixed inset-0 z-40 pointer-events-auto ${contextMenu ? "block" : "hidden"}`} 
+        onClick={() => setContextMenu(null)}
+      />
 
     </form>
   );

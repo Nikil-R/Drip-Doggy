@@ -1,6 +1,6 @@
 import axios from "axios";
-
-const BASE_URL = "/dripdoggy/api/admin";
+import { API_CONFIG } from "../utils/api-config";
+const BASE_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CATEGORIES}`;
 
 export interface BackendCategory {
   categoryId: number;
@@ -46,13 +46,13 @@ export interface HydratedCategory {
 export const categoryApi = {
   // Fetch all categories from backend
   getAllCategories: async (): Promise<BackendCategory[]> => {
-    const response = await axios.get(`${BASE_URL}/categories`);
+    const response = await axios.get(`${BASE_URL}`);
     return response.data;
   },
 
   // Fetch a category by ID
   getCategoryById: async (id: number): Promise<BackendCategory> => {
-    const response = await axios.get(`${BASE_URL}/categories/${id}`);
+    const response = await axios.get(`${BASE_URL}/${id}`);
     return response.data;
   },
 
@@ -65,7 +65,7 @@ export const categoryApi = {
     if (imageFile) {
       formData.append("image", imageFile);
     }
-    const response = await axios.post(`${BASE_URL}/categories`, formData, {
+    const response = await axios.post(`${BASE_URL}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -83,7 +83,7 @@ export const categoryApi = {
     if (imageFile) {
       formData.append("image", imageFile);
     }
-    const response = await axios.put(`${BASE_URL}/categories/${id}`, formData, {
+    const response = await axios.put(`${BASE_URL}/${id}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -93,12 +93,12 @@ export const categoryApi = {
 
   // Toggle category active status (PATCH)
   toggleCategoryStatus: async (id: number): Promise<BackendCategory> => {
-    const response = await axios.patch(`${BASE_URL}/categories/${id}`);
+    const response = await axios.patch(`${BASE_URL}/${id}`);
     return response.data;
   },
 
   // Soft delete category (DELETE)
   deleteCategory: async (id: number): Promise<void> => {
-    await axios.delete(`${BASE_URL}/categories/${id}`);
+    await axios.delete(`${BASE_URL}/${id}`);
   },
 };
