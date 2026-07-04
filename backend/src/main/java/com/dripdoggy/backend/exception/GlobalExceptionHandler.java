@@ -151,6 +151,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(CartItemNotFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handleCartItemNotFound(CartItemNotFoundException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseMsgDto> handleGlobalException(Exception ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());

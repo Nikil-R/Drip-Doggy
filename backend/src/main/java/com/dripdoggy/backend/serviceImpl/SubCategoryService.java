@@ -72,7 +72,14 @@ public class SubCategoryService implements ISubCategoryService {
     @Override
     public SubCategoryListResponseDto fetchAllSubCategories() {
         List<SubCategory> subCategories = subCategoryRepository.findAllActiveSubCategories();
+        boolean isAdmin = isCurrentUserAdmin();
         List<SubCategoryResponseDto> responseDtos = subCategories.stream()
+                .filter(s -> isAdmin || (s.getIsActive() != null && s.getIsActive()))
+                .filter(s -> {
+                    if (isAdmin) return true;
+                    Category cat = s.getCategory();
+                    return cat == null || (Boolean.TRUE.equals(cat.getIsActive()) && !Boolean.TRUE.equals(cat.getIsDeleted()));
+                })
                 .map(this::mapToSubCategoryResponseDto)
                 .collect(Collectors.toList());
         return new SubCategoryListResponseDto(200, "Subcategories fetched successfully", responseDtos);
@@ -84,6 +91,15 @@ public class SubCategoryService implements ISubCategoryService {
                 .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
         if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
             throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+        }
+        if (!isCurrentUserAdmin()) {
+            if (subCategory.getIsActive() == null || !subCategory.getIsActive()) {
+                throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+            }
+            Category cat = subCategory.getCategory();
+            if (cat != null && (cat.getIsActive() == null || !cat.getIsActive() || Boolean.TRUE.equals(cat.getIsDeleted()))) {
+                throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+            }
         }
         SubCategoryResponseDto responseDto = mapToSubCategoryResponseDto(subCategory);
         return new SubCategoryDetailsResponseDto(200, "Subcategory fetched successfully", responseDto);
@@ -165,5 +181,15 @@ public class SubCategoryService implements ISubCategoryService {
             dto.setCategoryId(sub.getCategory().getId());
         }
         return dto;
+    }
+
+    private boolean isCurrentUserAdmin() {
+        org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
     }
 }
