@@ -83,7 +83,9 @@ public class CategoryService implements ICategoryService {
     @Override
     public CategoryListResponseDto fetchAllCategory() {
         List<Category> categories = categoryrepo.findAllActiveCategories();
+        boolean isAdmin = isCurrentUserAdmin();
         List<CategoryResponseDto> responseDtos = categories.stream()
+                .filter(c -> isAdmin || (c.getIsActive() != null && c.getIsActive()))
                 .map(this::mapToCategoryResponseDto)
                 .collect(Collectors.toList());
 
@@ -95,6 +97,9 @@ public class CategoryService implements ICategoryService {
         Category category = categoryrepo.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + id));
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
+            throw new CategoryNotFoundException("Category not found with ID: " + id);
+        }
+        if (!isCurrentUserAdmin() && (category.getIsActive() == null || !category.getIsActive())) {
             throw new CategoryNotFoundException("Category not found with ID: " + id);
         }
         CategoryResponseDto responseDto = mapToCategoryResponseDto(category);
@@ -315,8 +320,12 @@ public class CategoryService implements ICategoryService {
         }
         ObjectMapper mapper = new ObjectMapper();
         List<Map<String, Object>> list = new ArrayList<>();
+        boolean isAdmin = isCurrentUserAdmin();
         for (SubCategory sub : subCategories) {
             if (Boolean.TRUE.equals(sub.getIsDeleted())) {
+                continue;
+            }
+            if (!isAdmin && (sub.getIsActive() == null || !sub.getIsActive())) {
                 continue;
             }
             Map<String, Object> map = new HashMap<>();
@@ -337,10 +346,12 @@ public class CategoryService implements ICategoryService {
 
     private CategoryResponseDto mapToCategoryResponseDto(Category category) {
         CategoryResponseDto dto = modelMapper.map(category, CategoryResponseDto.class);
+        boolean isAdmin = isCurrentUserAdmin();
 
         List<SubCategoryResponseDto> subCategoryResponseDtos = category.getSubCategories() != null ?
                 category.getSubCategories().stream()
                         .filter(sub -> !Boolean.TRUE.equals(sub.getIsDeleted()))
+                        .filter(sub -> isAdmin || (sub.getIsActive() != null && sub.getIsActive()))
                         .map(this::mapToSubCategoryResponseDto)
                         .collect(Collectors.toList()) : Collections.emptyList();
 
@@ -365,5 +376,15 @@ public class CategoryService implements ICategoryService {
             dto.setCategoryId(sub.getCategory().getId());
         }
         return dto;
+    }
+
+    private boolean isCurrentUserAdmin() {
+        org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
     }
 }

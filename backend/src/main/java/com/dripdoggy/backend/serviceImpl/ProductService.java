@@ -251,7 +251,21 @@ public class ProductService implements IProductService {
     @Override
     public ProductListResponseDto fetchAllActiveProducts() {
         List<Product> products = productRepository.findAllActiveProducts();
+        boolean isAdmin = isCurrentUserAdmin();
         List<ProductResponseDto> responseDtos = products.stream()
+                .filter(p -> isAdmin || (p.getIsActive() != null && p.getIsActive()))
+                .filter(p -> {
+                    if (isAdmin) return true;
+                    Category cat = p.getCategory();
+                    if (cat != null && (cat.getIsActive() == null || !cat.getIsActive() || Boolean.TRUE.equals(cat.getIsDeleted()))) {
+                        return false;
+                    }
+                    SubCategory sub = p.getSubCategory();
+                    if (sub != null && (sub.getIsActive() == null || !sub.getIsActive() || Boolean.TRUE.equals(sub.getIsDeleted()))) {
+                        return false;
+                    }
+                    return true;
+                })
                 .map(this::mapToProductResponseDto)
                 .collect(Collectors.toList());
 
@@ -265,6 +279,20 @@ public class ProductService implements IProductService {
 
         if (Boolean.TRUE.equals(product.getIsDeleted())) {
             throw new ProductNotFoundException("Product not found with ID: " + id);
+        }
+
+        if (!isCurrentUserAdmin()) {
+            if (product.getIsActive() == null || !product.getIsActive()) {
+                throw new ProductNotFoundException("Product not found with ID: " + id);
+            }
+            Category cat = product.getCategory();
+            if (cat != null && (cat.getIsActive() == null || !cat.getIsActive() || Boolean.TRUE.equals(cat.getIsDeleted()))) {
+                throw new ProductNotFoundException("Product not found with ID: " + id);
+            }
+            SubCategory sub = product.getSubCategory();
+            if (sub != null && (sub.getIsActive() == null || !sub.getIsActive() || Boolean.TRUE.equals(sub.getIsDeleted()))) {
+                throw new ProductNotFoundException("Product not found with ID: " + id);
+            }
         }
 
         return new ProductDetailsResponseDto(200, "Product fetched successfully", mapToProductResponseDto(product));
@@ -637,8 +665,10 @@ public class ProductService implements IProductService {
 
         // Map Variants
         if (product.getProductVariants() != null) {
+            boolean isAdmin = isCurrentUserAdmin();
             List<ProductVariantResponseDto> variantDtos = product.getProductVariants().stream()
                     .filter(v -> v.getIsDeleted() == null || !v.getIsDeleted())
+                    .filter(v -> isAdmin || (v.getIsActive() != null && v.getIsActive()))
                     .map(v -> {
                         ProductVariantResponseDto vDto = new ProductVariantResponseDto();
                         vDto.setId(v.getId());
@@ -662,6 +692,7 @@ public class ProductService implements IProductService {
                         // Map Variant Sizes
                         if (v.getProductVariantSizes() != null) {
                             List<ProductVariantSizeResponseDto> sizeDtos = v.getProductVariantSizes().stream()
+                                    .filter(sz -> isAdmin || (sz.getIsActive() != null && sz.getIsActive()))
                                     .map(sz -> new ProductVariantSizeResponseDto(sz.getId(), sz.getSizeName(), sz.getStockQuantity(), sz.getIsActive()))
                                     .collect(Collectors.toList());
                             vDto.setSizes(sizeDtos);
@@ -674,5 +705,15 @@ public class ProductService implements IProductService {
         }
 
         return dto;
+    }
+
+    private boolean isCurrentUserAdmin() {
+        org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
     }
 }
