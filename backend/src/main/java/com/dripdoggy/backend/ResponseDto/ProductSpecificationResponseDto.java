@@ -1,51 +1,28 @@
-package com.dripdoggy.backend.entity;
+package com.dripdoggy.backend.ResponseDto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Map;
 
-@Entity
-@Table(name = "product_specifications")
-public class ProductSpecification {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ProductSpecificationResponseDto {
     private Long id;
-
     private String fabric;
     private String fit;
     private String waterproofing;
     private String hardware;
-
-    @Column(name = "pocket_design")
     private String pocketDesign;
-
     private String pattern;
-
-    @Column(name = "neck_collar_type")
     private String neckCollarType;
-
-    @Column(name = "sleeve_type")
     private String sleeveType;
-
     private String pockets;
-
-    @Column(name = "wash_care")
     private String washCare;
-
-    @Lob
-    @Column(name = "custom_specs", columnDefinition = "TEXT")
-    private String customSpecs;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
-    @JsonIgnore
-    private Product product;
+    private Map<String, String> customSpecs; // Deserialized custom key-value pairs
 
     // Constructors
-    public ProductSpecification() {
+    public ProductSpecificationResponseDto() {
     }
 
-    public ProductSpecification(Long id, String fabric, String fit, String waterproofing, String hardware, String pocketDesign, String pattern, String neckCollarType, String sleeveType, String pockets, String washCare, String customSpecs, Product product) {
+    public ProductSpecificationResponseDto(Long id, String fabric, String fit, String waterproofing, String hardware, String pocketDesign, String pattern, String neckCollarType, String sleeveType, String pockets, String washCare, Map<String, String> customSpecs) {
         this.id = id;
         this.fabric = fabric;
         this.fit = fit;
@@ -58,7 +35,6 @@ public class ProductSpecification {
         this.pockets = pockets;
         this.washCare = washCare;
         this.customSpecs = customSpecs;
-        this.product = product;
     }
 
     // Getters and Setters
@@ -150,19 +126,11 @@ public class ProductSpecification {
         this.washCare = washCare;
     }
 
-    public String getCustomSpecs() {
+    public Map<String, String> getCustomSpecs() {
         return customSpecs;
     }
 
-    public void setCustomSpecs(String customSpecs) {
+    public void setCustomSpecs(Map<String, String> customSpecs) {
         this.customSpecs = customSpecs;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
     }
 }
