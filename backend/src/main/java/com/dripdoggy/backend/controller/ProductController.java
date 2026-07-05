@@ -6,10 +6,16 @@ import com.dripdoggy.backend.ResponseDto.ProductDetailsResponseDto;
 import com.dripdoggy.backend.ResponseDto.ProductListResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/products")
@@ -22,9 +28,24 @@ public class ProductController {
         this.productService = productService;
     }
 
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.setDisallowedFields("variants*.images", "variants[*].images");
+    }
+
     @PostMapping
     public ResponseEntity<ResponseMsgDto> createProduct(
-            @Valid @ModelAttribute ProductRequestDto productDto) {
+            @Valid @ModelAttribute ProductRequestDto productDto,
+            HttpServletRequest request) {
+        if (request instanceof MultipartHttpServletRequest) {
+            MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+            if (productDto.getVariants() != null) {
+                for (int i = 0; i < productDto.getVariants().size(); i++) {
+                    List<MultipartFile> files = multipartRequest.getFiles("variants[" + i + "].images");
+                    productDto.getVariants().get(i).setImages(files);
+                }
+            }
+        }
         ResponseMsgDto response = productService.createProduct(productDto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -44,7 +65,17 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<ResponseMsgDto> updateProduct(
             @PathVariable Long id,
-            @Valid @ModelAttribute ProductRequestDto productDto) {
+            @Valid @ModelAttribute ProductRequestDto productDto,
+            HttpServletRequest request) {
+        if (request instanceof MultipartHttpServletRequest) {
+            MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+            if (productDto.getVariants() != null) {
+                for (int i = 0; i < productDto.getVariants().size(); i++) {
+                    List<MultipartFile> files = multipartRequest.getFiles("variants[" + i + "].images");
+                    productDto.getVariants().get(i).setImages(files);
+                }
+            }
+        }
         ResponseMsgDto response = productService.updateProduct(id, productDto);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
