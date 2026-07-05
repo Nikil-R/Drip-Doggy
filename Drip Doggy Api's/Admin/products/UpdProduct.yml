@@ -1,11 +1,11 @@
 info:
-  name: AddProduct
+  name: UpdProduct
   type: http
-  seq: 2
+  seq: 7
 
 http:
-  method: POST
-  url: http://localhost:8081/dripdoggy/api/admin/products
+  method: PUT
+  url: http://localhost:8081/dripdoggy/api/admin/products/1
   body:
     type: multipart-form
     data:
@@ -14,7 +14,7 @@ http:
         value: legginesTOPS
       - name: skuCode
         type: text
-        value: gymgsp-02
+        value: gymgsp-01
       - name: categoryId
         type: text
         value: "1"
@@ -26,17 +26,17 @@ http:
         value: BEST SELLER
       - name: productDescription
         type: text
-        value: "i dono abt girls "
+        value: girl pant is nice
       - name: isActive
         type: text
-        value: "true"
+        value: "false"
         disabled: true
       - name: variants[0].variantName
         type: text
-        value: Blue Leggins
+        value: "blue leggines "
       - name: variants[0].skuCode
         type: text
-        value: bL-001
+        value: bl-001
       - name: variants[0].mrp
         type: text
         value: "150"
@@ -46,24 +46,10 @@ http:
       - name: variants[0].discountValue
         type: text
         value: "40"
-      - name: variants.isActive
-        type: text
-        value: ""
-        disabled: true
       - name: variants[0].images
         type: file
         value:
-          - C:\Users\vinay\Downloads\Gemini_Generated_Image_mx2pq9mx2pq9mx2p.png
-        contentType: image/png
-      - name: variants[0].images
-        type: file
-        value:
-          - C:\Users\vinay\Downloads\download (2).jpg
-        contentType: image/jpeg
-      - name: variants[0].images
-        type: file
-        value:
-          - C:\Users\vinay\Downloads\ChatGPT Image Jun 15, 2026, 03_41_00 PM.png
+          - C:\Users\vinay\OneDrive\Pictures\Gemini_Generated_Image_60yqt360yqt360yq.png
         contentType: image/png
       - name: variants[0].sizes[0].sizeName
         type: text
@@ -85,51 +71,49 @@ http:
         value: Features 1 apply to the entire product
       - name: features[1]
         type: text
-        value: Features 1 apply to the entire product
-      - name: variants[0].variantName
-        type: text
-        value: ""
-        disabled: true
-      - name: variants[0].variantName
-        type: text
-        value: ""
-        disabled: true
-      - name: variants[1].variantName
-        type: text
-        value: green Leggines
+        value: Features 12 apply to the entire product
       - name: variants[1].skuCode
         type: text
-        value: Gl-01
+        value: GL-002
       - name: variants[1].mrp
         type: text
-        value: "500.0"
+        value: "2500"
       - name: variants[1].discountType
         type: text
-        value: FLAT
+        value: PERCENTAGE
       - name: variants[1].discountValue
         type: text
-        value: "100"
+        value: "20"
       - name: variants[1].images
         type: file
         value:
-          - C:\Users\vinay\OneDrive\Pictures\Camera Roll\WIN_20251002_10_07_11_Pro.jpg
+          - C:\Users\vinay\OneDrive\Pictures\3a7af7d4913f70dc93f9e79dcdc98ad8.jpg
         contentType: image/jpeg
       - name: variants[1].images
         type: file
         value:
-          - C:\Users\vinay\OneDrive\Pictures\Camera Roll\WIN_20251110_14_00_59_Pro.jpg
+          - C:\Users\vinay\OneDrive\Pictures\bc8775e0d865b16ed58d26a5bf08c23e.jpg
         contentType: image/jpeg
-      - name: variants[1].images
-        type: file
-        value:
-          - C:\Users\vinay\OneDrive\Pictures\Camera Roll\WIN_20251110_14_00_57_Pro.jpg
-        contentType: image/jpeg
+      - name: variants[1].variantName
+        type: text
+        value: pink-leggines
       - name: variants[1].sizes[0].sizeName
         type: text
-        value: DOUBLE XL
+        value: Medium
       - name: variants[1].sizes[0].stockQuantity
         type: text
-        value: "45"
+        value: "10"
+      - name: variants[0].existingImageUrls[0]
+        type: text
+        value: https://dripdoggy.s3.ap-south-1.amazonaws.com/b9b08eeb-86ad-4bc0-9d62-004ab1ebe1b5.jpg
+        disabled: true
+      - name: variants[0].primaryImageUrl
+        type: text
+        value: https://dripdoggy.s3.ap-south-1.amazonaws.com/eda6fefd-357a-4a33-9459-9572c3c4deb0.jpeg
+        disabled: true
+      - name: variants[0].images
+        type: text
+        value: ""
   auth:
     type: bearer
     token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg

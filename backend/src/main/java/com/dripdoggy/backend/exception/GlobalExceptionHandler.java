@@ -40,6 +40,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(ProductVariantSizeNotFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handleProductVariantSizeNotFound(ProductVariantSizeNotFoundException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(InvalidImageDimensionException.class)
     public ResponseEntity<ResponseMsgDto> handleInvalidImageDimension(InvalidImageDimensionException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
