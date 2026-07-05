@@ -31,6 +31,49 @@ export function Header() {
     loadCategories();
   }, []);
 
+  const [navConfig, setNavConfig] = useState<any>(null);
+
+  useEffect(() => {
+    const loadNav = () => {
+      try {
+        const stored = localStorage.getItem("dd_content_navigation");
+        if (stored) {
+          setNavConfig(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    window.addEventListener("dd-content-changed", loadNav);
+    window.addEventListener("storage", loadNav);
+    loadNav();
+
+    return () => {
+      window.removeEventListener("dd-content-changed", loadNav);
+      window.removeEventListener("storage", loadNav);
+    };
+  }, []);
+
+  const categoriesNode = navConfig?.desktopItems?.find(
+    (item: any) => item.label.toLowerCase() === "categories"
+  );
+  const categoriesChildren = categoriesNode?.children || [];
+
+  const dropdownItems = categoriesChildren.length > 0
+    ? categoriesChildren
+    : categories.map((cat) => {
+        const isWomen = cat.categoryName.toLowerCase().includes("women");
+        return {
+          label: cat.categoryName,
+          to: isWomen ? `/shop?category=${cat.categoryName.toLowerCase()}` : "/coming-soon",
+          children: isWomen ? cat.subCategories?.map((sub) => ({
+            label: sub.subcategoryName,
+            to: `/shop?category=${cat.categoryName.toLowerCase()}&subcategory=${sub.subcategoryName.toLowerCase()}`
+          })) : []
+        };
+      });
+
   const [cartItems, setCartItems] = useState<any[]>(() => {
     try {
       const stored = localStorage.getItem("cart");
@@ -326,30 +369,27 @@ export function Header() {
               
               <div className="absolute left-0 top-full pt-1 w-48 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 ease-in-out">
                 <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
-                  {categories.map((cat) => (
-                    <div key={cat.categoryId} className="relative group/sub px-5 py-2 hover:bg-neutral-100/60 flex items-center justify-between">
-                      <Link to={`/shop?category=${cat.categoryName.toLowerCase()}`} className="hover:text-black transition-colors w-full flex items-center justify-between">
-                        <span>{cat.categoryName}</span>
-                        {cat.subCategories && cat.subCategories.length > 0 && (
+                  {dropdownItems.map((cat: any, catIdx: number) => (
+                    <div key={catIdx} className="relative group/sub px-5 py-2 hover:bg-neutral-100/60 flex items-center justify-between">
+                      <Link to={cat.to} className="hover:text-black transition-colors w-full flex items-center justify-between">
+                        <span>{cat.label}</span>
+                        {cat.children && cat.children.length > 0 && (
                           <svg className="w-2.5 h-2.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
                           </svg>
                         )}
                       </Link>
                       
-                      {cat.subCategories && cat.subCategories.length > 0 && (
+                      {cat.children && cat.children.length > 0 && (
                         <div className="absolute left-full top-0 pl-1 w-48 opacity-0 pointer-events-none group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto transition-all duration-200 ease-in-out">
                           <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
-                            <Link to={`/shop?category=${cat.categoryName.toLowerCase()}`} className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                              All {cat.categoryName}
-                            </Link>
-                            {cat.subCategories.filter(sub => sub.isActive !== false).map(sub => (
+                            {cat.children.map((sub: any, subIdx: number) => (
                               <Link 
-                                key={sub.subCategoryId} 
-                                to={`/shop?category=${cat.categoryName.toLowerCase()}&subcategory=${sub.subcategoryName.toLowerCase()}`} 
+                                key={subIdx} 
+                                to={sub.to} 
                                 className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors"
                               >
-                                {sub.subcategoryName}
+                                {sub.label}
                               </Link>
                             ))}
                           </div>
@@ -357,7 +397,7 @@ export function Header() {
                       )}
                     </div>
                   ))}
-                  {categories.length === 0 && (
+                  {dropdownItems.length === 0 && (
                     <div className="px-5 py-2 text-neutral-400 text-[9px]">
                       No categories
                     </div>
@@ -686,15 +726,11 @@ export function Header() {
             <nav className="flex flex-col gap-4 text-xs font-bold tracking-widest uppercase text-neutral-800">
               <div className="flex flex-col gap-2 pl-3 border-l border-neutral-200">
                 <span className="text-[10px] text-neutral-400 font-bold tracking-wider uppercase mb-1">Categories</span>
-                <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
-                  Women
-                </Link>
-                <Link to="/coming-soon" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
-                  Men
-                </Link>
-                <Link to="/coming-soon" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
-                  Accessories
-                </Link>
+                {dropdownItems.map((cat: any, idx: number) => (
+                  <Link key={idx} to={cat.to} onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
+                    {cat.label}
+                  </Link>
+                ))}
               </div>
               <Link to="/about" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 About

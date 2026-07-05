@@ -158,8 +158,10 @@ export function CategoriesPage() {
             // Validate Category Image banner matches 800x1000 pixels
             const img = new Image();
             img.onload = () => {
-              if (img.width !== 800 || img.height !== 1000) {
-                alert(`Error: Image dimensions are ${img.width}x${img.height}px. Category images must be exactly 800x1000 pixels.`);
+              const ratio = img.width / img.height;
+              const isCorrectRatio = Math.abs(ratio - 0.8) < 0.025;
+              if (!isCorrectRatio) {
+                alert(`Error: Image dimensions are ${img.width}x${img.height}px. Category images must match a 4:5 aspect ratio (portrait) only.`);
                 if (e.target) e.target.value = ""; // clear file input
                 setter("");
                 setCatImageFile(null);
@@ -192,7 +194,7 @@ export function CategoriesPage() {
     e.preventDefault();
     if (!catLabel.trim() || !token) return;
     if (!catBannerImage) {
-      alert("Please upload a category banner image matching 800x1000 pixels.");
+      alert("Please upload a category banner image matching a 4:5 aspect ratio.");
       return;
     }
 
@@ -673,7 +675,7 @@ export function CategoriesPage() {
                 <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} placeholder="Category description..." rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-normal lowercase">(800x1000 pixels)</span></label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-bold uppercase">(Required: 4:5 aspect ratio, e.g. 800x1000)</span></label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
@@ -683,7 +685,7 @@ export function CategoriesPage() {
                 </div>
                 {catBannerImage && (
                   <div className="mt-3 flex flex-col items-center bg-neutral-50 p-2.5 border border-neutral-200">
-                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000)</span>
+                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (4:5)</span>
                     <div className="w-[140px] h-[175px] border border-neutral-200 overflow-hidden shrink-0 relative bg-neutral-100 shadow-sm">
                       <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
                     </div>
@@ -719,7 +721,7 @@ export function CategoriesPage() {
                 <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-normal lowercase">(800x1000 pixels)</span></label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-bold uppercase">(Required: 4:5 aspect ratio, e.g. 800x1000)</span></label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
@@ -729,7 +731,7 @@ export function CategoriesPage() {
                 </div>
                 {catBannerImage && (
                   <div className="mt-3 flex flex-col items-center bg-neutral-50 p-2.5 border border-neutral-200">
-                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000)</span>
+                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (4:5)</span>
                     <div className="w-[140px] h-[175px] border border-neutral-200 overflow-hidden shrink-0 relative bg-neutral-100 shadow-sm">
                       <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
                     </div>

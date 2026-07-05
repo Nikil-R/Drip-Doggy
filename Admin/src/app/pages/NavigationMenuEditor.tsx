@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, RotateCcw, Check, ChevronDown, ChevronRight, Globe, Layers, Smartphone, Monitor, Eye, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Check, ChevronDown, ChevronRight, Globe, Layers, Smartphone, Monitor, Eye, Link as LinkIcon, Save } from "lucide-react";
 import { getNavConfig, setNavConfig, NavConfig, NavMenuItem, NavDropdownItem } from "../lib/admin-content-store";
+import { useAuthStore } from "../store/auth-store";
+import { categoryApi, subCategoryApi } from "../lib/category-api";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
@@ -58,17 +60,99 @@ const DEFAULT_CONFIG: NavConfig = {
 
 export function NavigationMenuEditorPage() {
   const [config, setConfig] = useState<NavConfig>(DEFAULT_CONFIG);
+  const [lastSavedConfig, setLastSavedConfig] = useState<NavConfig>(DEFAULT_CONFIG);
   const [toast, setToast] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(["desktop-0"]));
   const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  const { token } = useAuthStore();
+
   useEffect(() => {
-    const stored = getNavConfig();
-    if (stored.desktopItems.length > 0) {
-      setConfig(stored);
+    async function loadAndSyncCategories() {
+      const stored = getNavConfig();
+      let currentConfig = stored.desktopItems.length > 0 ? stored : { ...DEFAULT_CONFIG };
+
+      if (!token) {
+        setConfig(currentConfig);
+        return;
+      }
+
+      try {
+        const [cats, subs] = await Promise.all([
+          categoryApi.getAllCategories(token),
+          subCategoryApi.getAllSubCategories(token)
+        ]);
+
+        const activeCats = cats.filter(c => c.isActive !== false && c.isDeleted !== true);
+
+        const categoryDropdownItems = activeCats.map(cat => {
+          const subIds = cat.subCategoryIds ? cat.subCategoryIds.split(",").map(id => parseInt(id.trim(), 10)) : [];
+          const matchedSubs = subs.filter(sub => subIds.includes(sub.subCategoryId) && sub.isActive !== false && sub.isDeleted !== true);
+
+          const subChildren = matchedSubs.map(s => ({
+            label: s.subcategoryName,
+            to: `/shop?category=${cat.categoryName.toLowerCase()}&subcategory=${s.subcategoryName.toLowerCase()}`
+          }));
+
+          const childrenList = [
+            { label: `All ${cat.categoryName}`, to: `/shop?category=${cat.categoryName.toLowerCase()}` },
+            ...subChildren
+          ];
+
+          const existingDesktopItem = currentConfig.desktopItems
+            ?.find(item => item.label.toLowerCase() === "categories")
+            ?.children?.find((child: any) => child.label.toLowerCase() === cat.categoryName.toLowerCase());
+
+          const defaultTo = cat.categoryName.toLowerCase().includes("women")
+            ? `/shop?category=${cat.categoryName.toLowerCase()}`
+            : "/coming-soon";
+
+          return {
+            label: cat.categoryName,
+            to: existingDesktopItem?.to || defaultTo,
+            children: childrenList.length > 1 ? childrenList : undefined
+          };
+        });
+
+        const desktop = [...currentConfig.desktopItems];
+        const categoriesIndex = desktop.findIndex(item => item.label.toLowerCase() === "categories");
+        if (categoriesIndex !== -1) {
+          desktop[categoriesIndex] = {
+            ...desktop[categoriesIndex],
+            children: categoryDropdownItems
+          };
+        }
+
+        const mobile = [...currentConfig.mobileItems];
+        const filteredMobile = mobile.filter(item => {
+          const matchedCat = activeCats.some(c => c.categoryName.toLowerCase() === item.label.toLowerCase());
+          const isOldHardcoded = ["women", "men", "accessories"].includes(item.label.toLowerCase());
+          return !matchedCat && !isOldHardcoded;
+        });
+
+        const categoriesToInsert = activeCats.map(cat => ({
+          label: cat.categoryName,
+          to: `/shop?category=${cat.categoryName.toLowerCase()}`
+        }));
+        filteredMobile.splice(0, 0, ...categoriesToInsert);
+
+         const finalConfig = {
+          ...currentConfig,
+          desktopItems: desktop,
+          mobileItems: filteredMobile
+        };
+        setConfig(finalConfig);
+        setLastSavedConfig(finalConfig);
+      } catch (err) {
+        console.error("Failed to load and sync categories in navigation editor", err);
+        setConfig(currentConfig);
+        setLastSavedConfig(currentConfig);
+      }
     }
-  }, []);
+
+    loadAndSyncCategories();
+  }, [token]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -77,6 +161,7 @@ export function NavigationMenuEditorPage() {
 
   const save = () => {
     setNavConfig(config);
+    setLastSavedConfig(config);
     window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_navigation" } }));
     showToast("Navigation saved & synced to frontend");
   };
@@ -177,14 +262,7 @@ export function NavigationMenuEditorPage() {
     <div className="space-y-8 font-sans text-[#382d24]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-neutral-200/60 pb-5">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
-            <Globe className="w-5 h-5 text-[#224870]" /> Navigation Menu
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Configure desktop & mobile navigation — changes sync to the storefront in real time
-          </p>
-        </div>
+        <div />
         <div className="flex gap-2.5">
           <button
             onClick={() => setPreviewOpen(!previewOpen)}
@@ -391,8 +469,48 @@ export function NavigationMenuEditorPage() {
                               <Plus className="w-2 h-2" />
                             </button>
                             <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const savedChild = lastSavedConfig.desktopItems[idx]?.children?.[ci];
+                                const isChildSaved = savedChild && savedChild.label === child.label && savedChild.to === child.to;
+                                if (!isChildSaved) {
+                                  setNavConfig(config);
+                                  setLastSavedConfig(config);
+                                  window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_navigation" } }));
+                                  showToast("Item saved & synced!");
+                                }
+                              }}
+                              className={`p-1 border cursor-pointer transition-colors flex items-center justify-center ${
+                                (() => {
+                                  const savedChild = lastSavedConfig.desktopItems[idx]?.children?.[ci];
+                                  const isChildSaved = savedChild && savedChild.label === child.label && savedChild.to === child.to;
+                                  return isChildSaved
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-250"
+                                    : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100";
+                                })()
+                              }`}
+                              title={
+                                (() => {
+                                  const savedChild = lastSavedConfig.desktopItems[idx]?.children?.[ci];
+                                  const isChildSaved = savedChild && savedChild.label === child.label && savedChild.to === child.to;
+                                  return isChildSaved ? "Already saved" : "Click to save changes instantly";
+                                })()
+                              }
+                            >
+                              {(() => {
+                                const savedChild = lastSavedConfig.desktopItems[idx]?.children?.[ci];
+                                const isChildSaved = savedChild && savedChild.label === child.label && savedChild.to === child.to;
+                                return isChildSaved ? (
+                                  <Check className="w-3 h-3 stroke-[2.5]" />
+                                ) : (
+                                  <Save className="w-3 h-3 stroke-[2.5]" />
+                                );
+                              })()}
+                            </button>
+                            <button
                               onClick={e => { e.stopPropagation(); removeDesktopChild(idx, ci); }}
-                              className="text-neutral-200 hover:text-[#b2533e] cursor-pointer bg-transparent border-none transition-colors ml-auto"
+                              className="text-neutral-200 hover:text-[#b2533e] cursor-pointer bg-transparent border-none transition-colors"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
