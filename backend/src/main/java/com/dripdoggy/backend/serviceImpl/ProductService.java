@@ -197,6 +197,9 @@ public class ProductService implements IProductService {
 
                 // Save Variant Images to S3
                 List<Image> images = new ArrayList<>();
+                String primaryImgUrl = variantDto.getPrimaryImageUrl();
+                String resolvedPrimaryUrl = null;
+
                 if (variantDto.getImages() != null) {
                     for (MultipartFile imageFile : variantDto.getImages()) {
                         if (!imageFile.isEmpty()) {
@@ -206,8 +209,14 @@ public class ProductService implements IProductService {
                                 image.setImageUrl(imageUrl);
                                 image.setIsActive(true);
                                 image.setProductVariant(savedVariant);
+                                image.setProduct(savedProduct);
                                 imageRepository.save(image);
                                 images.add(image);
+
+                                if (primaryImgUrl != null && imageFile.getOriginalFilename() != null 
+                                        && imageFile.getOriginalFilename().equalsIgnoreCase(primaryImgUrl.trim())) {
+                                    resolvedPrimaryUrl = imageUrl;
+                                }
                             } catch (Exception e) {
                                 throw new FailedToUploadImageException("Failed to upload variant image to S3: " + e.getMessage());
                             }
@@ -217,8 +226,20 @@ public class ProductService implements IProductService {
                 savedVariant.setImages(images);
 
                 // Set Primary Image URL
-                if (variantDto.getPrimaryImageUrl() != null && !variantDto.getPrimaryImageUrl().trim().isEmpty()) {
-                    savedVariant.setPrimaryImageUrl(variantDto.getPrimaryImageUrl());
+                if (resolvedPrimaryUrl != null) {
+                    savedVariant.setPrimaryImageUrl(resolvedPrimaryUrl);
+                } else if (primaryImgUrl != null && !primaryImgUrl.trim().isEmpty()) {
+                    boolean found = false;
+                    for (Image img : images) {
+                        if (img.getImageUrl().equals(primaryImgUrl.trim())) {
+                            savedVariant.setPrimaryImageUrl(img.getImageUrl());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found && !images.isEmpty()) {
+                        savedVariant.setPrimaryImageUrl(images.get(0).getImageUrl());
+                    }
                 } else if (!images.isEmpty()) {
                     savedVariant.setPrimaryImageUrl(images.get(0).getImageUrl());
                 }
@@ -358,6 +379,8 @@ public class ProductService implements IProductService {
         if (product.getProductFeatures() != null) {
             productFeatureRepository.deleteAll(product.getProductFeatures());
             product.getProductFeatures().clear();
+        } else {
+            product.setProductFeatures(new ArrayList<>());
         }
         if (productReqDto.getFeatures() != null) {
             List<ProductFeature> features = new ArrayList<>();
@@ -371,7 +394,7 @@ public class ProductService implements IProductService {
                     features.add(feature);
                 }
             }
-            product.setProductFeatures(features);
+            product.getProductFeatures().addAll(features);
         }
 
         // Update Variants and Sizes (merge strategy to prevent breaking cart/order_items references)
@@ -427,7 +450,14 @@ public class ProductService implements IProductService {
                 // Handle Variant Images: Keep existing ones, upload new ones
                 List<Image> variantImages = new ArrayList<>();
                 if (!isNew && savedVariant.getImages() != null) {
-                    List<String> keepUrls = varDto.getExistingImageUrls() != null ? varDto.getExistingImageUrls() : Collections.emptyList();
+                    List<String> keepUrls;
+                    if (varDto.getExistingImageUrls() == null) {
+                        keepUrls = savedVariant.getImages().stream()
+                                .map(Image::getImageUrl)
+                                .collect(Collectors.toList());
+                    } else {
+                        keepUrls = varDto.getExistingImageUrls();
+                    }
                     for (Image existingImg : savedVariant.getImages()) {
                         if (keepUrls.contains(existingImg.getImageUrl())) {
                             variantImages.add(existingImg);
@@ -440,6 +470,9 @@ public class ProductService implements IProductService {
                 }
 
                 // Upload new variant images to S3
+                String primaryImgUrl = varDto.getPrimaryImageUrl();
+                String resolvedPrimaryUrl = null;
+
                 if (varDto.getImages() != null) {
                     for (MultipartFile imageFile : varDto.getImages()) {
                         if (!imageFile.isEmpty()) {
@@ -449,8 +482,14 @@ public class ProductService implements IProductService {
                                 image.setImageUrl(imageUrl);
                                 image.setIsActive(true);
                                 image.setProductVariant(savedVariant);
+                                image.setProduct(product);
                                 imageRepository.save(image);
                                 variantImages.add(image);
+
+                                if (primaryImgUrl != null && imageFile.getOriginalFilename() != null 
+                                        && imageFile.getOriginalFilename().equalsIgnoreCase(primaryImgUrl.trim())) {
+                                    resolvedPrimaryUrl = imageUrl;
+                                }
                             } catch (Exception e) {
                                 throw new FailedToUploadImageException("Failed to upload variant image to S3: " + e.getMessage());
                             }
@@ -460,8 +499,31 @@ public class ProductService implements IProductService {
                 savedVariant.setImages(variantImages);
 
                 // Set/Update Primary Image Url
-                if (varDto.getPrimaryImageUrl() != null && !varDto.getPrimaryImageUrl().trim().isEmpty()) {
-                    savedVariant.setPrimaryImageUrl(varDto.getPrimaryImageUrl());
+                if (resolvedPrimaryUrl != null) {
+                    savedVariant.setPrimaryImageUrl(resolvedPrimaryUrl);
+                } else if (primaryImgUrl != null && !primaryImgUrl.trim().isEmpty()) {
+                    boolean found = false;
+                    for (Image img : variantImages) {
+                        if (img.getImageUrl().equals(primaryImgUrl.trim())) {
+                            savedVariant.setPrimaryImageUrl(img.getImageUrl());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        boolean currentPrimaryStillValid = false;
+                        if (savedVariant.getPrimaryImageUrl() != null) {
+                            for (Image img : variantImages) {
+                                if (img.getImageUrl().equals(savedVariant.getPrimaryImageUrl())) {
+                                    currentPrimaryStillValid = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!currentPrimaryStillValid) {
+                            savedVariant.setPrimaryImageUrl(!variantImages.isEmpty() ? variantImages.get(0).getImageUrl() : null);
+                        }
+                    }
                 } else {
                     // Check if current primaryImageUrl is still valid (in variantImages list)
                     boolean currentPrimaryStillValid = false;
@@ -508,7 +570,12 @@ public class ProductService implements IProductService {
                         updatedSizes.add(size);
                     }
                 }
-                savedVariant.setProductVariantSizes(updatedSizes);
+                if (savedVariant.getProductVariantSizes() != null) {
+                    savedVariant.getProductVariantSizes().clear();
+                    savedVariant.getProductVariantSizes().addAll(updatedSizes);
+                } else {
+                    savedVariant.setProductVariantSizes(updatedSizes);
+                }
 
                 updatedVariants.add(savedVariant);
             }
@@ -524,7 +591,12 @@ public class ProductService implements IProductService {
                 }
             }
 
-            product.setProductVariants(updatedVariants);
+            if (product.getProductVariants() != null) {
+                product.getProductVariants().clear();
+                product.getProductVariants().addAll(updatedVariants);
+            } else {
+                product.setProductVariants(updatedVariants);
+            }
         }
 
         productRepository.save(product);
@@ -545,10 +617,17 @@ public class ProductService implements IProductService {
         product.setIsActive(false);
         product.setIsDeleted(true);
 
-        // Deactivate all variants
+        // Soft delete and deactivate all variants and their sizes
         if (product.getProductVariants() != null) {
             for (ProductVariant variant : product.getProductVariants()) {
                 variant.setIsActive(false);
+                variant.setIsDeleted(true);
+                if (variant.getProductVariantSizes() != null) {
+                    for (ProductVariantSize size : variant.getProductVariantSizes()) {
+                        size.setIsActive(false);
+                        productVariantSizeRepository.save(size);
+                    }
+                }
                 productVariantRepository.save(variant);
             }
         }
@@ -610,6 +689,13 @@ public class ProductService implements IProductService {
         // Soft delete: set isActive to false and isDeleted to true
         variant.setIsActive(false);
         variant.setIsDeleted(true);
+
+        if (variant.getProductVariantSizes() != null) {
+            for (ProductVariantSize size : variant.getProductVariantSizes()) {
+                size.setIsActive(false);
+                productVariantSizeRepository.save(size);
+            }
+        }
 
         productVariantRepository.save(variant);
 
