@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { Heart, ShoppingBag, ShieldCheck, RefreshCw, Truck, Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { products } from "../data/products";
+import { cartApi } from "../lib/cart-api";
+import { syncCart } from "../lib/cart-sync";
 
 interface CartItem {
   id: number;
@@ -17,6 +19,7 @@ interface CartItem {
   favorite?: boolean;
   originalPrice?: number;
   outOfStock?: boolean;
+  backendId?: number;
 }
 
 function CheckoutButton({ cartItems }: { cartItems: CartItem[] }) {
@@ -91,22 +94,47 @@ export function Cart() {
     window.dispatchEvent(new Event("cart-updated"));
   };
 
-  const updateQuantity = (cartItemId: string, delta: number) => {
-    setCartItems(prev => {
-      const updated = prev.map(item =>
-        item.cartItemId === cartItemId ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-      );
-      saveCart(updated);
-      return updated;
-    });
+  const updateQuantity = async (cartItemId: string, delta: number) => {
+    const item = cartItems.find(i => i.cartItemId === cartItemId);
+    if (!item) return;
+    const newQty = Math.max(1, item.quantity + delta);
+
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token && item.backendId) {
+      try {
+        await cartApi.updateQuantity(item.backendId, newQty);
+        await syncCart();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      setCartItems(prev => {
+        const updated = prev.map(i =>
+          i.cartItemId === cartItemId ? { ...i, quantity: newQty } : i
+        );
+        saveCart(updated);
+        return updated;
+      });
+    }
   };
 
-  const removeItem = (cartItemId: string) => {
-    setCartItems(prev => {
-      const updated = prev.filter(item => item.cartItemId !== cartItemId);
-      saveCart(updated);
-      return updated;
-    });
+  const removeItem = async (cartItemId: string) => {
+    const item = cartItems.find(i => i.cartItemId === cartItemId);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token && item?.backendId) {
+      try {
+        await cartApi.removeFromCart(item.backendId);
+        await syncCart();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      setCartItems(prev => {
+        const updated = prev.filter(i => i.cartItemId !== cartItemId);
+        saveCart(updated);
+        return updated;
+      });
+    }
   };
 
   const toggleFavorite = (cartItemId: string) => {
@@ -297,8 +325,8 @@ export function Cart() {
                           <div className="flex justify-between items-center mt-4 md:hidden">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-extrabold text-neutral-900">₹{item.price.toFixed(2)}</span>
-                                <span className="text-[10px] font-medium text-neutral-450 line-through">₹{originalPrice.toFixed(2)}</span>
+                                <span className="text-xs font-extrabold text-neutral-900">₹{item.price.toFixed(0)}</span>
+                                <span className="text-[10px] font-medium text-neutral-450 line-through">₹{originalPrice.toFixed(0)}</span>
                                 <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">{discountPercent}% OFF</span>
                               </div>
                             </div>
@@ -316,8 +344,8 @@ export function Cart() {
                       {/* DESKTOP PRICE */}
                       <div className="hidden md:flex col-span-2 flex-col items-center justify-center text-center gap-1">
                         <div className="flex items-center gap-2 justify-center">
-                          <span className="text-sm font-extrabold text-neutral-900">₹{item.price.toFixed(2)}</span>
-                          <span className="text-[10px] font-medium text-neutral-450 line-through">₹{originalPrice.toFixed(2)}</span>
+                          <span className="text-sm font-extrabold text-neutral-900">₹{item.price.toFixed(0)}</span>
+                          <span className="text-[10px] font-medium text-neutral-450 line-through">₹{originalPrice.toFixed(0)}</span>
                         </div>
                         <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-widest bg-red-50 px-1.5 py-0.5">{discountPercent}% OFF</span>
                       </div>
@@ -343,7 +371,7 @@ export function Cart() {
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block md:hidden">Total:</span>
-                          <span className="text-sm font-extrabold text-neutral-950">₹{(item.price * item.quantity).toFixed(2)}</span>
+                          <span className="text-sm font-extrabold text-neutral-950">₹{(item.price * item.quantity).toFixed(0)}</span>
                         </div>
                       </div>
                     </div>
@@ -374,7 +402,7 @@ export function Cart() {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[9px] font-extrabold tracking-wider text-neutral-500 uppercase">
-                        Add <span className="text-neutral-900 font-black">₹{(1999 - subtotal).toFixed(2)}</span> more for FREE shipping
+                        Add <span className="text-neutral-900 font-black">₹{(1999 - subtotal).toFixed(0)}</span> more for FREE shipping
                       </span>
                       <span className="text-[10px] font-black text-neutral-850">{Math.round((subtotal / 1999) * 100)}%</span>
                     </div>
@@ -388,23 +416,23 @@ export function Cart() {
               <div className="space-y-3.5 text-[10px] font-bold tracking-wider text-neutral-600 uppercase mb-6">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(2)}</span>
+                  <span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(0)}</span>
                 </div>
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-green-600 font-extrabold">
                     <span>Promo Discount ({appliedPromo})</span>
-                    <span>-₹{promoDiscount.toFixed(2)}</span>
+                    <span>-₹{promoDiscount.toFixed(0)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
                   <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600 tracking-widest font-black text-[9.5px]" : "text-neutral-950"}`}>
-                    {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue.toFixed(2)}`}
+                    {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue.toFixed(0)}`}
                   </span>
                 </div>
                 <div className="border-t border-neutral-200 pt-3.5 flex justify-between text-xs font-extrabold text-neutral-950">
                   <span>Total To Pay</span>
-                  <span className="text-sm font-extrabold">₹{totalToPay.toFixed(2)}</span>
+                  <span className="text-sm font-extrabold">₹{totalToPay.toFixed(0)}</span>
                 </div>
               </div>
 
@@ -521,10 +549,10 @@ function RecommendedCard({ product, onAddToBag }: { product: any; onAddToBag: (p
           <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{product.brand}</span>
           <h3 className="text-xs font-extrabold text-[#030213] uppercase leading-tight line-clamp-1">{product.name}</h3>
           <div className="flex items-baseline gap-2 mt-0.5">
-            <span className="text-sm font-extrabold text-neutral-900">₹{product.price.toFixed(2)}</span>
+            <span className="text-sm font-extrabold text-neutral-900">₹{product.price.toFixed(0)}</span>
             {product.originalPrice && (
               <>
-                <span className="text-xs font-semibold text-neutral-450 line-through">₹{product.originalPrice.toFixed(2)}</span>
+                <span className="text-xs font-semibold text-neutral-450 line-through">₹{product.originalPrice.toFixed(0)}</span>
                 <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1.5 py-0.5">
                   {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
                 </span>

@@ -1,9 +1,13 @@
 import { Heart, Star, ShoppingBag, Plus, Minus, RotateCcw } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useSearchParams, useNavigate } from "react-router";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { products as catalogProducts } from "../../data/products";
 import type { Product } from "../../data/products";
 import { productApi } from "../../lib/product-api";
+import { cartApi } from "../../lib/cart-api";
+import { syncCart } from "../../lib/cart-sync";
+import { wishlistApi } from "../../lib/wishlist-api";
+import { syncWishlist } from "../../lib/wishlist-sync";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -143,12 +147,12 @@ function ProductCard({
         {/* Wishlist Heart */}
         <button
           onClick={onToggleFav}
-          className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 shadow-sm hover:text-red-500 transition-colors z-10 bg-transparent border-none cursor-pointer"
+          className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 shadow-sm hover:text-[#b2533e] transition-colors z-10 border-none cursor-pointer"
           aria-label={isFav ? "Remove from wishlist" : "Add to wishlist"}
         >
           <Heart
             className={`h-4 w-4 stroke-[1.5] ${
-              isFav ? "fill-red-500 stroke-red-500" : ""
+              isFav ? "fill-[#b2533e] stroke-[#b2533e]" : ""
             }`}
           />
         </button>
@@ -164,12 +168,12 @@ function ProductCard({
         <div className="flex items-center justify-between mt-0.5">
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-extrabold text-neutral-900">
-              ₹{product.price.toFixed(2)}
+              ₹{product.price.toFixed(0)}
             </span>
             {product.originalPrice && (
               <>
                 <span className="text-xs font-semibold text-neutral-450 line-through">
-                  ₹{product.originalPrice.toFixed(2)}
+                  ₹{product.originalPrice.toFixed(0)}
                 </span>
                 {discount > 0 && (
                   <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
@@ -198,6 +202,7 @@ function ProductCard({
 
 export function ProductGrid() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const collectionParam = searchParams.get("collection");
   const newParam = searchParams.get("new");
   const categoryParam = searchParams.get("category");
@@ -297,98 +302,121 @@ export function ProductGrid() {
     return cartLookup.get(key) ?? 0;
   };
 
-  const handleAddToBag = (product: Product, e: React.MouseEvent) => {
+  const handleAddToBag = async (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("cart");
       let items: any[] = stored ? JSON.parse(stored) : [];
       const cartItemId = `${product.id}-Default-S`;
       const existing = items.find((i: any) => i.cartItemId === cartItemId);
-      if (existing) {
-        existing.quantity += 1;
+
+      if (existing && existing.backendId) {
+        await cartApi.updateQuantity(existing.backendId, existing.quantity + 1);
       } else {
-        items.push({
-          id: product.id,
-          cartItemId,
-          brand: product.brand,
-          name: product.name,
-          size: "S",
-          color: "Default",
-          price: product.price,
-          quantity: 1,
-          image: product.image,
-        });
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === "default"
+        ) || product.rawVariants?.[0];
+        const sizeObj = variant?.sizes?.find((s: any) => s.sizeName === "S");
+        const sizeId = sizeObj?.id;
+        if (sizeId) {
+          await cartApi.addToCart(sizeId, 1);
+        } else {
+          console.error("Size ID not found for handleAddToBag:", product.id);
+        }
       }
-      localStorage.setItem("cart", JSON.stringify(items));
-      window.dispatchEvent(new Event("cart-updated"));
+      await syncCart();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleUpdateQty = (
+  const handleUpdateQty = async (
     product: Product,
     newQty: number,
     e: React.MouseEvent
   ) => {
     e.preventDefault();
     e.stopPropagation();
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("cart");
       let items: any[] = stored ? JSON.parse(stored) : [];
       const cartItemId = `${product.id}-Default-S`;
+      const existing = items.find((i: any) => i.cartItemId === cartItemId);
 
       if (newQty <= 0) {
-        items = items.filter((i: any) => i.cartItemId !== cartItemId);
+        if (existing && existing.backendId) {
+          await cartApi.removeFromCart(existing.backendId);
+        }
       } else {
-        const existing = items.find((i: any) => i.cartItemId === cartItemId);
-        if (existing) {
-          existing.quantity = newQty;
+        if (existing && existing.backendId) {
+          await cartApi.updateQuantity(existing.backendId, newQty);
         } else {
-          items.push({
-            id: product.id,
-            cartItemId,
-            brand: product.brand,
-            name: product.name,
-            size: "S",
-            color: "Default",
-            price: product.price,
-            quantity: newQty,
-            image: product.image,
-          });
+          const variant = product.rawVariants?.find(
+            (v: any) => (v.variantName || "Default").toLowerCase() === "default"
+          ) || product.rawVariants?.[0];
+          const sizeObj = variant?.sizes?.find((s: any) => s.sizeName === "S");
+          const sizeId = sizeObj?.id;
+          if (sizeId) {
+            await cartApi.addToCart(sizeId, newQty);
+          } else {
+            console.error("Size ID not found for handleUpdateQty:", product.id);
+          }
         }
       }
-      localStorage.setItem("cart", JSON.stringify(items));
-      window.dispatchEvent(new Event("cart-updated"));
+      await syncCart();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
+  const toggleWishlist = async (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("wishlist");
       let list: any[] = stored ? JSON.parse(stored) : [];
-      const exists = list.some((item: any) => item.id === product.id);
+      const existing = list.find((item: any) => item.id === product.id);
 
-      if (exists) {
-        list = list.filter((item: any) => item.id !== product.id);
+      if (existing) {
+        if (existing.backendId) {
+          await wishlistApi.removeFromWishlist(existing.backendId);
+        }
       } else {
-        list.push({
-          id: product.id,
-          brand: product.brand,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-        });
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === "default"
+        ) || product.rawVariants?.[0];
+        const sizeObj = variant?.sizes?.find((s: any) => s.sizeName === "S") || variant?.sizes?.[0];
+        const sizeId = sizeObj?.id;
+        if (sizeId) {
+          await wishlistApi.addToWishlist(sizeId);
+        } else {
+          console.error("Size ID not found for wishlist:", product.id);
+        }
       }
-      localStorage.setItem("wishlist", JSON.stringify(list));
-      window.dispatchEvent(new Event("wishlist-updated"));
-    } catch (err) {
+      await syncWishlist();
+    } catch (err: any) {
       console.error(err);
+      const msg = err?.response?.data?.message || err?.message || "Failed to update wishlist.";
+      alert(msg);
     }
   };
 

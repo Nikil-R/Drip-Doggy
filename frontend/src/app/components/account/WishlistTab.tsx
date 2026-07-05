@@ -60,10 +60,10 @@ export function WishlistTab({ wishlistItems, onRemove, onAddToCart }: WishlistTa
                     <span className="text-[8px] font-extrabold tracking-widest text-[#b2533e] uppercase block">{item.brand}</span>
                     <h4 className="text-[12px] font-extrabold text-[#030213] uppercase mt-1 leading-tight truncate group-hover:underline">{item.name}</h4>
                     <div className="flex items-baseline gap-2 mt-1.5">
-                      <span className="text-[12px] font-extrabold text-neutral-900">₹{item.price.toFixed(2)}</span>
+                      <span className="text-[12px] font-extrabold text-neutral-900">₹{item.price.toFixed(0)}</span>
                       {originalPrice && (
                         <>
-                          <span className="text-[10px] font-semibold text-neutral-450 line-through">₹{originalPrice.toFixed(2)}</span>
+                          <span className="text-[10px] font-semibold text-neutral-450 line-through">₹{originalPrice.toFixed(0)}</span>
                           {discountPercent > 0 && (
                             <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
                               {discountPercent}% OFF

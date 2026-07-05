@@ -78,7 +78,8 @@ export const productApi = {
         description: p.productDescription || "",
         sizes: allSizes,
         specs: specsList,
-        designDetails: p.features ? p.features.map((f: any) => f.featureName) : []
+        designDetails: p.features ? p.features.map((f: any) => f.featureName) : [],
+        rawVariants: p.variants
       };
     });
   },
@@ -159,7 +160,8 @@ export const productApi = {
       variants: colorVariants,
       sizes: allSizes,
       specs: specsList,
-      designDetails: p.features ? p.features.map((f: any) => f.featureName) : []
+      designDetails: p.features ? p.features.map((f: any) => f.featureName) : [],
+      rawVariants: p.variants
     };
   }
 };

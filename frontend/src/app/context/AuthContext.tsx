@@ -12,8 +12,11 @@ import {
   createUser,
   saveSessionToken,
   getSessionToken,
+  clearSessionToken,
 } from "../lib/auth-storage";
 import { authApi } from "../lib/auth-api";
+import { syncCart, mergeLocalCartToBackend } from "../lib/cart-sync";
+import { syncWishlist, mergeLocalWishlistToBackend } from "../lib/wishlist-sync";
 
 type AuthActionResult = {
   success: boolean;
@@ -49,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sessionUser = getSessionUser();
     if (sessionUser) {
       setUser(sessionUser);
+      syncCart();
+      syncWishlist();
     }
     const pending = getPendingIdentifier();
     if (pending) {
@@ -99,6 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(authUser);
             clearPendingIdentifier();
             setPendingIdentifier(null);
+            mergeLocalCartToBackend();
+            mergeLocalWishlistToBackend();
             return { success: true, userExists: true };
           } else {
             // Save to pending state so onboarding can read this email/phone parameter
@@ -167,6 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(authUser);
         clearPendingIdentifier();
         setPendingIdentifier(null);
+        mergeLocalCartToBackend();
+        mergeLocalWishlistToBackend();
         return { success: true };
       } catch (err: any) {
         return {
@@ -189,8 +198,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     clearSessionUser();
     clearPendingIdentifier();
+    clearSessionToken();
     setUser(null);
     setPendingIdentifier(null);
+    localStorage.removeItem("cart");
+    localStorage.removeItem("wishlist");
+    window.dispatchEvent(new Event("cart-updated"));
+    window.dispatchEvent(new Event("wishlist-updated"));
   }, []);
 
   return (

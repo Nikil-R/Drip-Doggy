@@ -469,12 +469,12 @@ export function Search() {
 
                         <div className="flex items-baseline gap-2 mt-1">
                           <span className="text-xs font-semibold text-neutral-500">
-                            ₹{product.price.toFixed(2)}
+                            ₹{product.price.toFixed(0)}
                           </span>
                           {product.originalPrice && (
                             <>
                               <span className="text-[10px] font-medium text-neutral-400 line-through">
-                                ₹{product.originalPrice.toFixed(2)}
+                                ₹{product.originalPrice.toFixed(0)}
                               </span>
                               {discount > 0 && (
                                 <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">

@@ -76,6 +76,7 @@ interface ProductVariant {
   sizes: string[];
   images: string[];
   primaryImageUrl?: string;
+  existingUrls?: string[];
 }
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
@@ -169,7 +170,7 @@ export function AddProductPage() {
         setDbCategories(catList);
 
         if (isEdit && id) {
-          const rawId = Number(id.replace("#DD-P", "").replace("DD-P", ""));
+          const rawId = Number(id.replace(/\D/g, ""));
           if (isNaN(rawId)) {
             navigate("/admin/products");
             return;
@@ -181,7 +182,17 @@ export function AddProductPage() {
             setDescription(product.productDescription || "");
             setSelectedCategory(String(product.categoryId || ""));
             setSelectedSubCategory(String(product.subCategoryId || ""));
-            setSelectedTags(product.baseTitle ? [product.baseTitle] : []);
+            if (product.baseTitle) {
+              setSelectedTags([product.baseTitle]);
+              setDynamicTags(prev => {
+                if (!prev.includes(product.baseTitle)) {
+                  return [...prev, product.baseTitle];
+                }
+                return prev;
+              });
+            } else {
+              setSelectedTags([]);
+            }
             
             // Map specifications
             if (product.specification) {
@@ -227,7 +238,9 @@ export function AddProductPage() {
                 sizeStock: sizeStockMap,
                 active: v.isActive !== false,
                 sizes: (v.sizes || []).map((s: any) => s.sizeName),
-                images: v.imageUrls || []
+                images: v.imageUrls || [],
+                existingUrls: [...(v.imageUrls || [])],
+                primaryImageUrl: v.primaryImageUrl || ""
               };
             });
             setVariants(mappedVariants);
@@ -364,10 +377,7 @@ export function AddProductPage() {
         formData.append(`variants[${index}].discountType`, v.discountType === "percentage" ? "PERCENTAGE" : "FLAT");
         formData.append(`variants[${index}].discountValue`, cleanDiscountVal);
         formData.append(`variants[${index}].isActive`, String(v.active));
-        if (v.primaryImageUrl && v.primaryImageUrl.startsWith("http")) {
-          formData.append(`variants[${index}].primaryImageUrl`, v.primaryImageUrl);
-        }
-        
+
         // Sizes
         const activeSizes = v.sizes || [];
         activeSizes.forEach((sizeName, sizeIdx) => {
@@ -376,24 +386,43 @@ export function AddProductPage() {
           formData.append(`variants[${index}].sizes[${sizeIdx}].isActive`, "true");
         });
 
-        // Images
+        // Images & Primary Image resolution
         let localImageCount = 0;
+        let primaryFilename = "";
+        const existingList = v.existingUrls || [];
         (v.images || []).forEach(img => {
-          if (img.startsWith("data:")) {
-            try {
-              const file = dataURLtoFile(img, `variant_${index}_img_${localImageCount++}.png`);
-              formData.append(`variants[${index}].images`, file);
-            } catch (fileErr) {
-              console.error("Error converting image base64 to file", fileErr);
-            }
-          } else if (img.startsWith("http")) {
+          const isExisting = existingList.includes(img);
+          if (isExisting) {
             formData.append(`variants[${index}].existingImageUrls`, img);
+          } else {
+            if (img.startsWith("data:")) {
+              try {
+                const filename = `variant_${index}_img_${localImageCount++}.png`;
+                const file = dataURLtoFile(img, filename);
+                formData.append(`variants[${index}].images`, file);
+                if (v.primaryImageUrl === img) {
+                  primaryFilename = filename;
+                }
+              } catch (fileErr) {
+                console.error("Error converting image base64 to file", fileErr);
+              }
+            } else if (img.startsWith("http")) {
+              formData.append(`variants[${index}].existingImageUrls`, img);
+            }
           }
         });
+
+        if (v.primaryImageUrl) {
+          if (v.primaryImageUrl.startsWith("http")) {
+            formData.append(`variants[${index}].primaryImageUrl`, v.primaryImageUrl);
+          } else if (primaryFilename) {
+            formData.append(`variants[${index}].primaryImageUrl`, primaryFilename);
+          }
+        }
       });
 
       if (isEdit && id) {
-        const rawId = Number(id.replace("#DD-P", ""));
+        const rawId = Number(id.replace(/\D/g, ""));
         await productApi.updateProduct(rawId, formData, token);
       } else {
         await productApi.createProduct(formData, token);
@@ -671,6 +700,7 @@ export function AddProductPage() {
                 active: true,
                 sizes: [],
                 images: [],
+                existingUrls: [],
               }])}
               className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-black tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 border-none cursor-pointer transition-colors"
             >

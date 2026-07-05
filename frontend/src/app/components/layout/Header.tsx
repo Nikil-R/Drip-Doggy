@@ -420,7 +420,9 @@ export function Header() {
               <Search className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
             </button>
 
-            <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
+            {isAuthenticated && (
+              <>
+                <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
               <Heart className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
               {wishlistCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
@@ -633,6 +635,8 @@ export function Header() {
                 )}
               </SheetContent>
             </Sheet>
+          </>
+        )}
 
             {isAuthenticated ? (
               <div 
@@ -738,18 +742,21 @@ export function Header() {
               <Link to="/help" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 Help
               </Link>
-              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4 flex justify-between items-center">
-                <span>Wishlist</span>
-                {wishlistCount > 0 && (
-                  <span className="bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
-                    {wishlistCount}
-                  </span>
-                )}
-              </Link>
-
-              <Link to="/account" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
-                Account Settings
-              </Link>
+              {isAuthenticated && (
+                <>
+                  <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4 flex justify-between items-center">
+                    <span>Wishlist</span>
+                    {wishlistCount > 0 && (
+                      <span className="bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/account" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
+                    Account Settings
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}

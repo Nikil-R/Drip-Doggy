@@ -14,6 +14,10 @@ import { Link, useNavigate, useParams } from "react-router";
 import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
 import type { Product, ProductColorVariant } from "../data/products";
 import { productApi } from "../lib/product-api";
+import { cartApi } from "../lib/cart-api";
+import { syncCart } from "../lib/cart-sync";
+import { wishlistApi } from "../lib/wishlist-api";
+import { syncWishlist } from "../lib/wishlist-sync";
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -129,12 +133,26 @@ function ProductDetailContent({ product }: { product: Product }) {
       try {
         const stored = localStorage.getItem("cart");
         const items = stored ? JSON.parse(stored) : [];
-        const item = items.find(
-          (i: any) =>
-            i.id === product.id &&
-            i.color === selectedColor &&
-            i.size === selectedSize
+
+        // Find the selected variant size ID
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
         );
+        const sizeObj = variant?.sizes?.find(
+          (s: any) => (s.sizeName || "").toLowerCase() === selectedSize.toLowerCase()
+        );
+        const sizeId = sizeObj?.id;
+
+        const item = items.find((i: any) => {
+          if (sizeId && i.productVariantSizeId) {
+            return String(i.productVariantSizeId) === String(sizeId);
+          }
+          return (
+            i.id === product.id &&
+            i.color.toLowerCase() === selectedColor.toLowerCase() &&
+            i.size.toLowerCase() === selectedSize.toLowerCase()
+          );
+        });
         setCartQuantity(item ? item.quantity : 0);
       } catch (e) {
         console.error(e);
@@ -150,36 +168,69 @@ function ProductDetailContent({ product }: { product: Product }) {
     };
   }, [selectedColor, selectedSize, product.id]);
 
-  const updateProductQuantity = (newQty: number) => {
+  const updateProductQuantity = async (newQty: number) => {
     try {
+      const token = localStorage.getItem("dripdoggy_auth_token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      // Resolve the backend size ID for this variant+size selection
+      const variant = product.rawVariants?.find(
+        (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
+      );
+      const sizeObj = variant?.sizes?.find(
+        (s: any) => (s.sizeName || "").toLowerCase() === selectedSize.toLowerCase()
+      );
+      const sizeId = sizeObj?.id;
+      const maxStock = sizeObj?.stockQuantity ?? 999999;
+
+      // Find existing cart item — prefer sizeId match, fall back to string key
+      const cartItemId = `${product.id}-${selectedColor.toLowerCase()}-${selectedSize.toLowerCase()}`;
       const stored = localStorage.getItem("cart");
       let items = stored ? JSON.parse(stored) : [];
-      const cartItemId = `${product.id}-${selectedColor}-${selectedSize}`;
+      const existing = items.find((i: any) => {
+        if (sizeId && i.productVariantSizeId) {
+          return String(i.productVariantSizeId) === String(sizeId);
+        }
+        return i.cartItemId === cartItemId;
+      });
 
       if (newQty <= 0) {
-        items = items.filter((i: any) => i.cartItemId !== cartItemId);
+        // Remove from cart
+        if (existing && existing.backendId) {
+          await cartApi.removeFromCart(existing.backendId);
+        }
       } else {
-        const existing = items.find((i: any) => i.cartItemId === cartItemId);
-        if (existing) {
-          existing.quantity = newQty;
+        // Check stock limit
+        if (newQty > maxStock) {
+          alert(`Out of stock! Only ${maxStock} units are available.`);
+          return;
+        }
+
+        if (existing && existing.backendId) {
+          // Item already in backend cart — just update quantity
+          await cartApi.updateQuantity(existing.backendId, newQty);
         } else {
-          items.push({
-            id: product.id,
-            cartItemId,
-            brand: product.brand,
-            name: product.name,
-            size: selectedSize,
-            color: selectedColor,
-            price: product.price,
-            quantity: newQty,
-            image: productImages[0] || product.image,
-          });
+          // Item not in cart yet — add fresh
+          if (sizeId) {
+            await cartApi.addToCart(sizeId, newQty);
+          } else {
+            alert(`Selected size "${selectedSize}" is not available for this variant.`);
+            return;
+          }
         }
       }
-      localStorage.setItem("cart", JSON.stringify(items));
-      window.dispatchEvent(new Event("cart-updated"));
-    } catch (e) {
+
+      await syncCart();
+    } catch (e: any) {
       console.error(e);
+      const msg = e?.response?.data?.message || e?.message || "Failed to update cart.";
+      // Only show error to user if it's NOT a stock limit message we're already handling
+      if (!msg.toLowerCase().includes("insufficient") && !msg.toLowerCase().includes("stock")) {
+        alert(msg);
+      }
     }
   };
 
@@ -221,29 +272,39 @@ function ProductDetailContent({ product }: { product: Product }) {
     }
   }, [product.id]);
 
-  const toggleWishlist = () => {
-    const nextState = !isWishlisted;
-    setIsWishlisted(nextState);
+  const toggleWishlist = async () => {
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("wishlist");
       let items = stored ? JSON.parse(stored) : [];
-      const productItem = {
-        id: product.id,
-        brand: product.brand,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-      };
+      const existing = items.find((item: any) => item.id === product.id);
 
-      if (nextState) {
-        if (!items.some((item: any) => item.id === product.id)) {
-          items.push(productItem);
+      if (isWishlisted) {
+        if (existing && existing.backendId) {
+          await wishlistApi.removeFromWishlist(existing.backendId);
         }
+        setIsWishlisted(false);
       } else {
-        items = items.filter((item: any) => item.id !== product.id);
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
+        );
+        const sizeObj = variant?.sizes?.find(
+          (s: any) => s.sizeName === selectedSize
+        );
+        const sizeId = sizeObj?.id;
+        if (sizeId) {
+          await wishlistApi.addToWishlist(sizeId);
+        } else {
+          console.error("Size ID not found for wishlist:", selectedColor, selectedSize);
+        }
+        setIsWishlisted(true);
       }
-      localStorage.setItem("wishlist", JSON.stringify(items));
-      window.dispatchEvent(new Event("wishlist-updated"));
+      await syncWishlist();
     } catch (e) {
       console.error(e);
     }
@@ -272,7 +333,7 @@ function ProductDetailContent({ product }: { product: Product }) {
   }, []);
 
   const handleAddToBag = () => {
-    updateProductQuantity(1);
+    updateProductQuantity(cartQuantity + 1);
   };
 
   const handleBuyNow = () => {
@@ -432,12 +493,12 @@ function ProductDetailContent({ product }: { product: Product }) {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-extrabold tracking-tight text-neutral-900">
-                    ₹{product.price.toFixed(2)}
+                    ₹{product.price.toFixed(0)}
                   </span>
                   {product.originalPrice && (
                     <>
                       <span className="text-xs font-semibold text-neutral-450 line-through">
-                        ₹{product.originalPrice.toFixed(2)}
+                        ₹{product.originalPrice.toFixed(0)}
                       </span>
                       {discountPercent > 0 && (
                         <span className="text-[9px] font-extrabold text-[#b2533e] tracking-wider uppercase bg-red-50 px-1.5 py-0.5 rounded-sm">
@@ -1048,10 +1109,10 @@ function ProductDetailContent({ product }: { product: Product }) {
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl font-bold text-neutral-900">
-                  ₹{(product.price + 245 + 165).toFixed(2)}
+                  ₹{(product.price + 245 + 165).toFixed(0)}
                 </span>
                 <span className="text-xs text-neutral-400 line-through">
-                  ₹{(product.originalPrice ?? product.price + 245 + 165).toFixed(2)}
+                  ₹{(product.originalPrice ?? product.price + 245 + 165).toFixed(0)}
                 </span>
               </div>
             </div>
@@ -1174,7 +1235,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                 {product.name}
               </h4>
               <span className="text-sm font-extrabold text-[#b2533e] mt-0.5 block">
-                ₹{product.price.toFixed(2)}
+                ₹{product.price.toFixed(0)}
               </span>
             </div>
           </div>
@@ -1243,7 +1304,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </div>
             </div>
             <span className="text-sm font-extrabold text-[#b2533e]">
-              ₹{product.price.toFixed(2)}
+              ₹{product.price.toFixed(0)}
             </span>
           </div>
 
@@ -1631,12 +1692,12 @@ function RecommendationCard({ product }: { product: Product }) {
       </div>
       <div className="flex items-baseline gap-2 mt-2">
         <span className="text-xs font-bold text-neutral-800">
-          ₹{product.price.toFixed(2)}
+          ₹{product.price.toFixed(0)}
         </span>
         {product.originalPrice && (
           <>
             <span className="text-[10px] font-semibold text-[#858383] line-through">
-              ₹{product.originalPrice.toFixed(2)}
+              ₹{product.originalPrice.toFixed(0)}
             </span>
             {discountPercent > 0 && (
               <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
