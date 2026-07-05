@@ -11,21 +11,21 @@ http:
     data:
       - name: subcategoryName
         type: text
-        value: Tshirt
+        value: "pants "
       - name: image
         type: file
         value:
-          - C:\Users\vinay\OneDrive\Pictures\Gemini_Generated_Image_60yqt360yqt360yq.png
-        contentType: image/png
+          - C:\Users\vinay\OneDrive\Pictures\3a7af7d4913f70dc93f9e79dcdc98ad8.jpg
+        contentType: image/jpeg
       - name: description
         type: text
-        value: for Mens super T-shirts are aviable
+        value: "for Mens super pants "
       - name: categoryId
         type: text
-        value: "2"
+        value: "1"
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MjU5ODgyOSwiZXhwIjoxNzg0MzI2ODI5fQ.-twdbsXFqwuhsBhCGqB--ziTwVVYY2BKSJtWjEpIh3GoDkqG-B49HtOZgob0cNuvtMlCFxpkrXdqjqWZQZfALw
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
 
 settings:
   encodeUrl: true

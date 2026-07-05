@@ -1,0 +1,22 @@
+info:
+  name: admin-verfy-Otp
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/auth/admin/verify-otp
+  body:
+    type: json
+    data: |-
+      {
+        "identifier":"nikilvenom46@gmail.com",
+        "otpCode":950538
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

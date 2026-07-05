@@ -11,14 +11,14 @@ http:
     data: |
       {
       //   "phoneNo":"+911234577898",no
-        "firstName": "vinay",
-        "lastName": "raj",
+        "firstName": "shuku",
+        "lastName": "s",
         "dob":"22/03/2022",
-        "gender":"MALE"
+        "gender":"FEMALE"
       }
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4Mjc0NzE0NywiZXhwIjoxNzg0NDc1MTQ3fQ.9JCuu3xve6g6rPpVcd4nqzY6aNre96Pq-R6XgU5IFbQSC8R2aiGuCVby5MvXErOiY0wvU6swun2u2qMeUy83wg
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJuaWtpbHZlbm9tNDZAZ21haWwuY29tIiwiaWF0IjoxNzgyODE0MzM2LCJleHAiOjE3ODQ1NDIzMzZ9.O7vH9AqyM4DPLWB0azoQ4sc92SnE1zeIqbin7GnhWOsSDwc5y3FlmIXISwu6iBLVdORSe4aMODf_utx_Z-FioQ
 
 settings:
   encodeUrl: true
