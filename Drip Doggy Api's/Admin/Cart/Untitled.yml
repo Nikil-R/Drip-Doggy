@@ -1,11 +1,18 @@
 info:
-  name: DelSubcategoriesById
+  name: Untitled
   type: http
-  seq: 6
+  seq: 1
 
 http:
-  method: DELETE
-  url: http://localhost:8081/dripdoggy/api/admin/subcategories/3
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/cart
+  body:
+    type: json
+    data: |-
+      {
+        "productVariantSizeId":2,
+        "quantity":4
+      }
   auth:
     type: bearer
     token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg

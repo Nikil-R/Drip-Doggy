@@ -8,7 +8,7 @@ http:
   url: http://localhost:8081/dripdoggy/api/admin/categories
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MjczMDk2MCwiZXhwIjoxNzg0NDU4OTYwfQ.DhMOxgrwLfU9HkBIZOqt9fa5SKcd8482R7HskLyXdBmwxvSk42o5BildNKG9_4U9_2DfkWNvcCbIrCDvpxOmnw
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
 
 settings:
   encodeUrl: true
