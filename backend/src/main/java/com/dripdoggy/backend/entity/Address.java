@@ -12,6 +12,15 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "phone_no")
+    private String phoneNo;
+
     @Column(name = "building_no")
     private String buildingNo;
 
@@ -27,9 +36,8 @@ public class Address {
     private String pincode;
     private String country;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "address_type")
-    private AddressType addressType;
+    private String addressType;
 
     @Column(name = "is_default")
     private Boolean isDefault;
@@ -46,8 +54,11 @@ public class Address {
     public Address() {
     }
 
-    public Address(Long id, String buildingNo, String buildingName, String streetName, String area, String city, String state, String pincode, String country, AddressType addressType, Boolean isDefault, Boolean isActive, User user) {
+    public Address(Long id, String firstName, String lastName, String phoneNo, String buildingNo, String buildingName, String streetName, String area, String city, String state, String pincode, String country, String addressType, Boolean isDefault, Boolean isActive, User user) {
         this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phoneNo = phoneNo;
         this.buildingNo = buildingNo;
         this.buildingName = buildingName;
         this.streetName = streetName;
@@ -135,11 +146,11 @@ public class Address {
         this.country = country;
     }
 
-    public AddressType getAddressType() {
+    public String getAddressType() {
         return addressType;
     }
 
-    public void setAddressType(AddressType addressType) {
+    public void setAddressType(String addressType) {
         this.addressType = addressType;
     }
 
@@ -165,5 +176,29 @@ public class Address {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getPhoneNo() {
+        return phoneNo;
+    }
+
+    public void setPhoneNo(String phoneNo) {
+        this.phoneNo = phoneNo;
     }
 }
