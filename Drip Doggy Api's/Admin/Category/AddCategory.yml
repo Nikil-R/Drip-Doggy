@@ -19,13 +19,13 @@ http:
         contentType: image/jpeg
       - name: description
         type: text
-        value: girl clothing bords
+        value: girl clothing bords duplicate
       - name: subCategoryIds
         type: text
         value: ""
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMyNzg4MzksImV4cCI6MTc4NTAwNjgzOX0.G4G60ZILfQZaGsJV_SjJa_3U4eqQq8hlHtWZrhS4Qpph1Zn8gsecJhcucwD84x7RGVjAk7tKnZlxWGSCHK3t5Q
 
 settings:
   encodeUrl: true

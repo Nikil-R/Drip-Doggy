@@ -13,5 +13,6 @@ public interface IProductService {
     ResponseMsgDto deleteProduct(Long id);
     ResponseMsgDto toggleProductIsActive(Long id);
     ResponseMsgDto toggleProductVariantIsActive(Long id);
+    ResponseMsgDto toggleProductVariantSizeIsActive(Long id);
     ResponseMsgDto deleteProductVariant(Long id);
 }
