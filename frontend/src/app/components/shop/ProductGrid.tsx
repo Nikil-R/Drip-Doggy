@@ -134,10 +134,10 @@ function ProductCard({
         {/* Badge */}
         {product.badge && (
           <span
-            className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 z-10 ${
+            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-1.5 py-0.5 sm:px-3 sm:py-1.5 z-10 ${
               product.badge === "SOLD OUT"
                 ? "bg-neutral-100 text-neutral-500"
-                : "bg-white text-[#030213]"
+                : "bg-white text-[#030213] border border-neutral-200/40"
             }`}
           >
             {product.badge}
@@ -147,11 +147,11 @@ function ProductCard({
         {/* Wishlist Heart */}
         <button
           onClick={onToggleFav}
-          className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 shadow-sm hover:text-[#b2533e] transition-colors z-10 border-none cursor-pointer"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/95 text-neutral-800 p-1.5 sm:p-2 shadow-sm hover:text-[#b2533e] transition-colors z-10 border-none cursor-pointer"
           aria-label={isFav ? "Remove from wishlist" : "Add to wishlist"}
         >
           <Heart
-            className={`h-4 w-4 stroke-[1.5] ${
+            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[1.5] ${
               isFav ? "fill-[#b2533e] stroke-[#b2533e]" : ""
             }`}
           />

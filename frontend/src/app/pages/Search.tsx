@@ -422,10 +422,10 @@ export function Search() {
                             {/* Badge */}
                             {product.badge && (
                               <span
-                                className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 ${
+                                className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-1.5 py-0.5 sm:px-3 sm:py-1.5 z-10 ${
                                   product.badge === "SOLD OUT"
                                     ? "bg-neutral-100 text-neutral-500"
-                                    : "bg-white text-[#030213]"
+                                    : "bg-white text-[#030213] border border-neutral-200/40"
                                 }`}
                               >
                                 {product.badge}

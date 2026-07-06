@@ -165,7 +165,7 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
           className="flex items-center justify-between w-full text-left py-1.5 bg-transparent border-none cursor-pointer select-none"
         >
           <span className="text-[10px] font-black tracking-[0.2em] text-neutral-900 uppercase">
-            Size Swatches
+            Size
           </span>
           {openSections.sizes ? (
             <Minus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
