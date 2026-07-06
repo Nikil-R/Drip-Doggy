@@ -50,6 +50,9 @@ public class AddressService implements IAddressService {
     }
 
     private void validateRegisteredUser(User user) {
+        if (user.getRole() == com.dripdoggy.backend.enums.UserRole.ADMIN) {
+            throw new InvalidCredentialsException("Access Denied: Admins cannot manage addresses through this API.");
+        }
         if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
             throw new UserNotRegisteredException("Register through the OTP, then you can.");
         }
@@ -217,7 +220,11 @@ public class AddressService implements IAddressService {
         Address address = addressRepository.findByIdAndUserAndIsActiveTrue(addressId, user)
                 .orElseThrow(() -> new AddressNotFoundException("Address not found with ID: " + addressId));
 
-        if (!Boolean.TRUE.equals(address.getIsDefault())) {
+        if (Boolean.TRUE.equals(address.getIsDefault())) {
+            address.setIsDefault(false);
+            addressRepository.save(address);
+            return new ResponseMsgDto(200, "Address unset as default successfully");
+        } else {
             List<Address> activeAddresses = addressRepository.findByUserAndIsActiveTrue(user);
             for (Address addr : activeAddresses) {
                 if (!addr.getId().equals(addressId) && Boolean.TRUE.equals(addr.getIsDefault())) {
@@ -227,8 +234,7 @@ public class AddressService implements IAddressService {
             }
             address.setIsDefault(true);
             addressRepository.save(address);
+            return new ResponseMsgDto(200, "Address set as default successfully");
         }
-
-        return new ResponseMsgDto(200, "Address set as default successfully");
     }
 }
