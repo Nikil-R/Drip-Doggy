@@ -134,10 +134,10 @@ function ProductCard({
         {/* Badge */}
         {product.badge && (
           <span
-            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-1.5 py-0.5 sm:px-3 sm:py-1.5 z-10 ${
+            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-0 z-10 ${
               product.badge === "SOLD OUT"
-                ? "bg-neutral-100 text-neutral-500"
-                : "bg-white text-[#030213] border border-neutral-200/40"
+                ? "bg-transparent text-neutral-500"
+                : "bg-transparent text-[#030213]"
             }`}
           >
             {product.badge}
@@ -147,7 +147,7 @@ function ProductCard({
         {/* Wishlist Heart */}
         <button
           onClick={onToggleFav}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/95 text-neutral-800 p-1.5 sm:p-2 shadow-sm hover:text-[#b2533e] transition-colors z-10 border-none cursor-pointer"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-transparent text-neutral-800 p-1.5 sm:p-2 hover:text-[#b2533e] transition-colors z-10 border-none cursor-pointer"
           aria-label={isFav ? "Remove from wishlist" : "Add to wishlist"}
         >
           <Heart
@@ -160,20 +160,20 @@ function ProductCard({
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1.5 mt-1">
+      <div className="flex flex-col gap-1 mt-1">
         <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1">
           {product.name}
         </h3>
 
-        <div className="flex items-center justify-between mt-0.5">
-          <div className="flex items-baseline gap-2">
-            <span className="text-sm font-extrabold text-neutral-900">
-              ₹{product.price.toFixed(0)}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+              ₹{Math.floor(product.price)}
             </span>
             {product.originalPrice && (
               <>
-                <span className="text-xs font-semibold text-neutral-450 line-through">
-                  ₹{product.originalPrice.toFixed(0)}
+                <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through">
+                  ₹{Math.floor(product.originalPrice)}
                 </span>
                 {discount > 0 && (
                   <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
@@ -184,7 +184,7 @@ function ProductCard({
             )}
           </div>
 
-          <div className="flex items-center text-neutral-800">
+          <div className="flex items-center text-neutral-800 flex-shrink-0">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
