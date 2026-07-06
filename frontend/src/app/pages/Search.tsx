@@ -422,10 +422,10 @@ export function Search() {
                             {/* Badge */}
                             {product.badge && (
                               <span
-                                className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-0 z-10 ${
+                                className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-2 py-0.5 sm:px-3 sm:py-1 z-10 bg-white/75 backdrop-blur-xs border border-white/40 rounded-xs shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${
                                   product.badge === "SOLD OUT"
-                                    ? "bg-transparent text-neutral-500"
-                                    : "bg-transparent text-[#030213]"
+                                    ? "text-neutral-500"
+                                    : "text-[#030213]"
                                 }`}
                               >
                                 {product.badge}
