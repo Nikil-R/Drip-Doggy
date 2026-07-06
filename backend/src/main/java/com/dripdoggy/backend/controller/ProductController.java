@@ -98,6 +98,12 @@ public class ProductController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @PatchMapping("/variants/sizes/{id}")
+    public ResponseEntity<ResponseMsgDto> toggleProductVariantSizeIsActive(@PathVariable Long id) {
+        ResponseMsgDto response = productService.toggleProductVariantSizeIsActive(id);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @DeleteMapping("/variants/{id}")
     public ResponseEntity<ResponseMsgDto> deleteProductVariant(@PathVariable Long id) {
         ResponseMsgDto response = productService.deleteProductVariant(id);

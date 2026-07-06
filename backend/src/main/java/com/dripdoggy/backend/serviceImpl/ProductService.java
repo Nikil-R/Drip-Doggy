@@ -678,6 +678,21 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    public ResponseMsgDto toggleProductVariantSizeIsActive(Long id) {
+        ProductVariantSize variantSize = productVariantSizeRepository.findById(id)
+                .orElseThrow(() -> new ProductVariantSizeNotFoundException("Product variant size not found with ID: " + id));
+
+        boolean nextActiveState = variantSize.getIsActive() == null || !variantSize.getIsActive();
+        variantSize.setIsActive(nextActiveState);
+
+        productVariantSizeRepository.save(variantSize);
+
+        String variantName = (variantSize.getProductVariant() != null) ? variantSize.getProductVariant().getVariantName() : "Unknown";
+        String stateStr = nextActiveState ? "activated" : "deactivated";
+        return new ResponseMsgDto(200, "Product variant size '" + variantSize.getSizeName() + "' of variant '" + variantName + "' " + stateStr + " successfully");
+    }
+
+    @Override
     public ResponseMsgDto deleteProductVariant(Long id) {
         ProductVariant variant = productVariantRepository.findById(id)
                 .orElseThrow(() -> new ProductVariantNotFoundException("Product variant not found with ID: " + id));
@@ -778,7 +793,7 @@ public class ProductService implements IProductService {
                         // Map Variant Sizes
                         if (v.getProductVariantSizes() != null) {
                             List<ProductVariantSizeResponseDto> sizeDtos = v.getProductVariantSizes().stream()
-                                    .filter(sz -> isAdmin || (sz.getIsActive() != null && sz.getIsActive()))
+                                    .filter(sz -> sz.getIsActive() != null && sz.getIsActive())
                                     .map(sz -> new ProductVariantSizeResponseDto(sz.getId(), sz.getSizeName(), sz.getStockQuantity(), sz.getIsActive()))
                                     .collect(Collectors.toList());
                             vDto.setSizes(sizeDtos);
