@@ -42,7 +42,7 @@ public class ProductController {
             if (productDto.getVariants() != null) {
                 for (int i = 0; i < productDto.getVariants().size(); i++) {
                     List<MultipartFile> files = multipartRequest.getFiles("variants[" + i + "].images");
-                    productDto.getVariants().get(i).setImages(files);
+                    productDto.getVariants().get(i).setUploadedImages(files);
                 }
             }
         }
@@ -72,7 +72,7 @@ public class ProductController {
             if (productDto.getVariants() != null) {
                 for (int i = 0; i < productDto.getVariants().size(); i++) {
                     List<MultipartFile> files = multipartRequest.getFiles("variants[" + i + "].images");
-                    productDto.getVariants().get(i).setImages(files);
+                    productDto.getVariants().get(i).setUploadedImages(files);
                 }
             }
         }
