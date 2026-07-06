@@ -297,7 +297,10 @@ export function Cart() {
               <div className="divide-y divide-neutral-200 border-b border-neutral-200">
                 {cartItems.map(item => {
                   const originalPrice = getOriginalPrice(item);
-                  const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
+                  const isDiscounted = originalPrice > item.price;
+                  const discountLabel = item.discountType === "value" || item.discountType === "flat"
+                    ? `₹${Math.floor(item.discountValue || (originalPrice - item.price))} OFF`
+                    : `${Math.round(((originalPrice - item.price) / originalPrice) * 100)}% OFF`;
                   const isOutOfStock = item.outOfStock;
 
                   return (
@@ -325,9 +328,13 @@ export function Cart() {
                           <div className="flex justify-between items-center mt-4 md:hidden">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-extrabold text-neutral-900">₹{item.price.toFixed(0)}</span>
-                                <span className="text-[10px] font-medium text-neutral-450 line-through">₹{originalPrice.toFixed(0)}</span>
-                                <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">{discountPercent}% OFF</span>
+                                <span className="text-xs font-extrabold text-neutral-900">₹{Math.floor(item.price)}</span>
+                                {isDiscounted && (
+                                  <>
+                                    <span className="text-[10px] font-medium text-neutral-450 line-through">₹{Math.floor(originalPrice)}</span>
+                                    <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">{discountLabel}</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center border border-neutral-300 px-2 py-0.5 bg-white">
@@ -344,10 +351,14 @@ export function Cart() {
                       {/* DESKTOP PRICE */}
                       <div className="hidden md:flex col-span-2 flex-col items-center justify-center text-center gap-1">
                         <div className="flex items-center gap-2 justify-center">
-                          <span className="text-sm font-extrabold text-neutral-900">₹{item.price.toFixed(0)}</span>
-                          <span className="text-[10px] font-medium text-neutral-450 line-through">₹{originalPrice.toFixed(0)}</span>
+                          <span className="text-sm font-extrabold text-neutral-900">₹{Math.floor(item.price)}</span>
+                          {isDiscounted && (
+                            <span className="text-[10px] font-medium text-neutral-450 line-through">₹{Math.floor(originalPrice)}</span>
+                          )}
                         </div>
-                        <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-widest bg-red-50 px-1.5 py-0.5">{discountPercent}% OFF</span>
+                        {isDiscounted && (
+                          <span className="text-[8px] font-black text-[#b2533e] uppercase tracking-widest bg-red-50 px-1.5 py-0.5">{discountLabel}</span>
+                        )}
                       </div>
 
                       {/* DESKTOP QUANTITY */}
@@ -371,7 +382,7 @@ export function Cart() {
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block md:hidden">Total:</span>
-                          <span className="text-sm font-extrabold text-neutral-950">₹{(item.price * item.quantity).toFixed(0)}</span>
+                          <span className="text-sm font-extrabold text-neutral-950">₹{Math.floor(item.price * item.quantity)}</span>
                         </div>
                       </div>
                     </div>
@@ -413,26 +424,26 @@ export function Cart() {
                 )}
               </div>
 
-              <div className="space-y-3.5 text-[10px] font-bold tracking-wider text-neutral-600 uppercase mb-6">
+               <div className="space-y-3.5 text-[10px] font-bold tracking-wider text-neutral-600 uppercase mb-6">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(0)}</span>
+                  <span className="font-extrabold text-neutral-950">₹{Math.floor(subtotal)}</span>
                 </div>
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-green-600 font-extrabold">
                     <span>Promo Discount ({appliedPromo})</span>
-                    <span>-₹{promoDiscount.toFixed(0)}</span>
+                    <span>-₹{Math.floor(promoDiscount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
                   <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600 tracking-widest font-black text-[9.5px]" : "text-neutral-950"}`}>
-                    {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue.toFixed(0)}`}
+                    {deliveryFeeValue === 0 ? "FREE" : `₹${Math.floor(deliveryFeeValue)}`}
                   </span>
                 </div>
                 <div className="border-t border-neutral-200 pt-3.5 flex justify-between text-xs font-extrabold text-neutral-950">
                   <span>Total To Pay</span>
-                  <span className="text-sm font-extrabold">₹{totalToPay.toFixed(0)}</span>
+                  <span className="text-sm font-extrabold">₹{Math.floor(totalToPay)}.00</span>
                 </div>
               </div>
 
@@ -441,7 +452,7 @@ export function Cart() {
                 <label className="text-[9px] font-extrabold tracking-widest text-neutral-400 uppercase block mb-2">PROMO CODE</label>
                 {appliedPromo ? (
                   <div className="flex items-center justify-between bg-neutral-100 border border-neutral-200 px-3 py-2 text-[9px] font-extrabold text-neutral-800 uppercase tracking-widest">
-                    <span>Applied: {appliedPromo} (-₹{promoDiscount}.00)</span>
+                    <span>Applied: {appliedPromo} (-₹{promoDiscount})</span>
                     <button onClick={removePromo}
                       className="text-[#b2533e] hover:opacity-75 font-extrabold underline bg-transparent border-none cursor-pointer">REMOVE</button>
                   </div>

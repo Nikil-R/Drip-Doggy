@@ -11,17 +11,29 @@ export async function syncCart() {
       productApi.fetchProducts()
     ]);
 
-    // Map sizeId to product details
-    const sizeToProductMap = new Map<string, { productId: number; brand: string; name: string }>();
+    // Map sizeId to product and variant details
+    const sizeToDetailsMap = new Map<string, { 
+      productId: number; 
+      brand: string; 
+      name: string; 
+      mrp: number; 
+      price: number; 
+      discountType: string;
+      discountValue: number;
+    }>();
     products.forEach(p => {
       if (p.rawVariants) {
         p.rawVariants.forEach(v => {
           if (v.sizes) {
             v.sizes.forEach((s: any) => {
-              sizeToProductMap.set(String(s.id), {
+              sizeToDetailsMap.set(String(s.id), {
                 productId: p.id,
                 brand: p.brand,
-                name: p.name
+                name: p.name,
+                mrp: v.mrp || 0,
+                price: v.price || v.mrp || 0,
+                discountType: v.discountType || "",
+                discountValue: v.discountValue || 0
               });
             });
           }
@@ -30,19 +42,28 @@ export async function syncCart() {
     });
 
     const mappedItems = backendItems.map(item => {
-      const prodInfo = sizeToProductMap.get(String(item.productVariantSizeId));
+      const details = sizeToDetailsMap.get(String(item.productVariantSizeId));
       const rawColor = item.variantName || "Default";
       const rawSize = item.sizeName || "S";
-      const productId = prodInfo ? prodInfo.productId : item.productVariantSizeId;
+      const productId = details ? details.productId : item.productVariantSizeId;
+      
+      const mrp = details ? details.mrp : (item.price || 0);
+      const price = details ? details.price : (item.price || 0);
+      const discountType = details ? details.discountType : "";
+      const discountValue = details ? details.discountValue : 0;
+      
       return {
         id: productId,
         cartItemId: `${productId}-${rawColor.toLowerCase()}-${rawSize.toLowerCase()}`,
         productVariantSizeId: item.productVariantSizeId,
-        brand: prodInfo ? prodInfo.brand : "Drip Doggy",
-        name: item.productName || (prodInfo ? prodInfo.name : "Product"),
+        brand: details ? details.brand : "Drip Doggy",
+        name: item.productName || (details ? details.name : "Product"),
         size: rawSize,
         color: rawColor,
-        price: item.price || 0,
+        price: price,
+        originalPrice: mrp,
+        discountType,
+        discountValue,
         quantity: item.quantity || 1,
         image: item.primaryImageUrl || "",
         backendId: item.id

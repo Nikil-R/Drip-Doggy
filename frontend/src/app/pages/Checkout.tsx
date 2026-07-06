@@ -950,7 +950,7 @@ export function Checkout() {
                           <span className="flex items-center gap-1"><Check className="h-3 w-3 stroke-[1.5]" /> COD Eligible</span>
                         </div>
                       </MethodCard>
-                      <MethodCard title="Express Shipping" subtitle="Next Working Day" price="₹150.00" badge="Fastest"
+                      <MethodCard title="Express Shipping" subtitle="Next Working Day" price="₹150" badge="Fastest"
                         isSelected={shippingMethod === "express"} onSelect={() => setShippingMethod("express")}>
                         <div className="flex items-center gap-3 text-[8px] text-neutral-400 font-medium">
                           <span className="flex items-center gap-1"><Zap className="h-3 w-3 stroke-[1.5]" /> Priority Dispatch</span>
@@ -982,7 +982,7 @@ export function Checkout() {
                         value={`${activeAddress.firstName} ${activeAddress.lastName}, ${activeAddress.buildingNo ? `${activeAddress.buildingNo}, ` : ""}${activeAddress.buildingName ? `${activeAddress.buildingName}, ` : ""}${activeAddress.street}, ${activeAddress.area}, ${activeAddress.city}, ${activeAddress.state} — ${activeAddress.postalCode}`}
                         onEdit={() => setStep(1)} />
                       <RecapRow label="Method"
-                        value={shippingMethod === "express" ? "Express Shipping — ₹150.00" : `Standard Delivery — ${deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}`}
+                        value={shippingMethod === "express" ? "Express Shipping — ₹150" : `Standard Delivery — ${deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}`}
                         onEdit={() => setStep(2)} />
                     </div>
                   </section>

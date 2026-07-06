@@ -36,11 +36,11 @@ export function WishlistTab({ wishlistItems, onRemove, onAddToCart }: WishlistTa
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {wishlistItems.map((item) => {
             const isOutOfStock = item.outOfStock;
-            const catalogProduct = getProductById(item.id);
-            const originalPrice = catalogProduct?.originalPrice;
-            const discountPercent = (originalPrice && originalPrice > item.price)
-              ? Math.round(((originalPrice - item.price) / originalPrice) * 100)
-              : 0;
+            const originalPrice = item.originalPrice;
+            const isDiscounted = originalPrice && originalPrice > item.price;
+            const discountLabel = item.discountType === "value" || item.discountType === "flat"
+              ? `₹${Math.floor(item.discountValue || (originalPrice - item.price))} OFF`
+              : `${Math.round(((originalPrice - item.price) / originalPrice) * 100)}% OFF`;
 
             return (
               <Link key={item.id} to={`/product/${item.id}`}
@@ -60,15 +60,13 @@ export function WishlistTab({ wishlistItems, onRemove, onAddToCart }: WishlistTa
                     <span className="text-[8px] font-extrabold tracking-widest text-[#b2533e] uppercase block">{item.brand}</span>
                     <h4 className="text-[12px] font-extrabold text-[#030213] uppercase mt-1 leading-tight truncate group-hover:underline">{item.name}</h4>
                     <div className="flex items-baseline gap-2 mt-1.5">
-                      <span className="text-[12px] font-extrabold text-neutral-900">₹{item.price.toFixed(0)}</span>
-                      {originalPrice && (
+                      <span className="text-[12px] font-extrabold text-neutral-900">₹{Math.floor(item.price)}</span>
+                      {isDiscounted && (
                         <>
-                          <span className="text-[10px] font-semibold text-neutral-450 line-through">₹{originalPrice.toFixed(0)}</span>
-                          {discountPercent > 0 && (
-                            <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
-                              {discountPercent}% OFF
-                            </span>
-                          )}
+                          <span className="text-[10px] font-semibold text-neutral-450 line-through">₹{Math.floor(originalPrice)}</span>
+                          <span className="text-[8px] font-extrabold text-[#b2533e] bg-red-50 px-1 py-0.5 rounded-sm">
+                            {discountLabel}
+                          </span>
                         </>
                       )}
                     </div>
