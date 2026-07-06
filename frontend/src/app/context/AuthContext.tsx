@@ -12,8 +12,11 @@ import {
   createUser,
   saveSessionToken,
   getSessionToken,
+  clearSessionToken,
 } from "../lib/auth-storage";
 import { authApi } from "../lib/auth-api";
+import { syncCart, mergeLocalCartToBackend } from "../lib/cart-sync";
+import { syncWishlist, mergeLocalWishlistToBackend } from "../lib/wishlist-sync";
 
 type AuthActionResult = {
   success: boolean;
@@ -49,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sessionUser = getSessionUser();
     if (sessionUser) {
       setUser(sessionUser);
+      syncCart();
+      syncWishlist();
     }
     const pending = getPendingIdentifier();
     if (pending) {
@@ -85,20 +90,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (res.token) {
           saveSessionToken(res.token);
           
-          if (res.userExists && res.user) {
+          if (res.userExists) {
             const authUser: AuthUser = {
-              id: res.user.id,
-              firstName: res.user.firstName,
-              lastName: res.user.lastName,
-              email: res.user.email,
-              phone: res.user.phone,
-              gender: res.user.gender,
-              dateOfBirth: res.user.dateOfBirth,
+              id: res.user?.id || identifier,
+              firstName: res.user?.firstName || "",
+              lastName: res.user?.lastName || "",
+              email: identifier.includes("@") ? identifier : (res.user?.email || ""),
+              phone: identifier.includes("@") ? (res.user?.phone || "") : identifier,
+              gender: res.user?.gender || "",
+              dateOfBirth: res.user?.dateOfBirth || "",
             };
             saveSessionUser(authUser);
             setUser(authUser);
             clearPendingIdentifier();
             setPendingIdentifier(null);
+            mergeLocalCartToBackend();
+            mergeLocalWishlistToBackend();
             return { success: true, userExists: true };
           } else {
             // Save to pending state so onboarding can read this email/phone parameter
@@ -127,41 +134,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dateOfBirth: string;
     }): Promise<AuthActionResult> => {
       const pending = getPendingIdentifier();
+      const token = getSessionToken();
       if (!pending) {
         return { success: false, message: "No pending verification found. Please start over." };
       }
+      if (!token) {
+        return { success: false, message: "Authentication session expired. Please verify again." };
+      }
 
-      const isEmailInput = pending.includes("@");
-      const storedUser = createUser({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        email: isEmailInput ? pending : "",
-        phone: isEmailInput ? "" : pending,
-      });
+      try {
+        // Convert yyyy-mm-dd to dd/MM/yyyy for backend compatibility
+        let formattedDob = profile.dateOfBirth;
+        if (profile.dateOfBirth && profile.dateOfBirth.includes("-")) {
+          const parts = profile.dateOfBirth.split("-"); // [yyyy, mm, dd]
+          if (parts.length === 3) {
+            formattedDob = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+        }
 
-      const updatedUser = updateUserProfile(pending, {
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        gender: profile.gender,
-        dateOfBirth: profile.dateOfBirth,
-      });
+        const backendUser = await authApi.registerCustomer(
+          profile.firstName,
+          profile.lastName,
+          formattedDob, // pass converted dd/MM/yyyy string
+          profile.gender,
+          token
+        );
 
-      const finalUser = updatedUser || storedUser;
-      const authUser: AuthUser = {
-        id: finalUser.id,
-        firstName: finalUser.firstName,
-        lastName: finalUser.lastName,
-        email: finalUser.email,
-        phone: finalUser.phone,
-        gender: finalUser.gender,
-        dateOfBirth: finalUser.dateOfBirth,
-      };
+        const authUser: AuthUser = {
+          id: String(backendUser.id || pending),
+          firstName: backendUser.firstName || profile.firstName,
+          lastName: backendUser.lastName || profile.lastName,
+          email: pending.includes("@") ? pending : "",
+          phone: pending.includes("@") ? "" : pending,
+          gender: backendUser.gender || profile.gender,
+          dateOfBirth: backendUser.dob || profile.dateOfBirth,
+        };
 
-      saveSessionUser(authUser);
-      setUser(authUser);
-      clearPendingIdentifier();
-      setPendingIdentifier(null);
-      return { success: true };
+        saveSessionUser(authUser);
+        setUser(authUser);
+        clearPendingIdentifier();
+        setPendingIdentifier(null);
+        mergeLocalCartToBackend();
+        mergeLocalWishlistToBackend();
+        return { success: true };
+      } catch (err: any) {
+        return {
+          success: false,
+          message: err?.response?.data?.message || "Failed to update onboarding profile. Please try again."
+        };
+      }
     },
     []
   );
@@ -177,8 +198,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     clearSessionUser();
     clearPendingIdentifier();
+    clearSessionToken();
     setUser(null);
     setPendingIdentifier(null);
+    localStorage.removeItem("cart");
+    localStorage.removeItem("wishlist");
+    window.dispatchEvent(new Event("cart-updated"));
+    window.dispatchEvent(new Event("wishlist-updated"));
   }, []);
 
   return (

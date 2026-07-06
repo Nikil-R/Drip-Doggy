@@ -50,6 +50,7 @@ export interface Product {
   shippingInfo?: { title: string; content: string }[];
   reviews?: ProductReview[];
   features?: ProductFeature[];
+  rawVariants?: any[];
 }
 
 // ─── Utility ────────────────────────────────────────────────────────────────

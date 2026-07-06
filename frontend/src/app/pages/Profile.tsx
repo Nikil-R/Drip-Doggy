@@ -7,6 +7,7 @@ import { OrdersTab } from "../components/account/OrdersTab";
 import { AddressesTab } from "../components/account/AddressesTab";
 import { WishlistTab } from "../components/account/WishlistTab";
 import type { AddressItem } from "../types/account";
+import { addressApi } from "../lib/address-api";
 
 type TabKey = "profile" | "orders" | "addresses" | "wishlist";
 
@@ -53,7 +54,38 @@ export function Profile() {
     lastName: user?.lastName || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    gender: user?.gender || "",
+    dateOfBirth: user?.dateOfBirth || "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        gender: user.gender || "",
+        dateOfBirth: user.dateOfBirth || "",
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token) {
+      async function loadAddresses() {
+        try {
+          const list = await addressApi.getAddresses();
+          setAddresses(list);
+        } catch (err) {
+          console.error("Error loading addresses from DB:", err);
+        }
+      }
+      loadAddresses();
+    }
+  }, [user]);
+
   const [phoneVerified, setPhoneVerified] = useState(false);
 
   const [addresses, setAddresses] = useState<AddressItem[]>(() => {
@@ -114,35 +146,50 @@ export function Profile() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="flex flex-col md:flex-row gap-12">
-          {/* Left Panel — Dashboard Nav */}
-          <div className="w-full md:w-64 flex-shrink-0 space-y-2">
-            <div className="bg-white border border-neutral-200/80 p-6 text-center md:text-left mb-6">
-              <div className="w-16 h-16 bg-[#FAF8F5] border border-neutral-200 flex items-center justify-center mx-auto md:mx-0 mb-4">
-                <User className="h-8 w-8 stroke-[1.2] text-neutral-600" />
+      <div className="max-w-7xl mx-auto px-2 sm:px-3 py-12">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Left Panel — Unified Dashboard Sidebar */}
+          <div className="w-full md:w-60 flex-shrink-0">
+            <div className="bg-white border border-neutral-200/80 rounded-sm overflow-hidden divide-y divide-neutral-200/60 shadow-xs">
+              {/* User Profile Header Segment */}
+              <div className="bg-[#FAF8F5]/80 p-5 text-center md:text-left flex md:flex-row items-center gap-3.5">
+                <div className="w-12 h-12 rounded-full bg-[#030213] flex items-center justify-center flex-shrink-0 text-white font-bold text-xs uppercase tracking-wider">
+                  {profile.firstName ? profile.firstName.slice(0, 2) : "NV"}
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold tracking-[0.05em] uppercase text-[#030213]">
+                    {profile.firstName} {profile.lastName}
+                  </h2>
+                  <p className="text-[10px] text-neutral-400 font-medium mt-0.5 lowercase max-w-[140px] truncate">
+                    {profile.email}
+                  </p>
+                </div>
               </div>
-              <h2 className="text-sm font-extrabold tracking-[0.05em] uppercase text-[#030213]">{profile.firstName} {profile.lastName}</h2>
-              <p className="text-[10px] text-neutral-400 font-medium mt-1.5 lowercase">{profile.email}</p>
-            </div>
 
-            <nav className="space-y-0.5">
-              {NAV_ITEMS.map(({ key, icon: Icon, label }) => (
-                <button key={key} onClick={() => handleTabChange(key)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-[10px] font-extrabold tracking-[0.15em] uppercase transition-all duration-200 border cursor-pointer ${
-                    activeTab === key
-                      ? "bg-[#030213] text-white border-[#030213]"
-                      : "bg-transparent text-neutral-600 border-transparent hover:bg-white hover:border-neutral-200"
-                  }`}>
-                  <Icon className={`h-3.5 w-3.5 stroke-[1.8] ${activeTab === key ? "text-white" : "text-neutral-400"}`} />
-                  {label}
+              {/* Navigation Segment */}
+              <nav className="p-2 space-y-0.5">
+                {NAV_ITEMS.map(({ key, icon: Icon, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleTabChange(key)}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-200 cursor-pointer ${
+                      activeTab === key
+                        ? "bg-[#FAF8F5] text-[#030213] border-l-2 border-[#b2533e] font-black"
+                        : "bg-transparent text-neutral-600 border-l-2 border-transparent hover:bg-neutral-50/50 hover:text-[#030213]"
+                    }`}
+                  >
+                    <Icon className={`h-3.5 w-3.5 stroke-[1.8] ${activeTab === key ? "text-[#b2533e]" : "text-neutral-400"}`} />
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[10px] font-bold tracking-[0.15em] uppercase border-l-2 border-transparent text-red-500 hover:bg-red-50/50 transition-all duration-200 cursor-pointer bg-transparent mt-2"
+                >
+                  <LogOut className="h-3.5 w-3.5 stroke-[1.8]" /> Log Out
                 </button>
-              ))}
-              <button onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-extrabold tracking-[0.15em] uppercase border border-transparent text-red-500 hover:bg-red-50/50 hover:border-red-200/30 transition-all duration-200 cursor-pointer bg-transparent mt-4">
-                <LogOut className="h-3.5 w-3.5 stroke-[1.8]" /> Log Out
-              </button>
-            </nav>
+              </nav>
+            </div>
           </div>
 
           {/* Right Panel — Tab Contents */}

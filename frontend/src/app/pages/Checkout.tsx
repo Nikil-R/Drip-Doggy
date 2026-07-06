@@ -943,14 +943,14 @@ export function Checkout() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <MethodCard title="Standard Delivery" subtitle="3 — 5 Working Days"
-                        price={deliveryFee === 0 ? "FREE" : `₹${deliveryFee.toFixed(2)}`} badge="Recommended"
+                        price={deliveryFee === 0 ? "FREE" : `₹${deliveryFee.toFixed(0)}`} badge="Recommended"
                         isSelected={shippingMethod === "standard"} onSelect={() => setShippingMethod("standard")}>
                         <div className="flex items-center gap-3 text-[8px] text-neutral-400 font-medium">
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3 stroke-[1.5]" /> Tracked Dispatch</span>
                           <span className="flex items-center gap-1"><Check className="h-3 w-3 stroke-[1.5]" /> COD Eligible</span>
                         </div>
                       </MethodCard>
-                      <MethodCard title="Express Shipping" subtitle="Next Working Day" price="₹150.00" badge="Fastest"
+                      <MethodCard title="Express Shipping" subtitle="Next Working Day" price="₹150" badge="Fastest"
                         isSelected={shippingMethod === "express"} onSelect={() => setShippingMethod("express")}>
                         <div className="flex items-center gap-3 text-[8px] text-neutral-400 font-medium">
                           <span className="flex items-center gap-1"><Zap className="h-3 w-3 stroke-[1.5]" /> Priority Dispatch</span>
@@ -982,7 +982,7 @@ export function Checkout() {
                         value={`${activeAddress.firstName} ${activeAddress.lastName}, ${activeAddress.buildingNo ? `${activeAddress.buildingNo}, ` : ""}${activeAddress.buildingName ? `${activeAddress.buildingName}, ` : ""}${activeAddress.street}, ${activeAddress.area}, ${activeAddress.city}, ${activeAddress.state} — ${activeAddress.postalCode}`}
                         onEdit={() => setStep(1)} />
                       <RecapRow label="Method"
-                        value={shippingMethod === "express" ? "Express Shipping — ₹150.00" : `Standard Delivery — ${deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}`}
+                        value={shippingMethod === "express" ? "Express Shipping — ₹150" : `Standard Delivery — ${deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}`}
                         onEdit={() => setStep(2)} />
                     </div>
                   </section>
@@ -1005,7 +1005,7 @@ export function Checkout() {
                           </div>
                           <p className="text-[10px] text-neutral-500 leading-relaxed font-medium">
                             Pay with cash upon delivery. Please keep the exact amount of{" "}
-                            <span className="font-extrabold text-[#030213]">₹{Math.max(0, total).toFixed(2)}</span> ready when your courier arrives.
+                            <span className="font-extrabold text-[#030213]">₹{Math.max(0, total).toFixed(0)}</span> ready when your courier arrives.
                           </p>
                           <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center gap-4 text-[8px] text-neutral-400 font-medium">
                             <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 stroke-[1.5]" /> Pay at doorstep</span>
@@ -1017,7 +1017,7 @@ export function Checkout() {
                     {promoDiscount > 0 && (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200/60">
                         <p className="text-[8px] font-extrabold tracking-widest text-green-700 uppercase flex items-center gap-1">
-                          <Check className="h-3 w-3 stroke-[2]" /> Promo {appliedPromo} applied — you save ₹{promoDiscount.toFixed(2)}
+                          <Check className="h-3 w-3 stroke-[2]" /> Promo {appliedPromo} applied — you save ₹{promoDiscount.toFixed(0)}
                         </p>
                       </div>
                     )}
@@ -1033,7 +1033,7 @@ export function Checkout() {
                       <ArrowLeft className="h-3 w-3 stroke-[2]" /> Back to Delivery</button>
                     <button type="submit"
                       className="w-full md:w-2/3 bg-[#030213] hover:bg-neutral-800 text-white py-3.5 text-xs font-bold tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 uppercase">
-                      Confirm & Place Order <span className="text-white/70 font-bold text-[10px]">(₹{Math.max(0, total).toFixed(2)})</span>
+                      Confirm & Place Order <span className="text-white/70 font-bold text-[10px]">(₹{Math.max(0, total).toFixed(0)})</span>
                     </button>
                   </form>
                 </div>
@@ -1055,18 +1055,18 @@ export function Checkout() {
                     <h4 className="text-[11px] font-extrabold text-neutral-900 truncate uppercase mt-0.5 leading-tight">{item.name}</h4>
                     <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Qty: {item.quantity} | Size: {item.size} | Color: {item.color}</p>
                   </div>
-                  <span className="text-xs font-extrabold text-neutral-950">₹{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="text-xs font-extrabold text-neutral-950">₹{(item.price * item.quantity).toFixed(0)}</span>
                 </div>
               ))}
             </div>
             <div className="space-y-3.5 pt-5 border-t border-neutral-200/80 text-[10px] font-bold tracking-wider text-neutral-600 uppercase">
-              <div className="flex justify-between"><span>Subtotal</span><span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Subtotal</span><span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(0)}</span></div>
               {promoDiscount > 0 && (
-                <div className="flex justify-between text-green-600 font-extrabold"><span>Promo ({appliedPromo})</span><span>-₹{promoDiscount.toFixed(2)}</span></div>
+                <div className="flex justify-between text-green-600 font-extrabold"><span>Promo ({appliedPromo})</span><span>-₹{promoDiscount.toFixed(0)}</span></div>
               )}
-              <div className="flex justify-between"><span>Delivery Fee</span><span>{shippingCost > 0 ? `₹${shippingCost.toFixed(2)}` : "FREE"}</span></div>
+              <div className="flex justify-between"><span>Delivery Fee</span><span>{shippingCost > 0 ? `₹${shippingCost.toFixed(0)}` : "FREE"}</span></div>
               <div className="border-t border-neutral-200 pt-3 flex justify-between text-xs font-extrabold text-neutral-950">
-                <span>Total</span><span className="text-sm font-extrabold">₹{Math.max(0, total).toFixed(2)}</span>
+                <span>Total</span><span className="text-sm font-extrabold">₹{Math.max(0, total).toFixed(0)}</span>
               </div>
             </div>
             <div className="bg-neutral-50/50 border border-neutral-200/50 p-4 flex gap-3 text-[9px] font-bold text-neutral-500 uppercase tracking-wide leading-relaxed">

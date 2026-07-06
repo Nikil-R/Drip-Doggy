@@ -41,5 +41,29 @@ export const authApi = {
         Authorization: `Bearer ${token}`
       }
     });
+  },
+
+  // 4. Register a new Admin (Requires active admin token)
+  registerAdmin: async (
+    token: string,
+    payload: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNo: string;
+      dob: string;
+      gender: string;
+    }
+  ): Promise<any> => {
+    const response = await axios.post(
+      `${BASE_URL}${API_CONFIG.ENDPOINTS.REGISTER_ADMIN}`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
   }
 };

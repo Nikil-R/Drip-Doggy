@@ -330,70 +330,45 @@ export function ProductMediaPage() {
                 </div>
               </div>
 
-              {/* Source Tabs */}
-              <div className="flex bg-[#faf8f5] border border-neutral-250 p-0.5">
+              {/* Tab Selector: Upload local files only */}
+              <div className="flex border-b border-neutral-200">
                 <button 
                   type="button" 
-                  onClick={() => setActiveTab("file")}
-                  className={`flex-1 py-1.5 text-[9px] font-bold uppercase cursor-pointer border-none transition-all ${activeTab === "file" ? "bg-[#224870] text-white" : "bg-transparent text-[#615e56]"}`}>
-                  Upload Local Files
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setActiveTab("url")}
-                  className={`flex-1 py-1.5 text-[9px] font-bold uppercase cursor-pointer border-none transition-all ${activeTab === "url" ? "bg-[#224870] text-white" : "bg-transparent text-[#615e56]"}`}>
-                  Paste Bulk Image URLs
+                  className="flex-1 py-1.5 text-[9px] font-black uppercase border-none bg-[#224870] text-white">
+                  Upload Product Files
                 </button>
               </div>
 
-              {/* Tab Content: Upload local files */}
-              {activeTab === "file" && (
-                <div className="space-y-3">
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
-                  
-                  {bulkUploadedFiles.length > 0 ? (
-                    <div className="space-y-2">
-                      <span className="text-[9px] font-bold uppercase text-[#615e56]">{bulkUploadedFiles.length} files selected for batch upload:</span>
-                      <div className="grid grid-cols-5 gap-2 max-h-36 overflow-y-auto p-2 bg-[#faf8f5] border border-neutral-200">
-                        {bulkUploadedFiles.map((file, i) => (
-                          <div key={i} className="aspect-square border border-neutral-200 relative p-1 bg-white">
-                            <img src={file} alt="Preview" className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => setBulkUploadedFiles(prev => prev.filter((_, idx) => idx !== i))}
-                              className="absolute -top-1 -right-1 bg-[#b2533e] text-white hover:bg-red-800 w-3.5 h-3.5 flex items-center justify-center border-none cursor-pointer">
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          </div>
-                        ))}
-                        <div onClick={() => fileInputRef.current?.click()} className="aspect-square border border-dashed border-neutral-300 hover:border-[#224870] flex flex-col items-center justify-center cursor-pointer">
-                          <Plus className="w-4 h-4 text-neutral-400" />
-                          <span className="text-[7.5px] font-bold text-[#615e56] uppercase mt-0.5">Add</span>
+              <div className="space-y-3 pt-2">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
+                
+                {bulkUploadedFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    <span className="text-[9px] font-bold uppercase text-[#615e56]">{bulkUploadedFiles.length} files selected for batch upload:</span>
+                    <div className="grid grid-cols-5 gap-2 max-h-36 overflow-y-auto p-2 bg-[#faf8f5] border border-neutral-200">
+                      {bulkUploadedFiles.map((file, i) => (
+                        <div key={i} className="aspect-square border border-neutral-200 relative p-1 bg-white">
+                          <img src={file} alt="Preview" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => setBulkUploadedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -top-1 -right-1 bg-[#b2533e] text-white hover:bg-red-800 w-3.5 h-3.5 flex items-center justify-center border-none cursor-pointer">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
                         </div>
+                      ))}
+                      <div onClick={() => fileInputRef.current?.click()} className="aspect-square border border-dashed border-neutral-300 hover:border-[#224870] flex flex-col items-center justify-center cursor-pointer">
+                        <Plus className="w-4 h-4 text-neutral-400" />
+                        <span className="text-[7.5px] font-bold text-[#615e56] uppercase mt-0.5">Add</span>
                       </div>
                     </div>
-                  ) : (
-                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 aspect-video bg-neutral-50/20 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-neutral-400">
-                      <Upload className="w-8 h-8 text-neutral-300 mb-2 stroke-[1.5]" />
-                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Drag &amp; drop or click to choose multiple files</span>
-                      <span className="text-[8px] text-neutral-400 uppercase mt-1">Accepts JPG, PNG, WEBP, etc.</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tab Content: Bulk URLs */}
-              {activeTab === "url" && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Image URLs (one URL per line)</label>
-                  <textarea 
-                    rows={5} 
-                    value={bulkUrlsText} 
-                    onChange={e => setBulkUrlsText(e.target.value)}
-                    placeholder="https://images.unsplash.com/photo-1551028719&#10;https://images.unsplash.com/photo-1593030761757"
-                    className="w-full bg-card border border-neutral-200 px-3 py-2 text-[9.5px] font-mono focus:outline-none focus:border-[#224870] rounded-none text-[#382d24] placeholder-neutral-300 leading-normal" 
-                  />
-                </div>
-              )}
-
+                  </div>
+                ) : (
+                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 aspect-video bg-neutral-50/20 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-neutral-400">
+                    <Upload className="w-8 h-8 text-neutral-300 mb-2 stroke-[1.5]" />
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Drag &amp; drop or click to choose multiple files</span>
+                    <span className="text-[8px] text-neutral-400 uppercase mt-1">Accepts JPG, PNG, WEBP, etc.</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="flex justify-end gap-2.5 mt-6 pt-3 border-t border-neutral-200/60">

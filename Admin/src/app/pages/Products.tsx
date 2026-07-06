@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useAuthStore } from "@/app/store/auth-store";
+import { productApi } from "@/app/lib/product-api";
 import {
   Plus,
   Search,
@@ -91,9 +93,77 @@ const sampleProducts: Product[] = [
 
 const categories = ["All", "Outerwear", "Knitwear", "Tops", "Bottoms", "Accessories", "Signature", "New Arrivals"];
 
+const mapBackendProductToFrontend = (p: any): any => {
+  if (!p) return null;
+  try {
+    let totalStock = 0;
+    const mappedVariants = (p.variants || []).map((v: any) => {
+      if (!v) return null;
+      const sizeStockMap: Record<string, number> = {};
+      (v.sizes || []).forEach((s: any) => {
+        if (s && s.sizeName) {
+          sizeStockMap[s.sizeName] = s.stockQuantity || 0;
+          totalStock += s.stockQuantity || 0;
+        }
+      });
+      const variantImages: string[] = [];
+      if (v.primaryImageUrl) {
+        variantImages.push(v.primaryImageUrl);
+      }
+      (v.imageUrls || []).forEach((img: string) => {
+        if (img && !variantImages.includes(img)) {
+          variantImages.push(img);
+        }
+      });
+
+      return {
+        id: v.id ? String(v.id) : "",
+        name: v.variantName || "",
+        sku: v.skuCode || "",
+        mrp: v.mrp || 0,
+        discountType: v.discountType?.toLowerCase() || "percentage",
+        discountValue: v.discountValue || 0,
+        finalPrice: v.price || v.mrp || 0,
+        sizeStock: sizeStockMap,
+        active: v.isActive !== false,
+        sizes: (v.sizes || []).map((s: any) => s?.sizeName).filter(Boolean),
+        images: variantImages
+      };
+    }).filter(Boolean);
+
+    return {
+      id: p.id ? `#DD-P${p.id}` : "",
+      name: p.productName || "",
+      category: p.categoryName || "Uncategorized",
+      price: p.variants && p.variants.length > 0 ? Math.min(...p.variants.map((v: any) => v?.price || v?.mrp || 0)) : 0,
+      cost: 0,
+      stock: totalStock,
+      status: p.isActive !== false ? "Active" : "Inactive",
+      sales: 0,
+      revenue: 0,
+      image: p.variants && p.variants.length > 0
+        ? (p.variants[0].primaryImageUrl || (p.variants[0].imageUrls && p.variants[0].imageUrls.length > 0 ? p.variants[0].imageUrls[0] : ""))
+        : "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop",
+      sku: p.skuCode || "",
+      season: p.baseTitle || "SS26",
+      dateAdded: "2026-06-01",
+      description: p.productDescription || "",
+      variants: mappedVariants,
+      specification: p.specification || null,
+      features: (p.features || []).map((f: any) => f?.featureName).filter(Boolean),
+      subcategory: p.subcategoryName || "Uncategorized"
+    };
+  } catch (err) {
+    console.error("Failed to map backend product to frontend:", p, err);
+    return null;
+  }
+};
+
 export function ProductsPage() {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>(sampleProducts);
+  const { token } = useAuthStore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
@@ -114,6 +184,24 @@ export function ProductsPage() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
+
+  const loadProducts = async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const list = await productApi.fetchAllProducts(token);
+      console.log("FETCHED PRODUCTS:", JSON.stringify(list, null, 2));
+      setProducts(list.map(mapBackendProductToFrontend).filter(Boolean));
+    } catch (e) {
+      console.error("Error loading products", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, [token]);
 
   const getProductStockSum = (p: Product) => {
     let sum = 0;
@@ -138,9 +226,16 @@ export function ProductsPage() {
     ];
   }, [products]);
 
-  const handleToggleStatus = (id: string, e: React.MouseEvent) => {
+  const handleToggleStatus = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Stops preview product modal from opening
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: p.status === "Active" ? "Inactive" : "Active" } : p));
+    if (!token) return;
+    try {
+      const rawId = parseInt(id.replace("#DD-P", "").replace("DD-P", ""));
+      await productApi.toggleProductStatus(rawId, token);
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, status: p.status === "Active" ? "Inactive" : "Active" } : p));
+    } catch (err) {
+      console.error("Error toggling status", err);
+    }
   };
 
   const handleSort = (key: keyof Product) => {
@@ -155,9 +250,9 @@ export function ProductsPage() {
   const filteredProducts = useMemo(() => {
     let filtered = products;
 
-    // Category Filter
+    // Subcategory Filter
     if (activeCategory !== "All") {
-      filtered = filtered.filter(p => p.category === activeCategory);
+      filtered = filtered.filter(p => p.subcategory?.toLowerCase() === activeCategory.toLowerCase());
     }
 
     // Gender Category Filter
@@ -529,10 +624,10 @@ export function ProductsPage() {
                     {product.variants && product.variants.length > 0 ? (
                       <div className="space-y-0.5">
                         <div className="text-[7.5px] text-[#615e56]/80 font-bold uppercase tracking-wider">Starts From</div>
-                        <div className="text-[10px] text-neutral-400 font-bold"><span className="text-[#382d24]">{RS}{Math.min(...product.variants.map(v => v.finalPrice)).toLocaleString("en-IN")}</span></div>
+                        <div className="text-[10px] text-neutral-400 font-bold"><span className="text-[#382d24]">{RS}{Math.round(Math.min(...product.variants.map(v => v.finalPrice))).toLocaleString("en-IN")}</span></div>
                       </div>
                     ) : (
-                      <span>{RS}{product.price.toLocaleString("en-IN")}</span>
+                      <span>{RS}{Math.round(product.price).toLocaleString("en-IN")}</span>
                     )}
                   </td>
                   <td className="py-5 px-3">
@@ -673,7 +768,7 @@ export function ProductsPage() {
                   <div className="grid grid-cols-3 gap-3 pt-2">
                     <div className="border border-neutral-200 p-3 text-center bg-[#faf8f5]">
                       <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block mb-1">Price</span>
-                      <span className="text-sm font-black text-[#382d24]">{RS}{previewProduct.price.toLocaleString("en-IN")}</span>
+                      <span className="text-sm font-black text-[#382d24]">{RS}{Math.round(previewProduct.price).toLocaleString("en-IN")}</span>
                     </div>
                     <div className="border border-neutral-200 p-3 text-center bg-[#faf8f5]">
                       <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block mb-1">Total Stock</span>
@@ -756,7 +851,7 @@ export function ProductsPage() {
                               </div>
                               <div>
                                 <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">MRP</span>
-                                <span className="text-[10px] font-black text-[#382d24]">{RS}{v.mrp.toLocaleString("en-IN")}</span>
+                                <span className="text-[10px] font-black text-[#382d24]">{RS}{Math.round(v.mrp).toLocaleString("en-IN")}</span>
                               </div>
                               <div>
                                 <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Discount</span>
@@ -768,7 +863,7 @@ export function ProductsPage() {
                               </div>
                               <div>
                                 <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Final Price</span>
-                                <span className="text-[10px] font-black text-[#224870]">{RS}{v.finalPrice.toLocaleString("en-IN")}</span>
+                                <span className="text-[10px] font-black text-[#224870]">{RS}{Math.round(v.finalPrice).toLocaleString("en-IN")}</span>
                               </div>
                               <div>
                                 <span className="text-[7px] text-neutral-400 uppercase font-bold tracking-wider block">Total Stock</span>
@@ -850,9 +945,16 @@ export function ProductsPage() {
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-100">
               <button onClick={() => setDeleteProduct(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
               <button 
-                onClick={() => {
-                  setProducts(prev => prev.filter(p => p.id !== deleteProduct.id));
-                  setDeleteProduct(null);
+                onClick={async () => {
+                  if (!token) return;
+                  try {
+                    const rawId = parseInt(deleteProduct.id.replace("#DD-P", "").replace("DD-P", ""));
+                    await productApi.deleteProduct(rawId, token);
+                    setProducts(prev => prev.filter(p => p.id !== deleteProduct.id));
+                    setDeleteProduct(null);
+                  } catch (err) {
+                    console.error("Error deleting product", err);
+                  }
                 }} 
                 className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all"
               >

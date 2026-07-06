@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/app/store/auth-store";
+import { authApi } from "@/app/lib/auth-api";
 import {
   Shield,
   Users,
@@ -43,30 +44,99 @@ export function RolesPage() {
     { id: "DD-ADM-003", name: "Jeshwanth", email: "jeshwanth@dripdoggy.com", role: "Admin", status: "Active", lastActive: "Yesterday", lastLoginIP: "103.45.98.201", permissionsCount: 18, twoFactorEnabled: false, department: "Operations" }
   ]);
 
-  const handleInviteAdmin = (e: React.FormEvent) => {
+  const { user, token } = useAuthStore();
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  // Fetch admin users on mount
+  useEffect(() => {
+    async function fetchAdmins() {
+      if (!token) return;
+      try {
+        // Fetch through local Vite server proxy to hit the database correctly
+        const response = await fetch("/dripdoggy/api/auth/admin/list", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            // Mapped keys directly matching the database user schema columns (first_name, last_name, role, dob, phone_no, gender)
+            const mapped: AdminUser[] = data.map((item: any, index: number) => {
+              const fName = item.firstName || item.first_name || "";
+              const lName = item.lastName || item.last_name || "";
+              const name = fName && lName ? `${fName} ${lName}` : (fName || lName || item.name || "Nikil");
+              return {
+                id: item.id ? `DD-ADM-${item.id}` : `DD-ADM-00${index + 1}`,
+                name,
+                email: item.email || "nikil@dripdoggy.com",
+                role: item.role || "Admin",
+                status: item.status === "Active" || item.status === "Inactive" || item.status === "Pending" ? item.status : "Active",
+                lastActive: item.lastActive || "Just now",
+                lastLoginIP: item.lastLoginIP || "—",
+                permissionsCount: 18,
+                twoFactorEnabled: !!item.twoFactorEnabled,
+                department: item.department || "Tech"
+              };
+            });
+            setAdmins(mapped);
+          }
+        } else {
+          throw new Error(`HTTP Error Status: ${response.status}`);
+        }
+      } catch (err) {
+        console.warn("Backend admin list query returned error, using fallback seed database.", err);
+      }
+    }
+    fetchAdmins();
+  }, [token]);
+
+  const handleInviteAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInviteError(null);
     const formData = new FormData(e.currentTarget);
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
+    const gender = formData.get("gender") as string;
+    const dob = formData.get("dob") as string;
+    const phoneNo = formData.get("phone") as string;
     
     const name = `${firstName} ${lastName}`;
 
-    const newAdmin: AdminUser = {
-      id: `DD-ADM-00${admins.length + 1}`,
-      name, 
-      email, 
-      role: "Admin",
-      status: "Active",
-      lastActive: "Just now",
-      lastLoginIP: "—",
-      permissionsCount: 18,
-      twoFactorEnabled: false,
-      department: "Tech"
-    };
+    if (!token) {
+      setInviteError("Unauthorized: Session token is missing.");
+      return;
+    }
 
-    setAdmins(prev => [...prev, newAdmin]);
-    setIsInviteModalOpen(false);
+    try {
+      await authApi.registerAdmin(token, {
+        firstName,
+        lastName,
+        email,
+        phoneNo,
+        dob,
+        gender
+      });
+
+      const newAdmin: AdminUser = {
+        id: `DD-ADM-00${admins.length + 1}`,
+        name, 
+        email, 
+        role: "Admin",
+        status: "Active",
+        lastActive: "Just now",
+        lastLoginIP: "—",
+        permissionsCount: 18,
+        twoFactorEnabled: false,
+        department: "Tech"
+      };
+
+      setAdmins(prev => [...prev, newAdmin]);
+      setIsInviteModalOpen(false);
+    } catch (err: any) {
+      setInviteError(err?.response?.data?.message || "Failed to register admin. Please verify input data.");
+    }
   };
 
   const toggleUserStatus = (user: AdminUser) => {
@@ -97,7 +167,6 @@ export function RolesPage() {
     admin.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const { user } = useAuthStore();
   const activeCount = admins.filter(a => a.status === "Active").length;
   const isExistingAdmin = admins.some(admin => admin.email.toLowerCase() === user?.email.toLowerCase());
 
@@ -240,6 +309,11 @@ export function RolesPage() {
             </div>
 
             <form onSubmit={handleInviteAdmin} className="space-y-4">
+              {inviteError && (
+                <div className="border border-red-200 bg-red-50 text-red-700 text-[10px] font-bold p-3 uppercase tracking-wider">
+                  {inviteError}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">First Name</label>

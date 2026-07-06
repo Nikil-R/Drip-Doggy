@@ -9,12 +9,16 @@ interface ProfileTabProps {
     lastName: string;
     email: string;
     phone: string;
+    gender: string;
+    dateOfBirth: string;
   };
   setProfile: React.Dispatch<React.SetStateAction<{
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
+    gender: string;
+    dateOfBirth: string;
   }>>;
   phoneVerified: boolean;
   setPhoneVerified: (v: boolean) => void;
@@ -95,6 +99,26 @@ export function ProfileTab({ profile, setProfile, phoneVerified, setPhoneVerifie
                 <PhoneVerification phone={profile.phone} onVerified={() => setPhoneVerified(true)} />
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Date of Birth & Gender */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-1.5">
+              Date of Birth
+            </label>
+            <input type="text" readOnly value={profile.dateOfBirth}
+              className="w-full bg-neutral-100/60 border border-neutral-200 px-3.5 py-2.5 text-xs font-bold tracking-wide text-neutral-500 focus:outline-none cursor-not-allowed uppercase"
+              placeholder="NOT PROVIDED" />
+          </div>
+          <div>
+            <label className="block text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-1.5">
+              Gender
+            </label>
+            <input type="text" readOnly value={profile.gender}
+              className="w-full bg-neutral-100/60 border border-neutral-200 px-3.5 py-2.5 text-xs font-bold tracking-wide text-neutral-500 focus:outline-none cursor-not-allowed uppercase"
+              placeholder="NOT PROVIDED" />
           </div>
         </div>
 

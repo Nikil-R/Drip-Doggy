@@ -219,14 +219,9 @@ export function HeroSlidesEditorPage() {
               {/* Background Image Inputs */}
               <div className="space-y-2">
                 <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Background Image</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#faf8f5] p-3.5 border border-neutral-300">
+                <div className="bg-[#faf8f5] p-3.5 border border-neutral-300">
                   <div className="space-y-1">
-                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-1">Option A: Image URL</span>
-                    <input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })}
-                      className="w-full border border-neutral-300 bg-white px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" placeholder="https://..." />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-1">Option B: Upload File</span>
+                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-1">Upload File</span>
                     <label className="w-full border border-neutral-300 hover:border-[#224870] bg-white px-3.5 py-2 text-xs font-bold text-[#382d24] flex items-center justify-center cursor-pointer transition-colors relative h-[38px]">
                       <span className="truncate">{form.image.startsWith("data:") ? "Image Loaded" : "Choose File..."}</span>
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />

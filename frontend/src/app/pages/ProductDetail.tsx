@@ -9,16 +9,52 @@ import {
   Check,
   Truck,
   RotateCcw,
+  ArrowLeft,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
 import type { Product, ProductColorVariant } from "../data/products";
+import { productApi } from "../lib/product-api";
+import { cartApi } from "../lib/cart-api";
+import { syncCart } from "../lib/cart-sync";
+import { wishlistApi } from "../lib/wishlist-api";
+import { syncWishlist } from "../lib/wishlist-sync";
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productId = parseInt(id || "0", 10);
-  const product = getProductById(productId);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProduct() {
+      if (!productId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const item = await productApi.fetchProductById(productId);
+        setProduct(item);
+      } catch (err) {
+        console.error("Error loading product detail", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProduct();
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xs font-bold tracking-[0.2em] uppercase text-neutral-400 animate-pulse">Loading Product details...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ─── 404 State ──────────────────────────────────────────────────────────
   if (!product) {
@@ -98,12 +134,26 @@ function ProductDetailContent({ product }: { product: Product }) {
       try {
         const stored = localStorage.getItem("cart");
         const items = stored ? JSON.parse(stored) : [];
-        const item = items.find(
-          (i: any) =>
-            i.id === product.id &&
-            i.color === selectedColor &&
-            i.size === selectedSize
+
+        // Find the selected variant size ID
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
         );
+        const sizeObj = variant?.sizes?.find(
+          (s: any) => (s.sizeName || "").toLowerCase() === selectedSize.toLowerCase()
+        );
+        const sizeId = sizeObj?.id;
+
+        const item = items.find((i: any) => {
+          if (sizeId && i.productVariantSizeId) {
+            return String(i.productVariantSizeId) === String(sizeId);
+          }
+          return (
+            i.id === product.id &&
+            i.color.toLowerCase() === selectedColor.toLowerCase() &&
+            i.size.toLowerCase() === selectedSize.toLowerCase()
+          );
+        });
         setCartQuantity(item ? item.quantity : 0);
       } catch (e) {
         console.error(e);
@@ -119,36 +169,69 @@ function ProductDetailContent({ product }: { product: Product }) {
     };
   }, [selectedColor, selectedSize, product.id]);
 
-  const updateProductQuantity = (newQty: number) => {
+  const updateProductQuantity = async (newQty: number) => {
     try {
+      const token = localStorage.getItem("dripdoggy_auth_token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      // Resolve the backend size ID for this variant+size selection
+      const variant = product.rawVariants?.find(
+        (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
+      );
+      const sizeObj = variant?.sizes?.find(
+        (s: any) => (s.sizeName || "").toLowerCase() === selectedSize.toLowerCase()
+      );
+      const sizeId = sizeObj?.id;
+      const maxStock = sizeObj?.stockQuantity ?? 999999;
+
+      // Find existing cart item — prefer sizeId match, fall back to string key
+      const cartItemId = `${product.id}-${selectedColor.toLowerCase()}-${selectedSize.toLowerCase()}`;
       const stored = localStorage.getItem("cart");
       let items = stored ? JSON.parse(stored) : [];
-      const cartItemId = `${product.id}-${selectedColor}-${selectedSize}`;
+      const existing = items.find((i: any) => {
+        if (sizeId && i.productVariantSizeId) {
+          return String(i.productVariantSizeId) === String(sizeId);
+        }
+        return i.cartItemId === cartItemId;
+      });
 
       if (newQty <= 0) {
-        items = items.filter((i: any) => i.cartItemId !== cartItemId);
+        // Remove from cart
+        if (existing && existing.backendId) {
+          await cartApi.removeFromCart(existing.backendId);
+        }
       } else {
-        const existing = items.find((i: any) => i.cartItemId === cartItemId);
-        if (existing) {
-          existing.quantity = newQty;
+        // Check stock limit
+        if (newQty > maxStock) {
+          alert(`Out of stock! Only ${maxStock} units are available.`);
+          return;
+        }
+
+        if (existing && existing.backendId) {
+          // Item already in backend cart — just update quantity
+          await cartApi.updateQuantity(existing.backendId, newQty);
         } else {
-          items.push({
-            id: product.id,
-            cartItemId,
-            brand: product.brand,
-            name: product.name,
-            size: selectedSize,
-            color: selectedColor,
-            price: product.price,
-            quantity: newQty,
-            image: productImages[0] || product.image,
-          });
+          // Item not in cart yet — add fresh
+          if (sizeId) {
+            await cartApi.addToCart(sizeId, newQty);
+          } else {
+            alert(`Selected size "${selectedSize}" is not available for this variant.`);
+            return;
+          }
         }
       }
-      localStorage.setItem("cart", JSON.stringify(items));
-      window.dispatchEvent(new Event("cart-updated"));
-    } catch (e) {
+
+      await syncCart();
+    } catch (e: any) {
       console.error(e);
+      const msg = e?.response?.data?.message || e?.message || "Failed to update cart.";
+      // Only show error to user if it's NOT a stock limit message we're already handling
+      if (!msg.toLowerCase().includes("insufficient") && !msg.toLowerCase().includes("stock")) {
+        alert(msg);
+      }
     }
   };
 
@@ -190,29 +273,39 @@ function ProductDetailContent({ product }: { product: Product }) {
     }
   }, [product.id]);
 
-  const toggleWishlist = () => {
-    const nextState = !isWishlisted;
-    setIsWishlisted(nextState);
+  const toggleWishlist = async () => {
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("wishlist");
       let items = stored ? JSON.parse(stored) : [];
-      const productItem = {
-        id: product.id,
-        brand: product.brand,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-      };
+      const existing = items.find((item: any) => item.id === product.id);
 
-      if (nextState) {
-        if (!items.some((item: any) => item.id === product.id)) {
-          items.push(productItem);
+      if (isWishlisted) {
+        if (existing && existing.backendId) {
+          await wishlistApi.removeFromWishlist(existing.backendId);
         }
+        setIsWishlisted(false);
       } else {
-        items = items.filter((item: any) => item.id !== product.id);
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
+        );
+        const sizeObj = variant?.sizes?.find(
+          (s: any) => s.sizeName === selectedSize
+        );
+        const sizeId = sizeObj?.id;
+        if (sizeId) {
+          await wishlistApi.addToWishlist(sizeId);
+        } else {
+          console.error("Size ID not found for wishlist:", selectedColor, selectedSize);
+        }
+        setIsWishlisted(true);
       }
-      localStorage.setItem("wishlist", JSON.stringify(items));
-      window.dispatchEvent(new Event("wishlist-updated"));
+      await syncWishlist();
     } catch (e) {
       console.error(e);
     }
@@ -241,7 +334,7 @@ function ProductDetailContent({ product }: { product: Product }) {
   }, []);
 
   const handleAddToBag = () => {
-    updateProductQuantity(1);
+    updateProductQuantity(cartQuantity + 1);
   };
 
   const handleBuyNow = () => {
@@ -260,7 +353,15 @@ function ProductDetailContent({ product }: { product: Product }) {
       <section className="max-w-7xl mx-auto px-6 py-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ─── LEFT COLUMN — Images ──────────────────────────────────── */}
-          <div className="lg:col-span-6 space-y-5">
+          <div className="lg:col-span-6 space-y-4">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate(-1)}
+              className="text-[9.5px] font-black uppercase text-[#615e56] hover:text-[#224870] tracking-widest flex items-center gap-1.5 bg-transparent border-none cursor-pointer mb-2 transition-colors focus:outline-none"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Catalog
+            </button>
+
             <div className="flex flex-col-reverse md:flex-row gap-4">
               {/* Thumbnail Strip */}
               <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pb-2 md:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -269,7 +370,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     key={index}
                     onMouseEnter={() => setCurrentImageIndex(index)}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative flex-shrink-0 w-14 h-14 md:w-18 md:h-18 bg-neutral-100 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                    className={`relative flex-shrink-0 w-15 h-20 md:w-18 md:h-24 bg-neutral-100 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
                       currentImageIndex === index
                         ? "border-[#030213] scale-[1.02] shadow-sm"
                         : "border-transparent opacity-60 hover:opacity-100"
@@ -285,7 +386,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </div>
 
               {/* Main Image */}
-              <div className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[4/5] lg:aspect-square group">
+              <div className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[3/4] group">
                 <img
                   src={productImages[currentImageIndex]}
                   alt={product.name}
@@ -401,12 +502,12 @@ function ProductDetailContent({ product }: { product: Product }) {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-extrabold tracking-tight text-neutral-900">
-                    ₹{product.price.toFixed(2)}
+                    ₹{product.price.toFixed(0)}
                   </span>
                   {product.originalPrice && (
                     <>
                       <span className="text-xs font-semibold text-neutral-450 line-through">
-                        ₹{product.originalPrice.toFixed(2)}
+                        ₹{product.originalPrice.toFixed(0)}
                       </span>
                       {discountPercent > 0 && (
                         <span className="text-[9px] font-extrabold text-[#b2533e] tracking-wider uppercase bg-red-50 px-1.5 py-0.5 rounded-sm">
@@ -460,14 +561,14 @@ function ProductDetailContent({ product }: { product: Product }) {
                         setSelectedColor(color.name);
                         setCurrentImageIndex(0);
                       }}
-                      className={`relative p-0.5 rounded-full border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
+                      className={`relative p-0.5 rounded-md border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
                         selectedColor === color.name
                           ? "border-[#030213] scale-105 shadow-sm"
                           : "border-transparent opacity-80 hover:opacity-100 hover:scale-105"
                       }`}
                       aria-label={`Select ${color.name} variant`}
                     >
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden">
+                      <div className="w-15 h-20 md:w-18 md:h-24 rounded-md overflow-hidden bg-white border border-neutral-200">
                         <img
                           src={color.thumbnail}
                           alt={`${color.name} variant`}
@@ -494,28 +595,24 @@ function ProductDetailContent({ product }: { product: Product }) {
                   SIZE GUIDE
                 </button>
               </div>
-              <div
-                className={`grid gap-2 max-w-md`}
-                style={{
-                  gridTemplateColumns: `repeat(${Math.min(
-                    displaySizes.length,
-                    6
-                  )}, 1fr)`,
-                }}
-              >
-                {displaySizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`border text-[10px] font-bold py-2 rounded-sm transition-colors text-center cursor-pointer ${
-                      selectedSize === size
-                        ? "bg-[#030213] text-white border-neutral-900 font-extrabold"
-                        : "bg-white text-neutral-700 border-neutral-200/65 hover:border-neutral-900"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2.5">
+                {displaySizes.map((size) => {
+                  const isSelected = selectedSize === size;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      className={`w-12 h-12 flex items-center justify-center border text-[10.5px] font-black transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#030213] text-white border-neutral-900 font-black scale-105"
+                          : "bg-white text-neutral-850 border-neutral-300 hover:border-neutral-950"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -564,14 +661,16 @@ function ProductDetailContent({ product }: { product: Product }) {
           <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-neutral-900 border-b border-neutral-200/60 pb-2">
-                DESIGN DETAILS
+                PRODUCT FEATURES
               </h3>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold tracking-wider text-neutral-700 uppercase">
-                {(product.designDetails ?? [
-                  "Premium Construction",
-                  "Quality Materials",
-                  "Modern Fit",
-                  "Attention to Detail",
+                {((product.designDetails && product.designDetails.length > 0) ? product.designDetails : [
+                  "Elasticated Waistband",
+                  "Adjustable Drawstring Closure",
+                  "Dual Side-Seam Cross Pockets",
+                  "Reinforced Ribbed Detailing",
+                  "Premium Breathable Blend",
+                  "Anti-Pilling Soft Finish"
                 ]).map((detail) => (
                   <li key={detail} className="flex items-center gap-2">
                     <span className="text-[#b2533e] font-extrabold">—</span>{" "}
@@ -752,26 +851,29 @@ function ProductDetailContent({ product }: { product: Product }) {
                     </h2>
                     <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">
                       {product.description ??
-                        "A premium piece from our latest collection, designed with meticulous attention to detail and crafted from the finest materials."}
+                        "Experience unparalleled comfort with our signature loungewear garments. Crafted from a soft cotton-polyester blend, this collection promises a cozy and breathable feel, perfect for active lifestyle layers or a restful night's sleep. Classic styling cues offer a timeless look that suits any casual setting."}
                     </p>
 
-                    {(product.features ?? []).length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                        {(product.features ?? []).map((f) => (
-                          <div
-                            key={f.title}
-                            className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
-                          >
-                            <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
-                              {f.title}
-                            </h4>
-                            <p className="text-xs text-neutral-500 leading-relaxed">
-                              {f.content}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+                      {[
+                        { title: "Comfortable Fabric", content: "The premium blend of 80% cotton and 20% polyester ensures a soft touch against your skin, keeping you comfortable all day long." },
+                        { title: "Versatile Design", content: "With its solid pattern and clean fits, this range is perfect for both lounging at home and casual premium streetwear outings." },
+                        { title: "Practical Features", content: "Functional waist rise parameters paired with deep cross pockets allow you to carry everyday essentials with ease." },
+                        { title: "Effortless Style", content: "Constructed with half sleeves and a neat crew neck profile to offer a relaxed yet structured styling silhouette." }
+                      ].map((f) => (
+                        <div
+                          key={f.title}
+                          className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
+                        >
+                          <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
+                            {f.title}
+                          </h4>
+                          <p className="text-xs text-neutral-500 leading-relaxed">
+                            {f.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -781,31 +883,40 @@ function ProductDetailContent({ product }: { product: Product }) {
                     <h2 className="text-lg font-extrabold tracking-[0.1em] uppercase text-neutral-900">
                       PRODUCT SPECIFICATIONS
                     </h2>
-                    {(product.specs ?? []).length > 0 ? (
-                      <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
-                        {(product.specs ?? []).map((spec, idx) => (
-                          <div
-                            key={spec.label}
-                            className={`grid grid-cols-2 ${
-                              idx < (product.specs ?? []).length - 1
-                                ? "border-b border-neutral-150"
-                                : ""
-                            } p-4`}
-                          >
-                            <span className="font-extrabold text-neutral-400 tracking-wider">
-                              {spec.label}
-                            </span>
-                            <span className="font-semibold text-neutral-800">
-                              {spec.value}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-neutral-400 text-sm">
-                        Specifications coming soon.
-                      </p>
-                    )}
+                    {(() => {
+                      const isAcc = product.brand === "ACCESSORIES";
+                      const specsList = (product.specs && product.specs.length > 0) ? product.specs : [
+                        { label: "Fabric Type", value: isAcc ? "100% Recycled Nylon (Ballistic Grade)" : "Premium Cotton Polyester Blend" },
+                        { label: "Fit / Size", value: isAcc ? "One Size (Adjustable Straps)" : "Regular Comfort Fit" },
+                        { label: "Pattern", value: "Solid Matte Finish" },
+                        { label: "Neck/Collar Type", value: isAcc ? "N/A" : "Classic Crew Neck" },
+                        { label: "Sleeve Type", value: isAcc ? "N/A" : "Half Sleeve" },
+                        { label: "Pockets", value: isAcc ? "Multi-Compartment Organizer Pockets" : "Concealed Side-Seam Cross Pockets" },
+                        { label: "Wash Care", value: "Machine Wash Cold at 40°C. Do Not Bleach. Warm Iron if needed." }
+                      ].filter(spec => spec.value !== "N/A");
+                      
+                      return (
+                        <div className="border border-neutral-250/60 rounded-none overflow-hidden bg-white text-xs text-neutral-800">
+                          {specsList.map((spec, idx) => (
+                            <div
+                              key={spec.label}
+                              className={`grid grid-cols-2 ${
+                                idx < specsList.length - 1
+                                  ? "border-b border-neutral-150"
+                                  : ""
+                              } p-4`}
+                            >
+                              <span className="font-extrabold text-neutral-400 tracking-wider">
+                                {spec.label}
+                              </span>
+                              <span className="font-semibold text-neutral-800">
+                                {spec.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -819,18 +930,18 @@ function ProductDetailContent({ product }: { product: Product }) {
                       Every order is handled with custom premium packaging.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                      {(product.shippingInfo ?? [
+                      {[
                         {
-                          title: "DELIVERY TIMES",
+                          title: "DOMESTIC DISPATCH TIMELINES",
                           content:
-                            "• Express Shipping: 2-3 working days (Free on order above ₹2,000)\n• Standard Shipping: 5-7 working days (Free on all orders)",
+                            "• Metro Cities (Delhi, Mumbai, Bengaluru, etc.): 2-3 working days\n• Other Regions: 4-6 working days\n• Free shipping on all prepaid orders across India.",
                         },
                         {
-                          title: "EASY EXCHANGES",
+                          title: "7-DAY COMPLIMENTARY RETURN & EXCHANGE",
                           content:
-                            "Enjoy a 7-day return window. Size exchanges are processed with complimentary home pickup across India.",
+                            "Enjoy a 7-day hassle-free return window. Size exchanges are processed with complimentary doorstep home pickup across India.",
                         },
-                      ]).map((info) => (
+                      ].map((info) => (
                         <div
                           key={info.title}
                           className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
@@ -1003,10 +1114,10 @@ function ProductDetailContent({ product }: { product: Product }) {
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl font-bold text-neutral-900">
-                  ₹{(product.price + 245 + 165).toFixed(2)}
+                  ₹{(product.price + 245 + 165).toFixed(0)}
                 </span>
                 <span className="text-xs text-neutral-400 line-through">
-                  ₹{(product.originalPrice ?? product.price + 245 + 165).toFixed(2)}
+                  ₹{(product.originalPrice ?? product.price + 245 + 165).toFixed(0)}
                 </span>
               </div>
             </div>
@@ -1129,7 +1240,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                 {product.name}
               </h4>
               <span className="text-sm font-extrabold text-[#b2533e] mt-0.5 block">
-                ₹{product.price.toFixed(2)}
+                ₹{product.price.toFixed(0)}
               </span>
             </div>
           </div>
@@ -1198,7 +1309,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </div>
             </div>
             <span className="text-sm font-extrabold text-[#b2533e]">
-              ₹{product.price.toFixed(2)}
+              ₹{product.price.toFixed(0)}
             </span>
           </div>
 
@@ -1586,12 +1697,12 @@ function RecommendationCard({ product }: { product: Product }) {
       </div>
       <div className="flex items-baseline gap-2 mt-2">
         <span className="text-xs font-bold text-neutral-800">
-          ₹{product.price.toFixed(2)}
+          ₹{product.price.toFixed(0)}
         </span>
         {product.originalPrice && (
           <>
             <span className="text-[10px] font-semibold text-[#858383] line-through">
-              ₹{product.originalPrice.toFixed(2)}
+              ₹{product.originalPrice.toFixed(0)}
             </span>
             {discountPercent > 0 && (
               <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">

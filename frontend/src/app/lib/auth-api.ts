@@ -47,5 +47,25 @@ export const authApi = {
         Authorization: `Bearer ${token}`
       }
     });
+  },
+
+  // 4. Complete customer onboarding registration
+  registerCustomer: async (
+    firstName: string,
+    lastName: string,
+    dob: string,
+    gender: string,
+    token: string
+  ): Promise<any> => {
+    const response = await axios.post(
+      `${BASE_URL}${API_CONFIG.ENDPOINTS.REGISTER}`,
+      { firstName, lastName, dob, gender },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
   }
 };

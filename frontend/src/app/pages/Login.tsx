@@ -287,12 +287,6 @@ export function Login() {
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               </button>
-
-              <div className="text-center">
-                <p className="text-[9px] text-neutral-400 font-bold tracking-wider uppercase">
-                  Test: <span className="text-neutral-600">test@gmail.com</span>
-                </p>
-              </div>
             </form>
           )}
 
@@ -303,10 +297,9 @@ export function Login() {
               onOtpChange={setOtp}
               onSubmit={handleVerifyOtp}
               onBack={handleBackToIdentifier}
-              onAutoFill={() => setOtp("123456")}
               isSubmitting={isSubmitting}
               error={error}
-              showDevHelper={true}
+              showDevHelper={false}
               submitLabel={isCheckoutFlow ? "VERIFY & CHECKOUT" : "VERIFY & SIGN IN"}
             />
           )}

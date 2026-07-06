@@ -7,7 +7,8 @@ import {
   X,
   Upload,
 } from "lucide-react";
-import { categoryApi, BackendCategory } from "../lib/category-api";
+import { categoryApi, subCategoryApi, BackendCategory, BackendSubCategory } from "../lib/category-api";
+import { useAuthStore } from "../store/auth-store";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }) {
   return (
@@ -53,6 +54,7 @@ interface Category {
 }
 
 export function CategoriesPage() {
+  const { token } = useAuthStore();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,37 +90,28 @@ export function CategoriesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load categories from API on mount
+  // Load categories and subcategories from API on mount
   const loadCategories = async () => {
+    if (!token) return;
     setIsLoading(true);
     try {
-      const data = await categoryApi.getAllCategories();
-      const mapped: Category[] = data.map((bc: BackendCategory) => {
-        // Parse subCategoryIds back to subCategories list.
-        // Since we don't have separate subcategory table queries, we map subcategory data structures.
-        // We will seed / parse subcategory structures from JSON or ID arrays.
-        let subCats: SubCategory[] = [];
-        try {
-          if (bc.subCategoryIds) {
-            // Assume subCategoryIds holds comma separated names or stringified structures
-            const parsed = JSON.parse(bc.subCategoryIds);
-            if (Array.isArray(parsed)) {
-              subCats = parsed;
-            }
-          }
-        } catch {
-          // fallback to IDs mapping if not JSON
-          if (bc.subCategoryIds) {
-            subCats = bc.subCategoryIds.split(",").filter(Boolean).map(idOrName => ({
-              id: `${bc.categoryId}-${idOrName.trim()}`,
-              name: idOrName.trim(),
-              description: "Subcategory of " + bc.categoryName,
-              imageUrl: "",
-              isActive: true,
-              categoryId: String(bc.categoryId),
-            }));
-          }
-        }
+      const [categoriesData, subcategoriesData] = await Promise.all([
+        categoryApi.getAllCategories(token),
+        subCategoryApi.getAllSubCategories(token)
+      ]);
+
+      const mapped: Category[] = categoriesData.map((bc: BackendCategory) => {
+        // Filter subcategories that belong to this categoryId
+        const subCats: SubCategory[] = subcategoriesData
+          .filter((bsc: BackendSubCategory) => Number(bsc.categoryId) === bc.categoryId)
+          .map((bsc: BackendSubCategory) => ({
+            id: String(bsc.subCategoryId),
+            name: bsc.subcategoryName,
+            description: bsc.description || "",
+            imageUrl: bsc.imageUrl || "",
+            isActive: bsc.isActive,
+            categoryId: String(bc.categoryId),
+          }));
 
         return {
           id: String(bc.categoryId),
@@ -128,7 +121,7 @@ export function CategoriesPage() {
           count: 0,
           orders: 0,
           status: bc.isActive ? "Active" : "Inactive",
-          bannerImage: bc.imagePath || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
+          bannerImage: bc.imageUrl || bc.imagePath || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
           slug: bc.categoryName.toLowerCase().replace(/\s+/g, "-"),
           subCategories: subCats,
           revenueSales: 0,
@@ -139,7 +132,7 @@ export function CategoriesPage() {
         setSelectedCategoryId(mapped[0].id);
       }
     } catch (err) {
-      console.error("Failed to load categories", err);
+      console.error("Failed to load categories and subcategories", err);
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +140,7 @@ export function CategoriesPage() {
 
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [token]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void, isSub = false) => {
     const files = e.target.files;
@@ -165,8 +158,10 @@ export function CategoriesPage() {
             // Validate Category Image banner matches 800x1000 pixels
             const img = new Image();
             img.onload = () => {
-              if (img.width !== 800 || img.height !== 1000) {
-                alert(`Error: Image dimensions are ${img.width}x${img.height}px. Category images must be exactly 800x1000 pixels.`);
+              const ratio = img.width / img.height;
+              const isCorrectRatio = Math.abs(ratio - 0.8) < 0.025;
+              if (!isCorrectRatio) {
+                alert(`Error: Image dimensions are ${img.width}x${img.height}px. Category images must match a 4:5 aspect ratio (portrait) only.`);
                 if (e.target) e.target.value = ""; // clear file input
                 setter("");
                 setCatImageFile(null);
@@ -197,9 +192,9 @@ export function CategoriesPage() {
 
   const handleAddCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!catLabel.trim()) return;
+    if (!catLabel.trim() || !token) return;
     if (!catBannerImage) {
-      alert("Please upload a category banner image matching 800x1000 pixels.");
+      alert("Please upload a category banner image matching a 4:5 aspect ratio.");
       return;
     }
 
@@ -208,7 +203,8 @@ export function CategoriesPage() {
         catLabel.trim(),
         catSub.trim(),
         catImageFile,
-        ""
+        "",
+        token
       );
       await loadCategories();
       if (added && added.categoryId) {
@@ -218,7 +214,7 @@ export function CategoriesPage() {
       resetCatForm();
     } catch (err) {
       console.error("Error creating category", err);
-      alert("Failed to create category. Please ensure backend is running at http://localhost:8081.");
+      alert("Failed to create category. Please ensure backend is running at http://13.201.227.2:8081.");
     }
   };
 
@@ -234,7 +230,7 @@ export function CategoriesPage() {
 
   const handleSaveCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editCategoryTarget) return;
+    if (!editCategoryTarget || !token) return;
 
     try {
       const subIds = JSON.stringify(editCategoryTarget.subCategories || []);
@@ -244,7 +240,8 @@ export function CategoriesPage() {
         catSub.trim(),
         catImageFile,
         subIds,
-        editCategoryTarget.status === "Active"
+        editCategoryTarget.status === "Active",
+        token
       );
       await loadCategories();
       setIsEditCatOpen(false);
@@ -260,9 +257,9 @@ export function CategoriesPage() {
   };
 
   const handleConfirmDeleteCategory = async () => {
-    if (!deleteCategoryTarget) return;
+    if (!deleteCategoryTarget || !token) return;
     try {
-      await categoryApi.deleteCategory(Number(deleteCategoryTarget.id));
+      await categoryApi.deleteCategory(Number(deleteCategoryTarget.id), token);
       await loadCategories();
       if (selectedCategoryId === deleteCategoryTarget.id) {
         setSelectedCategoryId(null);
@@ -290,56 +287,37 @@ export function CategoriesPage() {
 
   const handleAddSubCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subName.trim() || !selectedCategoryId) return;
+    if (!subName.trim() || !selectedCategoryId || !token) return;
 
-    const activeCat = categories.find(c => c.id === selectedCategoryId);
-    if (!activeCat) return;
+    if (subDescription.trim().length < 5 || subDescription.trim().length > 255) {
+      alert("Subcategory description must be between 5 and 255 characters.");
+      return;
+    }
 
-    const id = `${selectedCategoryId}-${subName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
-    const newSub: SubCategory = {
-      id,
-      name: subName.trim(),
-      description: subDescription.trim(),
-      imageUrl: subImageUrl,
-      isActive: true,
-      categoryId: selectedCategoryId,
-    };
-
-    const updatedSubCategories = [...(activeCat.subCategories || []), newSub];
     try {
-      await categoryApi.updateCategory(
-        Number(activeCat.id),
-        activeCat.label,
-        activeCat.sub,
-        null,
-        JSON.stringify(updatedSubCategories),
-        activeCat.status === "Active"
+      await subCategoryApi.createSubCategory(
+        subName.trim(),
+        subDescription.trim(),
+        Number(selectedCategoryId),
+        subImageFile,
+        true,
+        token
       );
       await loadCategories();
       setIsAddSubOpen(false);
-    } catch (err) {
+      resetSubForm();
+    } catch (err: any) {
       console.error("Error adding subcategory", err);
+      const errMsg = err?.response?.data?.message || "Failed to create subcategory. Check description length (must be 5 to 255 characters).";
+      alert(errMsg);
     }
   };
 
   const handleToggleSubActive = async (categoryId: string, subId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const activeCat = categories.find(c => c.id === categoryId);
-    if (!activeCat) return;
-
-    const updatedSubCategories = (activeCat.subCategories || []).map(s =>
-      s.id === subId ? { ...s, isActive: !s.isActive } : s
-    );
-
+    if (!token) return;
     try {
-      await categoryApi.updateCategory(
-        Number(activeCat.id),
-        activeCat.label,
-        activeCat.sub,
-        null,
-        JSON.stringify(updatedSubCategories),
-        activeCat.status === "Active"
-      );
+      await subCategoryApi.toggleSubCategoryStatus(Number(subId), token);
       await loadCategories();
     } catch (err) {
       console.error("Error toggling subcategory", err);
@@ -347,20 +325,9 @@ export function CategoriesPage() {
   };
 
   const handleRemoveSubCategory = async (categoryId: string, subId: string) => {
-    const activeCat = categories.find(c => c.id === categoryId);
-    if (!activeCat) return;
-
-    const updatedSubCategories = (activeCat.subCategories || []).filter(s => s.id !== subId);
-
+    if (!token) return;
     try {
-      await categoryApi.updateCategory(
-        Number(activeCat.id),
-        activeCat.label,
-        activeCat.sub,
-        null,
-        JSON.stringify(updatedSubCategories),
-        activeCat.status === "Active"
-      );
+      await subCategoryApi.deleteSubCategory(Number(subId), token);
       await loadCategories();
     } catch (err) {
       console.error("Error removing subcategory", err);
@@ -379,31 +346,26 @@ export function CategoriesPage() {
 
   const handleSaveSubCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editSubTarget) return;
+    if (!editSubTarget || !token) return;
 
-    const activeCat = categories.find(c => c.id === editSubTarget.categoryId);
-    if (!activeCat) return;
-
-    const updatedSubCategories = (activeCat.subCategories || []).map(s =>
-      s.id === editSubTarget.id ? {
-        ...s,
-        name: subName.trim(),
-        description: subDescription.trim(),
-        imageUrl: subImageUrl,
-      } : s
-    );
+    if (subDescription.trim().length < 5 || subDescription.trim().length > 255) {
+      alert("Subcategory description must be between 5 and 255 characters.");
+      return;
+    }
 
     try {
-      await categoryApi.updateCategory(
-        Number(activeCat.id),
-        activeCat.label,
-        activeCat.sub,
-        null,
-        JSON.stringify(updatedSubCategories),
-        activeCat.status === "Active"
+      await subCategoryApi.updateSubCategory(
+        Number(editSubTarget.id),
+        subName.trim(),
+        subDescription.trim(),
+        Number(editSubTarget.categoryId),
+        subImageFile,
+        editSubTarget.isActive,
+        token
       );
       await loadCategories();
       setIsEditSubOpen(false);
+      resetSubForm();
     } catch (err) {
       console.error("Error updating subcategory", err);
     }
@@ -416,21 +378,10 @@ export function CategoriesPage() {
   };
 
   const handleConfirmDeleteSubCategory = async () => {
-    if (!deleteSubTarget) return;
-    const activeCat = categories.find(c => c.id === deleteSubTarget.categoryId);
-    if (!activeCat) return;
-
-    const updatedSubCategories = (activeCat.subCategories || []).filter(s => s.id !== deleteSubTarget.id);
+    if (!deleteSubTarget || !token) return;
 
     try {
-      await categoryApi.updateCategory(
-        Number(activeCat.id),
-        activeCat.label,
-        activeCat.sub,
-        null,
-        JSON.stringify(updatedSubCategories),
-        activeCat.status === "Active"
-      );
+      await subCategoryApi.deleteSubCategory(Number(deleteSubTarget.id), token);
       await loadCategories();
       setIsDeleteSubOpen(false);
     } catch (err) {
@@ -456,8 +407,9 @@ export function CategoriesPage() {
 
   const handleToggleStatus = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!token) return;
     try {
-      await categoryApi.toggleCategoryStatus(Number(id));
+      await categoryApi.toggleCategoryStatus(Number(id), token);
       await loadCategories();
     } catch (err) {
       console.error("Error toggling category status", err);
@@ -605,14 +557,14 @@ export function CategoriesPage() {
           {activeCategoryDetails ? (
             <div className="bg-card border border-neutral-200/80 p-5 space-y-5">
 
-              <div className="relative aspect-[16/9] border border-neutral-200/80 overflow-hidden group">
+              <div className="relative aspect-[4/5] border border-neutral-200/80 overflow-hidden group max-w-[280px] mx-auto">
                 <img
-                  src={activeCategoryDetails.bannerImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop"}
+                  src={activeCategoryDetails.bannerImage}
                   alt="Banner"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
-                  <span className="text-[7.5px] font-bold tracking-[0.25em] text-white/70 uppercase">{activeCategoryDetails.parent} Category</span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4">
+                  <span className="text-[7.5px] font-bold tracking-[0.25em] text-white/80 uppercase">{activeCategoryDetails.parent} Category</span>
                   <h3 className="text-sm font-black text-white uppercase tracking-wider mt-0.5">{activeCategoryDetails.label}</h3>
                 </div>
               </div>
@@ -723,7 +675,7 @@ export function CategoriesPage() {
                 <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} placeholder="Category description..." rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-normal lowercase">(800x1000 pixels)</span></label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-bold uppercase">(Required: 4:5 aspect ratio, e.g. 800x1000)</span></label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
@@ -733,7 +685,7 @@ export function CategoriesPage() {
                 </div>
                 {catBannerImage && (
                   <div className="mt-3 flex flex-col items-center bg-neutral-50 p-2.5 border border-neutral-200">
-                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000)</span>
+                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (4:5)</span>
                     <div className="w-[140px] h-[175px] border border-neutral-200 overflow-hidden shrink-0 relative bg-neutral-100 shadow-sm">
                       <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
                     </div>
@@ -769,7 +721,7 @@ export function CategoriesPage() {
                 <textarea required value={catSub} onChange={e => setCatSub(e.target.value)} rows={3} className="w-full bg-card border border-neutral-200 text-[9.5px] font-semibold p-2.5 focus:outline-none focus:border-[#224870] rounded-none transition-all text-[#382d24] resize-none" />
               </div>
               <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-normal lowercase">(800x1000 pixels)</span></label>
+                <label className="block text-[8px] font-bold tracking-widest text-[#382d24] uppercase mb-1">Upload Image <span className="text-red-500 font-bold uppercase">(Required: 4:5 aspect ratio, e.g. 800x1000)</span></label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="border border-neutral-200 hover:border-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase flex items-center gap-2 bg-transparent cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5 text-neutral-500" /> Choose File
@@ -779,7 +731,7 @@ export function CategoriesPage() {
                 </div>
                 {catBannerImage && (
                   <div className="mt-3 flex flex-col items-center bg-neutral-50 p-2.5 border border-neutral-200">
-                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000)</span>
+                    <span className="text-[7.5px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (4:5)</span>
                     <div className="w-[140px] h-[175px] border border-neutral-200 overflow-hidden shrink-0 relative bg-neutral-100 shadow-sm">
                       <img src={catBannerImage} alt="Preview" className="w-full h-full object-cover" />
                     </div>

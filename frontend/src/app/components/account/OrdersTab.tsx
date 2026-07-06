@@ -72,7 +72,7 @@ export function OrdersTab() {
                   </div>
                   <div>
                     <span className="text-[7px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Total</span>
-                    <span className="text-[#030213] font-extrabold">₹{order.total.toFixed(2)}</span>
+                    <span className="text-[#030213] font-extrabold">₹{order.total.toFixed(0)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
@@ -102,7 +102,7 @@ export function OrdersTab() {
                         Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
                       </p>
                     </div>
-                    <span className="text-[12px] font-extrabold text-[#030213] flex-shrink-0">₹{(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="text-[12px] font-extrabold text-[#030213] flex-shrink-0">₹{(item.price * item.quantity).toFixed(0)}</span>
                   </div>
                 ))}
               </div>

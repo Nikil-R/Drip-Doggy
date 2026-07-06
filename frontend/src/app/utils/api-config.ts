@@ -3,6 +3,8 @@ export const API_CONFIG = {
   ENDPOINTS: {
     SEND_OTP: "/dripdoggy/api/auth/send-otp",
     VERIFY_OTP: "/dripdoggy/api/auth/verify-otp",
-    LOGOUT: "/dripdoggy/api/auth/logout"
+    LOGOUT: "/dripdoggy/api/auth/logout",
+    REGISTER: "/dripdoggy/api/auth/register",
+    CATEGORIES: "/dripdoggy/api/public/categories"
   }
 };

@@ -72,12 +72,12 @@ function SignatureCard({ product }: { product: Product }) {
         </h3>
         <div className="flex items-baseline gap-2 mt-0.5">
           <span className="text-sm font-extrabold text-neutral-900">
-            ₹{product.price.toFixed(2)}
+            ₹{product.price.toFixed(0)}
           </span>
           {product.originalPrice && (
             <>
               <span className="text-[10px] font-semibold text-neutral-450 line-through">
-                ₹{product.originalPrice.toFixed(2)}
+                ₹{product.originalPrice.toFixed(0)}
               </span>
               {product.originalPrice > product.price && (
                 <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
@@ -141,7 +141,7 @@ export function SignaturePieces() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {finalProducts.map((product, idx) => (
             <motion.div
               key={product.id}

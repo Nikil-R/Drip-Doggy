@@ -1,21 +1,8 @@
 import { Slider } from "../ui/slider";
-import { Separator } from "../ui/separator";
 import { useSearchParams } from "react-router";
-
-// ─── Helper to map hex → color name ────────────────────────────────────────
-function hexToColorName(hex: string): string | undefined {
-  const map: Record<string, string> = {
-    "#1A1A1A": "black",
-    "#000000": "black",
-    "#FAF8F5": "white",
-    "#FFFFFF": "white",
-    "#9CA3AF": "gray",
-    "#D2C9BD": "beige",
-    "#D4C5B9": "beige",
-    "#92400E": "brown",
-  };
-  return map[hex.toUpperCase()];
-}
+import { useState, useEffect, useMemo } from "react";
+import { categoryApi, Category } from "../../lib/category-api";
+import { Plus, Minus, RotateCcw } from "lucide-react";
 
 export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,25 +14,48 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
     searchParams.get("category")?.toUpperCase() ||
     (isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
   const selectedSize = searchParams.get("size")?.toUpperCase() || "";
-  const selectedColor = searchParams.get("color") || "";
 
   const priceRangeParam = searchParams.get("price");
   const priceRange = priceRangeParam
     ? priceRangeParam.split("-").map(Number)
-    : [0, 500];
+    : [0, 10000];
 
-  const categories = isAccessories
-    ? ["ALL ACCESSORIES", "BAGS", "CAPS", "BELTS"]
-    : ["ALL WOMEN'S", "DRESSES", "OUTERWEAR", "TOPS", "SKIRTS"];
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  const [openSections, setOpenSections] = useState({
+    categories: true,
+    sizes: true,
+    price: true,
+  });
 
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const list = await categoryApi.fetchCategories();
+        setDbCategories(list.filter(c => c.isActive !== false));
+      } catch (err) {
+        console.error("Error loading categories", err);
+      }
+    }
+    loadCategories();
+  }, []);
+
+  const activeSubcategories = useMemo(() => {
+    const subs = new Set<string>();
+    subs.add(isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
+    dbCategories.forEach(cat => {
+      if (cat.subCategories) {
+        cat.subCategories.forEach(sub => {
+          if (sub.isActive !== false) {
+            subs.add(sub.subcategoryName.toUpperCase());
+          }
+        });
+      }
+    });
+    return Array.from(subs);
+  }, [dbCategories, isAccessories]);
+
+  const categories = activeSubcategories;
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-  const colors = [
-    { name: "Black", value: "#000000" },
-    { name: "White", value: "#FFFFFF" },
-    { name: "Gray", value: "#9CA3AF" },
-    { name: "Brown", value: "#92400E" },
-    { name: "Beige", value: "#D4C5B9" },
-  ];
 
   const handleCategoryClick = (category: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -69,32 +79,17 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
     setSearchParams(newParams);
   };
 
-  const handleColorClick = (colorName: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (selectedColor.toLowerCase() === colorName.toLowerCase()) {
-      newParams.delete("color");
-    } else {
-      newParams.set("color", colorName.toLowerCase());
-    }
-    setSearchParams(newParams);
-  };
-
   const handlePriceChange = (val: number[]) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("price", `${val[0]}-${val[1]}`);
     setSearchParams(newParams);
   };
 
-  const handleGenderToggle = () => {
-    const newParams = new URLSearchParams(searchParams);
-    if (isAccessories) {
-      newParams.set("gender", "women");
-      newParams.delete("category");
-    } else {
-      newParams.set("gender", "accessories");
-      newParams.delete("category");
-    }
-    setSearchParams(newParams);
+  const toggleSection = (section: "categories" | "sizes" | "price") => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
   const clearFilters = () => {
@@ -103,127 +98,140 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
 
   const hasActiveFilters =
     selectedSize ||
-    selectedColor ||
     priceRange[0] > 0 ||
-    priceRange[1] < 500 ||
-    selectedCategory;
+    priceRange[1] < 10000 ||
+    searchParams.get("category");
 
   const content = (
-    <div className={isMobile ? "" : "w-64 pr-8 border-r border-neutral-200/60"}>
-      {/* Mobile: Header + Clear */}
-      {isMobile && (
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-200/60">
-          <h2 className="text-sm font-extrabold tracking-[0.2em] uppercase">
-            FILTERS
-          </h2>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-[9px] font-bold tracking-[0.15em] text-neutral-400 border-b border-neutral-300 pb-0.5 hover:text-neutral-900 transition-colors bg-transparent border-none cursor-pointer"
-            >
-              RESET ALL
-            </button>
+    <div className={isMobile ? "" : "w-64 pr-10 border-r border-neutral-100 font-sans"}>
+      {/* Header for Desktop or Mobile */}
+      <div className="flex items-center justify-between mb-8 pb-3.5 border-b border-neutral-150">
+        <h2 className="text-[11px] font-black tracking-[0.25em] text-[#030213] uppercase">
+          Filter By
+        </h2>
+        {hasActiveFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1 text-[9px] font-extrabold tracking-[0.15em] text-[#b2533e] hover:text-black transition-colors bg-transparent border-none cursor-pointer uppercase"
+          >
+            <RotateCcw className="h-3 w-3 stroke-[2.5]" />
+            Reset
+          </button>
+        )}
+      </div>
+
+      {/* Categories Section */}
+      <div className="border-b border-neutral-100 pb-6 mb-6">
+        <button
+          onClick={() => toggleSection("categories")}
+          className="flex items-center justify-between w-full text-left py-1.5 bg-transparent border-none cursor-pointer select-none"
+        >
+          <span className="text-[10px] font-black tracking-[0.2em] text-neutral-900 uppercase">
+            Sub Categories
+          </span>
+          {openSections.categories ? (
+            <Minus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
+          ) : (
+            <Plus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
           )}
-        </div>
-      )}
+        </button>
 
-
-      {/* Categories */}
-      <div className="mb-8">
-        <h3 className="text-xs font-extrabold tracking-[0.15em] text-neutral-800 mb-4 uppercase">
-          SUB CATEGORIES
-        </h3>
-        <div className="space-y-2.5">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => handleCategoryClick(category)}
-              className={`block w-full text-left py-1 text-xs font-bold tracking-wider transition-colors uppercase bg-transparent border-none cursor-pointer ${
-                selectedCategory === category
-                  ? "text-[#030213] font-extrabold"
-                  : "text-neutral-500 hover:text-neutral-900"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+        {openSections.categories && (
+          <div className="mt-4 space-y-3 pl-0.5">
+            {categories.map((category) => {
+              const isSelected = selectedCategory === category;
+              return (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryClick(category)}
+                  className={`flex items-center w-full text-left py-1 text-[11px] tracking-wider transition-all duration-300 uppercase bg-transparent border-none cursor-pointer ${
+                    isSelected
+                      ? "text-[#030213] font-black font-extrabold pl-2.5 border-l-2 border-[#030213]"
+                      : "text-neutral-500 hover:text-neutral-900 pl-0 border-l-2 border-transparent hover:pl-2"
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      <Separator className="my-6 bg-neutral-200/60 h-px" />
+      {/* Sizes Section */}
+      <div className="border-b border-neutral-100 pb-6 mb-6">
+        <button
+          onClick={() => toggleSection("sizes")}
+          className="flex items-center justify-between w-full text-left py-1.5 bg-transparent border-none cursor-pointer select-none"
+        >
+          <span className="text-[10px] font-black tracking-[0.2em] text-neutral-900 uppercase">
+            Size
+          </span>
+          {openSections.sizes ? (
+            <Minus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
+          ) : (
+            <Plus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
+          )}
+        </button>
 
-      {/* Sizes */}
-      <div className="mb-8">
-        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">
-          SIZE
-        </h3>
-        <div className="grid grid-cols-3 gap-2">
-          {sizes.map((size) => (
-            <button
-              key={size}
-              onClick={() => handleSizeClick(size)}
-              className={`border text-[10px] font-bold py-2.5 rounded-sm transition-all text-center uppercase cursor-pointer ${
-                selectedSize === size
-                  ? "bg-[#030213] text-white border-neutral-900"
-                  : "bg-white text-neutral-750 border-neutral-200/60 hover:border-neutral-900"
-              }`}
-            >
-              {size}
-            </button>
-          ))}
-        </div>
+        {openSections.sizes && (
+          <div className="mt-4">
+            <div className="flex flex-wrap gap-2">
+              {sizes.map((size) => {
+                const isSelected = selectedSize === size;
+                return (
+                  <button
+                    key={size}
+                    onClick={() => handleSizeClick(size)}
+                    className={`w-10 h-10 flex items-center justify-center text-[10px] font-bold tracking-wider transition-all duration-300 border rounded-none cursor-pointer uppercase ${
+                      isSelected
+                        ? "bg-[#030213] text-white border-[#030213] shadow-[0_2px_8px_rgba(0,0,0,0.15)] font-black"
+                        : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-800 hover:text-neutral-900"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      <Separator className="my-6 bg-neutral-200/60 h-px" />
+      {/* Price Range Section */}
+      <div className="pb-4">
+        <button
+          onClick={() => toggleSection("price")}
+          className="flex items-center justify-between w-full text-left py-1.5 bg-transparent border-none cursor-pointer select-none"
+        >
+          <span className="text-[10px] font-black tracking-[0.2em] text-neutral-900 uppercase">
+            Price Range
+          </span>
+          {openSections.price ? (
+            <Minus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
+          ) : (
+            <Plus className="h-3 w-3 text-neutral-400 stroke-[2.5]" />
+          )}
+        </button>
 
-      {/* Colors */}
-      <div className="mb-8">
-        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">
-          COLOR
-        </h3>
-        <div className="flex flex-wrap gap-2.5">
-          {colors.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => handleColorClick(color.name)}
-              className={`w-8 h-8 rounded-full border border-neutral-200 p-0.5 transition-all hover:scale-105 bg-transparent cursor-pointer ${
-                selectedColor.toLowerCase() === color.name.toLowerCase()
-                  ? "ring-2 ring-neutral-900 ring-offset-2 scale-105"
-                  : ""
-              }`}
-              title={color.name}
-            >
-              <div
-                className="w-full h-full rounded-full border border-neutral-200/20"
-                style={{ backgroundColor: color.value }}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Separator className="my-6 bg-neutral-200/60 h-px" />
-
-      {/* Price Range */}
-      <div className="mb-8">
-        <h3 className="text-[10px] font-bold tracking-[0.2em] text-neutral-400 mb-4 uppercase">
-          PRICE RANGE
-        </h3>
-        <div className="px-1 py-3">
-          <Slider
-            min={0}
-            max={500}
-            step={10}
-            defaultValue={[0, 500]}
-            value={priceRange}
-            onValueChange={handlePriceChange}
-            className="w-full cursor-pointer accent-[#030213]"
-          />
-        </div>
-        <div className="flex justify-between items-baseline mt-3 text-[10px] font-bold tracking-wider text-neutral-500 uppercase">
-          <span>₹{priceRange[0]}</span>
-          <span>₹{priceRange[1]}</span>
-        </div>
+        {openSections.price && (
+          <div className="mt-5 px-1.5">
+            <Slider
+              min={0}
+              max={10000}
+              step={100}
+              defaultValue={[0, 10000]}
+              value={priceRange}
+              onValueChange={handlePriceChange}
+              className="w-full cursor-pointer accent-[#030213] h-1.5"
+            />
+            <div className="flex justify-between items-baseline mt-4 text-[10px] font-extrabold tracking-widest text-neutral-700 uppercase">
+              <span className="bg-neutral-50 px-2 py-1 border border-neutral-200/50">₹{priceRange[0]}</span>
+              <span className="text-neutral-300">—</span>
+              <span className="bg-neutral-50 px-2 py-1 border border-neutral-200/50">₹{priceRange[1]}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

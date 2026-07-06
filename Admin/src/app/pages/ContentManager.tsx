@@ -28,7 +28,7 @@ export function ContentPage() {
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Content Manager</h1>
+        <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Navigation Menu</h1>
         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
           Drip Doggy homepage &amp; site content editor
         </p>

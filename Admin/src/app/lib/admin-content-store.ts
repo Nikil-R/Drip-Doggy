@@ -22,8 +22,22 @@ function getItem<T>(key: string, fallback: T): T {
 }
 
 function setItem<T>(key: string, value: T): void {
-  localStorage.setItem(key, JSON.stringify(value));
+  const serialized = JSON.stringify(value);
+  localStorage.setItem(key, serialized);
   localStorage.setItem(KEYS.lastUpdated, new Date().toISOString());
+
+  try {
+    const payload = { type: "sync-from-admin", key, value: serialized };
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(payload, "*");
+    }
+    if (window.opener) {
+      window.opener.postMessage(payload, "*");
+    }
+    window.top?.postMessage(payload, "*");
+  } catch (err) {
+    console.error("Storage sync postMessage failed", err);
+  }
 }
 
 export interface ComingSoonTeaser {
