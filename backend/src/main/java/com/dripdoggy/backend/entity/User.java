@@ -5,6 +5,7 @@ import com.dripdoggy.backend.enums.UserRole;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -52,6 +53,20 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "is_blocked", nullable = false)
+    private Boolean isBlocked = false;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.isBlocked == null) {
+            this.isBlocked = false;
+        }
+    }
 
     // Constructors
     public User() {
@@ -185,5 +200,21 @@ public class User {
 
     public void setTokens(List<Token> tokens) {
         this.tokens = tokens;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Boolean getIsBlocked() {
+        return isBlocked;
+    }
+
+    public void setIsBlocked(Boolean isBlocked) {
+        this.isBlocked = isBlocked;
     }
 }

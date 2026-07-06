@@ -1,11 +1,12 @@
 package com.dripdoggy.backend.exception;
 
-import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -176,11 +177,7 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
-    public ResponseEntity<ResponseMsgDto> handleMaxUploadSizeExceededException(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
-        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Maximum upload size exceeded. The total request size must not exceed 200MB, and each individual file must not exceed 100MB.");
-        return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
-    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseMsgDto> handleGlobalException(Exception ex) {
