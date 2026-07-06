@@ -1,6 +1,5 @@
 package com.dripdoggy.backend.Configuration;
 
-import jakarta.servlet.MultipartConfigElement;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
