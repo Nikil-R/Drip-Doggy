@@ -1,21 +1,11 @@
 info:
-  name: Customer Registration
+  name: DelAddress
   type: http
-  seq: 3
+  seq: 5
 
 http:
-  method: POST
-  url: http://localhost:8081/dripdoggy/api/auth/register
-  body:
-    type: json
-    data: |
-      {
-      //   "phoneNo":"+911234577898",no
-        "firstName": "shuku",
-        "lastName": "s",
-        "dob":"22/03/2022",
-        "gender":"FEMALE"
-      }
+  method: DELETE
+  url: http://localhost:8081/dripdoggy/api/address/1
   auth:
     type: bearer
     token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw

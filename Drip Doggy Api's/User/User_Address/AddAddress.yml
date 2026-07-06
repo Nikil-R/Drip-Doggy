@@ -1,0 +1,49 @@
+info:
+  name: AddAddress
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/address
+  body:
+    type: json
+    data: |
+      {
+        "type": "Home",
+        "firstName": "John",
+        "lastName": "Doe",
+        "buildingNo": "42-B",
+        "buildingName": "Skyline Apartments",
+        "street": "Oakwood Avenue",
+        "area": "Whitefield",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postalCode": "560066",
+        "phone": "9876543210"
+      //   "isDefault": true
+      }
+
+      // {
+      //   "type": "Office",
+      //   "firstName": "Priya",
+      //   "lastName": "Patel",
+      //   "buildingNo": "Level 5",
+      //   "buildingName": "Tech Park One",
+      //   "street": "Airport Road",
+      //   "area": "Yerwada",
+      //   "city": "Pune",
+      //   "state": "Maharashtra",
+      //   "postalCode": "411006",
+      //   "phone": "9123456789"
+      // //   "isDefault": false
+      // }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
