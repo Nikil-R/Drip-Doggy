@@ -16,22 +16,22 @@ export const productApi = {
     
     return details.map((p: any) => {
       const primaryVariant = p.variants && p.variants.length > 0 ? p.variants[0] : null;
-      const mainImage = primaryVariant && primaryVariant.imageUrls && primaryVariant.imageUrls.length > 0
-        ? primaryVariant.imageUrls[0]
+      const mainImage = primaryVariant
+        ? (primaryVariant.primaryImageUrl || (primaryVariant.imageUrls && primaryVariant.imageUrls.length > 0 ? primaryVariant.imageUrls[0] : "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=600&auto=format&fit=crop"))
         : "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=600&auto=format&fit=crop";
 
       const allImages: string[] = [];
+      if (mainImage) {
+        allImages.push(mainImage);
+      }
       if (p.variants) {
         p.variants.forEach((v: any) => {
           if (v.imageUrls) {
             v.imageUrls.forEach((img: string) => {
-              if (!allImages.includes(img)) allImages.push(img);
+              if (img && !allImages.includes(img)) allImages.push(img);
             });
           }
         });
-      }
-      if (allImages.length === 0) {
-        allImages.push(mainImage);
       }
 
       const allSizes: string[] = [];
@@ -91,22 +91,22 @@ export const productApi = {
     if (!p) return null;
 
     const primaryVariant = p.variants && p.variants.length > 0 ? p.variants[0] : null;
-    const mainImage = primaryVariant && primaryVariant.imageUrls && primaryVariant.imageUrls.length > 0
-      ? primaryVariant.imageUrls[0]
+    const mainImage = primaryVariant
+      ? (primaryVariant.primaryImageUrl || (primaryVariant.imageUrls && primaryVariant.imageUrls.length > 0 ? primaryVariant.imageUrls[0] : "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=600&auto=format&fit=crop"))
       : "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=600&auto=format&fit=crop";
 
     const allImages: string[] = [];
+    if (mainImage) {
+      allImages.push(mainImage);
+    }
     if (p.variants) {
       p.variants.forEach((v: any) => {
         if (v.imageUrls) {
           v.imageUrls.forEach((img: string) => {
-            if (!allImages.includes(img)) allImages.push(img);
+            if (img && !allImages.includes(img)) allImages.push(img);
           });
         }
       });
-    }
-    if (allImages.length === 0) {
-      allImages.push(mainImage);
     }
 
     const allSizes: string[] = [];
@@ -139,11 +139,25 @@ export const productApi = {
       if (spec.washCare) specsList.push({ label: "Wash Care", value: spec.washCare });
     }
 
-    const colorVariants: ProductColorVariant[] = (p.variants || []).map((v: any) => ({
-      name: v.variantName || "DEFAULT",
-      thumbnail: v.imageUrls && v.imageUrls.length > 0 ? v.imageUrls[0] : mainImage,
-      images: v.imageUrls && v.imageUrls.length > 0 ? v.imageUrls : [mainImage]
-    }));
+    const colorVariants: ProductColorVariant[] = (p.variants || []).map((v: any) => {
+      const variantImages: string[] = [];
+      if (v.primaryImageUrl) {
+        variantImages.push(v.primaryImageUrl);
+      }
+      if (v.imageUrls) {
+        v.imageUrls.forEach((img: string) => {
+          if (img && !variantImages.includes(img)) variantImages.push(img);
+        });
+      }
+      if (variantImages.length === 0) {
+        variantImages.push(mainImage);
+      }
+      return {
+        name: v.variantName || "DEFAULT",
+        thumbnail: v.primaryImageUrl || (v.imageUrls && v.imageUrls.length > 0 ? v.imageUrls[0] : mainImage),
+        images: variantImages
+      };
+    });
 
     return {
       id: p.id,

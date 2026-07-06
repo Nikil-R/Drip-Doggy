@@ -106,6 +106,16 @@ const mapBackendProductToFrontend = (p: any): any => {
           totalStock += s.stockQuantity || 0;
         }
       });
+      const variantImages: string[] = [];
+      if (v.primaryImageUrl) {
+        variantImages.push(v.primaryImageUrl);
+      }
+      (v.imageUrls || []).forEach((img: string) => {
+        if (img && !variantImages.includes(img)) {
+          variantImages.push(img);
+        }
+      });
+
       return {
         id: v.id ? String(v.id) : "",
         name: v.variantName || "",
@@ -117,7 +127,7 @@ const mapBackendProductToFrontend = (p: any): any => {
         sizeStock: sizeStockMap,
         active: v.isActive !== false,
         sizes: (v.sizes || []).map((s: any) => s?.sizeName).filter(Boolean),
-        images: v.imageUrls || []
+        images: variantImages
       };
     }).filter(Boolean);
 
@@ -131,8 +141,8 @@ const mapBackendProductToFrontend = (p: any): any => {
       status: p.isActive !== false ? "Active" : "Inactive",
       sales: 0,
       revenue: 0,
-      image: p.variants && p.variants.length > 0 && p.variants[0].imageUrls && p.variants[0].imageUrls.length > 0 
-        ? p.variants[0].imageUrls[0] 
+      image: p.variants && p.variants.length > 0
+        ? (p.variants[0].primaryImageUrl || (p.variants[0].imageUrls && p.variants[0].imageUrls.length > 0 ? p.variants[0].imageUrls[0] : ""))
         : "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop",
       sku: p.skuCode || "",
       season: p.baseTitle || "SS26",

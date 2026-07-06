@@ -35,7 +35,7 @@ export function TopBar() {
     const path = location.pathname;
     if (path.includes("/admin/dashboard")) return "Dashboard";
     if (path.includes("/admin/orders")) return "Order Management";
-    if (path.includes("/admin/customers")) return "Customers";
+    if (path.includes("/admin/customers")) return "Customers Management";
     if (path.includes("/admin/categories")) return "Categories";
     if (path.includes("/admin/transactions")) return "Payments Ledger";
     if (path.includes("/admin/products/new")) return "Add Product";

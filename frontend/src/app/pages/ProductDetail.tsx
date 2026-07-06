@@ -9,6 +9,7 @@ import {
   Check,
   Truck,
   RotateCcw,
+  ArrowLeft,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
@@ -352,7 +353,15 @@ function ProductDetailContent({ product }: { product: Product }) {
       <section className="max-w-7xl mx-auto px-6 py-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ─── LEFT COLUMN — Images ──────────────────────────────────── */}
-          <div className="lg:col-span-6 space-y-5">
+          <div className="lg:col-span-6 space-y-4">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate(-1)}
+              className="text-[9.5px] font-black uppercase text-[#615e56] hover:text-[#224870] tracking-widest flex items-center gap-1.5 bg-transparent border-none cursor-pointer mb-2 transition-colors focus:outline-none"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Catalog
+            </button>
+
             <div className="flex flex-col-reverse md:flex-row gap-4">
               {/* Thumbnail Strip */}
               <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pb-2 md:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -361,7 +370,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     key={index}
                     onMouseEnter={() => setCurrentImageIndex(index)}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative flex-shrink-0 w-14 h-14 md:w-18 md:h-18 bg-neutral-100 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                    className={`relative flex-shrink-0 w-15 h-20 md:w-18 md:h-24 bg-neutral-100 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
                       currentImageIndex === index
                         ? "border-[#030213] scale-[1.02] shadow-sm"
                         : "border-transparent opacity-60 hover:opacity-100"
@@ -377,7 +386,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </div>
 
               {/* Main Image */}
-              <div className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[4/5] lg:aspect-square group">
+              <div className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[3/4] group">
                 <img
                   src={productImages[currentImageIndex]}
                   alt={product.name}
@@ -552,14 +561,14 @@ function ProductDetailContent({ product }: { product: Product }) {
                         setSelectedColor(color.name);
                         setCurrentImageIndex(0);
                       }}
-                      className={`relative p-0.5 rounded-full border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
+                      className={`relative p-0.5 rounded-md border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
                         selectedColor === color.name
                           ? "border-[#030213] scale-105 shadow-sm"
                           : "border-transparent opacity-80 hover:opacity-100 hover:scale-105"
                       }`}
                       aria-label={`Select ${color.name} variant`}
                     >
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden">
+                      <div className="w-15 h-20 md:w-18 md:h-24 rounded-md overflow-hidden bg-white border border-neutral-200">
                         <img
                           src={color.thumbnail}
                           alt={`${color.name} variant`}
@@ -586,28 +595,24 @@ function ProductDetailContent({ product }: { product: Product }) {
                   SIZE GUIDE
                 </button>
               </div>
-              <div
-                className={`grid gap-2 max-w-md`}
-                style={{
-                  gridTemplateColumns: `repeat(${Math.min(
-                    displaySizes.length,
-                    6
-                  )}, 1fr)`,
-                }}
-              >
-                {displaySizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`border text-[10px] font-bold py-2 rounded-sm transition-colors text-center cursor-pointer ${
-                      selectedSize === size
-                        ? "bg-[#030213] text-white border-neutral-900 font-extrabold"
-                        : "bg-white text-neutral-700 border-neutral-200/65 hover:border-neutral-900"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2.5">
+                {displaySizes.map((size) => {
+                  const isSelected = selectedSize === size;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      className={`w-12 h-12 flex items-center justify-center border text-[10.5px] font-black transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#030213] text-white border-neutral-900 font-black scale-105"
+                          : "bg-white text-neutral-850 border-neutral-300 hover:border-neutral-950"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
