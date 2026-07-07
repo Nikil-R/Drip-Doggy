@@ -146,7 +146,7 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
                   onClick={() => handleCategoryClick(category)}
                   className={`flex items-center w-full text-left py-1 text-[11px] tracking-wider transition-all duration-300 uppercase bg-transparent border-none cursor-pointer ${
                     isSelected
-                      ? "text-[#030213] font-black font-extrabold pl-2.5 border-l-2 border-[#030213]"
+                      ? "text-[#030213] font-black pl-2.5 border-l-2 border-[#030213]"
                       : "text-neutral-500 hover:text-neutral-900 pl-0 border-l-2 border-transparent hover:pl-2"
                   }`}
                 >

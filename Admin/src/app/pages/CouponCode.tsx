@@ -274,7 +274,7 @@ export function CouponCodePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
         <div>
           <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest">Coupons &amp; Offers</h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Configure discounts, campaign tickets, and checkout promotions</p>
+          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Configure discounts, COUPON tickets, and checkout promotions</p>
         </div>
         <button onClick={openAdd} className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-2 transition-all cursor-pointer border-none self-start md:self-auto">
           <Plus className="w-3.5 h-3.5" /> Create Coupon
@@ -282,12 +282,11 @@ export function CouponCodePage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Total Coupon Codes", value: summaryStats.total.toString(), trend: "up", change: "+12.5%", subtitle: "Total campaigns created" },
+          { label: "Total Coupon Codes", value: summaryStats.total.toString(), trend: "up", change: "+12.5%", subtitle: "Total coupons created" },
           { label: "Active Promos", value: summaryStats.active.toString(), trend: "up", change: "+8.4%", subtitle: "Currently live at checkout" },
-          { label: "Total Redemptions", value: summaryStats.totalUsed.toLocaleString("en-IN"), trend: "up", change: "+24.1%", subtitle: "Successful checkouts" },
-          { label: "Revenue Driven", value: RS + summaryStats.totalRevenueDriven.toLocaleString("en-IN"), trend: "up", change: "+19.7%", subtitle: "Total coupon transaction sales" }
+          { label: "Total Redemptions", value: summaryStats.totalUsed.toLocaleString("en-IN"), trend: "up", change: "+24.1%", subtitle: "Successful checkouts" }
         ].map((stat, idx) => (
           <div key={idx} className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] hover:shadow-sm transition-shadow">
             <div className="flex items-start justify-between">
@@ -330,19 +329,7 @@ export function CouponCodePage() {
               ))}
             </div>
 
-            {/* Segment select */}
-            <div className="flex items-center border border-neutral-200 bg-card px-3 py-1.5 rounded-sm gap-2">
-              <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Segment:</span>
-              <select
-                value={segmentFilter}
-                onChange={e => setSegmentFilter(e.target.value as any)}
-                className="bg-transparent border-none text-[8.5px] font-bold uppercase tracking-wider focus:outline-none cursor-pointer text-[#382d24]"
-              >
-                <option value="all">All Groups</option>
-                <option value="vip">VIP Segment</option>
-                <option value="new">New Customers</option>
-              </select>
-            </div>
+
 
             {/* Calendar picker */}
             <div className="relative" ref={calendarRef}>
@@ -440,7 +427,6 @@ export function CouponCodePage() {
                 <th className="p-4 font-bold">Discount Rate</th>
                 <th className="p-4 font-bold">Constraints</th>
                 <th className="p-4 font-bold">Redemptions</th>
-                <th className="p-4 font-bold">Revenue Driven</th>
                 <th className="p-4 font-bold">Status</th>
                 <th className="p-4 font-bold text-right">Actions</th>
               </tr>
@@ -473,9 +459,6 @@ export function CouponCodePage() {
                   </td>
                   <td className="p-4">
                     <UsageBar used={coupon.usedCount} limit={coupon.usageLimit} />
-                  </td>
-                  <td className="p-4 font-bold text-green-700 text-[10.5px]">
-                    {RS}{(coupon.revenueGenerated || 0).toLocaleString()}
                   </td>
                   <td className="p-4">
                     <ToggleSwitch enabled={coupon.status === "active"} onClick={() => toggleStatus(coupon)} />
@@ -554,8 +537,8 @@ export function CouponCodePage() {
               {/* Data Summary Grid */}
               <div className="grid grid-cols-2 gap-4 border-t border-neutral-100 pt-5">
                 <div>
-                  <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Campaign Description</span>
-                  <p className="text-[11px] font-bold text-[#382d24] mt-1">{selectedCoupon.description || "No description set for this coupon campaign."}</p>
+                  <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">COUPON Description</span>
+                  <p className="text-[11px] font-bold text-[#382d24] mt-1">{selectedCoupon.description || "No description set for this coupon COUPON."}</p>
                 </div>
                 <div>
                   <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Revenue Generated</span>
@@ -603,7 +586,7 @@ export function CouponCodePage() {
                 }}
                 className="text-red-700 hover:text-red-800 text-[9.5px] font-bold tracking-widest uppercase bg-transparent border-none cursor-pointer"
               >
-                Delete Campaign
+                Delete COUPON
               </button>
               <div className="flex gap-2">
                 <button
@@ -635,7 +618,7 @@ export function CouponCodePage() {
             <div className="p-6 border-b border-neutral-200 flex items-start justify-between">
               <div>
                 <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase">{editCoupon ? "Edit" : "Create New"}</span>
-                <h2 className="text-[17px] font-[950] text-[#382d24] uppercase tracking-widest mt-0.5">{editCoupon ? "Modify Coupon" : "Create Coupon Campaign"}</h2>
+                <h2 className="text-[17px] font-[950] text-[#382d24] uppercase tracking-widest mt-0.5">{editCoupon ? "Modify Coupon" : "Create Coupon"}</h2>
               </div>
               <button onClick={() => setShowModal(false)} className="p-2 border border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-[#382d24] bg-transparent cursor-pointer transition-all">
                 <X className="w-4 h-4" />
@@ -649,9 +632,6 @@ export function CouponCodePage() {
                   <div className="col-span-2">
                     <div className="flex justify-between items-center mb-1.5">
                       <label className="text-[8px] font-bold tracking-widest text-[#615e56] uppercase">Coupon Code</label>
-                      <button type="button" onClick={handleAutoGenerateCode} className="text-[#224870] hover:text-[#382d24] text-[8px] font-bold uppercase tracking-widest flex items-center gap-1 bg-transparent border-none cursor-pointer">
-                        <Sparkles className="w-3 h-3" /> Auto-Generate
-                      </button>
                     </div>
                     <input
                       value={form.code}
@@ -772,24 +752,12 @@ export function CouponCodePage() {
                     <input type="checkbox" checked={form.firstOrderOnly} onChange={e => setForm({ ...form, firstOrderOnly: e.target.checked })} className="accent-[#224870]" />
                     1st Order Only
                   </label>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[8px] font-bold text-[#615e56] uppercase tracking-widest">Segment:</span>
-                    <select
-                      value={form.targetSegment}
-                      onChange={e => setForm({ ...form, targetSegment: e.target.value as any })}
-                      className="bg-card border border-neutral-200 text-[9px] font-bold uppercase focus:outline-none focus:border-[#224870] px-2 py-1 text-[#382d24] cursor-pointer"
-                    >
-                      <option value="all">All Groups</option>
-                      <option value="vip">VIP Only</option>
-                      <option value="new">New Only</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 
               {/* Live Preview Column */}
               <div className="lg:col-span-5 p-6 bg-background flex flex-col justify-center items-center space-y-6">
-                <span className="text-[8.5px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Live Ticket Preview</span>
+                <span className="text-[8.5px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Coupon Preview</span>
                 
                 <div className="bg-[#224870] text-white p-5 relative overflow-hidden select-none w-full max-w-xs shadow-md">
                   <div className="absolute right-0 top-0 bottom-0 w-24 bg-white/5 skew-x-12 translate-x-10" />

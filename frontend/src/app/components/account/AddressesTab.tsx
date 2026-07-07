@@ -108,7 +108,7 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
   };
 
   return (
-    <div className="bg-white border-none p-0">
+    <div className="bg-white border border-neutral-200/80 p-6 md:p-8">
       <div className="flex items-center justify-between pb-4 border-b border-neutral-200 mb-8">
         <div className="flex items-center gap-3">
           <MapPin className="h-5 w-5 text-neutral-400 stroke-[1.5]" />

@@ -82,7 +82,7 @@ export const productApi = {
 
   // Update existing product (Multipart Form Data)
   updateProduct: async (id: number, formData: FormData, token: string): Promise<any> => {
-    const response = await axios.put(`${BASE_URL}/${id}`, formData, {
+    const response = await axios.post(`${BASE_URL}/${id}`, formData, {
       headers: {
         Authorization: `Bearer ${token}`
       }
