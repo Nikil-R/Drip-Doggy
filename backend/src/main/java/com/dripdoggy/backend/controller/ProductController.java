@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -27,11 +26,6 @@ public class ProductController {
     @Autowired
     public ProductController(IProductService productService) {
         this.productService = productService;
-    }
-
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.setDisallowedFields("variants*.images", "variants[*].images");
     }
 
     @PostMapping
