@@ -35,6 +35,8 @@ public class CouponRequestDto {
 
     private String description;
 
+    private Boolean firstOrderOnly = false;
+
     // Constructors
     public CouponRequestDto() {
     }
@@ -110,5 +112,13 @@ public class CouponRequestDto {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Boolean getFirstOrderOnly() {
+        return firstOrderOnly;
+    }
+
+    public void setFirstOrderOnly(Boolean firstOrderOnly) {
+        this.firstOrderOnly = firstOrderOnly;
     }
 }
