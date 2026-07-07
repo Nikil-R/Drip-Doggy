@@ -752,18 +752,6 @@ export function CouponCodePage() {
                     <input type="checkbox" checked={form.firstOrderOnly} onChange={e => setForm({ ...form, firstOrderOnly: e.target.checked })} className="accent-[#224870]" />
                     1st Order Only
                   </label>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[8px] font-bold text-[#615e56] uppercase tracking-widest">Segment:</span>
-                    <select
-                      value={form.targetSegment}
-                      onChange={e => setForm({ ...form, targetSegment: e.target.value as any })}
-                      className="bg-card border border-neutral-200 text-[9px] font-bold uppercase focus:outline-none focus:border-[#224870] px-2 py-1 text-[#382d24] cursor-pointer"
-                    >
-                      <option value="all">All Groups</option>
-                      <option value="vip">VIP Only</option>
-                      <option value="new">New Only</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 

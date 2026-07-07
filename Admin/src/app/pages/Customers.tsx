@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useAuthStore } from "@/app/store/auth-store";
+import { customerApi, CustomerStats, CustomerListItem, CustomerDetail } from "@/app/lib/customer-api";
 import {
   Search, MoreVertical, Phone, MapPin, Clock, X, Mail,
   Download, CheckCircle, ShoppingBag, Tag,
@@ -352,8 +354,13 @@ function CustomerAvatar({ name }: { name: string }) {
 }
 
 export function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomersData);
+  const { token } = useAuthStore();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stats, setStats] = useState<CustomerStats | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<CustomerDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
@@ -375,6 +382,66 @@ export function CustomersPage() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Fetch initial list and stats
+  useEffect(() => {
+    if (!token) return;
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const statsData = await customerApi.getCustomerStats(token);
+        setStats(statsData);
+
+        const list = await customerApi.getAllCustomers(token);
+        const mappedList: Customer[] = list.map(item => ({
+          id: `#DD-C${String(item.id).padStart(3, "0")}`,
+          name: item.name || "Unknown Customer",
+          firstName: (item.name || "").split(" ")[0] || "",
+          lastName: (item.name || "").split(" ").slice(1).join(" ") || "",
+          email: item.email || "No Email",
+          phone: item.phone || "—",
+          gender: "Unspecified",
+          dob: "",
+          orders: item.orders,
+          spent: 0,
+          avgOrder: 0,
+          status: (item.status === "active" ? "Active" : item.status === "blocked" ? "Blocked" : item.status === "inactive" ? "Inactive" : "New") as any,
+          address: "",
+          registered: item.registered || "",
+          lastPurchase: "",
+          favCategory: "",
+          lastProduct: ""
+        }));
+        setCustomers(mappedList);
+      } catch (err) {
+        console.error("Error loading customer list", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [token]);
+
+  // Fetch details live when modal is opened
+  useEffect(() => {
+    if (!selectedCustomerId || !token) {
+      setSelectedDetail(null);
+      return;
+    }
+    const loadDetails = async () => {
+      setLoadingDetail(true);
+      try {
+        const rawId = Number(selectedCustomerId.replace(/\D/g, ""));
+        const detail = await customerApi.getCustomerDetails(rawId, token);
+        setSelectedDetail(detail);
+      } catch (err) {
+        console.error("Error loading customer details", err);
+      } finally {
+        setLoadingDetail(false);
+      }
+    };
+    loadDetails();
+  }, [selectedCustomerId, token]);
 
   const handleDateClick = (day: number) => {
     const fm = String(calMonth + 1).padStart(2, "0");
@@ -419,11 +486,17 @@ export function CustomersPage() {
     return list;
   }, [customers, searchQuery, activeTab, dateRange]);
 
-  const handleToggleBlock = (id: string) => {
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, status: c.status === "Blocked" ? "Active" : "Blocked" } : c));
+  const handleToggleBlock = async (id: string) => {
+    if (!token) return;
+    try {
+      const rawId = Number(id.replace(/\D/g, ""));
+      await customerApi.toggleCustomerBlockStatus(rawId, token);
+      setCustomers(prev => prev.map(c => c.id === id ? { ...c, status: c.status === "Blocked" ? "Active" : "Blocked" } : c));
+    } catch (err) {
+      console.error("Failed to toggle block status", err);
+      alert("Error updating block status");
+    }
   };
-
-
 
   const tabs = [
     { id: "all",      label: "All",      count: customers.length },
@@ -434,28 +507,28 @@ export function CustomersPage() {
   const kpiData = [
     {
       label: "Total Customers",
-      value: "18,450",
+      value: stats ? stats.totalCustomers.toLocaleString() : "...",
       trend: "up" as const,
       change: "+22.3%",
       subtitle: "Lifetime registered accounts"
     },
     {
       label: "Active This Month",
-      value: "3,280",
+      value: stats ? stats.activeThisMonth.toLocaleString() : "...",
       trend: "up" as const,
       change: "+15.7%",
       subtitle: "Purchased in last 30 days"
     },
     {
       label: "New This Week",
-      value: "845",
+      value: stats ? stats.newThisWeek.toLocaleString() : "...",
       trend: "up" as const,
       change: "+11.2%",
       subtitle: "Joined in last 7 days"
     },
     {
       label: "Inactive Customers",
-      value: "1,120",
+      value: stats ? stats.inactiveCustomers.toLocaleString() : "...",
       trend: "down" as const,
       change: "-2.5%",
       subtitle: "No orders in last 90 days"
@@ -721,224 +794,234 @@ export function CustomersPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-6 flex-1">
+            {loadingDetail ? (
+              <div className="p-10 text-center text-[10px] font-bold text-[#382d24] uppercase tracking-widest">
+                Loading profile details...
+              </div>
+            ) : selectedDetail ? (
+              <div className="p-6 space-y-6 flex-1">
 
-              {/* 2-col layout to balance heights and prevent blank spaces */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Left Column: Personal Onboarding Profile + Purchase Summary */}
-                <div className="space-y-6">
-                  {/* Onboarding Profile Card */}
-                  <div>
-                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Onboarding Profile</span>
-                  <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm text-[10px] font-bold text-[#615e56]">
-                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Customer ID</span>
-                      <span className="text-[#382d24] font-black text-[10.5px]">{selectedCustomer.id}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">First Name</span>
-                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.firstName}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Last Name</span>
-                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.lastName}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Gender</span>
-                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.gender}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Date of Birth</span>
-                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.dob}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Email</span>
-                      <span className="text-[#224870] font-extrabold text-[10.5px] lowercase truncate select-all">{selectedCustomer.email}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Phone</span>
-                      <span className="text-[#382d24] font-extrabold text-[10.5px] select-all">{selectedCustomer.phone}</span>
-                    </div>
-                  </div>
-                  </div>
-
-                  {/* Purchase Summary Card */}
-                  <div>
-                    <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Purchase Summary</span>
-                    <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm text-[10px] font-bold text-[#615e56]">
-                      <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                        <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Total Orders</span>
-                        <span className="font-black text-[12.5px] text-[#382d24]">{selectedCustomer.orders}</span>
-                      </div>
-                      <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                        <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Last Purchase</span>
-                        <span className="font-extrabold text-[10.5px] text-[#382d24]">{selectedCustomer.lastPurchase}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Date Joined</span>
-                        <span className="font-extrabold text-[10.5px] text-[#382d24]">{selectedCustomer.registered}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Address Module List */}
-                <div>
-                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Shipping Addresses</span>
-                  <div className="space-y-4">
-                    {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
-                      selectedCustomer.addresses.map((addr, idx) => (
-                        <div key={idx} className="border border-neutral-200 p-4 bg-background/50 rounded-sm space-y-2">
-                          <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
-                            <span className="bg-[#224870]/10 text-[#224870] px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-widest rounded-sm">
-                              {addr.label}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-[#615e56] font-semibold space-y-1">
-                            <p className="text-[#382d24] font-black uppercase tracking-wide">
-                              {addr.firstName} {addr.lastName}
-                            </p>
-                            <p className="uppercase">{addr.building}</p>
-                            <p className="uppercase">{addr.street}</p>
-                            <p className="uppercase">{addr.area}</p>
-                            <p className="uppercase font-bold text-[#382d24]">
-                              {addr.city}, {addr.state} — {addr.pincode}
-                            </p>
-                            {addr.deliveryPhone && (
-                              <div className="pt-1.5 border-t border-neutral-100/50 flex items-center gap-1.5 text-neutral-400 font-bold text-[8.5px]">
-                                <span>Alternative Contact:</span>
-                                <span className="text-[#224870] select-all">{addr.deliveryPhone}</span>
-                              </div>
-                            )}
-                          </div>
+                {/* 2-col layout to balance heights and prevent blank spaces */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Left Column: Personal Onboarding Profile + Purchase Summary */}
+                  <div className="space-y-6">
+                    {/* Onboarding Profile Card */}
+                    <div>
+                      <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Onboarding Profile</span>
+                      <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm text-[10px] font-bold text-[#615e56]">
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Customer ID</span>
+                          <span className="text-[#382d24] font-black text-[10.5px]">{selectedCustomerId}</span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="border border-neutral-200 p-6 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
-                        No saved addresses found
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">First Name</span>
+                          <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedDetail.onboardingProfile.firstName || "—"}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Last Name</span>
+                          <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedDetail.onboardingProfile.lastName || "—"}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Gender</span>
+                          <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedDetail.onboardingProfile.gender || "—"}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Date of Birth</span>
+                          <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedDetail.onboardingProfile.dob || "—"}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Email</span>
+                          <span className="text-[#224870] font-extrabold text-[10.5px] lowercase truncate select-all">{selectedDetail.onboardingProfile.email || "—"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Phone</span>
+                          <span className="text-[#382d24] font-extrabold text-[10.5px] select-all">{selectedDetail.onboardingProfile.phone || "—"}</span>
+                        </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Purchase Summary Card */}
+                    <div>
+                      <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Purchase Summary</span>
+                      <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm text-[10px] font-bold text-[#615e56]">
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Total Orders</span>
+                          <span className="font-black text-[12.5px] text-[#382d24]">{selectedDetail.purchaseSummary.totalOrders}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Last Purchase</span>
+                          <span className="font-extrabold text-[10.5px] text-[#382d24]">{selectedDetail.purchaseSummary.lastPurchase || "—"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Date Joined</span>
+                          <span className="font-extrabold text-[10.5px] text-[#382d24]">{selectedDetail.purchaseSummary.dateJoined || "—"}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-              </div>
-
-              {/* Order History */}
-              <div>
-                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
-                  Recent Orders History
-                </span>
-                {selectedCustomer.recentOrders && selectedCustomer.recentOrders.length > 0 ? (
-                  <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30 text-[10px]">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-neutral-200 bg-background/50 text-[8.5px] text-[#615e56] font-bold tracking-widest uppercase">
-                          <th className="p-3">Order ID</th>
-                          <th className="p-3">Date</th>
-                          <th className="p-3">Amount</th>
-                          <th className="p-3">Payment</th>
-                          <th className="p-3">Delivery Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100">
-                        {selectedCustomer.recentOrders.map((ord, idx) => (
-                          <tr key={idx} className="text-[#382d24] font-semibold">
-                            <td className="p-3 font-mono font-black text-[#224870]">{ord.id}</td>
-                            <td className="p-3">{ord.date}</td>
-                            <td className="p-3 font-black">{RS}{ord.amount.toLocaleString("en-IN")}</td>
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
-                                ord.payment === 'Paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
-                              }`}>
-                                {ord.payment}
+                  {/* Right Column: Address Module List */}
+                  <div>
+                    <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Shipping Addresses</span>
+                    <div className="space-y-4">
+                      {selectedDetail.shippingAddresses && selectedDetail.shippingAddresses.length > 0 ? (
+                        selectedDetail.shippingAddresses.map((addr, idx) => (
+                          <div key={idx} className="border border-neutral-200 p-4 bg-background/50 rounded-sm space-y-2">
+                            <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                              <span className="bg-[#224870]/10 text-[#224870] px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-widest rounded-sm">
+                                Address #{idx + 1}
                               </span>
-                            </td>
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
-                                ord.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                              }`}>
-                                {ord.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
-                    No orders placed yet
-                  </div>
-                )}
-              </div>
-
-              {/* Shopping Cart List */}
-              <div>
-                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
-                  Shopping Cart Items
-                </span>
-                {selectedCustomer.cartItems && selectedCustomer.cartItems.length > 0 ? (
-                  <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30">
-                    {selectedCustomer.cartItems.map((item, index) => (
-                      <div key={index} className="p-3.5 flex items-center justify-between border-b border-neutral-200 last:border-b-0">
-                        <div className="flex items-center gap-3">
-                          <img src={item.image} alt={item.name} className="w-10 h-10 object-cover border border-neutral-200 rounded-sm" />
-                          <div>
-                            <p className="text-[10px] font-black text-[#382d24] uppercase tracking-wide">{item.name}</p>
-                            <div className="flex gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">
-                              <span>Color: {item.color}</span>
-                              <span>•</span>
-                              <span>Size: {item.size}</span>
+                            </div>
+                            <div className="text-[10px] text-[#615e56] font-semibold space-y-1">
+                              <p className="text-[#382d24] font-black uppercase tracking-wide">
+                                {addr.firstName} {addr.lastName}
+                              </p>
+                              <p className="uppercase">{addr.addressLine1}</p>
+                              <p className="uppercase">{addr.addressLine2}</p>
+                              <p className="uppercase font-bold text-[#382d24]">
+                                {addr.city}, {addr.state} — {addr.postalCode}
+                              </p>
+                              <p className="uppercase text-[8px] text-neutral-400">{addr.country}</p>
+                              {addr.phone && (
+                                <div className="pt-1.5 border-t border-neutral-100/50 flex items-center gap-1.5 text-neutral-400 font-bold text-[8.5px]">
+                                  <span>Contact Phone:</span>
+                                  <span className="text-[#224870] select-all">{addr.phone}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="border border-neutral-200 p-6 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                          No saved addresses found
                         </div>
-                        <div className="text-right">
-                          <p className="text-[10.5px] font-black text-[#382d24]">{RS}{item.price.toLocaleString("en-IN")}</p>
-                          <p className="text-[8.5px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">Qty: {item.quantity}</p>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Order History */}
+                <div>
+                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
+                    Recent Orders History
+                  </span>
+                  {selectedDetail.recentOrders && selectedDetail.recentOrders.length > 0 ? (
+                    <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30 text-[10px]">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b border-neutral-200 bg-background/50 text-[8.5px] text-[#615e56] font-bold tracking-widest uppercase">
+                            <th className="p-3">Order ID</th>
+                            <th className="p-3">Date</th>
+                            <th className="p-3">Amount</th>
+                            <th className="p-3">Payment</th>
+                            <th className="p-3">Delivery Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                          {selectedDetail.recentOrders.map((ord, idx) => (
+                            <tr key={idx} className="text-[#382d24] font-semibold">
+                              <td className="p-3 font-mono font-black text-[#224870]">{ord.id}</td>
+                              <td className="p-3">{ord.date}</td>
+                              <td className="p-3 font-black">{RS}{ord.amount.toLocaleString("en-IN")}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
+                                  ord.payment === 'Paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                }`}>
+                                  {ord.payment}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
+                                  ord.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                                }`}>
+                                  {ord.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                      No orders placed yet
+                    </div>
+                  )}
+                </div>
+
+                {/* Shopping Cart List */}
+                <div>
+                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
+                    Shopping Cart Items
+                  </span>
+                  {selectedDetail.shoppingCartItems && selectedDetail.shoppingCartItems.length > 0 ? (
+                    <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30">
+                      {selectedDetail.shoppingCartItems.map((item, index) => (
+                        <div key={index} className="p-3.5 flex items-center justify-between border-b border-neutral-200 last:border-b-0">
+                          <div className="flex items-center gap-3">
+                            <img src={item.imageUrl} alt={item.productName} className="w-10 h-10 object-cover border border-neutral-200 rounded-sm" />
+                            <div>
+                              <p className="text-[10px] font-black text-[#382d24] uppercase tracking-wide">{item.productName}</p>
+                              <div className="flex gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">
+                                <span>Color: {item.color}</span>
+                                <span>•</span>
+                                <span>Size: {item.size}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10.5px] font-black text-[#382d24]">{RS}{item.price.toLocaleString("en-IN")}</p>
+                            <p className="text-[8.5px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">Qty: {item.quantity}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
-                    No items in cart
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                      No items in cart
+                    </div>
+                  )}
+                </div>
 
-              {/* Wishlist List */}
-              <div>
-                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
-                  Wishlist Styles
-                </span>
-                {selectedCustomer.wishlist && selectedCustomer.wishlist.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCustomer.wishlist.map(w => (
-                      <span key={w} className="bg-[#224870]/8 border border-[#224870]/20 text-[#224870] px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider rounded-sm">
-                        {w}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
-                    No items in wishlist
-                  </div>
-                )}
-              </div>
+                {/* Wishlist List */}
+                <div>
+                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
+                    Wishlist Styles
+                  </span>
+                  {selectedDetail.wishlistStyles && selectedDetail.wishlistStyles.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDetail.wishlistStyles.map(w => (
+                        <span key={w} className="bg-[#224870]/8 border border-[#224870]/20 text-[#224870] px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider rounded-sm">
+                          {w}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                      No items in wishlist
+                    </div>
+                  )}
+                </div>
 
-              {/* Customer Actions */}
-              <div>
-                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Customer Actions</span>
-                <button
-                  onClick={() => handleToggleBlock(selectedCustomer.id)}
-                  className="w-full bg-card border border-neutral-200 hover:border-red-500 hover:text-red-500 text-neutral-600 py-2.5 text-[9px] font-bold uppercase tracking-widest cursor-pointer rounded-full flex items-center justify-center gap-2 transition-all"
-                >
-                  <UserX className="w-3.5 h-3.5" />
-                  {selectedCustomer.status === "Blocked" ? "Unblock Account" : "Block Account"}
-                </button>
+                {/* Customer Actions */}
+                <div>
+                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Customer Actions</span>
+                  <button
+                    onClick={() => handleToggleBlock(selectedCustomer.id)}
+                    className="w-full bg-card border border-neutral-200 hover:border-red-500 hover:text-red-500 text-neutral-600 py-2.5 text-[9px] font-bold uppercase tracking-widest cursor-pointer rounded-full flex items-center justify-center gap-2 transition-all"
+                  >
+                    <UserX className="w-3.5 h-3.5" />
+                    {selectedCustomer.status === "Blocked" ? "Unblock Account" : "Block Account"}
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-10 text-center text-[10px] font-bold text-red-500 uppercase tracking-widest">
+                Failed to load profile details
+              </div>
+            )}
 
             {/* Modal Footer */}
             <div className="p-5 border-t border-neutral-200 flex items-center justify-end bg-card sticky bottom-0">
