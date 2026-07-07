@@ -46,6 +46,9 @@ public class Coupon {
     @Column(name = "used_count", nullable = false)
     private Integer usedCount = 0;
 
+    @Column(name = "first_order_only", nullable = false)
+    private Boolean firstOrderOnly = false;
+
     @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CouponFilter> couponFilters;
 
@@ -65,9 +68,10 @@ public class Coupon {
         this.isActive = isActive;
         this.couponFilters = couponFilters;
         this.usedCount = 0;
+        this.firstOrderOnly = false;
     }
 
-    public Coupon(Long id, String code, DiscountType discountType, BigDecimal discountValue, BigDecimal minOrder, LocalDate startingDate, LocalDate expiryDate, Integer limit, Boolean isActive, List<CouponFilter> couponFilters, String description, Integer usedCount) {
+    public Coupon(Long id, String code, DiscountType discountType, BigDecimal discountValue, BigDecimal minOrder, LocalDate startingDate, LocalDate expiryDate, Integer limit, Boolean isActive, List<CouponFilter> couponFilters, String description, Integer usedCount, Boolean firstOrderOnly) {
         this.id = id;
         this.code = code;
         this.discountType = discountType;
@@ -80,6 +84,7 @@ public class Coupon {
         this.couponFilters = couponFilters;
         this.description = description;
         this.usedCount = usedCount != null ? usedCount : 0;
+        this.firstOrderOnly = firstOrderOnly != null ? firstOrderOnly : false;
     }
 
     // Getters and Setters
@@ -177,5 +182,13 @@ public class Coupon {
 
     public void setUsedCount(Integer usedCount) {
         this.usedCount = usedCount;
+    }
+
+    public Boolean getFirstOrderOnly() {
+        return firstOrderOnly;
+    }
+
+    public void setFirstOrderOnly(Boolean firstOrderOnly) {
+        this.firstOrderOnly = firstOrderOnly;
     }
 }

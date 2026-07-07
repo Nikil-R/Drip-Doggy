@@ -15,6 +15,7 @@ public class CouponResponseDto {
     private Integer usedCount;
     private Boolean isActive;
     private String description;
+    private Boolean firstOrderOnly;
 
     // Constructors
     public CouponResponseDto() {
@@ -32,6 +33,22 @@ public class CouponResponseDto {
         this.usedCount = usedCount;
         this.isActive = isActive;
         this.description = description;
+        this.firstOrderOnly = false;
+    }
+
+    public CouponResponseDto(Long id, String code, String discountType, BigDecimal discountValue, BigDecimal minOrder, LocalDate startingDate, LocalDate expiryDate, Integer limit, Integer usedCount, Boolean isActive, String description, Boolean firstOrderOnly) {
+        this.id = id;
+        this.code = code;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minOrder = minOrder;
+        this.startingDate = startingDate;
+        this.expiryDate = expiryDate;
+        this.limit = limit;
+        this.usedCount = usedCount;
+        this.isActive = isActive;
+        this.description = description;
+        this.firstOrderOnly = firstOrderOnly;
     }
 
     // Getters and Setters
@@ -121,5 +138,13 @@ public class CouponResponseDto {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Boolean getFirstOrderOnly() {
+        return firstOrderOnly;
+    }
+
+    public void setFirstOrderOnly(Boolean firstOrderOnly) {
+        this.firstOrderOnly = firstOrderOnly;
     }
 }
