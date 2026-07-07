@@ -1,8 +1,13 @@
 import { Heart, Star, ShoppingBag, Plus, Minus, RotateCcw } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useSearchParams, useNavigate } from "react-router";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { products as catalogProducts } from "../../data/products";
 import type { Product } from "../../data/products";
+import { productApi } from "../../lib/product-api";
+import { cartApi } from "../../lib/cart-api";
+import { syncCart } from "../../lib/cart-sync";
+import { wishlistApi } from "../../lib/wishlist-api";
+import { syncWishlist } from "../../lib/wishlist-sync";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -129,10 +134,10 @@ function ProductCard({
         {/* Badge */}
         {product.badge && (
           <span
-            className={`absolute top-4 left-4 text-[9px] font-bold tracking-[0.15em] px-3 py-1.5 z-10 ${
+            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-2 py-0.5 sm:px-3 sm:py-1 z-10 bg-white/75 backdrop-blur-xs border border-white/40 rounded-xs shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${
               product.badge === "SOLD OUT"
-                ? "bg-neutral-100 text-neutral-500"
-                : "bg-white text-[#030213]"
+                ? "text-neutral-500"
+                : "text-[#030213]"
             }`}
           >
             {product.badge}
@@ -142,12 +147,12 @@ function ProductCard({
         {/* Wishlist Heart */}
         <button
           onClick={onToggleFav}
-          className="absolute top-4 right-4 bg-white/95 text-neutral-800 p-2 shadow-sm hover:text-red-500 transition-colors z-10 bg-transparent border-none cursor-pointer"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/75 backdrop-blur-xs text-neutral-800 p-1.5 sm:p-2 border border-white/40 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:text-[#fd6585] transition-all z-10 cursor-pointer"
           aria-label={isFav ? "Remove from wishlist" : "Add to wishlist"}
         >
           <Heart
-            className={`h-4 w-4 stroke-[1.5] ${
-              isFav ? "fill-red-500 stroke-red-500" : ""
+            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[1.5] transition-colors ${
+              isFav ? "fill-[#fd6585] stroke-[#fd6585]" : "stroke-neutral-800"
             }`}
           />
         </button>
@@ -155,46 +160,31 @@ function ProductCard({
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1.5 mt-1">
-        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">
-          {product.brand}
-        </span>
+      <div className="flex flex-col gap-1 mt-1">
         <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1">
           {product.name}
         </h3>
 
-        <div className="flex items-baseline gap-2 mt-0.5">
-          <span className="text-sm font-extrabold text-neutral-900">
-            ₹{product.price.toFixed(2)}
-          </span>
-          {product.originalPrice && (
-            <>
-              <span className="text-xs font-semibold text-neutral-450 line-through">
-                ₹{product.originalPrice.toFixed(2)}
-              </span>
-              {discount > 0 && (
-                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
-                  {discount}% OFF
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+              ₹{Math.floor(product.price)}
+            </span>
+            {product.originalPrice && (
+              <>
+                <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through">
+                  ₹{Math.floor(product.originalPrice)}
                 </span>
-              )}
-            </>
-          )}
-        </div>
-
-        {product.colors && product.colors.length > 0 && (
-          <div className="flex gap-1.5">
-            {product.colors.map((c, i) => (
-              <div
-                key={i}
-                className="w-2.5 h-2.5 border border-neutral-200"
-                style={{ backgroundColor: c }}
-              />
-            ))}
+                {discount > 0 && (
+                  <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
+                    {discount}% OFF
+                  </span>
+                )}
+              </>
+            )}
           </div>
-        )}
 
-        {product.rating && (
-          <div className="flex items-center text-neutral-800">
+          <div className="flex items-center text-neutral-800 flex-shrink-0">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
@@ -202,7 +192,7 @@ function ProductCard({
               />
             ))}
           </div>
-        )}
+        </div>
       </div>
     </Link>
   );
@@ -212,6 +202,7 @@ function ProductCard({
 
 export function ProductGrid() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const collectionParam = searchParams.get("collection");
   const newParam = searchParams.get("new");
   const categoryParam = searchParams.get("category");
@@ -226,8 +217,19 @@ export function ProductGrid() {
   const [visibleCount, setVisibleCount] = useState(6);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  // Use shared catalog — no more hardcoded products
-  const [products] = useState<Product[]>(catalogProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const list = await productApi.fetchProducts();
+        setProducts(list);
+      } catch (err) {
+        console.error("Error loading products in shop page", err);
+      }
+    }
+    loadProducts();
+  }, []);
 
   // ─── Wishlist sync ────────────────────────────────────────────────────
   const [wishlistedIds, setWishlistedIds] = useState<Set<number>>(() => {
@@ -300,98 +302,121 @@ export function ProductGrid() {
     return cartLookup.get(key) ?? 0;
   };
 
-  const handleAddToBag = (product: Product, e: React.MouseEvent) => {
+  const handleAddToBag = async (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("cart");
       let items: any[] = stored ? JSON.parse(stored) : [];
       const cartItemId = `${product.id}-Default-S`;
       const existing = items.find((i: any) => i.cartItemId === cartItemId);
-      if (existing) {
-        existing.quantity += 1;
+
+      if (existing && existing.backendId) {
+        await cartApi.updateQuantity(existing.backendId, existing.quantity + 1);
       } else {
-        items.push({
-          id: product.id,
-          cartItemId,
-          brand: product.brand,
-          name: product.name,
-          size: "S",
-          color: "Default",
-          price: product.price,
-          quantity: 1,
-          image: product.image,
-        });
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === "default"
+        ) || product.rawVariants?.[0];
+        const sizeObj = variant?.sizes?.find((s: any) => s.sizeName === "S");
+        const sizeId = sizeObj?.id;
+        if (sizeId) {
+          await cartApi.addToCart(sizeId, 1);
+        } else {
+          console.error("Size ID not found for handleAddToBag:", product.id);
+        }
       }
-      localStorage.setItem("cart", JSON.stringify(items));
-      window.dispatchEvent(new Event("cart-updated"));
+      await syncCart();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleUpdateQty = (
+  const handleUpdateQty = async (
     product: Product,
     newQty: number,
     e: React.MouseEvent
   ) => {
     e.preventDefault();
     e.stopPropagation();
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("cart");
       let items: any[] = stored ? JSON.parse(stored) : [];
       const cartItemId = `${product.id}-Default-S`;
+      const existing = items.find((i: any) => i.cartItemId === cartItemId);
 
       if (newQty <= 0) {
-        items = items.filter((i: any) => i.cartItemId !== cartItemId);
+        if (existing && existing.backendId) {
+          await cartApi.removeFromCart(existing.backendId);
+        }
       } else {
-        const existing = items.find((i: any) => i.cartItemId === cartItemId);
-        if (existing) {
-          existing.quantity = newQty;
+        if (existing && existing.backendId) {
+          await cartApi.updateQuantity(existing.backendId, newQty);
         } else {
-          items.push({
-            id: product.id,
-            cartItemId,
-            brand: product.brand,
-            name: product.name,
-            size: "S",
-            color: "Default",
-            price: product.price,
-            quantity: newQty,
-            image: product.image,
-          });
+          const variant = product.rawVariants?.find(
+            (v: any) => (v.variantName || "Default").toLowerCase() === "default"
+          ) || product.rawVariants?.[0];
+          const sizeObj = variant?.sizes?.find((s: any) => s.sizeName === "S");
+          const sizeId = sizeObj?.id;
+          if (sizeId) {
+            await cartApi.addToCart(sizeId, newQty);
+          } else {
+            console.error("Size ID not found for handleUpdateQty:", product.id);
+          }
         }
       }
-      localStorage.setItem("cart", JSON.stringify(items));
-      window.dispatchEvent(new Event("cart-updated"));
+      await syncCart();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
+  const toggleWishlist = async (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("wishlist");
       let list: any[] = stored ? JSON.parse(stored) : [];
-      const exists = list.some((item: any) => item.id === product.id);
+      const existing = list.find((item: any) => item.id === product.id);
 
-      if (exists) {
-        list = list.filter((item: any) => item.id !== product.id);
+      if (existing) {
+        if (existing.backendId) {
+          await wishlistApi.removeFromWishlist(existing.backendId);
+        }
       } else {
-        list.push({
-          id: product.id,
-          brand: product.brand,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-        });
+        const variant = product.rawVariants?.find(
+          (v: any) => (v.variantName || "Default").toLowerCase() === "default"
+        ) || product.rawVariants?.[0];
+        const sizeObj = variant?.sizes?.find((s: any) => s.sizeName === "S") || variant?.sizes?.[0];
+        const sizeId = sizeObj?.id;
+        if (sizeId) {
+          await wishlistApi.addToWishlist(sizeId);
+        } else {
+          console.error("Size ID not found for wishlist:", product.id);
+        }
       }
-      localStorage.setItem("wishlist", JSON.stringify(list));
-      window.dispatchEvent(new Event("wishlist-updated"));
-    } catch (err) {
+      await syncWishlist();
+    } catch (err: any) {
       console.error(err);
+      const msg = err?.response?.data?.message || err?.message || "Failed to update wishlist.";
+      alert(msg);
     }
   };
 
@@ -523,7 +548,7 @@ export function ProductGrid() {
       // Price range filter
       const [minPrice, maxPrice] = priceRangeParam
         ? priceRangeParam.split("-").map(Number)
-        : [0, 500];
+        : [0, 10000];
       if (product.price < minPrice || product.price > maxPrice) return false;
 
       return true;

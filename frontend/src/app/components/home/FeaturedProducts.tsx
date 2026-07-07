@@ -68,12 +68,12 @@ function ProductCard({ product }: { product: Product }) {
         </h3>
         <div className="flex items-baseline gap-2 mt-0.5">
           <span className="text-sm font-extrabold text-neutral-900">
-            ₹{product.price.toFixed(2)}
+            ₹{product.price.toFixed(0)}
           </span>
           {product.originalPrice && (
             <>
               <span className="text-[10px] font-semibold text-neutral-450 line-through">
-                ₹{product.originalPrice.toFixed(2)}
+                ₹{product.originalPrice.toFixed(0)}
               </span>
               {product.originalPrice > product.price && (
                 <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">

@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MapPin, Plus, Edit2, Trash2, BadgeCheck } from "lucide-react";
 import type { AddressItem } from "../../types/account";
+import { addressApi } from "../../lib/address-api";
 
 interface AddressesTabProps {
   addresses: AddressItem[];
@@ -11,16 +12,12 @@ interface AddressesTabProps {
 export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabProps) {
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
+  const [addressToDelete, setAddressToDelete] = useState<number | null>(null);
   const [addressForm, setAddressForm] = useState({
     type: "HOME", otherName: "", firstName: "", lastName: "",
     buildingNo: "", buildingName: "", street: "", area: "",
     city: "", state: "", postalCode: "", phone: "", isDefault: false,
   });
-
-  // Sync addresses to localStorage
-  useEffect(() => {
-    localStorage.setItem("addresses", JSON.stringify(addresses));
-  }, [addresses]);
 
   const handleOpenAddAddress = () => {
     setEditingAddressId(null);
@@ -48,44 +45,70 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
     setIsAddressFormOpen(true);
   };
 
-  const handleDeleteAddress = (id: number, e: React.MouseEvent) => {
+  const handleSetDefault = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setAddresses(prev => prev.filter(a => a.id !== id));
+    try {
+      await addressApi.setDefaultAddress(id);
+      const list = await addressApi.getAddresses();
+      setAddresses(list);
+    } catch (err) {
+      console.error("Error setting default address:", err);
+    }
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const confirmDeleteAddress = async () => {
+    if (addressToDelete !== null) {
+      try {
+        await addressApi.deleteAddress(addressToDelete);
+        const list = await addressApi.getAddresses();
+        setAddresses(list);
+      } catch (err) {
+        console.error("Error deleting address:", err);
+      } finally {
+        setAddressToDelete(null);
+      }
+    }
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalType = addressForm.type === "OTHER"
       ? (addressForm.otherName.trim() || "OTHER").toUpperCase()
       : addressForm.type;
 
-    if (editingAddressId !== null) {
-      setAddresses(prev => prev.map(addr =>
-        addr.id === editingAddressId
-          ? { ...addr, type: finalType, firstName: addressForm.firstName, lastName: addressForm.lastName,
-              buildingNo: addressForm.buildingNo, buildingName: addressForm.buildingName, street: addressForm.street,
-              area: addressForm.area, city: addressForm.city, state: addressForm.state,
-              postalCode: addressForm.postalCode, phone: addressForm.phone, isDefault: addressForm.isDefault ? true : addr.isDefault }
-          : addressForm.isDefault ? { ...addr, isDefault: false } : addr
-      ));
-    } else {
-      const newAddr: AddressItem = {
-        id: Date.now(), type: finalType, firstName: addressForm.firstName, lastName: addressForm.lastName,
-        buildingNo: addressForm.buildingNo, buildingName: addressForm.buildingName,
-        street: addressForm.street, area: addressForm.area, city: addressForm.city, state: addressForm.state,
-        postalCode: addressForm.postalCode, phone: addressForm.phone, isDefault: addressForm.isDefault || addresses.length === 0,
-      };
-      setAddresses(prev => addressForm.isDefault
-        ? prev.map(a => ({ ...a, isDefault: false })).concat(newAddr)
-        : [...prev, newAddr]
-      );
+    const requestPayload = {
+      type: finalType,
+      firstName: addressForm.firstName,
+      lastName: addressForm.lastName,
+      buildingNo: addressForm.buildingNo,
+      buildingName: addressForm.buildingName,
+      street: addressForm.street,
+      area: addressForm.area,
+      city: addressForm.city,
+      state: addressForm.state,
+      postalCode: addressForm.postalCode,
+      phone: addressForm.phone,
+      isDefault: addressForm.isDefault,
+    };
+
+    try {
+      if (editingAddressId !== null) {
+        await addressApi.updateAddress(editingAddressId, requestPayload);
+      } else {
+        await addressApi.createAddress(requestPayload);
+      }
+      const list = await addressApi.getAddresses();
+      setAddresses(list);
+    } catch (err) {
+      console.error("Error saving address:", err);
     }
+
     setIsAddressFormOpen(false);
     setEditingAddressId(null);
   };
 
   return (
-    <div className="bg-white border border-neutral-200/80 p-8">
+    <div className="bg-white border border-neutral-200/80 p-6 md:p-8">
       <div className="flex items-center justify-between pb-4 border-b border-neutral-200 mb-8">
         <div className="flex items-center gap-3">
           <MapPin className="h-5 w-5 text-neutral-400 stroke-[1.5]" />
@@ -256,14 +279,45 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
                     <Edit2 className="h-3 w-3 stroke-[1.5]" /> Edit
                   </button>
                   <span className="text-neutral-200">|</span>
-                  <button onClick={(e) => handleDeleteAddress(addr.id, e)}
+                  <button onClick={(e) => { e.stopPropagation(); setAddressToDelete(addr.id); }}
                     className="flex items-center gap-1 text-[8px] font-extrabold tracking-widest uppercase text-red-400 hover:text-red-600 transition-colors bg-transparent border-none cursor-pointer">
                     <Trash2 className="h-3 w-3 stroke-[1.5]" /> Remove
                   </button>
+                  {!addr.isDefault && (
+                    <>
+                      <span className="text-neutral-200">|</span>
+                      <button onClick={(e) => handleSetDefault(addr.id, e)}
+                        className="flex items-center gap-1 text-[8px] font-extrabold tracking-widest uppercase text-green-600 hover:text-green-800 transition-colors bg-transparent border-none cursor-pointer">
+                        Set as Default
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {addressToDelete !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
+          <div className="bg-white border border-neutral-200 p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-xs font-black tracking-[0.2em] text-[#030213] uppercase mb-2">Delete Address?</h3>
+            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider leading-relaxed mb-6">
+              Are you sure you want to delete this address permanently? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={confirmDeleteAddress}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white text-[9px] font-extrabold tracking-widest py-2.5 uppercase border-none cursor-pointer transition-colors">
+                Delete
+              </button>
+              <button onClick={() => setAddressToDelete(null)}
+                className="flex-1 bg-transparent text-neutral-500 hover:text-[#030213] text-[9px] font-extrabold tracking-widest py-2.5 uppercase border border-neutral-200 cursor-pointer transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

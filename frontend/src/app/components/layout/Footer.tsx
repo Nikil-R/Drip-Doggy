@@ -225,10 +225,10 @@ export function Footer() {
           <div className="lg:hidden space-y-2">
             <div className="space-y-4 pb-6 border-b border-neutral-200/70">
               <div className="flex items-center gap-3">
-                <img src={logoIcon} alt="" className="h-9 w-auto object-contain mix-blend-multiply" />
-                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-10 w-auto object-contain mix-blend-multiply" />
+                <img src={logoIcon} alt="" className="h-22 w-auto object-contain mix-blend-multiply" />
+                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-24 w-auto object-contain mix-blend-multiply" />
               </div>
-              <span className="block text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase font-bold">
+              <span className="block text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase">
                 {config.tagline || "Luxury Streetwear / Est. 2026"}
               </span>
               <p className="text-xs text-neutral-500 leading-relaxed font-light">

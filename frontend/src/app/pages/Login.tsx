@@ -28,6 +28,16 @@ export function Login() {
   const [resendTimer, setResendTimer] = useState(0);
   const [verifiedMethod, setVerifiedMethod] = useState<"email" | "phone" | null>(null);
 
+  const handleIdentifierChange = (val: string) => {
+    const isNumericStart = /^[0-9]/.test(val);
+    if (isNumericStart) {
+      const cleaned = val.replace(/\D/g, "").slice(0, 10);
+      setIdentifier(cleaned);
+    } else {
+      setIdentifier(val);
+    }
+  };
+
   const fromPath = (location.state as { from?: { pathname: string } })?.from?.pathname;
   const isCheckoutFlow = fromPath?.includes("checkout");
 
@@ -57,17 +67,30 @@ export function Login() {
     setError(null);
     setIsSubmitting(true);
 
+    const isNumeric = /^\d+$/.test(identifier);
+    let finalId = identifier.trim();
+
+    if (isNumeric) {
+      if (identifier.length !== 10) {
+        setError("Please enter a valid 10-digit phone number.");
+        setIsSubmitting(false);
+        return;
+      }
+      finalId = `+91${identifier}`;
+    }
+
     try {
-      const result = await requestOtp(identifier);
+      const result = await requestOtp(finalId);
       if (!result.success) {
         setError(result.message ?? "Something went wrong.");
         setIsSubmitting(false);
         return;
       }
+      setIdentifier(finalId);
       setStep("otp");
       setOtp("");
       setResendTimer(30);
-      setVerifiedMethod(identifier.includes("@") ? "email" : "phone");
+      setVerifiedMethod(finalId.includes("@") ? "email" : "phone");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -118,6 +141,9 @@ export function Login() {
     setStep("identifier");
     setError(null);
     setOtp("");
+    if (identifier.startsWith("+91")) {
+      setIdentifier(identifier.replace("+91", ""));
+    }
   };
 
   const isEmail = identifier.includes("@");
@@ -234,10 +260,10 @@ export function Login() {
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
-                  {isEmail || identifier.length === 0 ? (
-                    <Mail className="h-4 w-4 stroke-[1.5]" />
-                  ) : (
+                  {/^[0-9]/.test(identifier) ? (
                     <Smartphone className="h-4 w-4 stroke-[1.5]" />
+                  ) : (
+                    <Mail className="h-4 w-4 stroke-[1.5]" />
                   )}
                 </div>
                 <input
@@ -245,15 +271,15 @@ export function Login() {
                   id="identifier"
                   required
                   value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="ENTER EMAIL OR PHONE"
-                  className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
+                  onChange={(e) => handleIdentifierChange(e.target.value)}
+                  placeholder="ENTER EMAIL OR 10-DIGIT PHONE"
+                  className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400 uppercase"
                   autoComplete="username"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                   {identifier.length > 0 && (
                     <span className="text-[7px] font-extrabold tracking-widest text-neutral-400 uppercase">
-                      {isEmail ? "EMAIL" : "PHONE"}
+                      {/^\d+$/.test(identifier) ? "PHONE" : "EMAIL"}
                     </span>
                   )}
                 </div>

@@ -74,8 +74,8 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
           <td style="color:#888;font-size:9px;">${item.brand}</td>
           <td style="color:#888;font-size:9px;">${item.size} / ${item.color}</td>
           <td class="amount">${item.quantity}</td>
-          <td class="amount">₹${item.price.toFixed(2)}</td>
-          <td class="amount">₹${(item.price * item.quantity).toFixed(2)}</td>
+          <td class="amount">₹${item.price.toFixed(0)}</td>
+          <td class="amount">₹${(item.price * item.quantity).toFixed(0)}</td>
         </tr>
       `).join('')}
     </tbody>
@@ -84,7 +84,7 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
   <div style="margin-left:auto;width:280px;">
     <div class="payment-row">
       <span class="payment-label">Subtotal</span>
-      <span class="payment-value">₹${order.total.toFixed(2)}</span>
+      <span class="payment-value">₹${order.total.toFixed(0)}</span>
     </div>
     <div class="payment-row">
       <span class="payment-label">Delivery</span>
@@ -92,11 +92,11 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
     </div>
     <div class="payment-row">
       <span class="payment-label">Tax (GST 18%)</span>
-      <span class="payment-value">₹${(order.total * 0.18).toFixed(2)}</span>
+      <span class="payment-value">₹${(order.total * 0.18).toFixed(0)}</span>
     </div>
     <div class="grand-total">
       <span style="letter-spacing:1px;text-transform:uppercase;">Total</span>
-      <span>₹${(order.total * 1.18).toFixed(2)}</span>
+      <span>₹${(order.total * 1.18).toFixed(0)}</span>
     </div>
   </div>
 

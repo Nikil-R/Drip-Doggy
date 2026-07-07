@@ -7,6 +7,10 @@ import logoIcon from "../../../assets/new_logo_icon.png";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "../ui/sheet";
 import { SearchOverlay } from "../search/SearchOverlay";
 import { useAuth } from "../../context/AuthContext";
+import { categoryApi, Category } from "../../lib/category-api";
+import { cartApi } from "../../lib/cart-api";
+import { syncCart } from "../../lib/cart-sync";
+import { productApi } from "../../lib/product-api";
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -15,6 +19,63 @@ export function Header() {
   const [navSearchVal, setNavSearchVal] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const list = await categoryApi.fetchCategories();
+        setCategories(list.filter(c => c.isActive !== false));
+      } catch (err) {
+        console.error("Error loading categories in header", err);
+      }
+    }
+    loadCategories();
+  }, []);
+
+  const [navConfig, setNavConfig] = useState<any>(null);
+
+  useEffect(() => {
+    const loadNav = () => {
+      try {
+        const stored = localStorage.getItem("dd_content_navigation");
+        if (stored) {
+          setNavConfig(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    window.addEventListener("dd-content-changed", loadNav);
+    window.addEventListener("storage", loadNav);
+    loadNav();
+
+    return () => {
+      window.removeEventListener("dd-content-changed", loadNav);
+      window.removeEventListener("storage", loadNav);
+    };
+  }, []);
+
+  const categoriesNode = navConfig?.desktopItems?.find(
+    (item: any) => item.label.toLowerCase() === "categories"
+  );
+  const categoriesChildren = categoriesNode?.children || [];
+
+  const dropdownItems = categoriesChildren.length > 0
+    ? categoriesChildren
+    : categories.map((cat) => {
+        const isWomen = cat.categoryName.toLowerCase().includes("women");
+        return {
+          label: cat.categoryName,
+          to: isWomen ? `/shop?category=${cat.categoryName.toLowerCase()}` : "/coming-soon",
+          children: isWomen ? cat.subCategories?.map((sub) => ({
+            label: sub.subcategoryName,
+            to: `/shop?category=${cat.categoryName.toLowerCase()}&subcategory=${sub.subcategoryName.toLowerCase()}`
+          })) : []
+        };
+      });
 
   const [cartItems, setCartItems] = useState<any[]>(() => {
     try {
@@ -138,41 +199,89 @@ export function Header() {
     setPromoError(null);
   };
 
-  const updateItemSize = (cartItemId: string, newSize: string) => {
+  const updateItemSize = async (cartItemId: string, newSize: string) => {
     setIsLoading(true);
     const itemToChange = cartItems.find(item => item.cartItemId === cartItemId);
     if (!itemToChange) {
       setIsLoading(false);
       return;
     }
-    
-    // Calculate new cartItemId
-    const newCartItemId = `${itemToChange.id}-${itemToChange.color}-${newSize}`;
-    
-    // Check if newCartItemId already exists
-    const duplicateIndex = cartItems.findIndex(item => item.cartItemId === newCartItemId);
-    let updated;
-    if (duplicateIndex > -1 && cartItems[duplicateIndex].cartItemId !== cartItemId) {
-      // Merge
-      updated = cartItems.map((item, idx) => {
-        if (idx === duplicateIndex) {
-          return { ...item, quantity: item.quantity + itemToChange.quantity };
+
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token && itemToChange.backendId) {
+      try {
+        const products = await productApi.fetchProducts();
+        let newSizeId: number | null = null;
+        products.forEach(p => {
+          if (p.rawVariants) {
+            p.rawVariants.forEach(v => {
+              const colorName = (v.variantName || "Default").toLowerCase();
+              if (colorName === itemToChange.color.toLowerCase() && v.sizes) {
+                v.sizes.forEach((s: any) => {
+                  if ((s.sizeName || "").toLowerCase() === newSize.toLowerCase()) {
+                    newSizeId = s.id;
+                  }
+                });
+              }
+            });
+          }
+        });
+
+        if (newSizeId) {
+          await cartApi.removeFromCart(itemToChange.backendId);
+          await cartApi.addToCart(newSizeId, itemToChange.quantity);
+          await syncCart();
+        } else {
+          console.warn("Could not resolve backend sizeId for update:", newSize);
         }
-        return item;
-      }).filter(item => item.cartItemId !== cartItemId);
+      } catch (err) {
+        console.error("Error updating size in DB:", err);
+      }
     } else {
-      // Just change size
-      updated = cartItems.map(item => {
-        if (item.cartItemId === cartItemId) {
-          return { ...item, size: newSize, cartItemId: newCartItemId };
-        }
-        return item;
-      });
+      const newCartItemId = `${itemToChange.id}-${itemToChange.color}-${newSize}`;
+      const duplicateIndex = cartItems.findIndex(item => item.cartItemId === newCartItemId);
+      let updated;
+      if (duplicateIndex > -1 && cartItems[duplicateIndex].cartItemId !== cartItemId) {
+        updated = cartItems.map((item, idx) => {
+          if (idx === duplicateIndex) {
+            return { ...item, quantity: item.quantity + itemToChange.quantity };
+          }
+          return item;
+        }).filter(item => item.cartItemId !== cartItemId);
+      } else {
+        updated = cartItems.map(item => {
+          if (item.cartItemId === cartItemId) {
+            return { ...item, size: newSize, cartItemId: newCartItemId };
+          }
+          return item;
+        });
+      }
+      setCartItems(updated);
+      saveCart(updated);
     }
-    
-    setCartItems(updated);
-    saveCart(updated);
-    setTimeout(() => setIsLoading(false), 300);
+    setIsLoading(false);
+  };
+
+  const [productsList, setProductsList] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const list = await productApi.fetchProducts();
+        setProductsList(list);
+      } catch (err) {
+        console.error("Error loading products in header:", err);
+      }
+    }
+    loadProducts();
+  }, []);
+
+  const getAvailableSizesForItem = (item: any) => {
+    const prod = productsList.find(p => p.id === item.id);
+    if (!prod || !prod.rawVariants) return ["XS", "S", "M", "L", "XL", "XXL"]; // default fallback
+    const variant = prod.rawVariants.find((v: any) => (v.variantName || "Default").toLowerCase() === item.color.toLowerCase());
+    if (!variant || !variant.sizes) return ["XS", "S", "M", "L", "XL", "XXL"]; // default fallback
+    return variant.sizes.map((s: any) => s.sizeName).filter(Boolean);
   };
 
   useEffect(() => {
@@ -214,59 +323,113 @@ export function Header() {
     window.dispatchEvent(new Event("cart-updated"));
   };
 
-  const updateQuantity = (cartItemId: string, delta: number) => {
+  const updateQuantity = async (cartItemId: string, delta: number) => {
     setIsLoading(true);
-    const updated = cartItems.map(item => {
-      if (item.cartItemId === cartItemId) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
+    const item = cartItems.find(i => i.cartItemId === cartItemId);
+    if (!item) {
+      setIsLoading(false);
+      return;
+    }
+    const newQty = Math.max(1, item.quantity + delta);
+
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token && item.backendId) {
+      try {
+        await cartApi.updateQuantity(item.backendId, newQty);
+        await syncCart();
+      } catch (err) {
+        console.error("Error updating quantity in DB:", err);
       }
-      return item;
-    });
-    setCartItems(updated);
-    saveCart(updated);
-    setTimeout(() => setIsLoading(false), 300);
+    } else {
+      const updated = cartItems.map(i => {
+        if (i.cartItemId === cartItemId) {
+          return { ...i, quantity: newQty };
+        }
+        return i;
+      });
+      setCartItems(updated);
+      saveCart(updated);
+    }
+    setIsLoading(false);
   };
 
-  const removeItem = (cartItemId: string) => {
+  const removeItem = async (cartItemId: string) => {
     setIsLoading(true);
-    const updated = cartItems.filter(item => item.cartItemId !== cartItemId);
-    setCartItems(updated);
-    saveCart(updated);
-    setTimeout(() => setIsLoading(false), 300);
+    const item = cartItems.find(i => i.cartItemId === cartItemId);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token && item?.backendId) {
+      try {
+        await cartApi.removeFromCart(item.backendId);
+        await syncCart();
+      } catch (err) {
+        console.error("Error removing item from DB:", err);
+      }
+    } else {
+      const updated = cartItems.filter(i => i.cartItemId !== cartItemId);
+      setCartItems(updated);
+      saveCart(updated);
+    }
+    setIsLoading(false);
   };
 
-  const quickShop = (rec: { id: number; name: string; price: number; image: string }) => {
+  const quickShop = async (rec: { id: number; name: string; price: number; image: string }) => {
     setIsLoading(true);
-    let updated;
     const size = "S";
     const color = "Default";
     const cartItemId = `${rec.id}-${color}-${size}`;
     const existing = cartItems.find(item => item.cartItemId === cartItemId);
-    if (existing) {
-      updated = cartItems.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
-    } else {
-      updated = [
-        ...cartItems,
-        {
-          id: rec.id,
-          cartItemId,
-          brand: "DRIP RECOMMENDED",
-          name: rec.name,
-          size,
-          color,
-          price: rec.price,
-          quantity: 1,
-          image: rec.image
-        }
-      ];
-    }
-    setCartItems(updated);
-    saveCart(updated);
-    setTimeout(() => setIsLoading(false), 300);
-  };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token) {
+      try {
+        if (existing && existing.backendId) {
+          await cartApi.updateQuantity(existing.backendId, existing.quantity + 1);
+        } else {
+          const products = await productApi.fetchProducts();
+          const targetProduct = products.find(p => p.id === rec.id);
+          let sizeId: number | null = null;
+          if (targetProduct && targetProduct.rawVariants) {
+            const firstVar = targetProduct.rawVariants[0];
+            if (firstVar && firstVar.sizes) {
+              const matchingSize = firstVar.sizes.find((s: any) => (s.sizeName || "").toLowerCase() === size.toLowerCase()) || firstVar.sizes[0];
+              if (matchingSize) sizeId = matchingSize.id;
+            }
+          }
+          if (sizeId) {
+            await cartApi.addToCart(sizeId, 1);
+          } else {
+            console.warn("Could not find matching sizeId for quickShop item");
+          }
+        }
+        await syncCart();
+      } catch (err) {
+        console.error("Error in DB quickShop:", err);
+      }
+    } else {
+      let updated;
+      if (existing) {
+        updated = cartItems.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
+      } else {
+        updated = [
+          ...cartItems,
+          {
+            id: rec.id,
+            cartItemId,
+            brand: "DRIP RECOMMENDED",
+            name: rec.name,
+            size,
+            color,
+            price: rec.price,
+            quantity: 1,
+            image: rec.image
+          }
+        ];
+      }
+      setCartItems(updated);
+      saveCart(updated);
+    }
+    setIsLoading(false);
+  };  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const FREE_DELIVERY_THRESHOLD = 1999;
@@ -310,52 +473,40 @@ export function Header() {
               </span>
               
               <div className="absolute left-0 top-full pt-1 w-48 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 ease-in-out">
-                <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm">
-                  
-                  {/* Women Dropdown */}
-                  <div className="relative group/sub px-5 py-2 hover:bg-neutral-100/60 flex items-center justify-between">
-                    <Link to="/shop?gender=women" className="hover:text-black transition-colors w-full flex items-center justify-between">
-                      <span>Women</span>
-                      <svg className="w-2 h-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                    
-                    <div className="absolute left-full top-0 pl-1 w-48 opacity-0 pointer-events-none group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto transition-all duration-200 ease-in-out">
-                      <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
-                        <Link to="/shop?gender=women" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          All Women's
-                        </Link>
-                        <Link to="/shop?gender=women&category=dresses" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Dresses
-                        </Link>
-                        <Link to="/shop?gender=women&category=outerwear" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Outerwear
-                        </Link>
-                        <Link to="/shop?gender=women&category=tops" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Tops
-                        </Link>
-                        <Link to="/shop?gender=women&category=skirts" className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors">
-                          Skirts
-                        </Link>
-                      </div>
+                <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
+                  {dropdownItems.map((cat: any, catIdx: number) => (
+                    <div key={catIdx} className="relative group/sub px-5 py-2 hover:bg-neutral-100/60 flex items-center justify-between">
+                      <Link to={cat.to} className="hover:text-black transition-colors w-full flex items-center justify-between">
+                        <span>{cat.label}</span>
+                        {cat.children && cat.children.length > 0 && (
+                          <svg className="w-2.5 h-2.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                          </svg>
+                        )}
+                      </Link>
+                      
+                      {cat.children && cat.children.length > 0 && (
+                        <div className="absolute left-full top-0 pl-1 w-48 opacity-0 pointer-events-none group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto transition-all duration-200 ease-in-out">
+                          <div className="bg-[#FAF8F5] border border-neutral-200/60 shadow-lg py-2 rounded-sm text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500">
+                            {cat.children.map((sub: any, subIdx: number) => (
+                              <Link 
+                                key={subIdx} 
+                                to={sub.to} 
+                                className="block px-5 py-2 hover:text-black hover:bg-neutral-100/60 transition-colors"
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Men */}
-                  <div className="px-5 py-2 hover:bg-neutral-100/60">
-                    <Link to="/coming-soon" className="block hover:text-black transition-colors">
-                      Men
-                    </Link>
-                  </div>
-
-                  {/* Accessories */}
-                  <div className="px-5 py-2 hover:bg-neutral-100/60">
-                    <Link to="/coming-soon" className="block hover:text-black transition-colors">
-                      Accessories
-                    </Link>
-                  </div>
-
+                  ))}
+                  {dropdownItems.length === 0 && (
+                    <div className="px-5 py-2 text-neutral-400 text-[9px]">
+                      No categories
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -374,7 +525,9 @@ export function Header() {
               <Search className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
             </button>
 
-            <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
+            {isAuthenticated && (
+              <>
+                <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
               <Heart className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
               {wishlistCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
@@ -440,7 +593,7 @@ export function Header() {
                                   className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
                                   aria-label="Select size"
                                 >
-                                  {["XS", "S", "M", "L", "XL", "XXL"].map(sz => (
+                                  {getAvailableSizesForItem(item).map(sz => (
                                     <option key={sz} value={sz}>{sz}</option>
                                   ))}
                                 </select>
@@ -449,11 +602,15 @@ export function Header() {
                           </div>
                           <div className="flex justify-between items-center mt-3">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-sm font-extrabold text-neutral-900">₹{item.price}</span>
-                              {item.id === 3 && (
+                              <span className="text-sm font-extrabold text-neutral-900">₹{Math.floor(item.price)}</span>
+                              {item.originalPrice && Math.floor(item.originalPrice) > Math.floor(item.price) && (
                                 <>
-                                  <span className="text-[11px] font-semibold text-neutral-450 line-through">₹999.00</span>
-                                  <span className="text-[8px] font-extrabold text-[#b2533e] bg-red-50 px-1 py-0.5 rounded-sm">51% OFF</span>
+                                  <span className="text-[11px] font-semibold text-neutral-450 line-through">₹{Math.floor(item.originalPrice)}</span>
+                                  <span className="text-[8px] font-extrabold text-[#b2533e] bg-red-50 px-1 py-0.5 rounded-sm">
+                                    {item.discountType === "value" || item.discountType === "flat"
+                                      ? `₹${Math.floor(item.discountValue)} OFF`
+                                      : `${Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}% OFF`}
+                                  </span>
                                 </>
                               )}
                             </div>
@@ -540,23 +697,23 @@ export function Header() {
                       <div className="space-y-1 text-[9px] font-bold tracking-wider text-neutral-600 uppercase">
                         <div className="flex justify-between">
                           <span>Subtotal</span>
-                          <span className="font-extrabold text-neutral-900">₹{subtotal}.00</span>
+                          <span className="font-extrabold text-neutral-900">₹{Math.floor(subtotal)}</span>
                         </div>
                         {promoDiscount > 0 && (
                           <div className="flex justify-between text-green-600 font-extrabold">
                             <span>Promo Discount ({appliedPromo})</span>
-                            <span>-₹{promoDiscount}.00</span>
+                            <span>-₹{Math.floor(promoDiscount)}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
                           <span>Delivery</span>
                           <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600" : "text-neutral-900"}`}>
-                            {deliveryFeeValue === 0 ? "FREE" : `₹${deliveryFeeValue}.00`}
+                            {deliveryFeeValue === 0 ? "FREE" : `₹${Math.floor(deliveryFeeValue)}`}
                           </span>
                         </div>
                         <div className="flex justify-between text-[10px] font-extrabold text-neutral-950 border-t border-neutral-200 pt-1.5">
                           <span>Total to Pay</span>
-                          <span className="text-xs">₹{totalToPay}.00</span>
+                          <span className="text-xs">₹{Math.floor(totalToPay)}.00</span>
                         </div>
                       </div>
                       
@@ -587,6 +744,8 @@ export function Header() {
                 )}
               </SheetContent>
             </Sheet>
+          </>
+        )}
 
             {isAuthenticated ? (
               <div 
@@ -680,15 +839,11 @@ export function Header() {
             <nav className="flex flex-col gap-4 text-xs font-bold tracking-widest uppercase text-neutral-800">
               <div className="flex flex-col gap-2 pl-3 border-l border-neutral-200">
                 <span className="text-[10px] text-neutral-400 font-bold tracking-wider uppercase mb-1">Categories</span>
-                <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
-                  Women
-                </Link>
-                <Link to="/coming-soon" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
-                  Men
-                </Link>
-                <Link to="/coming-soon" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
-                  Accessories
-                </Link>
+                {dropdownItems.map((cat: any, idx: number) => (
+                  <Link key={idx} to={cat.to} onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 text-xs">
+                    {cat.label}
+                  </Link>
+                ))}
               </div>
               <Link to="/about" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 About
@@ -696,18 +851,21 @@ export function Header() {
               <Link to="/help" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
                 Help
               </Link>
-              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4 flex justify-between items-center">
-                <span>Wishlist</span>
-                {wishlistCount > 0 && (
-                  <span className="bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
-                    {wishlistCount}
-                  </span>
-                )}
-              </Link>
-
-              <Link to="/account" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
-                Account Settings
-              </Link>
+              {isAuthenticated && (
+                <>
+                  <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1 border-t pt-4 flex justify-between items-center">
+                    <span>Wishlist</span>
+                    {wishlistCount > 0 && (
+                      <span className="bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/account" onClick={() => setIsMenuOpen(false)} className="hover:text-black py-1">
+                    Account Settings
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}
