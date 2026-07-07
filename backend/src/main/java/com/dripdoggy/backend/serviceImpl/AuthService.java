@@ -60,6 +60,11 @@ public class AuthService implements IAuthService {
             userOpt = userRepository.findByPhoneNo(identifier)
                     .or(() -> userRepository.findByPhoneNo(alternative));
         }
+
+        if (userOpt.isPresent() && Boolean.TRUE.equals(userOpt.get().getIsBlocked())) {
+            throw new InvalidCredentialsException("Your account has been blocked by the administrator.");
+        }
+
         boolean exists = userOpt.isPresent();
 
         if (identifier.contains("@")) {
@@ -87,6 +92,10 @@ public class AuthService implements IAuthService {
                 String alternative = identifier.startsWith("+") ? identifier.substring(1) : "+" + identifier;
                 userOpt = userRepository.findByPhoneNo(identifier)
                         .or(() -> userRepository.findByPhoneNo(alternative));
+            }
+
+            if (userOpt.isPresent() && Boolean.TRUE.equals(userOpt.get().getIsBlocked())) {
+                throw new InvalidCredentialsException("Your account has been blocked by the administrator.");
             }
 
             User user;
@@ -160,23 +169,21 @@ public class AuthService implements IAuthService {
         }
 
         String phoneNo = request.getPhoneNo();
-        if (phoneNo == null || phoneNo.trim().isEmpty()) {
-            throw new InvalidCountryCodeException("Phone number is required");
-        }
-        
-        validatePhoneNumberCountryCode(phoneNo);
+        if (phoneNo != null && !phoneNo.trim().isEmpty()) {
+            validatePhoneNumberCountryCode(phoneNo);
 
-        // Check if another user is already registered with this phone number
-        String alternativePhone = phoneNo.startsWith("+") ? phoneNo.substring(1) : "+" + phoneNo;
-        Optional<User> existingUserByPhone = userRepository.findByPhoneNo(phoneNo)
-                .or(() -> userRepository.findByPhoneNo(alternativePhone));
-        if (existingUserByPhone.isPresent() && !existingUserByPhone.get().getId().equals(user.getId())) {
-            throw new CustomerAlreadyFoundException("Phone number is already registered by another user: " + phoneNo);
+            // Check if another user is already registered with this phone number
+            String alternativePhone = phoneNo.startsWith("+") ? phoneNo.substring(1) : "+" + phoneNo;
+            Optional<User> existingUserByPhone = userRepository.findByPhoneNo(phoneNo)
+                    .or(() -> userRepository.findByPhoneNo(alternativePhone));
+            if (existingUserByPhone.isPresent() && !existingUserByPhone.get().getId().equals(user.getId())) {
+                throw new CustomerAlreadyFoundException("Phone number is already registered by another user: " + phoneNo);
+            }
+            user.setPhoneNo(phoneNo);
         }
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setPhoneNo(phoneNo);
         user.setRole(UserRole.CUSTOMER);
 
         if (request.getDob() != null && !request.getDob().trim().isEmpty()) {

@@ -168,12 +168,12 @@ public class CartService implements ICartService {
             if (Boolean.TRUE.equals(existingCart.getIsActive())) {
                 int newQuantity = existingCart.getQuantity() + request.getQuantity();
                 if (newQuantity > availableStock) {
-                    throw new IllegalArgumentException("Insufficient stock available. Only " + availableStock + " units left.");
+                    throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
                 }
                 existingCart.setQuantity(newQuantity);
             } else {
                 if (request.getQuantity() > availableStock) {
-                    throw new IllegalArgumentException("Insufficient stock available. Only " + availableStock + " units left.");
+                    throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
                 }
                 existingCart.setIsActive(true);
                 existingCart.setQuantity(request.getQuantity());
@@ -181,7 +181,7 @@ public class CartService implements ICartService {
             cartRepository.save(existingCart);
         } else {
             if (request.getQuantity() > availableStock) {
-                throw new IllegalArgumentException("Insufficient stock available. Only " + availableStock + " units left.");
+                throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
             }
             Cart newCart = new Cart();
             newCart.setUser(user);
@@ -231,7 +231,7 @@ public class CartService implements ICartService {
 
         int availableStock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
         if (quantity > availableStock) {
-            throw new IllegalArgumentException("Insufficient stock available. Only " + availableStock + " units left.");
+            throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
         }
 
         cartItem.setQuantity(quantity);
