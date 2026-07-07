@@ -29,10 +29,7 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.setDisallowedFields("variants*.images", "variants[*].images");
-    }
+
 
     @PostMapping
     public ResponseEntity<ResponseMsgDto> createProduct(
