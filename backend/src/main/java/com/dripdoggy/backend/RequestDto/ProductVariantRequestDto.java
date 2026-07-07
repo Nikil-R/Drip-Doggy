@@ -12,7 +12,7 @@ public class ProductVariantRequestDto {
     private DiscountType discountType;
     private BigDecimal discountValue;
     private Boolean isActive = true;
-    private List<MultipartFile> uploadedImages; // List of image files uploaded in multipart form
+    private List<MultipartFile> images; // List of image files uploaded in multipart form
     private List<String> existingImageUrls; // List of S3 URLs to keep (for updates)
     private List<ProductVariantSizeRequestDto> sizes;
     private String primaryImageUrl;
@@ -28,7 +28,7 @@ public class ProductVariantRequestDto {
         this.discountType = discountType;
         this.discountValue = discountValue;
         this.isActive = isActive;
-        this.uploadedImages = images;
+        this.images = images;
         this.existingImageUrls = existingImageUrls;
         this.sizes = sizes;
     }
@@ -82,12 +82,12 @@ public class ProductVariantRequestDto {
         this.isActive = isActive;
     }
 
-    public List<MultipartFile> getUploadedImages() {
-        return uploadedImages;
+    public List<MultipartFile> getImages() {
+        return images;
     }
 
-    public void setUploadedImages(List<MultipartFile> uploadedImages) {
-        this.uploadedImages = uploadedImages;
+    public void setImages(List<MultipartFile> images) {
+        this.images = images;
     }
 
     public List<String> getExistingImageUrls() {
