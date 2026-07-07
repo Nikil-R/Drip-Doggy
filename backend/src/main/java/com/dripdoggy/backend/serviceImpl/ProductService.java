@@ -177,8 +177,8 @@ public class ProductService implements IProductService {
                 }
 
                 // Validate Variant Images Dimensions
-                if (variantDto.getUploadedImages() != null) {
-                    for (MultipartFile imageFile : variantDto.getUploadedImages()) {
+                if (variantDto.getImages() != null) {
+                    for (MultipartFile imageFile : variantDto.getImages()) {
                         validateImageDimensions(imageFile);
                     }
                 }
@@ -200,8 +200,8 @@ public class ProductService implements IProductService {
                 String primaryImgUrl = variantDto.getPrimaryImageUrl();
                 String resolvedPrimaryUrl = null;
 
-                if (variantDto.getUploadedImages() != null) {
-                    for (MultipartFile imageFile : variantDto.getUploadedImages()) {
+                if (variantDto.getImages() != null) {
+                    for (MultipartFile imageFile : variantDto.getImages()) {
                         if (!imageFile.isEmpty()) {
                             try {
                                 String imageUrl = s3Service.uploadFile(imageFile);
@@ -441,8 +441,8 @@ public class ProductService implements IProductService {
                 ProductVariant savedVariant = productVariantRepository.save(variant);
 
                 // Validate Variant Images
-                if (varDto.getUploadedImages() != null) {
-                    for (MultipartFile imgFile : varDto.getUploadedImages()) {
+                if (varDto.getImages() != null) {
+                    for (MultipartFile imgFile : varDto.getImages()) {
                         validateImageDimensions(imgFile);
                     }
                 }
@@ -473,8 +473,8 @@ public class ProductService implements IProductService {
                 String primaryImgUrl = varDto.getPrimaryImageUrl();
                 String resolvedPrimaryUrl = null;
 
-                if (varDto.getUploadedImages() != null) {
-                    for (MultipartFile imageFile : varDto.getUploadedImages()) {
+                if (varDto.getImages() != null) {
+                    for (MultipartFile imageFile : varDto.getImages()) {
                         if (!imageFile.isEmpty()) {
                             try {
                                 String imageUrl = s3Service.uploadFile(imageFile);

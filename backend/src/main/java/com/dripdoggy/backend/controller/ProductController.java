@@ -5,7 +5,6 @@ import com.dripdoggy.backend.RequestDto.ProductRequestDto;
 import com.dripdoggy.backend.ResponseDto.ProductDetailsResponseDto;
 import com.dripdoggy.backend.ResponseDto.ProductListResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
-
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +42,7 @@ public class ProductController {
             if (productDto.getVariants() != null) {
                 for (int i = 0; i < productDto.getVariants().size(); i++) {
                     List<MultipartFile> files = multipartRequest.getFiles("variants[" + i + "].images");
-                    productDto.getVariants().get(i).setUploadedImages(files);
+                    productDto.getVariants().get(i).setImages(files);
                 }
             }
         }
@@ -73,7 +72,7 @@ public class ProductController {
             if (productDto.getVariants() != null) {
                 for (int i = 0; i < productDto.getVariants().size(); i++) {
                     List<MultipartFile> files = multipartRequest.getFiles("variants[" + i + "].images");
-                    productDto.getVariants().get(i).setUploadedImages(files);
+                    productDto.getVariants().get(i).setImages(files);
                 }
             }
         }
