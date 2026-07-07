@@ -16,7 +16,6 @@ public class CustomerRegisterRequest {
     @NotBlank(message = "Gender is required")
     private String gender;
 
-    @NotBlank(message = "Phone number is required")
     private String phoneNo;
 
     public CustomerRegisterRequest() {
