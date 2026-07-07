@@ -5,15 +5,17 @@ public class CustomerRegisterResponse {
     private String lastName;
     private String dob;
     private String gender;
+    private String phoneNo;
 
     public CustomerRegisterResponse() {
     }
 
-    public CustomerRegisterResponse(String firstName, String lastName, String dob, String gender) {
+    public CustomerRegisterResponse(String firstName, String lastName, String dob, String gender, String phoneNo) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dob = dob;
         this.gender = gender;
+        this.phoneNo = phoneNo;
     }
 
     public String getFirstName() {
@@ -46,5 +48,13 @@ public class CustomerRegisterResponse {
 
     public void setGender(String gender) {
         this.gender = gender;
+    }
+
+    public String getPhoneNo() {
+        return phoneNo;
+    }
+
+    public void setPhoneNo(String phoneNo) {
+        this.phoneNo = phoneNo;
     }
 }
