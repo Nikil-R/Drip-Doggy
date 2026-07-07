@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search, MoreVertical, Phone, MapPin, Clock, X, Mail,
-  Edit2, Slash, Download, CheckCircle, ShoppingBag, Tag,
-  TrendingUp, TrendingDown, Calendar, User, Heart, AlertTriangle
+  Download, CheckCircle, ShoppingBag, Tag,
+  TrendingUp, TrendingDown, Calendar, User, Heart, AlertTriangle, UserX
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -20,21 +20,46 @@ const weeklyDataAll = [
   { day: "Sun", active: 1120, orders: 162 },
 ];
 
-const weeklyDataVIP = [
-  { day: "Mon", active: 240, orders: 120 },
-  { day: "Tue", active: 310, orders: 135 },
-  { day: "Wed", active: 420, orders: 180 },
-  { day: "Thu", active: 350, orders: 145 },
-  { day: "Fri", active: 500, orders: 230 },
-  { day: "Sat", active: 480, orders: 210 },
-  { day: "Sun", active: 290, orders: 110 },
-];
+
+interface CartItem {
+  name: string;
+  image: string;
+  color: string;
+  size: string;
+  quantity: number;
+  price: number;
+}
+
+interface ShippingAddress {
+  label: string;
+  firstName: string;
+  lastName: string;
+  building: string;
+  street: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  deliveryPhone: string;
+}
+
+interface CustomerOrder {
+  id: string;
+  date: string;
+  amount: number;
+  status: "Delivered" | "Shipped" | "Processing" | "Pending" | "Cancelled";
+  payment: "Paid" | "Unpaid" | "Refunded";
+}
 
 interface Customer {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
+  gender: "Male" | "Female" | "Other" | "Unspecified";
+  dob: string;
   orders: number;
   spent: number;
   avgOrder: number;
@@ -46,69 +71,237 @@ interface Customer {
   lastProduct: string;
   notes?: string;
   wishlist?: string[];
+  cartItems?: CartItem[];
+  addresses?: ShippingAddress[];
+  recentOrders?: CustomerOrder[];
   abandonedCart?: string;
   logins?: string[];
 }
 
 const mockCustomersData: Customer[] = [
   {
-    id: "#DD-C001", name: "Ananya Sharma", email: "ananya.sharma@gmail.com", phone: "+91 98765 43210",
+    id: "#DD-C001", name: "Ananya Sharma", firstName: "Ananya", lastName: "Sharma",
+    email: "ananya.sharma@gmail.com", phone: "+91 98765 43210", gender: "Female", dob: "1998-04-15",
     orders: 28, spent: 62150, avgOrder: 2220, status: "Active",
     address: "42, Bandra West, Mumbai, Maharashtra", registered: "2025-01-12", lastPurchase: "2026-05-15",
     favCategory: "Outerwear", lastProduct: "Sartorial Trench Coat",
-    notes: "VIP customer. Prefers minimal packaging.",
+    notes: "Prefers minimal packaging.",
     wishlist: ["Structured Canvas Jacket", "French Terry Hoodie"],
-    abandonedCart: "Signature Silk Blouse (Size M)",
+    cartItems: [
+      {
+        name: "Signature Silk Blouse",
+        image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop",
+        color: "Midnight Black",
+        size: "M",
+        quantity: 1,
+        price: 1699
+      }
+    ],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Ananya",
+        lastName: "Sharma",
+        building: "Apt 4B, Sea Breeze Apartments",
+        street: "Carter Road",
+        area: "Bandra West",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400050",
+        deliveryPhone: "+91 99999 88888"
+      },
+      {
+        label: "Office",
+        firstName: "Ananya",
+        lastName: "Sharma",
+        building: "5th Floor, Maker Chambers VI",
+        street: "Nariman Point",
+        area: "Colaba",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400021",
+        deliveryPhone: "+91 98888 77777"
+      }
+    ],
+    recentOrders: [
+      { id: "#DD-6545", date: "2026-06-22", amount: 3450, status: "Delivered", payment: "Paid" },
+      { id: "#DD-6210", date: "2026-05-15", amount: 1699, status: "Delivered", payment: "Paid" }
+    ],
     logins: ["2026-06-22 14:30 - Mumbai, IN", "2026-06-20 11:15 - Mumbai, IN"]
   },
   {
-    id: "#DD-C002", name: "Rahul Verma", email: "rahul.verma@outlook.com", phone: "+91 87654 32109",
+    id: "#DD-C002", name: "Rahul Verma", firstName: "Rahul", lastName: "Verma",
+    email: "rahul.verma@outlook.com", phone: "+91 87654 32109", gender: "Male", dob: "1995-09-22",
     orders: 15, spent: 28400, avgOrder: 1893, status: "Active",
     address: "78, Indiranagar, Bangalore, Karnataka", registered: "2025-03-03", lastPurchase: "2026-05-12",
     favCategory: "Knitwear", lastProduct: "Cashmere Blend Crew",
     wishlist: ["Merino Wool Cardigan"],
+    cartItems: [],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Rahul",
+        lastName: "Verma",
+        building: "Flat 202, Royal Residency",
+        street: "12th Main Road",
+        area: "Indiranagar",
+        city: "Bangalore",
+        state: "Karnataka",
+        pincode: "560038",
+        deliveryPhone: "+91 98765 00001"
+      }
+    ],
+    recentOrders: [
+      { id: "#DD-6120", date: "2026-05-12", amount: 1893, status: "Delivered", payment: "Paid" }
+    ],
     logins: ["2026-06-21 09:45 - Bangalore, IN"]
   },
   {
-    id: "#DD-C003", name: "Priya Kapoor", email: "priya.kapoor@yahoo.com", phone: "+91 76543 21098",
+    id: "#DD-C003", name: "Priya Kapoor", firstName: "Priya", lastName: "Kapoor",
+    email: "priya.kapoor@yahoo.com", phone: "+91 76543 21098", gender: "Female", dob: "1997-12-05",
     orders: 42, spent: 98500, avgOrder: 2345, status: "Active",
     address: "15, GK II, New Delhi, Delhi", registered: "2024-11-20", lastPurchase: "2026-05-18",
     favCategory: "Tops", lastProduct: "Signature Silk Blouse",
     notes: "Requires fast shipping options.",
     wishlist: ["Sartorial Trench Coat", "Tailored Linen Trousers"],
-    abandonedCart: "French Terry Hoodie (Size L)",
+    cartItems: [
+      {
+        name: "French Terry Hoodie",
+        image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop",
+        color: "Sage Green",
+        size: "L",
+        quantity: 2,
+        price: 2450
+      }
+    ],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Priya",
+        lastName: "Kapoor",
+        building: "House 15, GK II",
+        street: "Outer Ring Road",
+        area: "Greater Kailash",
+        city: "New Delhi",
+        state: "Delhi",
+        pincode: "110048",
+        deliveryPhone: "+91 77777 66666"
+      },
+      {
+        label: "Studio (Others)",
+        firstName: "Priya",
+        lastName: "Kapoor",
+        building: "Studio 301, Creative Lofts",
+        street: "Okhla Phase III",
+        area: "Okhla",
+        city: "New Delhi",
+        state: "Delhi",
+        pincode: "110020",
+        deliveryPhone: "+91 88888 55555"
+      }
+    ],
+    recentOrders: [
+      { id: "#DD-6412", date: "2026-05-18", amount: 2450, status: "Delivered", payment: "Paid" }
+    ],
     logins: ["2026-06-22 16:10 - Delhi, IN", "2026-06-18 10:20 - Delhi, IN"]
   },
   {
-    id: "#DD-C004", name: "Arjun Mehta", email: "arjun.mehta@gmail.com", phone: "+91 65432 10987",
+    id: "#DD-C004", name: "Arjun Mehta", firstName: "Arjun", lastName: "Mehta",
+    email: "arjun.mehta@gmail.com", phone: "+91 65432 10987", gender: "Male", dob: "1992-07-30",
     orders: 8, spent: 12450, avgOrder: 1556, status: "Active",
     address: "33, Jubilee Hills, Hyderabad, Telangana", registered: "2025-04-10", lastPurchase: "2026-05-08",
-    favCategory: "Bottoms", lastProduct: "Pleated Wool Trousers", wishlist: []
+    favCategory: "Bottoms", lastProduct: "Pleated Wool Trousers", wishlist: [], cartItems: [],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Arjun",
+        lastName: "Mehta",
+        building: "Villa 33, Jubilee Hills",
+        street: "Road No. 10",
+        area: "Jubilee Hills",
+        city: "Hyderabad",
+        state: "Telangana",
+        pincode: "500033",
+        deliveryPhone: "+91 95555 44444"
+      }
+    ],
+    recentOrders: []
   },
   {
-    id: "#DD-C005", name: "Neha Gupta", email: "neha.gupta@rediffmail.com", phone: "+91 54321 09876",
-    orders: 3, spent: 4890, avgOrder: 1630, status: "New",
+    id: "#DD-C005", name: "Neha Gupta", firstName: "Neha", lastName: "Gupta",
+    email: "neha.gupta@rediffmail.com", phone: "+91 54321 09876", gender: "Female", dob: "2000-02-18",
+    orders: 3, spent: 4890, avgOrder: 1630, status: "Active",
     address: "55, Anna Nagar, Chennai, Tamil Nadu", registered: "2026-05-01", lastPurchase: "2026-05-05",
     favCategory: "Dresses", lastProduct: "Linen Midi Dress",
-    wishlist: ["Structured Canvas Jacket"]
+    wishlist: ["Structured Canvas Jacket"], cartItems: [],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Neha",
+        lastName: "Gupta",
+        building: "55, Anna Nagar",
+        street: "2nd Main Road",
+        area: "Anna Nagar",
+        city: "Chennai",
+        state: "Tamil Nadu",
+        pincode: "600040",
+        deliveryPhone: "+91 94444 33333"
+      }
+    ],
+    recentOrders: []
   },
   {
-    id: "#DD-C006", name: "Vikram Singh", email: "vikram.singh@gmail.com", phone: "+91 43210 98765",
+    id: "#DD-C006", name: "Vikram Singh", firstName: "Vikram", lastName: "Singh",
+    email: "vikram.singh@gmail.com", phone: "+91 43210 98765", gender: "Male", dob: "1994-11-12",
     orders: 22, spent: 45200, avgOrder: 2055, status: "Active",
     address: "89, Koregaon Park, Pune, Maharashtra", registered: "2025-02-05", lastPurchase: "2026-05-14",
-    favCategory: "Outerwear", lastProduct: "Structured Canvas Jacket"
+    favCategory: "Outerwear", lastProduct: "Structured Canvas Jacket", cartItems: [],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Vikram",
+        lastName: "Singh",
+        building: "Apt 89, Koregaon Heights",
+        street: "North Main Road",
+        area: "Koregaon Park",
+        city: "Pune",
+        state: "Maharashtra",
+        pincode: "411001",
+        deliveryPhone: "+91 93333 22222"
+      }
+    ],
+    recentOrders: []
   },
   {
-    id: "#DD-C007", name: "Ishita Patel", email: "ishita.patel@proton.me", phone: "+91 32109 87654",
+    id: "#DD-C007", name: "Ishita Patel", firstName: "Ishita", lastName: "Patel",
+    email: "ishita.patel@proton.me", phone: "+91 32109 87654", gender: "Female", dob: "1999-08-25",
     orders: 0, spent: 0, avgOrder: 0, status: "Inactive",
     address: "120, Navrangpura, Ahmedabad, Gujarat", registered: "2026-04-28",
-    lastPurchase: "—", favCategory: "—", lastProduct: "—"
+    lastPurchase: "—", favCategory: "—", lastProduct: "—", cartItems: [],
+    addresses: [],
+    recentOrders: []
   },
   {
-    id: "#DD-C008", name: "Aditya Joshi", email: "aditya.joshi@icloud.com", phone: "+91 21098 76543",
+    id: "#DD-C008", name: "Aditya Joshi", firstName: "Aditya", lastName: "Joshi",
+    email: "aditya.joshi@icloud.com", phone: "+91 21098 76543", gender: "Male", dob: "1996-03-08",
     orders: 35, spent: 73800, avgOrder: 2109, status: "Active",
     address: "7, Salt Lake, Kolkata, West Bengal", registered: "2024-10-10", lastPurchase: "2026-05-19",
-    favCategory: "Knitwear", lastProduct: "Merino Wool Cardigan"
+    favCategory: "Knitwear", lastProduct: "Merino Wool Cardigan", cartItems: [],
+    addresses: [
+      {
+        label: "Home",
+        firstName: "Aditya",
+        lastName: "Joshi",
+        building: "Block A, Flat 7",
+        street: "Salt Lake Sector II",
+        area: "Salt Lake",
+        city: "Kolkata",
+        state: "West Bengal",
+        pincode: "700091",
+        deliveryPhone: "+91 91111 22222"
+      }
+    ],
+    recentOrders: []
   }
 ];
 
@@ -163,10 +356,6 @@ export function CustomersPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [segment, setSegment] = useState<"all" | "vip" | "atrisk" | "new">("all");
-  const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
-  const [panelNoteText, setPanelNoteText] = useState("");
-  const [chartSegment, setChartSegment] = useState<"all" | "vip">("all");
 
   // Dashboard-style calendar
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -214,13 +403,6 @@ export function CustomersPage() {
 
   const handleOpenModal = (customer: Customer) => {
     setSelectedCustomerId(customer.id);
-    setPanelNoteText(customer.notes || "");
-  };
-
-  const handleSavePanelNotes = () => {
-    if (!selectedCustomerId) return;
-    setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, notes: panelNoteText } : c));
-    setSelectedCustomerId(null);
   };
 
   const filteredCustomers = useMemo(() => {
@@ -232,42 +414,20 @@ export function CustomersPage() {
     if (activeTab === "active") list = list.filter(c => c.status === "Active");
     else if (activeTab === "new") list = list.filter(c => c.status === "New");
     else if (activeTab === "inactive") list = list.filter(c => c.status === "Inactive");
-    if (segment === "vip") list = list.filter(c => c.spent >= 50000);
-    else if (segment === "atrisk") list = list.filter(c => c.status === "Inactive" || c.status === "Blocked");
-    else if (segment === "new") list = list.filter(c => c.status === "New" || c.registered >= "2026-05-01");
     if (dateRange.start) list = list.filter(c => c.registered >= dateRange.start);
     if (dateRange.end) list = list.filter(c => c.registered <= dateRange.end);
     return list;
-  }, [customers, searchQuery, activeTab, segment, dateRange]);
+  }, [customers, searchQuery, activeTab, dateRange]);
 
   const handleToggleBlock = (id: string) => {
     setCustomers(prev => prev.map(c => c.id === id ? { ...c, status: c.status === "Blocked" ? "Active" : "Blocked" } : c));
   };
 
-  const handleExportCSV = () => {
-    const headers = ["Customer ID,Name,Email,Phone,Orders,Spent,Avg Order,Status,Registered,Address"];
-    const rows = filteredCustomers.map(c => `"${c.id}","${c.name}","${c.email}","${c.phone}",${c.orders},${c.spent},${c.avgOrder},${c.status},${c.registered},"${c.address}"`);
-    const csv = [...headers, ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `customers-export-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editCustomer) return;
-    setCustomers(prev => prev.map(c => c.id === editCustomer.id ? editCustomer : c));
-    setEditCustomer(null);
-  };
 
   const tabs = [
     { id: "all",      label: "All",      count: customers.length },
     { id: "active",   label: "Active",   count: customers.filter(c => c.status === "Active").length },
-    { id: "new",      label: "New",      count: customers.filter(c => c.status === "New").length },
     { id: "inactive", label: "Inactive", count: customers.filter(c => c.status === "Inactive").length },
   ];
 
@@ -305,24 +465,6 @@ export function CustomersPage() {
   return (
     <div className="space-y-8 font-sans">
 
-      {/* ─── Header ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest">
-            Customer Management
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Drip Doggy customer profiles &amp; marketing segments
-          </p>
-        </div>
-        <button
-          onClick={handleExportCSV}
-          className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer flex items-center gap-2 rounded-full transition-all self-start md:self-auto"
-        >
-          <Download className="w-3.5 h-3.5" /> Export Customers
-        </button>
-      </div>
-
       {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiData.map((stat, idx) => (
@@ -340,61 +482,6 @@ export function CustomersPage() {
             <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-1.5">{stat.subtitle}</p>
           </div>
         ))}
-      </div>
-
-      {/* ─── Activity Chart ─── */}
-      <div className="bg-card border border-neutral-200/80 p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase block">
-              Customer Activity Trends
-            </span>
-            <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-0.5">Weekly active customers &amp; orders</p>
-          </div>
-          <div className="flex items-center border border-neutral-200">
-            {(["all", "vip"] as const).map(t => (
-              <button key={t} onClick={() => setChartSegment(t)}
-                className={`px-3 py-1.5 text-[8.5px] font-bold uppercase tracking-widest border-none cursor-pointer transition-all ${chartSegment === t ? "bg-[#224870] text-white" : "bg-card text-neutral-400 hover:text-[#382d24]"}`}>
-                {t === "all" ? "All Accounts" : "VIP Focus"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Summary chips */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-          {[
-            { label: "Avg. Session Time",       value: "4m 32s",     Icon: Clock     },
-            { label: "Loyalty Repeat Rate",     value: "68.4%",      Icon: ShoppingBag },
-            { label: "Customer Lifetime Value", value: RS + "32,800", Icon: Tag       },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 border border-neutral-200/60 bg-background/50 p-3.5">
-              <item.Icon className="w-4 h-4 text-[#224870] shrink-0" />
-              <div>
-                <p className="text-[12px] font-bold text-[#382d24]">{item.value}</p>
-                <p className="text-[8.5px] text-[#615e56] font-semibold uppercase tracking-wider mt-0.5">{item.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="h-[170px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartSegment === "all" ? weeklyDataAll : weeklyDataVIP} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="customerGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#224870" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#224870" stopOpacity={0}   />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,45,36,0.06)" vertical={false} />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "#615e56", fontWeight: 700 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "#615e56", fontWeight: 700 }} />
-              <Tooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="active" name="Active Customers" stroke="#224870" strokeWidth={2.5} fill="url(#customerGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
       </div>
 
       {/* ─── Filters + Table ─── */}
@@ -422,20 +509,7 @@ export function CustomersPage() {
               ))}
             </div>
 
-            {/* Segment select */}
-            <div className="flex items-center border border-neutral-200 bg-card px-3 py-1.5 rounded-sm gap-2">
-              <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Segment:</span>
-              <select
-                value={segment}
-                onChange={e => setSegment(e.target.value as any)}
-                className="bg-transparent border-none text-[8.5px] font-bold uppercase tracking-wider focus:outline-none cursor-pointer text-[#382d24]"
-              >
-                <option value="all">All Groups</option>
-                <option value="vip">VIP (LTV &gt; 50k)</option>
-                <option value="new">New Accounts</option>
-                <option value="atrisk">At-Risk / Inactive</option>
-              </select>
-            </div>
+
 
             {/* Calendar picker */}
             <div className="relative" ref={calendarRef}>
@@ -506,16 +580,35 @@ export function CustomersPage() {
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              placeholder="Search name, email, phone…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="bg-card border border-neutral-200 pl-10 pr-4 py-2 text-[9.5px] font-semibold focus:outline-none focus:border-[#224870] placeholder-neutral-400 w-full md:w-72 rounded-full transition-all"
-            />
+          {/* Search & Export */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search name, email, phone…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="bg-card border border-neutral-200 pl-10 pr-4 py-2 text-[9.5px] font-semibold focus:outline-none focus:border-[#224870] placeholder-neutral-400 w-full md:w-72 rounded-full transition-all"
+              />
+            </div>
+            <button
+              onClick={() => {
+                const headers = ["Customer ID,Name,Email,Phone,Orders,Spent,Avg Order,Status,Registered,Address"];
+                const rows = filteredCustomers.map(c => `"${c.id}","${c.name}","${c.email}","${c.phone}",${c.orders},${c.spent},${c.avgOrder},${c.status},${c.registered},"${c.address}"`);
+                const csv = [...headers, ...rows].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `customers-export-${new Date().toISOString().split("T")[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer flex items-center gap-1.5 transition-all shrink-0 rounded-full border-none"
+            >
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
           </div>
         </div>
 
@@ -526,10 +619,10 @@ export function CustomersPage() {
               <tr className="border-b border-neutral-200/80 bg-background/60 text-[9.5px] text-[#615e56] font-bold tracking-[0.12em] uppercase">
                 <th className="p-4">Customer</th>
                 <th className="p-4">Phone</th>
-                <th className="p-4">Orders</th>
-                <th className="p-4">Total Spent</th>
-                <th className="p-4">Avg. Order</th>
                 <th className="p-4">Registered</th>
+                <th className="p-4">Orders</th>
+                <th className="p-4">Cart Items</th>
+                <th className="p-4">Wishlist</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Actions</th>
               </tr>
@@ -545,33 +638,30 @@ export function CustomersPage() {
                     <div className="flex items-center gap-3">
                       <CustomerAvatar name={c.name} />
                       <div>
-                        <p className="font-bold text-[11px] text-[#382d24]">{c.name}</p>
-                        <span className="text-[8.5px] text-neutral-400 font-medium block">{c.email}</span>
-                        <span className="text-[7.5px] font-mono text-[#224870] font-bold">{c.id}</span>
+                        <p className="font-bold text-[11.5px] text-[#382d24]">{c.name}</p>
+                        <span className="text-[9.5px] text-[#615e56] font-bold block mt-0.5">{c.email}</span>
+                        <span className="text-[9px] font-mono text-[#224870] font-black block mt-0.5">{c.id}</span>
                       </div>
                     </div>
                   </td>
                   <td className="p-4 text-[9.5px] text-[#615e56] font-semibold font-mono">{c.phone}</td>
-                  <td className="p-4 font-black text-[11px] text-[#382d24]">{c.orders}</td>
-                  <td className="p-4 font-black text-[11px] text-[#382d24]">{RS}{c.spent.toLocaleString("en-IN")}</td>
-                  <td className="p-4 text-[10px] font-semibold text-[#615e56]">{c.avgOrder > 0 ? `${RS}${c.avgOrder.toLocaleString("en-IN")}` : "—"}</td>
                   <td className="p-4 text-[9.5px] text-[#736e64] font-semibold">{c.registered}</td>
+                  <td className="p-4 font-black text-[11px] text-[#382d24]">{c.orders}</td>
+                  <td className="p-4 text-[10px] font-semibold text-[#615e56]">
+                    {c.cartItems && c.cartItems.length > 0 ? `${c.cartItems.length} item${c.cartItems.length > 1 ? 's' : ''}` : "—"}
+                  </td>
+                  <td className="p-4 text-[10px] font-semibold text-[#615e56]">
+                    {c.wishlist && c.wishlist.length > 0 ? `${c.wishlist.length} item${c.wishlist.length > 1 ? 's' : ''}` : "—"}
+                  </td>
                   <td className="p-4"><StatusBadge status={c.status} /></td>
                   <td className="p-4" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditCustomer(c)}
-                        className="p-1.5 text-neutral-400 hover:text-[#224870] hover:bg-[#224870]/10 bg-transparent border-none cursor-pointer rounded-full transition-all"
-                        title="Edit Profile"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center justify-center">
                       <button
                         onClick={() => handleToggleBlock(c.id)}
                         className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 bg-transparent border-none cursor-pointer rounded-full transition-all"
                         title={c.status === "Blocked" ? "Unblock" : "Block Customer"}
                       >
-                        <Slash className="w-3.5 h-3.5" />
+                        <UserX className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -614,11 +704,11 @@ export function CustomersPage() {
               <div className="flex items-center gap-4">
                 <CustomerAvatar name={selectedCustomer.name} />
                 <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase">Customer Profile</span>
+                  <span className="text-[10px] font-black tracking-wider text-[#382d24]/60 uppercase">Customer Profile</span>
                   <h2 className="text-[17px] font-[950] text-[#382d24] uppercase tracking-widest mt-0.5">{selectedCustomer.name}</h2>
                   <div className="flex items-center gap-3 mt-1">
                     <StatusBadge status={selectedCustomer.status} />
-                    <span className="text-[8px] font-mono text-[#224870] font-bold">{selectedCustomer.id}</span>
+                    <span className="text-[10px] font-mono text-[#224870] font-black">{selectedCustomer.id}</span>
                   </div>
                 </div>
               </div>
@@ -633,206 +723,232 @@ export function CustomersPage() {
             {/* Modal Body */}
             <div className="p-6 space-y-6 flex-1">
 
-              {/* 2-col: Contact + Purchase Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Contact Details */}
-                <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Contact</span>
-                  <div className="border border-neutral-200 p-4 space-y-2.5 bg-background/50 rounded-sm text-[9px]">
-                    <a href={`mailto:${selectedCustomer.email}`} className="flex items-center gap-2 font-semibold text-neutral-600 hover:text-[#224870] transition-colors">
-                      <Mail className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                      <span className="lowercase truncate">{selectedCustomer.email}</span>
-                    </a>
-                    <a href={`tel:${selectedCustomer.phone}`} className="flex items-center gap-2 font-semibold text-neutral-600 hover:text-[#224870] transition-colors">
-                      <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                      {selectedCustomer.phone}
-                    </a>
-                    <div className="flex items-start gap-2 text-neutral-600 font-semibold">
-                      <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0 mt-0.5" />
-                      <span className="uppercase text-[8.5px]">{selectedCustomer.address}</span>
+              {/* 2-col layout to balance heights and prevent blank spaces */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Left Column: Personal Onboarding Profile + Purchase Summary */}
+                <div className="space-y-6">
+                  {/* Onboarding Profile Card */}
+                  <div>
+                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Onboarding Profile</span>
+                  <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm text-[10px] font-bold text-[#615e56]">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Customer ID</span>
+                      <span className="text-[#382d24] font-black text-[10.5px]">{selectedCustomer.id}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">First Name</span>
+                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.firstName}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Last Name</span>
+                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.lastName}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Gender</span>
+                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.gender}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Date of Birth</span>
+                      <span className="text-[#382d24] font-extrabold text-[10.5px]">{selectedCustomer.dob}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Email</span>
+                      <span className="text-[#224870] font-extrabold text-[10.5px] lowercase truncate select-all">{selectedCustomer.email}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Phone</span>
+                      <span className="text-[#382d24] font-extrabold text-[10.5px] select-all">{selectedCustomer.phone}</span>
+                    </div>
+                  </div>
+                  </div>
+
+                  {/* Purchase Summary Card */}
+                  <div>
+                    <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Purchase Summary</span>
+                    <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm text-[10px] font-bold text-[#615e56]">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                        <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Total Orders</span>
+                        <span className="font-black text-[12.5px] text-[#382d24]">{selectedCustomer.orders}</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                        <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Last Purchase</span>
+                        <span className="font-extrabold text-[10.5px] text-[#382d24]">{selectedCustomer.lastPurchase}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#615e56] uppercase tracking-wider text-[9px] font-bold">Date Joined</span>
+                        <span className="font-extrabold text-[10.5px] text-[#382d24]">{selectedCustomer.registered}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Purchase Summary */}
+                {/* Right Column: Address Module List */}
                 <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Purchase Summary</span>
-                  <div className="border border-neutral-200 p-4 space-y-2.5 bg-background/50 rounded-sm text-[9px]">
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Total Orders</span>
-                      <span className="font-black text-[12px] text-[#382d24]">{selectedCustomer.orders}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Total Spent</span>
-                      <span className="font-black text-[12px] text-[#382d24]">{RS}{selectedCustomer.spent.toLocaleString("en-IN")}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Avg. Order Value</span>
-                      <span className="font-bold text-[#382d24]">{selectedCustomer.avgOrder > 0 ? `${RS}${selectedCustomer.avgOrder.toLocaleString("en-IN")}` : "—"}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-t border-neutral-100 pt-2">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Fav. Category</span>
-                      <span className="font-bold text-[#224870]">{selectedCustomer.favCategory}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Last Purchase</span>
-                      <span className="font-semibold text-[#736e64]">{selectedCustomer.lastPurchase}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Registered</span>
-                      <span className="font-semibold text-[#736e64]">{selectedCustomer.registered}</span>
-                    </div>
+                  <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Shipping Addresses</span>
+                  <div className="space-y-4">
+                    {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
+                      selectedCustomer.addresses.map((addr, idx) => (
+                        <div key={idx} className="border border-neutral-200 p-4 bg-background/50 rounded-sm space-y-2">
+                          <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
+                            <span className="bg-[#224870]/10 text-[#224870] px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-widest rounded-sm">
+                              {addr.label}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-[#615e56] font-semibold space-y-1">
+                            <p className="text-[#382d24] font-black uppercase tracking-wide">
+                              {addr.firstName} {addr.lastName}
+                            </p>
+                            <p className="uppercase">{addr.building}</p>
+                            <p className="uppercase">{addr.street}</p>
+                            <p className="uppercase">{addr.area}</p>
+                            <p className="uppercase font-bold text-[#382d24]">
+                              {addr.city}, {addr.state} — {addr.pincode}
+                            </p>
+                            {addr.deliveryPhone && (
+                              <div className="pt-1.5 border-t border-neutral-100/50 flex items-center gap-1.5 text-neutral-400 font-bold text-[8.5px]">
+                                <span>Alternative Contact:</span>
+                                <span className="text-[#224870] select-all">{addr.deliveryPhone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="border border-neutral-200 p-6 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                        No saved addresses found
+                      </div>
+                    )}
                   </div>
                 </div>
+
               </div>
 
-              {/* Abandoned Cart */}
-              {selectedCustomer.abandonedCart && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-sm flex items-start gap-3">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[9px] font-black text-amber-800 uppercase tracking-wider">Abandoned Cart</p>
-                    <p className="text-[9px] font-semibold text-amber-700 mt-0.5">{selectedCustomer.abandonedCart} — awaiting checkout for 24h+</p>
+              {/* Order History */}
+              <div>
+                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
+                  Recent Orders History
+                </span>
+                {selectedCustomer.recentOrders && selectedCustomer.recentOrders.length > 0 ? (
+                  <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30 text-[10px]">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-neutral-200 bg-background/50 text-[8.5px] text-[#615e56] font-bold tracking-widest uppercase">
+                          <th className="p-3">Order ID</th>
+                          <th className="p-3">Date</th>
+                          <th className="p-3">Amount</th>
+                          <th className="p-3">Payment</th>
+                          <th className="p-3">Delivery Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {selectedCustomer.recentOrders.map((ord, idx) => (
+                          <tr key={idx} className="text-[#382d24] font-semibold">
+                            <td className="p-3 font-mono font-black text-[#224870]">{ord.id}</td>
+                            <td className="p-3">{ord.date}</td>
+                            <td className="p-3 font-black">{RS}{ord.amount.toLocaleString("en-IN")}</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
+                                ord.payment === 'Paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                              }`}>
+                                {ord.payment}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
+                                ord.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                              }`}>
+                                {ord.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                    No orders placed yet
+                  </div>
+                )}
+              </div>
 
-              {/* Wishlist */}
-              {selectedCustomer.wishlist && selectedCustomer.wishlist.length > 0 && (
-                <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">
-                    Wishlisted Styles — {selectedCustomer.wishlist.length} items
-                  </span>
+              {/* Shopping Cart List */}
+              <div>
+                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
+                  Shopping Cart Items
+                </span>
+                {selectedCustomer.cartItems && selectedCustomer.cartItems.length > 0 ? (
+                  <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30">
+                    {selectedCustomer.cartItems.map((item, index) => (
+                      <div key={index} className="p-3.5 flex items-center justify-between border-b border-neutral-200 last:border-b-0">
+                        <div className="flex items-center gap-3">
+                          <img src={item.image} alt={item.name} className="w-10 h-10 object-cover border border-neutral-200 rounded-sm" />
+                          <div>
+                            <p className="text-[10px] font-black text-[#382d24] uppercase tracking-wide">{item.name}</p>
+                            <div className="flex gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">
+                              <span>Color: {item.color}</span>
+                              <span>•</span>
+                              <span>Size: {item.size}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10.5px] font-black text-[#382d24]">{RS}{item.price.toLocaleString("en-IN")}</p>
+                          <p className="text-[8.5px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">Qty: {item.quantity}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                    No items in cart
+                  </div>
+                )}
+              </div>
+
+              {/* Wishlist List */}
+              <div>
+                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">
+                  Wishlist Styles
+                </span>
+                {selectedCustomer.wishlist && selectedCustomer.wishlist.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {selectedCustomer.wishlist.map(w => (
-                      <span key={w} className="bg-[#224870]/8 border border-[#224870]/20 text-[#224870] px-2.5 py-1 text-[8.5px] font-bold uppercase tracking-wider rounded-sm">
+                      <span key={w} className="bg-[#224870]/8 border border-[#224870]/20 text-[#224870] px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider rounded-sm">
                         {w}
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Login History */}
-              {selectedCustomer.logins && (
-                <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Recent Activity Log</span>
-                  <div className="border border-neutral-200 bg-background/50 rounded-sm p-3 space-y-1.5">
-                    {selectedCustomer.logins.map((log, i) => (
-                      <div key={i} className="text-[8.5px] font-mono text-[#615e56] flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
-                        {log}
-                      </div>
-                    ))}
+                ) : (
+                  <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">
+                    No items in wishlist
                   </div>
-                </div>
-              )}
-
-              {/* Internal Notes */}
-              <div>
-                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Internal Admin Notes</span>
-                <textarea
-                  rows={3}
-                  value={panelNoteText}
-                  onChange={e => setPanelNoteText(e.target.value)}
-                  placeholder="Add VIP details, sizing preferences, special handling notes…"
-                  className="w-full bg-card border border-neutral-200 px-3 py-2.5 text-[10px] font-semibold focus:outline-none focus:border-[#224870] rounded-sm leading-relaxed transition-all"
-                />
+                )}
               </div>
 
               {/* Customer Actions */}
               <div>
-                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Customer Actions</span>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => { setEditCustomer(selectedCustomer); setSelectedCustomerId(null); }}
-                    className="flex-1 bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-neutral-600 py-2.5 text-[9px] font-bold uppercase tracking-widest cursor-pointer rounded-full flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" /> Edit Profile
-                  </button>
-                  <button
-                    onClick={() => handleToggleBlock(selectedCustomer.id)}
-                    className="flex-1 bg-card border border-neutral-200 hover:border-red-500 hover:text-red-500 text-neutral-600 py-2.5 text-[9px] font-bold uppercase tracking-widest cursor-pointer rounded-full flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Slash className="w-3.5 h-3.5" />
-                    {selectedCustomer.status === "Blocked" ? "Unblock Account" : "Block Account"}
-                  </button>
-                </div>
+                <span className="text-[10.5px] font-[950] tracking-wider text-[#382d24] uppercase block mb-2">Customer Actions</span>
+                <button
+                  onClick={() => handleToggleBlock(selectedCustomer.id)}
+                  className="w-full bg-card border border-neutral-200 hover:border-red-500 hover:text-red-500 text-neutral-600 py-2.5 text-[9px] font-bold uppercase tracking-widest cursor-pointer rounded-full flex items-center justify-center gap-2 transition-all"
+                >
+                  <UserX className="w-3.5 h-3.5" />
+                  {selectedCustomer.status === "Blocked" ? "Unblock Account" : "Block Account"}
+                </button>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-5 border-t border-neutral-200 flex items-center justify-end gap-3 bg-card sticky bottom-0">
+            <div className="p-5 border-t border-neutral-200 flex items-center justify-end bg-card sticky bottom-0">
               <button
                 onClick={() => setSelectedCustomerId(null)}
-                className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-6 py-2.5 uppercase bg-transparent cursor-pointer rounded-full transition-all"
+                className="border border-neutral-300 hover:border-[#224870] hover:text-[#224870] text-[#382d24] text-[10px] font-extrabold tracking-widest px-6 py-2.5 uppercase bg-transparent cursor-pointer rounded-full transition-all"
               >
                 Close
               </button>
-              <button
-                onClick={handleSavePanelNotes}
-                className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-6 py-2.5 uppercase cursor-pointer rounded-full border-none transition-all"
-              >
-                Save & Close
-              </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Edit Customer Modal ─── */}
-      {editCustomer && (
-        <div
-          className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setEditCustomer(null)}
-        >
-          <div
-            className="bg-card w-full max-w-sm border border-neutral-200/80 shadow-2xl rounded-sm"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-5 border-b border-neutral-200 flex items-center justify-between">
-              <div>
-                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase">Edit Profile</span>
-                <h3 className="text-[13px] font-[950] text-[#382d24] uppercase tracking-widest mt-0.5">{editCustomer.name}</h3>
-              </div>
-              <button onClick={() => setEditCustomer(null)} className="p-2 border border-neutral-200 text-neutral-400 hover:border-neutral-400 bg-transparent cursor-pointer rounded-full transition-all">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
-              {[
-                { label: "Customer Name",     field: "name",    type: "text"  },
-                { label: "Email Address",     field: "email",   type: "email" },
-                { label: "Phone Number",      field: "phone",   type: "text"  },
-              ].map(({ label, field, type }) => (
-                <div key={field}>
-                  <label className="block text-[8px] font-bold tracking-widest text-[#615e56] uppercase mb-1.5">{label}</label>
-                  <input
-                    required type={type}
-                    value={(editCustomer as any)[field]}
-                    onChange={e => setEditCustomer({ ...editCustomer, [field]: e.target.value })}
-                    className="w-full bg-card border border-neutral-200 text-[10px] font-semibold px-3 py-2 focus:outline-none focus:border-[#224870] rounded-sm transition-all"
-                  />
-                </div>
-              ))}
-              <div>
-                <label className="block text-[8px] font-bold tracking-widest text-[#615e56] uppercase mb-1.5">Shipping Address</label>
-                <textarea
-                  required rows={2}
-                  value={editCustomer.address}
-                  onChange={e => setEditCustomer({ ...editCustomer, address: e.target.value })}
-                  className="w-full bg-card border border-neutral-200 text-[10px] font-semibold px-3 py-2 focus:outline-none focus:border-[#224870] rounded-sm transition-all leading-relaxed"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-1">
-                <button type="button" onClick={() => setEditCustomer(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2 uppercase bg-transparent cursor-pointer rounded-full transition-all">
-                  Cancel
-                </button>
-                <button type="submit" className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer rounded-full border-none transition-all">
-                  Save Profile
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

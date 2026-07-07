@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
+import { useAuthStore } from "@/app/store/auth-store";
+import { categoryApi, subCategoryApi, BackendCategory, BackendSubCategory } from "@/app/lib/category-api";
+import { productApi } from "@/app/lib/product-api";
 import {
   Search,
   Plus,
@@ -18,19 +21,26 @@ import {
   Eye,
   SlidersHorizontal,
   Tags,
-  Trash2
+  Trash2,
+  Star,
+  AlertTriangle
 } from "lucide-react";
 
 const availableSizes = ["XS", "S", "M", "L", "XL", "XXL"];
-const categories = ["Women", "Men", "Unisex"];
-const subcategoriesMap: Record<string, string[]> = {
-  "Women": ["Dresses", "Tops", "Knitwear"],
-  "Men": ["Shirts", "Outerwear"],
-  "Unisex": ["Bags", "Accessories"]
-};
 const brands = ["Drip Doggy", "Syndicate", "Archive", "SS26", "FW25 Heritage", "Studio"];
 const tags = ["New Arrival", "Limited Drop", "Best Seller", "Archive", "Signature Piece", "Seasonal", "Premium"];
 
+function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(",");
+  const mime = arr[0].match(/:(.*?);/)![1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
 const mockCatalogProducts = [
   { id: "#DD-P002", name: "Sartorial Trench Coat" },
   { id: "#DD-P003", name: "Cashmere Blend Crew" },
@@ -65,6 +75,8 @@ interface ProductVariant {
   active: boolean;
   sizes: string[];
   images: string[];
+  primaryImageUrl?: string;
+  existingUrls?: string[];
 }
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
@@ -92,25 +104,17 @@ export function AddProductPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Core Form States
-  const [productName, setProductName] = useState("Structured Canvas Jacket");
-  const [sku, setSku] = useState("DD-STR-001");
-  const [description, setDescription] = useState(
-    "A masterfully constructed canvas jacket built for the modern wardrobe. Features premium cotton-canvas shell, genuine horn buttons, contrast stitching, and a tailored yet relaxed silhouette. A Drip Doggy essential."
-  );
+  const [productName, setProductName] = useState("");
+  const [sku, setSku] = useState("");
+  const [description, setDescription] = useState("");
   
   // Organization
-  const [selectedCategory, setSelectedCategory] = useState("Women");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("Dresses");
+  const { token } = useAuthStore();
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
 
-  useEffect(() => {
-    const list = subcategoriesMap[selectedCategory] || [];
-    if (list.length > 0) {
-      setSelectedSubCategory(list[0]);
-    } else {
-      setSelectedSubCategory("");
-    }
-  }, [selectedCategory]);
-  const [selectedTags, setSelectedTags] = useState<string[]>(["Best Seller"]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [dynamicTags, setDynamicTags] = useState<string[]>(["New Arrival", "Limited Drop", "Best Seller", "Archive", "Signature Piece", "Seasonal", "Premium"]);
   const [isAddingCustomTag, setIsAddingCustomTag] = useState(false);
   const [customTagVal, setCustomTagVal] = useState("");
@@ -131,6 +135,7 @@ export function AddProductPage() {
   // Validation feedback
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [deleteVariantIndex, setDeleteVariantIndex] = useState<number | null>(null);
 
   // PDP Rich Details: Specs and Design Details (New Section 4 states)
   const [specs, setSpecs] = useState<{ label: string; value: string }[]>([
@@ -156,38 +161,108 @@ export function AddProductPage() {
   const [newSpecValue, setNewSpecValue] = useState("");
   const [newDetailVal, setNewDetailVal] = useState("");
 
-  // Load draft or edit product on mount
+  // Load categories & load edit product on mount
   useEffect(() => {
-    if (isEdit && id) {
-      const cleanId = id.startsWith("DD-P") ? `#${id}` : id;
-      const product = sampleProductsForEdit.find(p => p.id === cleanId || p.id.replace("#", "") === id);
-      if (product) {
-        setProductName(product.name);
-        setSku(product.sku);
-        setDescription(product.description || "");
-        setSelectedCategory(product.category);
-        setProductImages([product.image]);
-      }
-    } else {
-      const saved = localStorage.getItem("drip-doggy-product-draft");
-      if (saved) {
-        try {
-          const draft = JSON.parse(saved);
-          if (confirm("Would you like to resume editing your saved draft?")) {
-            setProductName(draft.productName || "");
-            setSku(draft.sku || "");
-            setDescription(draft.description || "");
-            setSelectedCategory(draft.selectedCategory || "Women");
-            setProductImages(draft.productImages || []);
-            setFeedbackMsg("Draft restored.");
-            setTimeout(() => setFeedbackMsg(""), 3000);
+    async function initPage() {
+      if (!token) return;
+      try {
+        const catList = await categoryApi.getAllCategories(token);
+        setDbCategories(catList);
+
+        if (isEdit && id) {
+          const rawId = Number(id.replace(/\D/g, ""));
+          if (isNaN(rawId)) {
+            navigate("/admin/products");
+            return;
           }
-        } catch (e) {
-          console.error("Error loading draft", e);
+          const product = await productApi.fetchProductById(rawId, token);
+          if (product) {
+            setProductName(product.productName || "");
+            setSku(product.skuCode || "");
+            setDescription(product.productDescription || "");
+            setSelectedCategory(String(product.categoryId || ""));
+            setSelectedSubCategory(String(product.subCategoryId || ""));
+            if (product.baseTitle) {
+              setSelectedTags([product.baseTitle]);
+              setDynamicTags(prev => {
+                if (!prev.includes(product.baseTitle)) {
+                  return [...prev, product.baseTitle];
+                }
+                return prev;
+              });
+            } else {
+              setSelectedTags([]);
+            }
+            
+            // Map specifications
+            if (product.specification) {
+              const specMap = product.specification;
+              const mappedSpecs = [
+                { label: "Fabric Type", value: specMap.fabric || "" },
+                { label: "Fit / Size", value: specMap.fit || "" },
+                { label: "Pattern", value: specMap.pattern || "" },
+                { label: "Neck/Collar Type", value: specMap.neckCollarType || "" },
+                { label: "Sleeve Type", value: specMap.sleeveType || "" },
+                { label: "Pockets", value: specMap.pockets || "" },
+                { label: "Wash Care", value: specMap.washCare || "" }
+              ].filter(s => s.value !== "");
+
+              // Append custom specifications
+              if (specMap.customSpecs) {
+                Object.entries(specMap.customSpecs).forEach(([k, v]) => {
+                  mappedSpecs.push({ label: k, value: String(v) });
+                });
+              }
+              setSpecs(mappedSpecs);
+            }
+
+            // Map design details
+            if (product.features) {
+              setDesignDetails(product.features.map((f: any) => f.featureName));
+            }
+
+            // Map variants
+            const mappedVariants: ProductVariant[] = (product.variants || []).map((v: any) => {
+              const sizeStockMap: Record<string, string> = {};
+              (v.sizes || []).forEach((s: any) => {
+                sizeStockMap[s.sizeName] = String(s.stockQuantity || 0);
+              });
+              return {
+                id: String(v.id),
+                name: v.variantName || "",
+                sku: v.skuCode || "",
+                mrp: String(v.mrp || 0),
+                discountType: v.discountType?.toLowerCase() === "percentage" ? "percentage" : "value",
+                discountValue: String(v.discountValue || 0),
+                finalPrice: String(v.price || v.mrp || 0),
+                sizeStock: sizeStockMap,
+                active: v.isActive !== false,
+                sizes: (v.sizes || []).map((s: any) => s.sizeName),
+                images: v.imageUrls || [],
+                existingUrls: [...(v.imageUrls || [])],
+                primaryImageUrl: v.primaryImageUrl || ""
+              };
+            });
+            setVariants(mappedVariants);
+            if (mappedVariants.length > 0 && mappedVariants[0].images.length > 0) {
+              setProductImages([mappedVariants[0].images[0]]);
+            }
+          }
+        } else {
+          // Initialize first category and subcategory for a new product
+          if (catList.length > 0) {
+            setSelectedCategory(String(catList[0].categoryId));
+            if (catList[0].subCategories && catList[0].subCategories.length > 0) {
+              setSelectedSubCategory(String(catList[0].subCategories[0].subCategoryId));
+            }
+          }
         }
+      } catch (err) {
+        console.error("Initialization error", err);
       }
     }
-  }, [id, isEdit]);
+    initPage();
+  }, [id, isEdit, token]);
 
 
   // Save draft manually
@@ -231,7 +306,7 @@ export function AddProductPage() {
     }
   };
 
-  const handlePublish = (e: React.FormEvent) => {
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: string[] = [];
     if (!productName.trim()) errors.push("Product Name is required.");
@@ -244,10 +319,122 @@ export function AddProductPage() {
       return;
     }
 
+    if (!token) {
+      alert("Authentication token is missing. Please log in again.");
+      return;
+    }
+
     setValidationErrors([]);
-    localStorage.removeItem("drip-doggy-product-draft");
-    alert(`"${productName}" (${sku}) has been successfully ${isEdit ? "updated" : "published"}!`);
-    navigate("/admin/products");
+    try {
+      const formData = new FormData();
+      formData.append("productName", productName.trim());
+      formData.append("skuCode", sku.trim());
+      formData.append("categoryId", selectedCategory);
+      formData.append("subCategoryId", selectedSubCategory);
+      formData.append("baseTitle", selectedTags[0] || "");
+      formData.append("productDescription", description.trim());
+      formData.append("isActive", "true");
+
+      // Features
+      designDetails.forEach((detail, index) => {
+        if (detail.trim()) {
+          formData.append(`features[${index}]`, detail.trim());
+        }
+      });
+
+      // Specifications
+      const standardLabels = ["Fabric Type", "Fit / Size", "Pattern", "Neck/Collar Type", "Sleeve Type", "Pockets", "Wash Care"];
+      
+      const specFabric = specs.find(s => s.label === "Fabric Type")?.value || "";
+      const specFit = specs.find(s => s.label === "Fit / Size")?.value || "";
+      const specPattern = specs.find(s => s.label === "Pattern")?.value || "";
+      const specNeck = specs.find(s => s.label === "Neck/Collar Type")?.value || "";
+      const specSleeve = specs.find(s => s.label === "Sleeve Type")?.value || "";
+      const specPockets = specs.find(s => s.label === "Pockets")?.value || "";
+      const specWash = specs.find(s => s.label === "Wash Care")?.value || "";
+
+      formData.append("specification.fabric", specFabric);
+      formData.append("specification.fit", specFit);
+      formData.append("specification.pattern", specPattern);
+      formData.append("specification.neckCollarType", specNeck);
+      formData.append("specification.sleeveType", specSleeve);
+      formData.append("specification.pockets", specPockets);
+      formData.append("specification.washCare", specWash);
+
+      specs.filter(s => !standardLabels.includes(s.label)).forEach(custom => {
+        if (custom.label.trim()) {
+          formData.append(`specification.customSpecs[${custom.label.trim()}]`, custom.value.trim());
+        }
+      });
+
+      // Variants
+      variants.forEach((v, index) => {
+        formData.append(`variants[${index}].variantName`, v.name);
+        formData.append(`variants[${index}].skuCode`, v.sku);
+        const cleanMrp = String(v.mrp || "").replace(/,/g, "").trim();
+        const cleanDiscountVal = String(v.discountValue || "").replace(/,/g, "").trim();
+        formData.append(`variants[${index}].mrp`, cleanMrp);
+        formData.append(`variants[${index}].discountType`, v.discountType === "percentage" ? "PERCENTAGE" : "FLAT");
+        formData.append(`variants[${index}].discountValue`, cleanDiscountVal);
+        formData.append(`variants[${index}].isActive`, String(v.active));
+
+        // Sizes
+        const activeSizes = v.sizes || [];
+        activeSizes.forEach((sizeName, sizeIdx) => {
+          formData.append(`variants[${index}].sizes[${sizeIdx}].sizeName`, sizeName);
+          formData.append(`variants[${index}].sizes[${sizeIdx}].stockQuantity`, String(v.sizeStock[sizeName] || 0));
+          formData.append(`variants[${index}].sizes[${sizeIdx}].isActive`, "true");
+        });
+
+        // Images & Primary Image resolution
+        let localImageCount = 0;
+        let primaryFilename = "";
+        const existingList = v.existingUrls || [];
+        (v.images || []).forEach(img => {
+          const isExisting = existingList.includes(img);
+          if (isExisting) {
+            formData.append(`variants[${index}].existingImageUrls`, img);
+          } else {
+            if (img.startsWith("data:")) {
+              try {
+                const filename = `variant_${index}_img_${localImageCount++}.png`;
+                const file = dataURLtoFile(img, filename);
+                formData.append(`variants[${index}].images`, file);
+                if (v.primaryImageUrl === img) {
+                  primaryFilename = filename;
+                }
+              } catch (fileErr) {
+                console.error("Error converting image base64 to file", fileErr);
+              }
+            } else if (img.startsWith("http")) {
+              formData.append(`variants[${index}].existingImageUrls`, img);
+            }
+          }
+        });
+
+        if (v.primaryImageUrl) {
+          if (v.primaryImageUrl.startsWith("http")) {
+            formData.append(`variants[${index}].primaryImageUrl`, v.primaryImageUrl);
+          } else if (primaryFilename) {
+            formData.append(`variants[${index}].primaryImageUrl`, primaryFilename);
+          }
+        }
+      });
+
+      if (isEdit && id) {
+        const rawId = Number(id.replace(/\D/g, ""));
+        await productApi.updateProduct(rawId, formData, token);
+      } else {
+        await productApi.createProduct(formData, token);
+      }
+
+      localStorage.removeItem("drip-doggy-product-draft");
+      alert(`"${productName}" (${sku}) has been successfully ${isEdit ? "updated" : "published"}!`);
+      navigate("/admin/products");
+    } catch (err: any) {
+      console.error("Error publishing product", err);
+      alert(`Failed to save product: ${err?.response?.data?.message || err?.message || err}`);
+    }
   };
 
   return (
@@ -273,16 +460,7 @@ export function AddProductPage() {
               {feedbackMsg}
             </span>
           )}
-          {!isEdit && (
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="bg-transparent border border-[#382d24]/30 hover:border-[#224870] text-[#382d24] hover:text-[#224870] text-[10.5px] font-black tracking-widest px-4.5 py-2.5 uppercase transition-all cursor-pointer flex items-center gap-2 rounded-none"
-            >
-              <Save className="h-4 w-4" />
-              Save Draft
-            </button>
-          )}
+
           <button
             type="submit"
             className="bg-[#224870] hover:bg-[#224870]/90 text-white text-[10.5px] font-black tracking-widest px-5.5 py-3 uppercase transition-colors cursor-pointer rounded-none border-none flex items-center gap-2"
@@ -304,10 +482,10 @@ export function AddProductPage() {
 
       <div className="max-w-4xl mx-auto space-y-8">
 
-        {/* 1. Specifications & Organization */}
+        {/* 1. Product Info & Categorization */}
         <div className="bg-[#faf8f5] border border-[#382d24]/15 p-7 space-y-5">
           <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest border-b border-[#382d24]/15 pb-4">
-            1. Specifications &amp; Organization
+            1. Product Info &amp; Categorization
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -328,17 +506,40 @@ export function AddProductPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
               <label className="text-[13px] font-bold text-[#615e56] uppercase tracking-wider block">Category</label>
-              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-                className="w-full bg-[#faf8f5] border border-[#382d24]/20 px-4 py-3 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              <select 
+                value={selectedCategory} 
+                onChange={e => {
+                  const catId = e.target.value;
+                  setSelectedCategory(catId);
+                  const cat = dbCategories.find(c => String(c.categoryId) === catId);
+                  if (cat && cat.subCategories && cat.subCategories.length > 0) {
+                    setSelectedSubCategory(String(cat.subCategories[0].subCategoryId));
+                  } else {
+                    setSelectedSubCategory("");
+                  }
+                }}
+                className="w-full bg-[#faf8f5] border border-[#382d24]/20 px-4 py-3 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all"
+              >
+                {dbCategories.map(c => (
+                  <option key={c.categoryId} value={String(c.categoryId)}>{c.categoryName}</option>
+                ))}
               </select>
             </div>
 
             <div className="space-y-2">
               <label className="text-[13px] font-bold text-[#615e56] uppercase tracking-wider block">Subcategory</label>
-              <select value={selectedSubCategory} onChange={e => setSelectedSubCategory(e.target.value)}
-                className="w-full bg-[#faf8f5] border border-[#382d24]/20 px-4 py-3 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all">
-                {(subcategoriesMap[selectedCategory] || []).map(sub => <option key={sub} value={sub}>{sub}</option>)}
+              <select 
+                value={selectedSubCategory} 
+                onChange={e => setSelectedSubCategory(e.target.value)}
+                className="w-full bg-[#faf8f5] border border-[#382d24]/20 px-4 py-3 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none cursor-pointer text-[#382d24] transition-all"
+              >
+                {(() => {
+                  const activeCat = dbCategories.find(c => String(c.categoryId) === selectedCategory);
+                  const subCats = activeCat?.subCategories || [];
+                  return subCats.map(sub => (
+                    <option key={sub.subCategoryId} value={String(sub.subCategoryId)}>{sub.subcategoryName}</option>
+                  ));
+                })()}
               </select>
             </div>
           </div>
@@ -479,41 +680,11 @@ export function AddProductPage() {
 
 
 
-        {/* 2. Cover Image */}
-        <div className="bg-[#faf8f5] border border-[#382d24]/15 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest">
-                2. Cover Image <span className="text-red-500 font-normal lowercase text-xs">(600x800 pixels)</span>
-              </h3>
-            </div>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-            {productImages.length > 0 ? (
-              <div className="flex items-center gap-3">
-                <div className="w-[60px] h-[80px] border border-[#382d24]/15 overflow-hidden bg-neutral-50/50 flex-shrink-0">
-                  <img src={productImages[0]} alt="Product" className="w-full h-full object-cover" />
-                </div>
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-transparent border border-[#382d24]/20 hover:border-[#224870] text-[#382d24] text-[9px] font-bold px-3 py-1.5 uppercase cursor-pointer transition-colors rounded-none">
-                  <FolderOpen className="w-3.5 h-3.5 inline-block mr-1 text-neutral-500" /> Browse
-                </button>
-                <button type="button" onClick={() => setProductImages([])} className="bg-transparent border border-[#382d24]/20 text-[#b2533e] text-[9px] font-bold px-3 py-1.5 uppercase cursor-pointer hover:border-[#b2533e] transition-colors rounded-none">
-                  <X className="w-3.5 h-3.5 inline-block mr-1" /> Remove
-                </button>
-              </div>
-            ) : (
-              <div onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 cursor-pointer px-4 py-2.5 border-2 border-dashed border-[#382d24]/20 hover:border-neutral-400 transition-colors rounded-none">
-                <Upload className="w-5 h-5 text-neutral-300 stroke-[1.5]" />
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Upload cover image</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3. Product Variants */}
+        {/* 2. Product Variants */}
         <div className="bg-[#faf8f5] border border-[#382d24]/15 p-7 space-y-6">
           <div className="flex items-center justify-between border-b border-[#382d24]/15 pb-4">
             <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest">
-              3. Product Variants
+              2. Product Variants
             </h3>
             <button
               type="button"
@@ -529,6 +700,7 @@ export function AddProductPage() {
                 active: true,
                 sizes: [],
                 images: [],
+                existingUrls: [],
               }])}
               className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-black tracking-widest px-4 py-2.5 uppercase flex items-center gap-1.5 border-none cursor-pointer transition-colors"
             >
@@ -559,7 +731,7 @@ export function AddProductPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))}
+                      onClick={() => setDeleteVariantIndex(idx)}
                       className="text-neutral-400 hover:text-[#b2533e] bg-transparent border-none cursor-pointer p-0 transition-colors"
                     >
                       <X className="w-4 h-4" />
@@ -570,17 +742,43 @@ export function AddProductPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {/* Image Upload */}
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Variant Images <span className="text-red-500 font-normal lowercase text-[9px]">(600x800 pixels)</span></label>
+                    <label className="text-[11px] font-bold text-[#615e56] uppercase tracking-wider block">Variant Images <span className="text-red-500 font-bold uppercase text-[8.5px]">(Required: 3:4 aspect ratio portrait only, e.g. 600x800, 768x1024)</span></label>
                     <div className="grid grid-cols-2 gap-2">
                       {variant.images.map((img, imgIdx) => (
                         <div key={imgIdx} className="border border-[#382d24]/15 w-[75px] h-[100px] relative bg-neutral-50 flex items-center justify-center p-1 shadow-xs">
                           <img src={img} alt="Variant asset" className="w-full h-full object-cover" />
+                          
+                          {/* Primary Image Star Indicator */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVariants(prev => prev.map((v, i) => {
+                                if (i !== idx) return v;
+                                const remainingImages = v.images.filter((_, idxImg) => idxImg !== imgIdx);
+                                return {
+                                  ...v,
+                                  images: [img, ...remainingImages],
+                                  primaryImageUrl: img
+                                };
+                              }));
+                            }}
+                            className={`absolute top-0.5 left-0.5 p-0.5 bg-white/80 hover:bg-white text-xs border border-neutral-200/50 cursor-pointer transition-all ${
+                              (variant.primaryImageUrl === img || (!variant.primaryImageUrl && imgIdx === 0))
+                                ? "text-amber-500" 
+                                : "text-neutral-300 hover:text-amber-400"
+                            }`}
+                            title="Set as Primary Cover Image"
+                          >
+                            <Star className="w-3.5 h-3.5 fill-current" />
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => {
                               setVariants(prev => prev.map((v, i) => i === idx ? {
                                 ...v,
-                                images: v.images.filter((_, idxImg) => idxImg !== imgIdx)
+                                images: v.images.filter((_, idxImg) => idxImg !== imgIdx),
+                                primaryImageUrl: v.primaryImageUrl === img ? undefined : v.primaryImageUrl
                               } : v));
                             }}
                             className="absolute -top-1 -right-1 bg-[#b2533e] text-white hover:bg-red-800 w-4.5 h-4.5 flex items-center justify-center border-none cursor-pointer rounded-none"
@@ -605,8 +803,10 @@ export function AddProductPage() {
                                     const base64Url = ev.target.result as string;
                                     const img = new Image();
                                     img.onload = () => {
-                                      if (img.width !== 600 || img.height !== 800) {
-                                        alert(`Error: Variant image dimensions are ${img.width}x${img.height}px. Variant images must be exactly 600x800 pixels (3:4 aspect ratio).`);
+                                      const ratio = img.width / img.height;
+                                      const isCorrectRatio = Math.abs(ratio - 0.75) < 0.025;
+                                      if (!isCorrectRatio) {
+                                        alert(`Error: Variant image dimensions are ${img.width}x${img.height}px. Variant images must match a 3:4 aspect ratio (portrait) only.`);
                                       } else {
                                         setVariants(prev => prev.map((v, i) => i === idx ? {
                                           ...v,
@@ -666,8 +866,8 @@ export function AddProductPage() {
                             const mrpValue = e.target.value;
                             setVariants(prev => prev.map((v, i) => {
                               if (i !== idx) return v;
-                              const mrpNum = Number(mrpValue) || 0;
-                              const discNum = Number(v.discountValue) || 0;
+                              const mrpNum = Number(String(mrpValue).replace(/,/g, "")) || 0;
+                              const discNum = Number(String(v.discountValue).replace(/,/g, "")) || 0;
                               let finalVal = mrpNum;
                               if (v.discountType === "percentage") {
                                 finalVal = mrpNum - (mrpNum * (discNum / 100));
@@ -696,8 +896,8 @@ export function AddProductPage() {
                             const discType = e.target.value as "percentage" | "value";
                             setVariants(prev => prev.map((v, i) => {
                               if (i !== idx) return v;
-                              const mrpNum = Number(v.mrp) || 0;
-                              const discNum = Number(v.discountValue) || 0;
+                              const mrpNum = Number(String(v.mrp).replace(/,/g, "")) || 0;
+                              const discNum = Number(String(v.discountValue).replace(/,/g, "")) || 0;
                               let finalVal = mrpNum;
                               if (discType === "percentage") {
                                 finalVal = mrpNum - (mrpNum * (discNum / 100));
@@ -724,8 +924,8 @@ export function AddProductPage() {
                           const discValue = e.target.value;
                           setVariants(prev => prev.map((v, i) => {
                             if (i !== idx) return v;
-                            const mrpNum = Number(v.mrp) || 0;
-                            const discNum = Number(discValue) || 0;
+                            const mrpNum = Number(String(v.mrp).replace(/,/g, "")) || 0;
+                            const discNum = Number(String(discValue).replace(/,/g, "")) || 0;
                             let finalVal = mrpNum;
                             if (v.discountType === "percentage") {
                               finalVal = mrpNum - (mrpNum * (discNum / 100));
@@ -838,11 +1038,11 @@ export function AddProductPage() {
           </div>
         </div>
 
-        {/* 4. Product Details (Specs & Design Details) */}
+        {/* 3. Product Details (Specs & Features) */}
         <div className="bg-[#faf8f5] border border-[#382d24]/15 p-7 space-y-8">
           <div className="border-b border-[#382d24]/15 pb-4">
             <h3 className="text-sm font-black text-[#382d24] uppercase tracking-widest">
-              4. Product Details (Specs & Design Details)
+              3. Product Details (Specs & Features)
             </h3>
           </div>
 
@@ -850,7 +1050,7 @@ export function AddProductPage() {
             {/* Left Col: Specifications */}
             <div className="space-y-5">
               <h4 className="text-[11px] font-black text-[#224870] uppercase tracking-widest border-b border-[#382d24]/10 pb-1.5">
-                Technical Specifications
+                Product Specifications
               </h4>
               
               {/* Predefined Standard Specs List with Checkboxes */}
@@ -974,7 +1174,7 @@ export function AddProductPage() {
             {/* Right Col: Design Details */}
             <div className="space-y-4">
               <h4 className="text-[11px] font-black text-[#224870] uppercase tracking-widest border-b border-[#382d24]/10 pb-1.5">
-                Design Details Bullets
+                Product Features
               </h4>
               <div className="space-y-2">
                 {designDetails.map((detail, dIdx) => (
@@ -1070,6 +1270,34 @@ export function AddProductPage() {
         className={`fixed inset-0 z-40 pointer-events-auto ${contextMenu ? "block" : "hidden"}`} 
         onClick={() => setContextMenu(null)}
       />
+
+      {/* Delete Variant Confirmation Modal */}
+      {deleteVariantIndex !== null && (
+        <div className="fixed inset-0 bg-[#382d24]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDeleteVariantIndex(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4 rounded-none" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 text-[#b2533e]">
+              <AlertTriangle className="w-5 h-5 text-[#b2533e]" />
+              <h3 className="text-xs font-black tracking-widest uppercase">Critical Action — Delete Variant</h3>
+            </div>
+            <p className="text-[10px] text-[#615e56] uppercase font-bold leading-normal">
+              Are you sure you want to delete <strong className="text-[#382d24]">{variants[deleteVariantIndex]?.name || `Variant ${deleteVariantIndex + 1}`}</strong>? This will permanently delete this variant from the product <strong className="text-[#382d24]">{productName || ""}</strong>. This action is irreversible.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-100">
+              <button type="button" onClick={() => setDeleteVariantIndex(null)} className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-none transition-all">Cancel</button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setVariants(prev => prev.filter((_, i) => i !== deleteVariantIndex));
+                  setDeleteVariantIndex(null);
+                }} 
+                className="bg-[#b2533e] text-white hover:bg-red-800 text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer rounded-none border-none transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </form>
   );

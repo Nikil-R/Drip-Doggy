@@ -62,20 +62,23 @@ export function RolesPage() {
           const data = await response.json();
           if (Array.isArray(data)) {
             // Mapped keys directly matching the database user schema columns (first_name, last_name, role, dob, phone_no, gender)
-            const mapped: AdminUser[] = data.map((item: any, index: number) => ({
-              id: item.id ? `DD-ADM-${item.id}` : `DD-ADM-00${index + 1}`,
-              name: item.first_name && item.last_name 
-                ? `${item.first_name} ${item.last_name}` 
-                : (item.first_name || item.last_name || item.name || "Nikil"),
-              email: item.email || "nikil@dripdoggy.com",
-              role: item.role || "Admin",
-              status: item.status === "Active" || item.status === "Inactive" || item.status === "Pending" ? item.status : "Active",
-              lastActive: item.lastActive || "Just now",
-              lastLoginIP: item.lastLoginIP || "—",
-              permissionsCount: 18,
-              twoFactorEnabled: !!item.twoFactorEnabled,
-              department: item.department || "Tech"
-            }));
+            const mapped: AdminUser[] = data.map((item: any, index: number) => {
+              const fName = item.firstName || item.first_name || "";
+              const lName = item.lastName || item.last_name || "";
+              const name = fName && lName ? `${fName} ${lName}` : (fName || lName || item.name || "Nikil");
+              return {
+                id: item.id ? `DD-ADM-${item.id}` : `DD-ADM-00${index + 1}`,
+                name,
+                email: item.email || "nikil@dripdoggy.com",
+                role: item.role || "Admin",
+                status: item.status === "Active" || item.status === "Inactive" || item.status === "Pending" ? item.status : "Active",
+                lastActive: item.lastActive || "Just now",
+                lastLoginIP: item.lastLoginIP || "—",
+                permissionsCount: 18,
+                twoFactorEnabled: !!item.twoFactorEnabled,
+                department: item.department || "Tech"
+              };
+            });
             setAdmins(mapped);
           }
         } else {

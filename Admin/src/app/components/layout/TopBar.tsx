@@ -35,7 +35,7 @@ export function TopBar() {
     const path = location.pathname;
     if (path.includes("/admin/dashboard")) return "Dashboard";
     if (path.includes("/admin/orders")) return "Order Management";
-    if (path.includes("/admin/customers")) return "Customers";
+    if (path.includes("/admin/customers")) return "Customers Management";
     if (path.includes("/admin/categories")) return "Categories";
     if (path.includes("/admin/transactions")) return "Payments Ledger";
     if (path.includes("/admin/products/new")) return "Add Product";
@@ -45,7 +45,7 @@ export function TopBar() {
     if (path.includes("/admin/authority")) return "Control Authority";
     if (path.includes("/admin/coupons")) return "Coupons & Promos";
     if (path.includes("/admin/brands")) return "Brands & Labels";
-    if (path.includes("/admin/content")) return "Content Manager";
+    if (path.includes("/admin/content")) return "Navigation Menu";
     if (path.includes("/admin/analytics")) return "Analytics";
     if (path.includes("/admin/settings")) return "Settings";
     if (path.includes("/admin/profile")) return "Admin Profile";
