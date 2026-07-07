@@ -16,14 +16,18 @@ public class CustomerRegisterRequest {
     @NotBlank(message = "Gender is required")
     private String gender;
 
+    @NotBlank(message = "Phone number is required")
+    private String phoneNo;
+
     public CustomerRegisterRequest() {
     }
 
-    public CustomerRegisterRequest(String firstName, String lastName, String dob, String gender) {
+    public CustomerRegisterRequest(String firstName, String lastName, String dob, String gender, String phoneNo) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dob = dob;
         this.gender = gender;
+        this.phoneNo = phoneNo;
     }
 
     public String getFirstName() {
@@ -56,5 +60,13 @@ public class CustomerRegisterRequest {
 
     public void setGender(String gender) {
         this.gender = gender;
+    }
+
+    public String getPhoneNo() {
+        return phoneNo;
+    }
+
+    public void setPhoneNo(String phoneNo) {
+        this.phoneNo = phoneNo;
     }
 }

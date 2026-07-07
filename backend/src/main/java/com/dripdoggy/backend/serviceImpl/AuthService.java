@@ -159,8 +159,24 @@ public class AuthService implements IAuthService {
             throw new CustomerAlreadyFoundException("Customer is already registered");
         }
 
+        String phoneNo = request.getPhoneNo();
+        if (phoneNo == null || phoneNo.trim().isEmpty()) {
+            throw new InvalidCountryCodeException("Phone number is required");
+        }
+        
+        validatePhoneNumberCountryCode(phoneNo);
+
+        // Check if another user is already registered with this phone number
+        String alternativePhone = phoneNo.startsWith("+") ? phoneNo.substring(1) : "+" + phoneNo;
+        Optional<User> existingUserByPhone = userRepository.findByPhoneNo(phoneNo)
+                .or(() -> userRepository.findByPhoneNo(alternativePhone));
+        if (existingUserByPhone.isPresent() && !existingUserByPhone.get().getId().equals(user.getId())) {
+            throw new CustomerAlreadyFoundException("Phone number is already registered by another user: " + phoneNo);
+        }
+
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
+        user.setPhoneNo(phoneNo);
         user.setRole(UserRole.CUSTOMER);
 
         if (request.getDob() != null && !request.getDob().trim().isEmpty()) {
@@ -182,6 +198,7 @@ public class AuthService implements IAuthService {
         response.setLastName(user.getLastName());
         response.setDob(user.getDob() != null ? user.getDob().toString() : null);
         response.setGender(user.getGender() != null ? user.getGender().name() : null);
+        response.setPhoneNo(user.getPhoneNo());
 
         return response;
     }
