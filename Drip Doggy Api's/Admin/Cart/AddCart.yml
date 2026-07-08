@@ -1,0 +1,24 @@
+info:
+  name: AddCart
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/cart
+  body:
+    type: json
+    data: |-
+      {
+        "productVariantSizeId":1,
+        "quantity":10
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

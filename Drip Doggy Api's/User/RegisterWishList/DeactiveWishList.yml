@@ -1,0 +1,17 @@
+info:
+  name: DeactiveWishList
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: http://localhost:8081/dripdoggy/api/wishlist/2
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
