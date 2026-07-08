@@ -79,10 +79,10 @@ public class CustomerService implements ICustomerService {
     @Override
     public CustomerDetailResponseDto getCustomerDetails(Long customerId) {
         User user = userRepository.findById(customerId)
-                .orElseThrow(() -> new UserNotFoundException("Customer not found with ID: " + customerId));
+                .orElseThrow(() -> new UserNotFoundException("Customer not found"));
 
         if (user.getRole() != UserRole.CUSTOMER) {
-            throw new IllegalArgumentException("User with ID " + customerId + " is not a customer.");
+            throw new IllegalArgumentException("User is not a customer.");
         }
 
         // 1. Onboarding Profile
@@ -237,10 +237,10 @@ public class CustomerService implements ICustomerService {
     @Override
     public ResponseMsgDto toggleCustomerBlockStatus(Long customerId) {
         User user = userRepository.findById(customerId)
-                .orElseThrow(() -> new UserNotFoundException("Customer not found with ID: " + customerId));
+                .orElseThrow(() -> new UserNotFoundException("Customer not found"));
 
         if (user.getRole() != UserRole.CUSTOMER) {
-            throw new IllegalArgumentException("User with ID " + customerId + " is not a customer.");
+            throw new IllegalArgumentException("User is not a customer.");
         }
 
         boolean isBlocked = Boolean.TRUE.equals(user.getIsBlocked());

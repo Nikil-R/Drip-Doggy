@@ -95,12 +95,12 @@ public class CategoryService implements ICategoryService {
     @Override
     public CategoryDetailsResponseDto fetchCategoryById(Long id) {
         Category category = categoryrepo.findById(id)
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + id));
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
-            throw new CategoryNotFoundException("Category not found with ID: " + id);
+            throw new CategoryNotFoundException("Category not found");
         }
         if (!isCurrentUserAdmin() && (category.getIsActive() == null || !category.getIsActive())) {
-            throw new CategoryNotFoundException("Category not found with ID: " + id);
+            throw new CategoryNotFoundException("Category not found");
         }
         CategoryResponseDto responseDto = mapToCategoryResponseDto(category);
 
@@ -110,9 +110,9 @@ public class CategoryService implements ICategoryService {
     @Override
     public ResponseMsgDto updateCategory(Long id, CategoryRequestDto categoryDto) {
         Category category = categoryrepo.findById(id)
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + id));
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
-            throw new CategoryNotFoundException("Category not found with ID: " + id);
+            throw new CategoryNotFoundException("Category not found");
         }
 
         if (categoryrepo.existsByCategoryNameIgnoreCaseAndIdNot(categoryDto.getCategoryName(), id)) {
@@ -162,7 +162,7 @@ public class CategoryService implements ICategoryService {
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
 
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
-            throw new CategoryNotFoundException(category.getCategoryName()+" "+"Category not found");
+            throw new CategoryNotFoundException("Category not found");
         }
 
         String originalName = category.getCategoryName();
@@ -200,9 +200,9 @@ public class CategoryService implements ICategoryService {
     @Override
     public ResponseMsgDto updateCategoryIsActiveById(Long categoryId) {
         Category category = categoryrepo.findById(categoryId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
         if (Boolean.TRUE.equals(category.getIsDeleted())) {
-            throw new CategoryNotFoundException("Category not found with ID: " + categoryId);
+            throw new CategoryNotFoundException("Category not found");
         }
 
         boolean newActiveStatus = category.getIsActive() == null || !category.getIsActive();
