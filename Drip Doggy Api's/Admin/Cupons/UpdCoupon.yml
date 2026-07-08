@@ -1,0 +1,30 @@
+info:
+  name: UpdCoupon
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: http://localhost:8081/dripdoggy/api/admin/coupons/4
+  body:
+    type: json
+    data: |-
+      {
+        "code":"dd-001",
+        "discountType":"FLAT",
+        "discountValue":600,
+        "minOrder":2000,
+        "limit":3,
+        "description":"simple welocme customers"
+      //    "startingDate": "2026-07-08",
+      //   "expiryDate": "2026-07-08"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMyNzg4MzksImV4cCI6MTc4NTAwNjgzOX0.G4G60ZILfQZaGsJV_SjJa_3U4eqQq8hlHtWZrhS4Qpph1Zn8gsecJhcucwD84x7RGVjAk7tKnZlxWGSCHK3t5Q
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

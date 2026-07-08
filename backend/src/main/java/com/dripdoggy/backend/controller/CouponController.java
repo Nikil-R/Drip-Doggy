@@ -66,7 +66,7 @@ public class CouponController {
 
     // ─── PUBLIC ENDPOINTS ───
 
-    @PostMapping("/api/public/coupons/validate")
+    @PostMapping("/api/customer/coupons/validate")
     public ResponseEntity<CouponValidationResponseDto> validateCoupon(
             @Valid @RequestBody CouponValidateRequestDto request) {
         CouponValidationResponseDto response = couponService.validateAndCalculateDiscount(

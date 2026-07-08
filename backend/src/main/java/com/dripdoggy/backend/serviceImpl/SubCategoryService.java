@@ -59,7 +59,7 @@ public class SubCategoryService implements ISubCategoryService {
 
         if (subCategoryDto.getCategoryId() != null) {
             Category category = categoryrepo.findById(subCategoryDto.getCategoryId())
-                    .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + subCategoryDto.getCategoryId()));
+                    .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
             subCategory.setCategory(category);
         } else {
             throw new CategoryNotFoundException("Category ID must be provided");
@@ -88,17 +88,17 @@ public class SubCategoryService implements ISubCategoryService {
     @Override
     public SubCategoryDetailsResponseDto fetchSubCategoryById(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
-                .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
+                .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found"));
         if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
-            throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+            throw new SubCategoryNotFoundException("Subcategory not found");
         }
         if (!isCurrentUserAdmin()) {
             if (subCategory.getIsActive() == null || !subCategory.getIsActive()) {
-                throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+                throw new SubCategoryNotFoundException("Subcategory not found");
             }
             Category cat = subCategory.getCategory();
             if (cat != null && (cat.getIsActive() == null || !cat.getIsActive() || Boolean.TRUE.equals(cat.getIsDeleted()))) {
-                throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+                throw new SubCategoryNotFoundException("Subcategory not found");
             }
         }
         SubCategoryResponseDto responseDto = mapToSubCategoryResponseDto(subCategory);
@@ -108,9 +108,9 @@ public class SubCategoryService implements ISubCategoryService {
     @Override
     public ResponseMsgDto updateSubCategory(Long id, SubCategoryRequestDto subCategoryDto) {
         SubCategory subCategory = subCategoryRepository.findById(id)
-                .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
+                .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found"));
         if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
-            throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+            throw new SubCategoryNotFoundException("Subcategory not found");
         }
 
         if (subCategoryDto.getImage() != null && !subCategoryDto.getImage().isEmpty()) {
@@ -133,7 +133,7 @@ public class SubCategoryService implements ISubCategoryService {
 
         if (subCategoryDto.getCategoryId() != null) {
             Category category = categoryrepo.findById(subCategoryDto.getCategoryId())
-                    .orElseThrow(() -> new SubCategoryNotFoundException("Category not found with ID: " + subCategoryDto.getCategoryId()));
+                    .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
             subCategory.setCategory(category);
         }
 
@@ -154,9 +154,9 @@ public class SubCategoryService implements ISubCategoryService {
     @Override
     public ResponseMsgDto toggleSubCategoryIsActive(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
-                .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found with ID: " + id));
+                .orElseThrow(() -> new SubCategoryNotFoundException("Subcategory not found"));
         if (Boolean.TRUE.equals(subCategory.getIsDeleted())) {
-            throw new SubCategoryNotFoundException("Subcategory not found with ID: " + id);
+            throw new SubCategoryNotFoundException("Subcategory not found");
         }
 
         boolean newActiveStatus = subCategory.getIsActive() == null || !subCategory.getIsActive();

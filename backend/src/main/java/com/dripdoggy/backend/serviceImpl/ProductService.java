@@ -107,15 +107,15 @@ public class ProductService implements IProductService {
     public ResponseMsgDto createProduct(ProductRequestDto productReqDto) {
         // Validate Product SKU
         if (productReqDto.getSkuCode() != null && productRepository.existsBySkuCodeIgnoreCase(productReqDto.getSkuCode())) {
-            throw new IllegalArgumentException("Product with SKU '" + productReqDto.getSkuCode() + "' already exists");
+            throw new DuplicateProductSkuException("Product with SKU '" + productReqDto.getSkuCode() + "' already exists");
         }
 
         // Validate Category & SubCategory
         Category category = categoryRepository.findById(productReqDto.getCategoryId())
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + productReqDto.getCategoryId()));
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
 
         SubCategory subCategory = subCategoryRepository.findById(productReqDto.getSubCategoryId())
-                .orElseThrow(() -> new SubCategoryNotFoundException("SubCategory not found with ID: " + productReqDto.getSubCategoryId()));
+                .orElseThrow(() -> new SubCategoryNotFoundException("SubCategory not found"));
 
         // Create Product
         Product product = new Product();
@@ -173,7 +173,7 @@ public class ProductService implements IProductService {
             for (ProductVariantRequestDto variantDto : productReqDto.getVariants()) {
                 // Validate Variant SKU
                 if (variantDto.getSkuCode() != null && productVariantRepository.existsBySkuCodeIgnoreCase(variantDto.getSkuCode())) {
-                    throw new IllegalArgumentException("Variant SKU '" + variantDto.getSkuCode() + "' already exists");
+                    throw new DuplicateProductSkuException("Variant SKU '" + variantDto.getSkuCode() + "' already exists");
                 }
 
                 // Validate Variant Images Dimensions
@@ -296,23 +296,23 @@ public class ProductService implements IProductService {
     @Override
     public ProductDetailsResponseDto fetchProductById(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
         if (Boolean.TRUE.equals(product.getIsDeleted())) {
-            throw new ProductNotFoundException("Product not found with ID: " + id);
+            throw new ProductNotFoundException("Product not found");
         }
 
         if (!isCurrentUserAdmin()) {
             if (product.getIsActive() == null || !product.getIsActive()) {
-                throw new ProductNotFoundException("Product not found with ID: " + id);
+                throw new ProductNotFoundException("Product not found");
             }
             Category cat = product.getCategory();
             if (cat != null && (cat.getIsActive() == null || !cat.getIsActive() || Boolean.TRUE.equals(cat.getIsDeleted()))) {
-                throw new ProductNotFoundException("Product not found with ID: " + id);
+                throw new ProductNotFoundException("Product not found");
             }
             SubCategory sub = product.getSubCategory();
             if (sub != null && (sub.getIsActive() == null || !sub.getIsActive() || Boolean.TRUE.equals(sub.getIsDeleted()))) {
-                throw new ProductNotFoundException("Product not found with ID: " + id);
+                throw new ProductNotFoundException("Product not found");
             }
         }
 
@@ -322,23 +322,23 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto updateProduct(Long id, ProductRequestDto productReqDto) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
         if (Boolean.TRUE.equals(product.getIsDeleted())) {
-            throw new ProductNotFoundException("Product not found with ID: " + id);
+            throw new ProductNotFoundException("Product not found");
         }
 
         // Validate Product SKU uniqueness (except current product)
         if (productReqDto.getSkuCode() != null && productRepository.existsBySkuCodeIgnoreCaseAndIdNot(productReqDto.getSkuCode(), id)) {
-            throw new IllegalArgumentException("Product SKU '" + productReqDto.getSkuCode() + "' already exists");
+            throw new DuplicateProductSkuException("Product SKU '" + productReqDto.getSkuCode() + "' already exists");
         }
 
         // Validate Category & SubCategory
         Category category = categoryRepository.findById(productReqDto.getCategoryId())
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + productReqDto.getCategoryId()));
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
 
         SubCategory subCategory = subCategoryRepository.findById(productReqDto.getSubCategoryId())
-                .orElseThrow(() -> new SubCategoryNotFoundException("SubCategory not found with ID: " + productReqDto.getSubCategoryId()));
+                .orElseThrow(() -> new SubCategoryNotFoundException("SubCategory not found"));
 
         // Update basic attributes
         product.setProductName(productReqDto.getProductName());
@@ -421,7 +421,7 @@ public class ProductService implements IProductService {
                 if (variant == null) {
                     // Check if SKU is used by another product variant
                     if (productVariantRepository.existsBySkuCodeIgnoreCase(varDto.getSkuCode())) {
-                        throw new IllegalArgumentException("Variant SKU '" + varDto.getSkuCode() + "' already exists");
+                        throw new DuplicateProductSkuException("Variant SKU '" + varDto.getSkuCode() + "' already exists");
                     }
                     variant = new ProductVariant();
                     variant.setSkuCode(varDto.getSkuCode());
@@ -607,21 +607,27 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
         if (Boolean.TRUE.equals(product.getIsDeleted())) {
-            throw new ProductNotFoundException("Product not found with ID: " + id);
+            throw new ProductNotFoundException("Product not found");
         }
 
         // Soft delete: set isActive to false and isDeleted to true
         product.setIsActive(false);
         product.setIsDeleted(true);
+        if (product.getSkuCode() != null && !product.getSkuCode().contains("_DELETED_")) {
+            product.setSkuCode(product.getSkuCode() + "_DELETED_" + System.currentTimeMillis());
+        }
 
         // Soft delete and deactivate all variants and their sizes
         if (product.getProductVariants() != null) {
             for (ProductVariant variant : product.getProductVariants()) {
                 variant.setIsActive(false);
                 variant.setIsDeleted(true);
+                if (variant.getSkuCode() != null && !variant.getSkuCode().contains("_DELETED_")) {
+                    variant.setSkuCode(variant.getSkuCode() + "_DELETED_" + System.currentTimeMillis());
+                }
                 if (variant.getProductVariantSizes() != null) {
                     for (ProductVariantSize size : variant.getProductVariantSizes()) {
                         size.setIsActive(false);
@@ -640,10 +646,10 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto toggleProductIsActive(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
         if (Boolean.TRUE.equals(product.getIsDeleted())) {
-            throw new ProductNotFoundException("Product not found with ID: " + id);
+            throw new ProductNotFoundException("Product not found");
         }
 
         boolean nextActiveState = product.getIsActive() == null || !product.getIsActive();
@@ -666,7 +672,7 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto toggleProductVariantIsActive(Long id) {
         ProductVariant variant = productVariantRepository.findById(id)
-                .orElseThrow(() -> new ProductVariantNotFoundException("Product variant not found with ID: " + id));
+                .orElseThrow(() -> new ProductVariantNotFoundException("Product variant not found"));
 
         boolean nextActiveState = variant.getIsActive() == null || !variant.getIsActive();
         variant.setIsActive(nextActiveState);
@@ -680,7 +686,7 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto toggleProductVariantSizeIsActive(Long id) {
         ProductVariantSize variantSize = productVariantSizeRepository.findById(id)
-                .orElseThrow(() -> new ProductVariantSizeNotFoundException("Product variant size not found with ID: " + id));
+                .orElseThrow(() -> new ProductVariantSizeNotFoundException("Product variant size not found"));
 
         boolean nextActiveState = variantSize.getIsActive() == null || !variantSize.getIsActive();
         variantSize.setIsActive(nextActiveState);
@@ -695,15 +701,18 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto deleteProductVariant(Long id) {
         ProductVariant variant = productVariantRepository.findById(id)
-                .orElseThrow(() -> new ProductVariantNotFoundException("Product variant not found with ID: " + id));
+                .orElseThrow(() -> new ProductVariantNotFoundException("Product variant not found"));
 
         if (Boolean.TRUE.equals(variant.getIsDeleted())) {
-            throw new ProductVariantNotFoundException("Product variant not found with ID: " + id);
+            throw new ProductVariantNotFoundException("Product variant not found");
         }
 
         // Soft delete: set isActive to false and isDeleted to true
         variant.setIsActive(false);
         variant.setIsDeleted(true);
+        if (variant.getSkuCode() != null && !variant.getSkuCode().contains("_DELETED_")) {
+            variant.setSkuCode(variant.getSkuCode() + "_DELETED_" + System.currentTimeMillis());
+        }
 
         if (variant.getProductVariantSizes() != null) {
             for (ProductVariantSize size : variant.getProductVariantSizes()) {

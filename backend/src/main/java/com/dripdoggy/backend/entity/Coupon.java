@@ -49,6 +49,9 @@ public class Coupon {
     @Column(name = "first_order_only", nullable = false)
     private Boolean firstOrderOnly = false;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CouponFilter> couponFilters;
 
@@ -190,5 +193,13 @@ public class Coupon {
 
     public void setFirstOrderOnly(Boolean firstOrderOnly) {
         this.firstOrderOnly = firstOrderOnly;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

@@ -11,8 +11,13 @@ import com.dripdoggy.backend.enums.DiscountType;
 import com.dripdoggy.backend.exception.CouponExpiredException;
 import com.dripdoggy.backend.exception.CouponFirstOrderOnlyException;
 import com.dripdoggy.backend.exception.CouponNotFoundException;
+import com.dripdoggy.backend.exception.DiscountNotAppliedException;
+import com.dripdoggy.backend.exception.InvalidCredentialsException;
+import com.dripdoggy.backend.entity.CouponUsage;
 import com.dripdoggy.backend.repository.CouponRepository;
 import com.dripdoggy.backend.repository.UserRepository;
+import com.dripdoggy.backend.repository.CouponUsageRepository;
+import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,17 +34,19 @@ public class CouponService implements ICouponService {
 
     private final CouponRepository couponRepository;
     private final UserRepository userRepository;
+    private final CouponUsageRepository couponUsageRepository;
 
     @Autowired
-    public CouponService(CouponRepository couponRepository, UserRepository userRepository) {
+    public CouponService(CouponRepository couponRepository, UserRepository userRepository, CouponUsageRepository couponUsageRepository) {
         this.couponRepository = couponRepository;
         this.userRepository = userRepository;
+        this.couponUsageRepository = couponUsageRepository;
     }
 
     @Override
     public ResponseMsgDto createCoupon(CouponRequestDto couponDto) {
         if (couponRepository.findByCode(couponDto.getCode().toUpperCase().trim()).isPresent()) {
-            throw new IllegalArgumentException("Coupon code already exists: " + couponDto.getCode());
+            throw new CouponNotFoundException("Coupon code already exists: " + couponDto.getCode());
         }
 
         Coupon coupon = new Coupon();
@@ -62,6 +69,7 @@ public class CouponService implements ICouponService {
         coupon.setDescription(couponDto.getDescription());
         coupon.setUsedCount(0);
         coupon.setFirstOrderOnly(couponDto.getFirstOrderOnly() != null ? couponDto.getFirstOrderOnly() : false);
+        coupon.setIsDeleted(false);
 
         couponRepository.save(coupon);
 
@@ -74,7 +82,7 @@ public class CouponService implements ICouponService {
 
     @Override
     public List<CouponResponseDto> fetchAllCoupons() {
-        return couponRepository.findAll().stream()
+        return couponRepository.findAllActiveCoupons().stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
     }
@@ -82,14 +90,20 @@ public class CouponService implements ICouponService {
     @Override
     public CouponResponseDto fetchCouponById(Long id) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found with ID: " + id));
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
+        if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
         return convertToResponseDto(coupon);
     }
 
     @Override
     public ResponseMsgDto updateCoupon(Long id, CouponRequestDto couponDto) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found with ID: " + id));
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
+        if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
 
         String newCode = couponDto.getCode().toUpperCase().trim();
         if (!coupon.getCode().equals(newCode) && couponRepository.findByCode(newCode).isPresent()) {
@@ -127,15 +141,26 @@ public class CouponService implements ICouponService {
     @Override
     public ResponseMsgDto deleteCoupon(Long id) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found with ID: " + id));
-        couponRepository.delete(coupon);
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
+        if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
+        
+        coupon.setIsDeleted(true);
+        coupon.setIsActive(false);
+        coupon.setCode(coupon.getCode() + "_DELETED_" + System.currentTimeMillis());
+        couponRepository.save(coupon);
+        
         return new ResponseMsgDto(200, "Coupon deleted successfully.");
     }
 
     @Override
     public ResponseMsgDto toggleCouponIsActive(Long id) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found with ID: " + id));
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
+        if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
         coupon.setIsActive(!Boolean.TRUE.equals(coupon.getIsActive()));
         couponRepository.save(coupon);
         return new ResponseMsgDto(200, "Coupon status updated to " + (coupon.getIsActive() ? "Active" : "Inactive") + " successfully.");
@@ -145,7 +170,21 @@ public class CouponService implements ICouponService {
     @Transactional(readOnly = true)
     public CouponValidationResponseDto validateAndCalculateDiscount(String code, BigDecimal orderAmount) {
         Coupon coupon = couponRepository.findByCode(code.toUpperCase().trim())
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found with code: " + code));
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
+        if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
+
+        // 0. Retrieve current authenticated user and enforce registration
+        User user = getOptionalCurrentUser();
+        if (user == null) {
+            throw new InvalidCredentialsException("Access Denied: User must be authenticated to apply coupons.");
+        }
+
+        // Check if this coupon has already been used by the customer
+        if (couponUsageRepository.existsByUserAndCoupon(user, coupon)) {
+            throw new DiscountNotAppliedException("This coupon has already been used by you.");
+        }
 
         // 1. Check if Coupon is Active
         if (!Boolean.TRUE.equals(coupon.getIsActive())) {
@@ -170,15 +209,14 @@ public class CouponService implements ICouponService {
 
         // 5. Check First Order Only
         if (Boolean.TRUE.equals(coupon.getFirstOrderOnly())) {
-            User user = getOptionalCurrentUser();
-            if (user != null && user.getOrders() != null && !user.getOrders().isEmpty()) {
+            if (user.getOrders() != null && !user.getOrders().isEmpty()) {
                 throw new CouponFirstOrderOnlyException("This coupon is valid for first order only.");
             }
         }
 
         // 6. Check Minimum Order Amount
         if (coupon.getMinOrder() != null && orderAmount.compareTo(coupon.getMinOrder()) < 0) {
-            throw new IllegalArgumentException("Minimum spend of ₹" + coupon.getMinOrder() + " is required to apply this coupon.");
+            throw new DiscountNotAppliedException("Minimum spend of ₹" + coupon.getMinOrder() + " is required to apply this coupon.");
         }
 
         // 7. Calculate Discount Amount
@@ -210,7 +248,18 @@ public class CouponService implements ICouponService {
     @Override
     public void incrementUsageCount(String code) {
         Coupon coupon = couponRepository.findByCode(code.toUpperCase().trim())
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found with code: " + code));
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
+        if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
+        
+        // Save coupon usage details
+        User user = getOptionalCurrentUser();
+        if (user != null) {
+            CouponUsage usage = new CouponUsage(user, coupon, LocalDateTime.now());
+            couponUsageRepository.save(usage);
+        }
+
         coupon.setUsedCount(coupon.getUsedCount() + 1);
         if (coupon.getLimit() != null && coupon.getUsedCount() >= coupon.getLimit()) {
             coupon.setIsActive(false);

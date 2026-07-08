@@ -132,7 +132,7 @@ public class CartService implements ICartService {
 
         User user = getCurrentUser();
         ProductVariantSize size = productVariantSizeRepository.findById(request.getProductVariantSizeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product variant size not found with ID: " + request.getProductVariantSizeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Product variant size not found"));
 
         ProductVariant variant = size.getProductVariant();
         if (variant == null || Boolean.TRUE.equals(variant.getIsDeleted()) || !Boolean.TRUE.equals(variant.getIsActive())) {
@@ -202,7 +202,7 @@ public class CartService implements ICartService {
 
         User user = getCurrentUser();
         Cart cartItem = cartRepository.findByIdAndUserAndIsActiveTrue(cartItemId, user)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive for ID: " + cartItemId));
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive"));
 
         ProductVariantSize size = cartItem.getProductVariantSize();
         if (size == null || !Boolean.TRUE.equals(size.getIsActive())) {
@@ -244,7 +244,7 @@ public class CartService implements ICartService {
     public ResponseMsgDto removeCartItem(Long cartItemId) {
         User user = getCurrentUser();
         Cart cartItem = cartRepository.findByIdAndUserAndIsActiveTrue(cartItemId, user)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive for ID: " + cartItemId));
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive"));
 
         // Soft Delete
         cartItem.setIsActive(false);

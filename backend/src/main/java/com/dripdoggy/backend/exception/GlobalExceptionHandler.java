@@ -82,6 +82,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(DuplicateProductSkuException.class)
+    public ResponseEntity<ResponseMsgDto> handleDuplicateProductSku(DuplicateProductSkuException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(InvalidCountryCodeException.class)
     public ResponseEntity<ResponseMsgDto> handleInvalidCountryCode(InvalidCountryCodeException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
@@ -195,6 +201,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CouponFirstOrderOnlyException.class)
     public ResponseEntity<ResponseMsgDto> handleCouponFirstOrderOnly(CouponFirstOrderOnlyException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DiscountNotAppliedException.class)
+    public ResponseEntity<ResponseMsgDto> handleDiscountNotApplied(DiscountNotAppliedException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
