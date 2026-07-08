@@ -7,6 +7,7 @@ import {
 import confetti from "canvas-confetti";
 import { useAuth } from "../context/AuthContext";
 import { addressApi } from "../lib/address-api";
+import { cartApi } from "../lib/cart-api";
 import { couponApi } from "../lib/coupon-api";
 import { getSessionToken } from "../lib/auth-storage";
 
@@ -418,6 +419,11 @@ export function Checkout() {
     e.preventDefault();
     setIsOrdered(true);
     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    // Clear backend cart if authenticated
+    const token = getSessionToken();
+    if (token) {
+      cartApi.clearCart().catch(err => console.error("Failed to clear backend cart", err));
+    }
     localStorage.removeItem("cart");
     localStorage.removeItem("appliedPromo");
     localStorage.removeItem("promoDiscount");

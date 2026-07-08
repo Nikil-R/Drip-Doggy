@@ -27,11 +27,17 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
     price: true,
   });
 
+  const [allSubCategories, setAllSubCategories] = useState<import("../../lib/category-api").SubCategory[]>([]);
+
   useEffect(() => {
     async function loadCategories() {
       try {
-        const list = await categoryApi.fetchCategories();
+        const [list, subs] = await Promise.all([
+          categoryApi.fetchCategories(),
+          categoryApi.fetchSubCategories().catch(() => []),
+        ]);
         setDbCategories(list.filter(c => c.isActive !== false));
+        setAllSubCategories(subs.filter(s => s.isActive !== false));
       } catch (err) {
         console.error("Error loading categories", err);
       }
@@ -51,18 +57,33 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
         });
       }
     });
+    allSubCategories.forEach(sub => {
+      subs.add(sub.subcategoryName.toUpperCase());
+    });
     return Array.from(subs);
-  }, [dbCategories, isAccessories]);
+  }, [dbCategories, allSubCategories, isAccessories]);
 
   const categories = activeSubcategories;
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
   const handleCategoryClick = (category: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (category.startsWith("ALL ")) {
+    const newParams = new URLSearchParams(searchParams);    if (category.startsWith("ALL ")) {
       newParams.delete("category");
     } else {
       newParams.set("category", category.toLowerCase());
+      // Fetch subcategory details by matching name
+      const match = allSubCategories.find(s => s.subcategoryName.toUpperCase() === category.toUpperCase());
+      if (match) {
+        categoryApi.fetchSubCategoryById(match.subCategoryId).catch(err => console.error("fetchSubCategoryById failed", err));
+      }
+      // Fetch parent category details
+      for (const cat of dbCategories) {
+        const subMatch = cat.subCategories?.find(s => s.subcategoryName.toUpperCase() === category.toUpperCase());
+        if (subMatch) {
+          categoryApi.fetchCategoryById(cat.categoryId).catch(err => console.error("fetchCategoryById failed", err));
+          break;
+        }
+      }
     }
     newParams.delete("collection");
     newParams.delete("new");

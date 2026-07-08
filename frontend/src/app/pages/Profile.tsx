@@ -209,6 +209,24 @@ export function Profile() {
     }
   };
 
+  const toggleWishlistArchive = async (item: any) => {
+    const backendId = item?.backendId;
+    if (backendId) {
+      try {
+        await wishlistApi.toggleWishlistActive(backendId);
+        // Re-sync after toggling
+        await syncWishlist();
+        const stored = localStorage.getItem("wishlist");
+        if (stored) {
+          const refreshed = JSON.parse(stored);
+          setWishlistItems(refreshed);
+        }
+      } catch (err) {
+        console.error("Failed to toggle wishlist archive:", err);
+      }
+    }
+  };
+
   const addWishlistToCart = (item: any, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -284,7 +302,9 @@ export function Profile() {
               <AddressesTab addresses={addresses} setAddresses={setAddresses} profile={profile} />
             )}
             {activeTab === "wishlist" && (
-              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart} />
+              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
+                onToggleArchive={toggleWishlistArchive}
+              />
             )}
           </div>
         </div>
