@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
@@ -63,6 +64,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ToastProvider>
         <ScrollToTop />
         <div className="min-h-screen bg-white">
           <Header />
@@ -121,6 +123,7 @@ export default function App() {
           style={{ display: 'none', width: 0, height: 0, border: 'none' }}
           title="localstorage-bridge"
         />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

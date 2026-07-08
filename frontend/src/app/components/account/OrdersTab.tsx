@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Package, CheckCircle, Truck, Eye, Printer, X, QrCode, Smartphone, Banknote, Upload, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { printInvoice } from "../../lib/invoice";
+import { printInvoice, printBill } from "../../lib/invoice";
 import type { Order, ReturnRequest, RefundDetails, RefundMethod } from "../../types/account";
 
 const ORDER_DATA: Order[] = [
@@ -254,6 +254,12 @@ export function OrdersTab() {
                     className="flex items-center gap-1.5 bg-[#030213] hover:bg-neutral-800 text-white px-4 py-2 text-[8px] font-extrabold tracking-widest uppercase transition-all cursor-pointer border-none"
                   >
                     <Printer className="h-3 w-3 stroke-[1.5]" /> Invoice
+                  </button>
+                  <button
+                    onClick={() => printBill(order, profile)}
+                    className="flex items-center gap-1.5 bg-white border border-neutral-200 hover:border-[#030213] text-neutral-600 hover:text-[#030213] px-4 py-2 text-[8px] font-extrabold tracking-widest uppercase transition-all cursor-pointer"
+                  >
+                    <Printer className="h-3 w-3 stroke-[1.5]" /> Bill
                   </button>
                 </div>
               </div>

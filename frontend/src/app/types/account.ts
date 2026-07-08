@@ -58,4 +58,8 @@ export interface WishlistItem {
   price: number;
   image: string;
   outOfStock?: boolean;
+  backendId?: number;       // backend DB id, used for API delete
+  originalPrice?: number;   // MRP before discount
+  discountType?: string;
+  discountValue?: number;
 }
