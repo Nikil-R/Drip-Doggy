@@ -577,7 +577,7 @@ export function Checkout() {
                       {emailError && <p className="text-[7.5px] font-extrabold text-red-600 mt-1.5 tracking-wider">{emailError}</p>}
                       {isEmailPreVerified && <span className="text-[7px] text-neutral-400 font-medium mt-1.5 block">Auto-filled from your account</span>}
                       {verifyingTarget === "email" && (
-                        <OTPVerification target="email" otpCode={otpCode} setOtpCode={setOtpCode} otpError={otpError}
+                        <OTPVerification target="email" otpCode={otpCode} setOtpCode={setOtpCode} setOtpError={setOtpError} otpError={otpError}
                           isVerifying={isVerifyingOtp} onVerify={handleVerifyOtpLocal}
                           onCancel={() => setVerifyingTarget(null)} label={`Verify Email (OTP sent to ${email})`} />
                       )}
@@ -609,7 +609,7 @@ export function Checkout() {
                       {phoneError && <p className="text-[7.5px] font-extrabold text-red-600 mt-1.5 tracking-wider">{phoneError}</p>}
                       {isPhonePreVerified && <span className="text-[7px] text-neutral-400 font-medium mt-1.5 block">Auto-filled from your account</span>}
                       {verifyingTarget === "phone" && (
-                        <OTPVerification target="phone" otpCode={otpCode} setOtpCode={setOtpCode} otpError={otpError}
+                        <OTPVerification target="phone" otpCode={otpCode} setOtpCode={setOtpCode} setOtpError={setOtpError} otpError={otpError}
                           isVerifying={isVerifyingOtp} onVerify={handleVerifyOtpLocal}
                           onCancel={() => setVerifyingTarget(null)} label={`Verify Phone (OTP sent to ${phone})`} />
                       )}
