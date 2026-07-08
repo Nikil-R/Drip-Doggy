@@ -170,7 +170,17 @@ public class CouponService implements ICouponService {
     @Override
     @Transactional(readOnly = true)
     public CouponValidationResponseDto validateAndCalculateDiscount(String code, BigDecimal orderAmount) {
-        Coupon coupon = couponRepository.findByCode(code.toUpperCase().trim())
+        if (code == null || code.trim().isEmpty()) {
+            throw new CouponNotFoundException("Coupon not found");
+        }
+
+        // Check if the user is trying to apply more than one coupon
+        String trimmedCode = code.trim();
+        if (trimmedCode.contains(",") || trimmedCode.contains(";") || trimmedCode.contains("|") || trimmedCode.contains("+") || trimmedCode.contains(" ")) {
+            throw new DiscountNotAppliedException("Only one coupon can be applied per order.");
+        }
+
+        Coupon coupon = couponRepository.findByCode(trimmedCode.toUpperCase())
                 .orElseThrow(() -> new CouponNotFoundException("Coupon not found"));
         if (Boolean.TRUE.equals(coupon.getIsDeleted())) {
             throw new CouponNotFoundException("Coupon not found");
@@ -182,9 +192,11 @@ public class CouponService implements ICouponService {
             throw new InvalidCredentialsException("Access Denied: User must be authenticated to apply coupons.");
         }
 
-        // Check if this coupon has already been used by the customer
-        if (couponUsageRepository.existsByUserAndCoupon(user, coupon)) {
-            throw new DiscountNotAppliedException("This coupon has already been used by you.");
+        // Check if this coupon has already been used by the customer (only for first-order-only coupons)
+        if (Boolean.TRUE.equals(coupon.getFirstOrderOnly())) {
+            if (couponUsageRepository.existsByUserAndCoupon(user, coupon)) {
+                throw new CouponFirstOrderOnlyException("This coupon is only for the first time user.");
+            }
         }
 
         // 1. Check if Coupon is Active
@@ -211,7 +223,7 @@ public class CouponService implements ICouponService {
         // 5. Check First Order Only
         if (Boolean.TRUE.equals(coupon.getFirstOrderOnly())) {
             if (user.getOrders() != null && !user.getOrders().isEmpty()) {
-                throw new CouponFirstOrderOnlyException("This coupon is valid for first order only.");
+                throw new CouponFirstOrderOnlyException("This coupon is only for the first time user.");
             }
         }
 

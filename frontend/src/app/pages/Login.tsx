@@ -58,6 +58,13 @@ export function Login() {
     return () => clearInterval(interval);
   }, [resendTimer]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("blocked") === "true") {
+      setError("Your account has been blocked. For more information contact help.");
+    }
+  }, [location.search]);
+
   if (isAuthenticated) {
     return <Navigate to={fromPath || "/"} replace />;
   }

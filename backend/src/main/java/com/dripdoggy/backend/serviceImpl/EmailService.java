@@ -56,4 +56,36 @@ public class EmailService {
                 "The DripDoggy Team");
         mailSender.send(message);
     }
+
+    public void sendOrderPlacementEmail(String toEmail, String orderNumber, String customerName, double totalAmount) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Order Placed Successfully - " + orderNumber);
+            
+            String htmlContent = "<h3>Thank you for your order, " + customerName + "!</h3>" +
+                    "<p>Your order <b>" + orderNumber + "</b> has been successfully placed.</p>" +
+                    "<p><b>Total Amount:</b> ₹" + totalAmount + "</p>" +
+                    "<p><b>Payment Method:</b> Cash on Delivery (COD)</p>" +
+                    "<p>We will notify you when your items are shipped.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Order Placed Successfully - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your order " + orderNumber + " has been successfully placed.\n\n" +
+                    "Total Amount: ₹" + totalAmount + "\n" +
+                    "Payment Method: Cash on Delivery (COD)\n\n" +
+                    "Thank you for shopping with us!\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
 }

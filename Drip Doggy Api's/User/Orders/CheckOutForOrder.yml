@@ -1,17 +1,19 @@
 info:
-  name: AddCart
+  name: CheckOutForOrder
   type: http
-  seq: 1
+  seq: 3
 
 http:
   method: POST
-  url: http://localhost:8081/dripdoggy/api/cart
+  url: http://localhost:8081/dripdoggy/api/customer/orders
   body:
     type: json
     data: |-
       {
-        "productVariantSizeId":1,
-        "quantity":20
+        "addressId":3,
+        "phoneNo":"8884094554",
+        "deliveryMethod":"STD",
+        "couponCode":"DD-001"
       }
   auth:
     type: bearer

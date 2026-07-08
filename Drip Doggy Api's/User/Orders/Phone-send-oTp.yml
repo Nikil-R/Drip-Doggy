@@ -1,17 +1,16 @@
 info:
-  name: AddCart
+  name: Phone-send-oTp
   type: http
   seq: 1
 
 http:
   method: POST
-  url: http://localhost:8081/dripdoggy/api/cart
+  url: http://localhost:8081/dripdoggy/api/customer/orders/send-otp
   body:
     type: json
     data: |-
       {
-        "productVariantSizeId":1,
-        "quantity":20
+        "phoneNo":"8884094554"
       }
   auth:
     type: bearer

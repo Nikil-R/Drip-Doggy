@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useAuthStore } from "@/app/store/auth-store";
+import { couponApi, CouponRequest, CouponResponse } from "@/app/lib/coupon-api";
 import {
   Search, Plus, Edit2, Trash2, X, Check, Copy, Calendar, Sparkles, TrendingUp, TrendingDown,
   Percent, ShoppingBag, ArrowRight, Tag, HelpCircle, Info
@@ -70,7 +72,9 @@ function UsageBar({ used, limit }: { used: number; limit: number }) {
 }
 
 export function CouponCodePage() {
-  const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
+  const { token } = useAuthStore();
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "expired">("all");
   const [segmentFilter, setSegmentFilter] = useState<"all" | "vip" | "new">("all");
@@ -106,6 +110,42 @@ export function CouponCodePage() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Fetch coupons on mount/token load
+  useEffect(() => {
+    if (!token) return;
+    const fetchCoupons = async () => {
+      setLoading(true);
+      try {
+        const data = await couponApi.fetchAllCoupons(token);
+        const mapped: Coupon[] = data.map(item => ({
+          id: item.id,
+          code: item.code,
+          type: (item.discountType === "flat" ? "flat" : item.discountType === "freeship" ? "freeship" : "percentage") as any,
+          value: item.discountValue,
+          minAmount: item.minOrder,
+          maxDiscount: 0,
+          usageLimit: item.limit,
+          usedCount: item.usedCount || 0,
+          validFrom: item.startingDate || "",
+          validTo: item.expiryDate || "",
+          status: (!item.isActive ? "inactive" : (item.expiryDate && new Date(item.expiryDate) < new Date() ? "expired" : "active")),
+          category: "All",
+          description: item.description || "",
+          stackable: false,
+          firstOrderOnly: false,
+          targetSegment: "all",
+          revenueGenerated: 0
+        }));
+        setCoupons(mapped);
+      } catch (err) {
+        console.error("Failed to load coupons", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCoupons();
+  }, [token]);
 
   const handleDateClick = (day: number) => {
     const fm = String(calMonth + 1).padStart(2, "0");
@@ -179,15 +219,6 @@ export function CouponCodePage() {
     setShowModal(true);
   };
 
-  const handleAutoGenerateCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "DD-";
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setForm(prev => ({ ...prev, code }));
-  };
-
   const handleCopyCode = (code: string, e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(code);
@@ -195,68 +226,91 @@ export function CouponCodePage() {
     setTimeout(() => setCopiedCode(null), 1500);
   };
 
-  const save = () => {
-    if (!form.code.trim()) return;
+  const save = async () => {
+    if (!form.code.trim() || !token) return;
 
-    let computedStatus = form.status;
-    if (form.validTo) {
-      const today = new Date().toISOString().split("T")[0];
-      if (form.validTo < today) {
-        computedStatus = "expired";
+    const req: CouponRequest = {
+      code: form.code,
+      discountType: form.type,
+      discountValue: form.value,
+      minOrder: form.minAmount,
+      startingDate: form.validFrom || undefined,
+      expiryDate: form.validTo || undefined,
+      limit: form.usageLimit,
+      isActive: form.status === "active",
+      description: form.description
+    };
+
+    try {
+      if (editCoupon) {
+        await couponApi.updateCoupon(editCoupon.id, req, token);
+      } else {
+        await couponApi.createCoupon(req, token);
       }
-    }
 
-    if (editCoupon) {
-      setCoupons(prev => prev.map(c => c.id === editCoupon.id ? { 
-        ...c, 
-        code: form.code, type: form.type, value: form.value, minAmount: form.minAmount,
-        maxDiscount: form.maxDiscount, usageLimit: form.usageLimit, validFrom: form.validFrom,
-        validTo: form.validTo, status: computedStatus, category: form.category, 
-        description: form.description, stackable: form.stackable, 
-        firstOrderOnly: form.firstOrderOnly, targetSegment: form.targetSegment,
-        excludedCategories: form.excludedCategories
-      } : c));
-    } else {
-      const newCoupon: Coupon = {
-        id: Math.max(...coupons.map(c => c.id)) + 1,
-        usedCount: 0,
-        code: form.code,
-        type: form.type,
-        value: form.value,
-        minAmount: form.minAmount,
-        maxDiscount: form.maxDiscount,
-        usageLimit: form.usageLimit,
-        validFrom: form.validFrom,
-        validTo: form.validTo,
-        status: computedStatus,
-        category: form.category,
-        description: form.description,
-        stackable: form.stackable,
-        firstOrderOnly: form.firstOrderOnly,
-        targetSegment: form.targetSegment,
-        excludedCategories: form.excludedCategories,
+      // Reload all coupons
+      const data = await couponApi.fetchAllCoupons(token);
+      const mapped: Coupon[] = data.map(item => ({
+        id: item.id,
+        code: item.code,
+        type: (item.discountType === "flat" ? "flat" : item.discountType === "freeship" ? "freeship" : "percentage") as any,
+        value: item.discountValue,
+        minAmount: item.minOrder,
+        maxDiscount: 0,
+        usageLimit: item.limit,
+        usedCount: item.usedCount || 0,
+        validFrom: item.startingDate || "",
+        validTo: item.expiryDate || "",
+        status: (!item.isActive ? "inactive" : (item.expiryDate && new Date(item.expiryDate) < new Date() ? "expired" : "active")),
+        category: "All",
+        description: item.description || "",
+        stackable: false,
+        firstOrderOnly: false,
+        targetSegment: "all",
         revenueGenerated: 0
-      };
-      setCoupons(prev => [...prev, newCoupon]);
-    }
-    setShowModal(false);
-  };
-
-  const toggleStatus = (c: Coupon) => {
-    const nextStatus = c.status === "active" ? "inactive" : "active";
-    setCoupons(prev => prev.map(item => item.id === c.id ? { ...item, status: nextStatus } : item));
-    if (selectedCoupon && selectedCoupon.id === c.id) {
-      setSelectedCoupon(prev => prev ? { ...prev, status: nextStatus } : null);
-    }
-  };
-
-  const confirmDelete = () => {
-    if (deleteId) {
-      setCoupons(prev => prev.filter(c => c.id !== deleteId));
-      if (selectedCoupon && selectedCoupon.id === deleteId) {
-        setSelectedCoupon(null);
+      }));
+      setCoupons(mapped);
+      
+      if (editCoupon && selectedCoupon && selectedCoupon.id === editCoupon.id) {
+        const updated = mapped.find(c => c.id === editCoupon.id);
+        if (updated) setSelectedCoupon(updated);
       }
-      setDeleteId(null);
+      
+      setShowModal(false);
+    } catch (err) {
+      console.error("Error saving coupon", err);
+      alert("Failed to save coupon.");
+    }
+  };
+
+  const toggleStatus = async (c: Coupon) => {
+    if (!token) return;
+    try {
+      await couponApi.toggleCouponStatus(c.id, token);
+      const nextStatus = c.status === "active" ? "inactive" : "active";
+      setCoupons(prev => prev.map(item => item.id === c.id ? { ...item, status: nextStatus as any } : item));
+      if (selectedCoupon && selectedCoupon.id === c.id) {
+        setSelectedCoupon(prev => prev ? { ...prev, status: nextStatus as any } : null);
+      }
+    } catch (err) {
+      console.error("Failed to toggle status", err);
+      alert("Error toggling status");
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (deleteId && token) {
+      try {
+        await couponApi.deleteCoupon(deleteId, token);
+        setCoupons(prev => prev.filter(c => c.id !== deleteId));
+        if (selectedCoupon && selectedCoupon.id === deleteId) {
+          setSelectedCoupon(null);
+        }
+        setDeleteId(null);
+      } catch (err) {
+        console.error("Failed to delete coupon", err);
+        alert("Error deleting coupon");
+      }
     }
   };
 
@@ -685,16 +739,7 @@ export function CouponCodePage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[8px] font-bold tracking-widest text-[#615e56] uppercase mb-1.5">Max Discount Cap ({RS})</label>
-                    <input
-                      type="number"
-                      disabled={form.type === "freeship"}
-                      value={form.type === "freeship" ? 0 : form.maxDiscount}
-                      onChange={e => setForm({ ...form, maxDiscount: Number(e.target.value) })}
-                      className="w-full bg-card border border-neutral-200 px-3 py-2.5 text-[11px] font-black focus:outline-none focus:border-[#224870] transition-all text-[#382d24] disabled:opacity-50"
-                    />
-                  </div>
+
 
                   <div>
                     <label className="block text-[8px] font-bold tracking-widest text-[#615e56] uppercase mb-1.5">Usage Limit</label>
