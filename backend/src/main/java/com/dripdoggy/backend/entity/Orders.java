@@ -32,6 +32,12 @@ public class Orders {
     @Column(name = "platform_fee")
     private BigDecimal platformFee;
 
+    @Column(name = "delivery_method")
+    private String deliveryMethod;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status")
     private PaymentStatus paymentStatus;
@@ -179,5 +185,21 @@ public class Orders {
 
     public void setReviews(List<Review> reviews) {
         this.reviews = reviews;
+    }
+
+    public String getDeliveryMethod() {
+        return deliveryMethod;
+    }
+
+    public void setDeliveryMethod(String deliveryMethod) {
+        this.deliveryMethod = deliveryMethod;
+    }
+
+    public BigDecimal getShippingFee() {
+        return shippingFee;
+    }
+
+    public void setShippingFee(BigDecimal shippingFee) {
+        this.shippingFee = shippingFee;
     }
 }
