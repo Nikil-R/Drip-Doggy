@@ -1,3 +1,4 @@
+import axios from "axios";
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import {
   type AuthUser,
@@ -47,6 +48,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [pendingIdentifier, setPendingIdentifier] = useState<string | null>(null);
 
+  const logout = useCallback(async () => {
+    const token = getSessionToken();
+    if (token) {
+      try {
+        await authApi.logout(token);
+      } catch (e) {
+        console.error("Logout request failed", e);
+      }
+    }
+    clearSessionUser();
+    clearPendingIdentifier();
+    clearSessionToken();
+    setUser(null);
+    setPendingIdentifier(null);
+    localStorage.removeItem("cart");
+    localStorage.removeItem("wishlist");
+    window.dispatchEvent(new Event("cart-updated"));
+    window.dispatchEvent(new Event("wishlist-updated"));
+  }, []);
+
   useEffect(() => {
     seedTestUser();
     const sessionUser = getSessionUser();
@@ -60,7 +81,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingIdentifier(pending);
     }
     setIsLoading(false);
-  }, []);
+
+    // Global Axios Interceptor to sign out if user gets blocked/forbidden
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          const msg = error.response.data?.message || "";
+          if (msg.toLowerCase().includes("block") || error.response.status === 403) {
+            logout();
+            window.location.href = "/login?blocked=true";
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [logout]);
 
   const requestOtp = useCallback(
     async (identifier: string): Promise<AuthActionResult> => {
@@ -187,25 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const logout = useCallback(async () => {
-    const token = getSessionToken();
-    if (token) {
-      try {
-        await authApi.logout(token);
-      } catch (e) {
-        console.error("Logout request failed", e);
-      }
-    }
-    clearSessionUser();
-    clearPendingIdentifier();
-    clearSessionToken();
-    setUser(null);
-    setPendingIdentifier(null);
-    localStorage.removeItem("cart");
-    localStorage.removeItem("wishlist");
-    window.dispatchEvent(new Event("cart-updated"));
-    window.dispatchEvent(new Event("wishlist-updated"));
-  }, []);
+
 
   return (
     <AuthContext.Provider
