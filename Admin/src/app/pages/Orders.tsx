@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import {
-  Search, Clock, CheckCircle2, XCircle, Truck,
+  Search, Clock, CheckCircle2, XCircle, Truck, Check, Edit2,
   ChevronLeft, ChevronRight, Download, User, MapPin, X,
-  FileText, Mail, Phone, TrendingUp, TrendingDown, DollarSign, ShoppingCart, AlertCircle, Calendar
+  FileText, Mail, Phone, TrendingUp, TrendingDown, DollarSign, ShoppingCart, AlertCircle, Calendar,
+  Banknote, ArrowLeftRight, Upload
 } from "lucide-react";
 
 const RS = "₹";
@@ -16,6 +17,26 @@ interface OrderItem {
   image: string;
 }
 
+type RefundMethod = "qr_code" | "upi" | "bank_transfer";
+
+interface CustomerRefundDetails {
+  method: RefundMethod;
+  qrCodeImage?: string;
+  upiId?: string;
+  phoneNumber?: string;
+  accountHolderName?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+}
+
+interface ReturnRequest {
+  reason: string;
+  refundDetails: CustomerRefundDetails;
+  submittedAt: string;
+  status: "pending" | "approved" | "completed" | "rejected";
+}
+
 interface Order {
   no: number;
   id: string;
@@ -24,11 +45,20 @@ interface Order {
   phone: string;
   date: string;
   payment: "Paid" | "Unpaid" | "Refunded";
-  status: "Delivered" | "Shipped" | "Processing" | "Pending" | "Cancelled";
+  status: "Delivered" | "Shipped" | "Processing" | "Pending" | "Cancelled" | "Return Requested";
   delivery: string;
+  // Full address fields
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  deliveryPhone: string;
   items: OrderItem[];
   trackingNumber?: string;
   notes?: string;
+  returnRequest?: ReturnRequest;
 }
 
 const initialOrders: Order[] = [
@@ -42,8 +72,22 @@ const initialOrders: Order[] = [
     payment: "Paid",
     status: "Delivered",
     delivery: "Mumbai, MH",
+    addressLine1: "Apt 4B, Sea Breeze Apartments",
+    addressLine2: "Carter Road, Bandra West",
+    city: "Mumbai",
+    state: "Maharashtra",
+    postalCode: "400050",
+    country: "India",
+    deliveryPhone: "+91 99999 88888",
     trackingNumber: "DEL-847294",
     notes: "Signature packaging requested.",
+    customerBankDetails: {
+      accountHolderName: "Ananya Sharma",
+      bankName: "State Bank of India",
+      accountNumber: "12345678901",
+      ifscCode: "SBIN0001234",
+      submittedAt: "2026-06-25 14:32"
+    },
     items: [
       { name: "Structured Canvas Jacket", sku: "DD-STR-001", size: "M", qty: 1, price: 5800, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop" },
       { name: "French Terry Hoodie", sku: "DD-FTH-001", size: "L", qty: 2, price: 3200, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=120&auto=format&fit=crop" }
@@ -59,6 +103,13 @@ const initialOrders: Order[] = [
     payment: "Paid",
     status: "Shipped",
     delivery: "Delhi, DL",
+    addressLine1: "Flat 202, Royal Residency",
+    addressLine2: "12th Main Road, Indiranagar",
+    city: "Delhi",
+    state: "Delhi",
+    postalCode: "110001",
+    country: "India",
+    deliveryPhone: "+91 98765 00001",
     trackingNumber: "BD-920485",
     notes: "",
     items: [
@@ -75,6 +126,13 @@ const initialOrders: Order[] = [
     payment: "Paid",
     status: "Processing",
     delivery: "Bangalore, KA",
+    addressLine1: "House 15, GK II",
+    addressLine2: "Outer Ring Road, Greater Kailash",
+    city: "Bangalore",
+    state: "Karnataka",
+    postalCode: "560038",
+    country: "India",
+    deliveryPhone: "+91 77777 66666",
     items: [
       { name: "Parachute Cargo Skirt", sku: "DD-PCS-001", size: "S", qty: 1, price: 3400, image: "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?q=80&w=120&auto=format&fit=crop" }
     ]
@@ -89,6 +147,13 @@ const initialOrders: Order[] = [
     payment: "Paid",
     status: "Delivered",
     delivery: "Hyderabad, TS",
+    addressLine1: "Villa 33, Jubilee Hills",
+    addressLine2: "Road No. 10",
+    city: "Hyderabad",
+    state: "Telangana",
+    postalCode: "500033",
+    country: "India",
+    deliveryPhone: "+91 95555 44444",
     trackingNumber: "XP-304928",
     items: [
       { name: "Sartorial Trench Coat", sku: "DD-SAR-001", size: "XL", qty: 1, price: 6900, image: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?q=80&w=120&auto=format&fit=crop" },
@@ -105,6 +170,13 @@ const initialOrders: Order[] = [
     payment: "Unpaid",
     status: "Pending",
     delivery: "Chennai, TN",
+    addressLine1: "55, Anna Nagar",
+    addressLine2: "2nd Main Road",
+    city: "Chennai",
+    state: "Tamil Nadu",
+    postalCode: "600040",
+    country: "India",
+    deliveryPhone: "+91 94444 33333",
     items: [
       { name: "Boxy Minimalist Maxi", sku: "DD-BMM-001", size: "M", qty: 1, price: 4200, image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=120&auto=format&fit=crop" }
     ]
@@ -117,8 +189,27 @@ const initialOrders: Order[] = [
     phone: "+91 98888 77777",
     date: "2026-06-20",
     payment: "Paid",
-    status: "Delivered",
     delivery: "Kolkata, WB",
+    addressLine1: "Block A, Flat 7",
+    addressLine2: "Salt Lake Sector II",
+    city: "Kolkata",
+    state: "West Bengal",
+    postalCode: "700091",
+    country: "India",
+    deliveryPhone: "+91 91111 22222",
+    status: "Return Requested",
+    returnRequest: {
+      reason: "Defective / Damaged",
+      refundDetails: {
+        method: "bank_transfer",
+        accountHolderName: "Kabir Singh",
+        bankName: "HDFC Bank",
+        accountNumber: "98765432109",
+        ifscCode: "HDFC0004321"
+      },
+      submittedAt: "2026-06-23 10:15",
+      status: "pending"
+    },
     items: [
       { name: "Structured Canvas Jacket", sku: "DD-STR-001", size: "L", qty: 1, price: 5800, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop" }
     ]
@@ -133,18 +224,106 @@ const initialOrders: Order[] = [
     payment: "Paid",
     status: "Cancelled",
     delivery: "Pune, MH",
+    addressLine1: "Apt 89, Koregaon Heights",
+    addressLine2: "North Main Road, Koregaon Park",
+    city: "Pune",
+    state: "Maharashtra",
+    postalCode: "411001",
+    country: "India",
+    deliveryPhone: "+91 93333 22222",
     notes: "Customer cancelled prior to shipping.",
     items: [
       { name: "French Terry Hoodie", sku: "DD-FTH-001", size: "M", qty: 1, price: 3200, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=120&auto=format&fit=crop" }
     ]
+  },
+  {
+    no: 8,
+    id: "#DD-7012",
+    customer: "Maya Joshi",
+    email: "maya.joshi@gmail.com",
+    phone: "+91 98877 66554",
+    date: "2026-06-18",
+    payment: "Paid",
+    status: "Return Requested",
+    delivery: "Jaipur, RJ",
+    addressLine1: "B-45, Civil Lines",
+    addressLine2: "Sector 6",
+    city: "Jaipur",
+    state: "Rajasthan",
+    postalCode: "302001",
+    country: "India",
+    deliveryPhone: "+91 91122 33445",
+    returnRequest: {
+      reason: "Wrong Size — Ordered M, fits too large",
+      refundDetails: {
+        method: "bank_transfer",
+        accountHolderName: "Maya Joshi",
+        bankName: "ICICI Bank",
+        accountNumber: "45678901234",
+        ifscCode: "ICIC0005678"
+      },
+      submittedAt: "2026-06-20 09:15",
+      status: "pending"
+    },
+    items: [
+      { name: "Ribbed Panel Dress", sku: "DD-RPD-001", size: "M", qty: 1, price: 3900, image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=120&auto=format&fit=crop" }
+    ]
+  },
+  {
+    no: 9,
+    id: "#DD-7123",
+    customer: "Rohan Desai",
+    email: "rohan.d@gmail.com",
+    phone: "+91 92233 44556",
+    date: "2026-06-15",
+    payment: "Paid",
+    status: "Return Requested",
+    delivery: "Ahmedabad, GJ",
+    addressLine1: "12, Riverfront Apartments",
+    addressLine2: "Nehru Nagar",
+    city: "Ahmedabad",
+    state: "Gujarat",
+    postalCode: "380001",
+    country: "India",
+    deliveryPhone: "+91 97788 66554",
+    returnRequest: {
+      reason: "Defective Item — Zipper broken",
+      refundDetails: {
+        method: "upi",
+        upiId: "rohan.d@paytm",
+        phoneNumber: "+91 92233 44556"
+      },
+      submittedAt: "2026-06-17 14:30",
+      status: "pending"
+    },
+    items: [
+      { name: "Structured Canvas Jacket", sku: "DD-STR-001", size: "L", qty: 1, price: 5800, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop" }
+    ]
   }
 ];
 
+function DetailRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div className="flex justify-between items-center py-1.5 px-2.5 text-[9.5px]">
+      <span className="text-neutral-400 font-bold uppercase tracking-wider text-[8px]">{label}</span>
+      <span className="text-[#382d24] font-black">{value}</span>
+    </div>
+  );
+}
+
+function maskAccountNumber(num?: string) {
+  if (!num) return "";
+  if (num.length <= 4) return num;
+  return "••••" + num.slice(-4);
+}
+
 function PaymentBadge({ val }: { val: string }) {
+  const label = val === "Paid" ? "COD - Paid" : val === "Refunded" ? "COD - Refunded" : "COD - Unpaid";
   return (
     <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase">
       <span className={`w-2 h-2 rounded-full ${val === "Paid" ? "bg-green-500" : val === "Refunded" ? "bg-neutral-400" : "bg-red-500"}`} />
-      <span className={val === "Paid" ? "text-green-700" : val === "Refunded" ? "text-neutral-500" : "text-red-500"}>{val}</span>
+      <span className={val === "Paid" ? "text-green-700" : val === "Refunded" ? "text-neutral-500" : "text-red-500"}>{label}</span>
     </span>
   );
 }
@@ -156,6 +335,7 @@ function StatusBadge({ val }: { val: string }) {
     Processing: "bg-amber-50 text-amber-700 border-amber-200",
     Pending: "bg-neutral-50 text-neutral-700 border-neutral-200",
     Cancelled: "bg-red-50 text-red-700 border-red-200",
+    "Return Requested": "bg-purple-50 text-purple-700 border-purple-200",
   };
   const icons: Record<string, React.ReactNode> = {
     Delivered: <CheckCircle2 className="w-3.5 h-3.5" />,
@@ -163,6 +343,7 @@ function StatusBadge({ val }: { val: string }) {
     Processing: <Clock className="w-3 h-3" />,
     Pending: <Clock className="w-3 h-3" />,
     Cancelled: <XCircle className="w-3 h-3" />,
+    "Return Requested": <ArrowLeftRight className="w-3 h-3" />,
   };
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[9.5px] font-bold tracking-wider border uppercase rounded-full ${styles[val] || "bg-neutral-50 text-neutral-700 border-neutral-200"}`}>
@@ -179,12 +360,28 @@ export function OrdersPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [panelTracking, setPanelTracking] = useState("");
   const [panelNotes, setPanelNotes] = useState("");
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ status: Order["status"] } | null>(null);
+  const [showTrackingRequiredAlert, setShowTrackingRequiredAlert] = useState(false);
+  const [showEmailDispatchedAlert, setShowEmailDispatchedAlert] = useState<{ email: string; trackingId: string; customerName: string } | null>(null);
+  const [showSequenceErrorAlert, setShowSequenceErrorAlert] = useState<{ targetStage: string; requiredStage: string } | null>(null);
+  const [showTrackingSavedAlert, setShowTrackingSavedAlert] = useState(false);
+  const [isTrackingLocked, setIsTrackingLocked] = useState(true);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundConfirmed, setRefundConfirmed] = useState(false);
+  const [showRefundSuccess, setShowRefundSuccess] = useState(false);
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [returnApproveConfirmOrder, setReturnApproveConfirmOrder] = useState<Order | null>(null);
+  const [returnRejectConfirmOrder, setReturnRejectConfirmOrder] = useState<Order | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [adminTxId, setAdminTxId] = useState("");
+  const [adminReceiptScreenshot, setAdminReceiptScreenshot] = useState<string | null>(null);
+  const [showReturnSuccessAlert, setShowReturnSuccessAlert] = useState<{ email: string; txId: string; customerName: string; receiptScreenshot: string | null } | null>(null);
 
   // Dashboard-style calendar
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [showCalendar, setShowCalendar] = useState(false);
-  const [calYear, setCalYear] = useState(2026);
-  const [calMonth, setCalMonth] = useState(5); // June
+  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -236,10 +433,22 @@ export function OrdersPage() {
     [orders, selectedOrderId]
   );
 
+  const handleApproveReturn = (order: Order) => {
+    setReturnApproveConfirmOrder(order);
+    setAdminTxId("");
+    setAdminReceiptScreenshot(null);
+  };
+
+  const handleRejectReturn = (order: Order) => {
+    setReturnRejectConfirmOrder(order);
+    setRejectReason("");
+  };
+
   const handleOpenModal = (order: Order) => {
     setSelectedOrderId(order.id);
     setPanelTracking(order.trackingNumber || "");
     setPanelNotes(order.notes || "");
+    setIsTrackingLocked(true);
   };
 
   const filteredOrders = useMemo(() => {
@@ -248,6 +457,7 @@ export function OrdersPage() {
       if (activeTab === "Processing" && o.status !== "Processing" && o.status !== "Shipped") return false;
       if (activeTab === "Canceled" && o.status !== "Cancelled") return false;
       if (activeTab === "Pending" && o.status !== "Pending") return false;
+      if (activeTab === "Return" && o.status !== "Return Requested") return false;
       if (dateRange.start && o.date < dateRange.start) return false;
       if (dateRange.end && o.date > dateRange.end) return false;
       const q = searchQuery.toLowerCase();
@@ -262,6 +472,10 @@ export function OrdersPage() {
   }, [filteredOrders, currentPage]);
 
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE) || 1;
+
+  const returnRequestsCount = useMemo(() => {
+    return orders.filter(o => o.status === "Return Requested" && o.returnRequest?.status === "pending").length;
+  }, [orders]);
 
   const stats = useMemo(() => {
     const all = orders;
@@ -278,24 +492,35 @@ export function OrdersPage() {
     };
   }, [filteredOrders, orders]);
 
+  const triggerStageChangeConfirm = (status: Order["status"]) => {
+    const stages: Order["status"][] = ["Pending", "Processing", "Shipped", "Delivered"];
+    const currentIdx = stages.indexOf(activeOrderDetails?.status || "Pending");
+    const targetIdx = stages.indexOf(status);
+
+    if (targetIdx > currentIdx + 1) {
+      setShowSequenceErrorAlert({
+        targetStage: status,
+        requiredStage: stages[currentIdx + 1]
+      });
+      return;
+    }
+
+    if (status === "Shipped" && !panelTracking.trim()) {
+      setShowTrackingRequiredAlert(true);
+      return;
+    }
+    setPendingStatusChange({ status });
+  };
+
   const handleUpdateStatus = (status: Order["status"]) => {
     if (!selectedOrderId) return;
     setOrders((prev) => prev.map((o) => (o.id === selectedOrderId ? { ...o, status } : o)));
   };
 
-  const handleRefundOrder = () => {
-    if (!selectedOrderId) return;
-    if (confirm("Initiate return and refund process? This updates payment status to Refunded.")) {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === selectedOrderId ? { ...o, payment: "Refunded", status: "Cancelled" } : o))
-      );
-    }
-  };
-
   const handleSaveDetails = () => {
     if (!selectedOrderId) return;
     setOrders((prev) =>
-      prev.map((o) => (o.id === selectedOrderId ? { ...o, trackingNumber: panelTracking, notes: panelNotes } : o))
+      prev.map((o) => (o.id === selectedOrderId ? { ...o, trackingNumber: panelTracking } : o))
     );
     setSelectedOrderId(null);
   };
@@ -370,25 +595,7 @@ export function OrdersPage() {
   return (
     <div className="space-y-8 font-sans">
 
-      {/* ─── Header ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2">
-            Order Management
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Process, inspect, and fulfill Drip Doggy store orders
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExportCSV}
-            className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer flex items-center gap-2 rounded-full transition-all"
-          >
-            <Download className="w-3.5 h-3.5" /> Export CSV
-          </button>
-        </div>
-      </div>
+
 
       {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -440,20 +647,24 @@ export function OrdersPage() {
 
       {/* ─── Filters Panel ─── */}
       <div className="bg-card border border-neutral-200/80 p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4 rounded-sm">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-nowrap items-center gap-3 shrink-0">
           {/* Status Tabs */}
           <div className="flex bg-background border border-neutral-200 p-1 rounded-full gap-0.5">
-            {["All", "Completed", "Processing", "Pending", "Canceled"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
-                className={`px-3.5 py-1.5 text-[8.5px] font-bold tracking-widest uppercase border-none cursor-pointer rounded-full transition-all ${
-                  activeTab === tab ? "bg-[#224870] text-white shadow-sm" : "bg-transparent text-neutral-500 hover:text-[#224870]"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+            {["All", "Completed", "Processing", "Pending", "Canceled", "Return"].map((tab) => {
+              const isReturn = tab === "Return";
+              const label = isReturn ? `Return (${returnRequestsCount})` : tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
+                  className={`px-3.5 py-1.5 text-[8.5px] font-bold tracking-widest uppercase border-none cursor-pointer rounded-full transition-all ${
+                    activeTab === tab ? "bg-[#224870] text-white shadow-sm" : "bg-transparent text-neutral-500 hover:text-[#224870]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Dashboard-style Calendar Picker */}
@@ -502,14 +713,17 @@ export function OrdersPage() {
                       const d = new Date(cellStr);
                       return d >= new Date(dateRange.start) && d <= new Date(dateRange.end);
                     })();
+                    const todayStr = new Date().toISOString().split("T")[0];
+                    const isToday = cellStr === todayStr;
                     return (
                       <button
                         key={dayNum}
                         onClick={() => handleDateClick(dayNum)}
-                        className={`p-1.5 font-bold rounded-none text-center cursor-pointer text-[9px] transition-colors border-none ${
-                          isSelected ? "bg-[#224870] text-white" :
-                          inRange ? "bg-[#224870]/15 text-[#382d24]" :
-                          "bg-transparent text-[#382d24] hover:bg-neutral-200/40"
+                        className={`p-1.5 font-bold rounded-none text-center cursor-pointer text-[9px] transition-colors ${
+                          isSelected ? "bg-[#224870] text-white border-none" :
+                          inRange ? "bg-[#224870]/15 text-[#382d24] border-none" :
+                          isToday ? "bg-amber-100 text-amber-900 border border-amber-500 font-extrabold" :
+                          "bg-transparent text-[#382d24] hover:bg-neutral-200/40 border-none"
                         }`}
                       >{dayNum}</button>
                     );
@@ -532,16 +746,24 @@ export function OrdersPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search order ID, customer, product…"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="bg-card border border-neutral-200 pl-10 pr-4 py-2 text-[9.5px] font-semibold focus:outline-none focus:border-[#224870] placeholder-neutral-400 w-full md:w-72 rounded-full transition-all"
-          />
+        {/* Search & Export */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search order ID, customer, product…"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="bg-card border border-neutral-200 pl-10 pr-4 py-2 text-[9.5px] font-semibold focus:outline-none focus:border-[#224870] placeholder-neutral-400 w-full md:w-72 rounded-full transition-all"
+            />
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[9.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer flex items-center gap-1.5 rounded-full transition-all shrink-0"
+          >
+            <Download className="w-3.5 h-3.5" /> Export
+          </button>
         </div>
       </div>
 
@@ -553,11 +775,11 @@ export function OrdersPage() {
               <th className="p-4">Order ID</th>
               <th className="p-4">Customer</th>
               <th className="p-4">Products</th>
-              <th className="p-4">Size / Qty</th>
               <th className="p-4">Total</th>
               <th className="p-4">Payment</th>
               <th className="p-4">Status</th>
               <th className="p-4">Date</th>
+              <th className="p-4 text-right">Bill Preview</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100/80">
@@ -577,18 +799,28 @@ export function OrdersPage() {
                     {order.items.map((item) => item.name).join(", ")}
                   </div>
                   {order.trackingNumber && (
-                    <span className="text-[7px] font-bold text-[#224870] bg-[#224870]/10 px-1.5 py-0.5 border border-[#224870]/20 tracking-widest mt-1 inline-block rounded">
+                    <span className="text-[7px] font-bold text-[#224870] bg-[#224870]/10 px-1.5 py-0.5 border border-[#224870]/20 tracking-widest mt-1 inline-block rounded mr-1.5">
                       TRK: {order.trackingNumber}
                     </span>
                   )}
-                </td>
-                <td className="p-4 text-[10px] font-semibold text-[#615e56]">
-                  {order.items.map((i) => `${i.size} ×${i.qty}`).join(" | ")}
+                  {order.returnRequest && (
+                    <span className="text-[7px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 tracking-widest mt-1 inline-block rounded">
+                      RETURN: {order.returnRequest.status.toUpperCase()}
+                    </span>
+                  )}
                 </td>
                 <td className="p-4 font-black text-[11px] text-[#382d24]">{RS}{getOrderTotal(order).toLocaleString()}</td>
                 <td className="p-4"><PaymentBadge val={order.payment} /></td>
                 <td className="p-4"><StatusBadge val={order.status} /></td>
                 <td className="p-4 text-[9.5px] text-[#736e64] font-semibold">{order.date}</td>
+                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => handlePrintInvoice(order)}
+                    className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[8.5px] font-extrabold tracking-widest px-3 py-1.5 uppercase cursor-pointer transition-all rounded-sm flex items-center gap-1 inline-flex"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Bill
+                  </button>
+                </td>
               </tr>
             ))}
             {paginatedOrders.length === 0 && (
@@ -643,11 +875,11 @@ export function OrdersPage() {
           onClick={() => setSelectedOrderId(null)}
         >
           <div
-            className="bg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl border border-neutral-200/80 flex flex-col"
+            className="bg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl border border-neutral-200/80"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-6 border-b border-neutral-200 flex items-start justify-between sticky top-0 bg-card z-10">
+            <div className="p-6 border-b border-neutral-200 flex items-start justify-between sticky top-0 bg-card z-30">
               <div>
                 <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase">Order Details</span>
                 <h2 className="text-[18px] font-[950] text-[#224870] uppercase tracking-widest mt-0.5">{activeOrderDetails.id}</h2>
@@ -656,13 +888,12 @@ export function OrdersPage() {
                   <PaymentBadge val={activeOrderDetails.payment} />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => handlePrintInvoice(activeOrderDetails)}
-                  className="p-2 border border-neutral-200 text-neutral-500 hover:border-[#224870] hover:text-[#224870] cursor-pointer bg-card rounded-full transition-all"
-                  title="Print Invoice"
+                  className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9px] font-extrabold tracking-widest px-4 py-2.5 uppercase cursor-pointer flex items-center gap-1.5 border-none transition-all rounded-sm shadow-sm"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-3.5 h-3.5" /> Bill Preview
                 </button>
                 <button
                   onClick={() => setSelectedOrderId(null)}
@@ -673,141 +904,405 @@ export function OrdersPage() {
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-6 flex-1">
+            {/* Modal Body — fully scrollable */}
+            <div className="p-6 space-y-6">
               {/* 2-col layout: Customer + Financial Summary */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Customer Details */}
                 <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Customer</span>
-                  <div className="border border-neutral-200 p-4 space-y-3 bg-background/50 rounded-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-full bg-[#224870]/10 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-[#224870]" />
+                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Customer Profile</span>
+                  <div className="border border-neutral-200/80 p-4 space-y-3 bg-[#224870]/5 rounded-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-[#224870] text-white flex items-center justify-center shrink-0 font-bold text-[11px]">
+                        {activeOrderDetails.customer.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-[11px] font-black text-[#382d24] uppercase">{activeOrderDetails.customer}</p>
-                        <p className="text-[8.5px] text-neutral-400 font-semibold">{activeOrderDetails.email}</p>
+                        <p className="text-[11.5px] font-black text-[#382d24] uppercase tracking-wide">{activeOrderDetails.customer}</p>
+                        <span className="text-[9px] text-[#615e56] font-semibold block mt-0.5">{activeOrderDetails.email}</span>
                       </div>
                     </div>
-                    <div className="border-t border-neutral-100 pt-2.5 space-y-1.5">
-                      <a href={`tel:${activeOrderDetails.phone}`} className="flex items-center gap-2 text-[9px] font-semibold text-neutral-500 hover:text-[#224870] transition-colors">
+                    <div className="border-t border-neutral-200/60 pt-2.5 space-y-2 text-[9px] text-[#615e56] font-bold">
+                      <a href={`tel:${activeOrderDetails.phone}`} className="flex items-center gap-2 text-neutral-500 hover:text-[#224870] transition-colors">
                         <Phone className="w-3.5 h-3.5 text-neutral-400" /> {activeOrderDetails.phone}
                       </a>
-                      <div className="flex items-center gap-2 text-[9px] font-semibold text-neutral-500">
-                        <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                        <span className="uppercase">{activeOrderDetails.delivery}</span>
+                      {/* Full Delivery Address */}
+                      <div className="pt-1">
+                        <span className="text-[7.5px] font-bold tracking-[0.2em] text-neutral-400 uppercase block mb-1.5">
+                          Delivery Address
+                        </span>
+                        <div className="flex gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0 mt-0.5" />
+                          <div className="uppercase leading-relaxed text-[9px] font-semibold">
+                            <span className="block font-extrabold text-[#382d24]">
+                              {activeOrderDetails.addressLine1}
+                            </span>
+                            {activeOrderDetails.addressLine2 && (
+                              <span className="block">{activeOrderDetails.addressLine2}</span>
+                            )}
+                            <span className="block">
+                              {activeOrderDetails.city}, {activeOrderDetails.state} — {activeOrderDetails.postalCode}
+                            </span>
+                            <span className="block text-neutral-400">{activeOrderDetails.country}</span>
+                            <span className="block mt-1 text-[#224870]">
+                              Phone: {activeOrderDetails.deliveryPhone}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Financial Summary */}
+                {/* Order Invoice Summary */}
                 <div>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Financial Summary</span>
-                  <div className="border border-neutral-200 p-4 space-y-2.5 bg-background/50 rounded-sm text-[9px]">
+                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Order Invoice Summary</span>
+                  <div className="border border-neutral-200/80 p-4 space-y-2.5 bg-[#224870]/5 rounded-sm text-[9.5px] text-[#615e56] font-bold">
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Items Total</span>
-                      <span className="font-bold text-[#382d24]">{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</span>
+                      <span className="text-neutral-400 uppercase tracking-wider text-[8.5px]">Subtotal</span>
+                      <span className="font-extrabold text-[#382d24]">{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Payment Method</span>
-                      <span className="font-bold text-[#382d24]">Card</span>
+                      <span className="text-neutral-400 uppercase tracking-wider text-[8.5px]">Delivery Fee</span>
+                      <span className="font-extrabold text-green-600 uppercase tracking-wider">Free</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-400 font-semibold uppercase tracking-wider">Payment Status</span>
+                      <span className="text-neutral-400 uppercase tracking-wider text-[8.5px]">Payment Method</span>
+                      <span className="font-extrabold text-[#382d24]">Cash on Delivery (COD)</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-400 uppercase tracking-wider text-[8.5px]">Payment Status</span>
                       <div className="flex items-center gap-2">
                         <PaymentBadge val={activeOrderDetails.payment} />
-                        {activeOrderDetails.payment === "Paid" && (
-                          <button onClick={handleRefundOrder} className="text-red-500 hover:underline text-[8px] bg-transparent border-none cursor-pointer uppercase font-bold tracking-widest">
-                            Refund
-                          </button>
-                        )}
                       </div>
                     </div>
-                    <div className="flex justify-between border-t border-neutral-200 pt-2.5 text-[11px] font-black text-[#382d24]">
-                      <span>Total Gross</span>
+                    <div className="flex justify-between border-t border-neutral-200/60 pt-2.5 text-[11.5px] font-black text-[#382d24] uppercase tracking-wide">
+                      <span>Total Amount</span>
                       <span>{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</span>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Fulfillment Workflow */}
-              <div>
-                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Fulfillment Workflow</span>
-                <div className="border border-neutral-200 p-4 bg-background/50 rounded-sm space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {(["Processing", "Shipped", "Delivered", "Cancelled"] as Order["status"][]).map((st) => (
-                      <button
-                        key={st}
-                        onClick={() => handleUpdateStatus(st)}
-                        className={`px-4 py-1.5 text-[8.5px] font-bold uppercase tracking-wider border cursor-pointer rounded-full transition-all ${
-                          activeOrderDetails.status === st
-                            ? st === "Cancelled" ? "bg-red-500 text-white border-red-500" : "bg-[#224870] text-white border-[#224870]"
-                            : st === "Cancelled" ? "bg-card border-neutral-200 text-neutral-500 hover:border-red-500 hover:text-red-500"
-                            : "bg-card border-neutral-200 text-neutral-500 hover:border-[#224870] hover:text-[#224870]"
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Tracking Number</label>
-                    <input
-                      type="text"
-                      value={panelTracking}
-                      onChange={(e) => setPanelTracking(e.target.value)}
-                      placeholder="e.g. BD-8930482"
-                      className="w-full bg-card border border-neutral-200 px-3 py-2 text-[10px] font-bold font-mono focus:outline-none focus:border-[#224870] rounded-sm transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Cart Items */}
-              <div>
-                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">
-                  Cart Items — {activeOrderDetails.items.length} item{activeOrderDetails.items.length > 1 ? "s" : ""}
-                </span>
-                <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-sm bg-background/50">
-                  {activeOrderDetails.items.map((item, idx) => (
-                    <div key={idx} className="p-4 flex gap-4 items-center">
-                      <div className="w-14 h-14 overflow-hidden bg-neutral-100 shrink-0 rounded-sm">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  {/* Financial Actions Section */}
+                  {!activeOrderDetails.returnRequest && (
+                    <div className="mt-3 space-y-2">
+                      <span className="text-[7.5px] font-bold tracking-[0.2em] text-neutral-400 uppercase block">Financial Actions</span>
+                      <div className="border border-neutral-200/80 p-3 bg-background/50 rounded-sm text-[9px] font-bold">
+                        {activeOrderDetails.payment === "Refunded" ? (
+                          <div className="flex items-center gap-2 text-green-700">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span className="uppercase tracking-wider">Refund Completed — Amount credited via bank transfer</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-[9px] text-[#615e56] font-semibold leading-relaxed">
+                              {activeOrderDetails.payment === "Paid"
+                                ? "Initiate a refund to transfer the order amount directly to the customer's bank account."
+                                : "Payment is yet to be collected. Refund option is unavailable for unpaid orders."
+                              }
+                            </p>
+                            {activeOrderDetails.payment === "Paid" && (
+                              <button
+                                onClick={() => setShowRefundModal(true)}
+                                className="w-full py-2 px-3 text-[8.5px] font-bold uppercase tracking-wider rounded-sm transition-all border border-red-600 bg-red-600 hover:bg-red-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                              >
+                                <Banknote className="w-3.5 h-3.5" /> Initiate Refund — {RS}{getOrderTotal(activeOrderDetails).toLocaleString()}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-[10.5px] font-bold text-[#382d24] uppercase truncate">{item.name}</h4>
-                        <span className="text-[8.5px] text-neutral-400 font-semibold block mt-0.5">SKU: {item.sku} &nbsp;|&nbsp; SIZE: {item.size}</span>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[8.5px] font-semibold text-[#615e56]">Qty: {item.qty}</span>
-                          <span className="text-[8.5px] font-semibold text-[#615e56]">{RS}{item.price.toLocaleString()} each</span>
+                    </div>
+                  )}
+
+                  {/* Return Request Section */}
+                  {activeOrderDetails.returnRequest && (
+                    <div className="mt-3">
+                      <span className="text-[7.5px] font-bold tracking-[0.2em] text-neutral-400 uppercase block mb-1">
+                        Return Request
+                      </span>
+                      <div className="border border-purple-200/80 p-4 bg-purple-50/30 rounded-sm space-y-3">
+                        {/* Return Reason */}
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-[8px] font-bold text-purple-700 uppercase tracking-wider">
+                              Reason for Return
+                            </p>
+                            <p className="text-[10px] font-semibold text-[#382d24] mt-0.5">
+                              {activeOrderDetails.returnRequest.reason}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Refund Method Display */}
+                        <div className="border-t border-purple-200/60 pt-3">
+                          <p className="text-[8px] font-bold text-purple-700 uppercase tracking-wider mb-2">
+                            Refund Method Selected
+                          </p>
+                          
+                          {activeOrderDetails.returnRequest.refundDetails.method === "qr_code" && (
+                            <div>
+                              <p className="text-[9px] font-bold text-[#382d24] mb-2">
+                                QR Code Image — Scan to pay:
+                              </p>
+                              {activeOrderDetails.returnRequest.refundDetails.qrCodeImage ? (
+                                <img 
+                                  src={activeOrderDetails.returnRequest.refundDetails.qrCodeImage} 
+                                  alt="Customer's UPI QR Code" 
+                                  className="w-40 h-40 border border-neutral-300 object-contain bg-white"
+                                />
+                              ) : (
+                                <span className="text-[9.5px] text-neutral-400 font-bold uppercase italic">No QR Code Uploaded</span>
+                              )}
+                            </div>
+                          )}
+
+                          {activeOrderDetails.returnRequest.refundDetails.method === "upi" && (
+                            <div className="space-y-1.5 font-bold">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[8px] text-neutral-400 uppercase tracking-wider">UPI ID</span>
+                                <span className="text-[10px] font-bold text-[#382d24] font-mono">
+                                  {activeOrderDetails.returnRequest.refundDetails.upiId || "N/A"}
+                                </span>
+                              </div>
+                              {activeOrderDetails.returnRequest.refundDetails.phoneNumber && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[8px] text-neutral-400 uppercase tracking-wider">Phone</span>
+                                  <span className="text-[10px] font-bold text-[#382d24]">
+                                    {activeOrderDetails.returnRequest.refundDetails.phoneNumber}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {activeOrderDetails.returnRequest.refundDetails.method === "bank_transfer" && (
+                            <div className="border border-purple-200/30 bg-white rounded-sm divide-y divide-neutral-100 font-bold">
+                              <DetailRow label="Account Holder" value={activeOrderDetails.returnRequest.refundDetails.accountHolderName} />
+                              <DetailRow label="Bank Name" value={activeOrderDetails.returnRequest.refundDetails.bankName} />
+                              <DetailRow label="Account Number" value={activeOrderDetails.returnRequest.refundDetails.accountNumber} />
+                              <DetailRow label="IFSC Code" value={activeOrderDetails.returnRequest.refundDetails.ifscCode} />
+                            </div>
+                          )}
+                          
+                          <p className="text-[7.5px] text-neutral-400 font-semibold mt-2">
+                            Submitted: {activeOrderDetails.returnRequest.submittedAt}
+                          </p>
+                        </div>
+
+                        {/* Action Buttons for Admin */}
+                        {activeOrderDetails.returnRequest.status === "pending" && (
+                          <div className="border-t border-purple-200/60 pt-3 flex gap-2">
+                            <button
+                              onClick={() => handleApproveReturn(activeOrderDetails)}
+                              className="bg-green-600 hover:bg-green-700 text-white text-[8.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none rounded-sm transition-all flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Approve & Refund
+                            </button>
+                            <button
+                              onClick={() => handleRejectReturn(activeOrderDetails)}
+                              className="border border-red-300 text-red-600 hover:bg-red-50 text-[8.5px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer rounded-sm transition-all flex items-center gap-1.5"
+                            >
+                              <XCircle className="w-3.5 h-3.5" /> Reject
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Status badge for non-pending */}
+                        {activeOrderDetails.returnRequest.status === "completed" && (
+                          <div className="flex items-center gap-2 text-green-700 border-t border-purple-200/60 pt-3">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider">
+                              Refund Completed — Credited via {activeOrderDetails.returnRequest.refundDetails.method === "qr_code" ? "UPI QR" : activeOrderDetails.returnRequest.refundDetails.method === "upi" ? "UPI" : "Bank"}
+                            </span>
+                          </div>
+                        )}
+                        {activeOrderDetails.returnRequest.status === "rejected" && (
+                          <div className="flex items-center gap-2 text-red-600 border-t border-purple-200/60 pt-3">
+                            <XCircle className="w-4 h-4" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider">
+                              Return Request Rejected
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Order Progress & Shipping */}
+              {activeOrderDetails.status !== "Return Requested" && (
+                <div>
+                  <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Order Progress & Shipping</span>
+                  <div className="border border-neutral-200 p-6 bg-[#224870]/5 rounded-sm space-y-6">
+                    
+                    {/* Stepper Timeline */}
+                    <div className="relative flex justify-between items-center max-w-xl mx-auto px-4 h-16">
+                      {(() => {
+                        const currentIdx = ["Pending", "Processing", "Shipped", "Delivered"].indexOf(activeOrderDetails.status);
+                        return (
+                          <>
+                            <div className={`absolute left-[6%] w-[29%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 1 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[35%] w-[29%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 2 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[64%] w-[29%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 3 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                          </>
+                        );
+                      })()}
+                      
+                      {(["Pending", "Processing", "Shipped", "Delivered"] as Order["status"][]).map((st, idx) => {
+                        const isActive = activeOrderDetails.status === st;
+                        const currentIdx = ["Pending", "Processing", "Shipped", "Delivered"].indexOf(activeOrderDetails.status);
+                        const isCompleted = currentIdx > idx && activeOrderDetails.status !== "Cancelled";
+                        const isDisabled = activeOrderDetails.status === "Cancelled" || idx <= currentIdx;
+                        
+                        return (
+                          <button
+                            key={st}
+                            disabled={isDisabled}
+                            onClick={() => triggerStageChangeConfirm(st)}
+                            className={`relative z-10 flex flex-col items-center bg-transparent border-none focus:outline-none transition-all ${
+                              isDisabled ? "cursor-not-allowed" : "cursor-pointer group"
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] border-2 transition-all shadow-xs ${
+                              isActive ? "bg-[#224870] text-white border-[#224870] scale-110 ring-4 ring-[#224870]/10" :
+                              isCompleted ? "bg-white text-[#224870] border-[#224870]" :
+                              "bg-white text-neutral-400 border-neutral-200 group-hover:border-neutral-300"
+                            }`}>
+                              {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
+                            </div>
+                            <span className={`text-[8.5px] font-black uppercase tracking-wider mt-2 transition-colors ${
+                              isActive ? "text-[#224870]" : "text-neutral-400"
+                            }`}>
+                              {st}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Actions Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-5 border-t border-neutral-200/60">
+                      {/* Courier Tracking */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[8px] font-bold text-[#615e56] uppercase tracking-wider">Courier Tracking ID</label>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                            <input
+                              type="text"
+                              value={panelTracking}
+                              readOnly={isTrackingLocked}
+                              onChange={(e) => setPanelTracking(e.target.value)}
+                              placeholder="Enter shipment tracking number..."
+                              className={`w-full border pl-9 pr-3 py-2 text-[10px] font-bold font-mono focus:outline-none focus:border-[#224870] rounded-sm transition-all ${
+                                isTrackingLocked ? "bg-neutral-100/80 text-neutral-500 border-neutral-200/80 cursor-not-allowed" : "bg-card text-[#382d24] border-neutral-300"
+                              }`}
+                            />
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              disabled={!isTrackingLocked}
+                              onClick={() => setIsTrackingLocked(false)}
+                              className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed p-2 flex items-center justify-center rounded-sm border border-neutral-200 transition-all cursor-pointer"
+                              title="Edit Tracking ID"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTrackingLocked}
+                              onClick={() => {
+                                if (!selectedOrderId) return;
+                                setOrders((prev) =>
+                                  prev.map((o) => (o.id === selectedOrderId ? { ...o, trackingNumber: panelTracking } : o))
+                                );
+                                setIsTrackingLocked(true);
+                                setShowTrackingSavedAlert(true);
+                              }}
+                              className="bg-[#224870] hover:bg-[#224870]/85 text-white disabled:opacity-40 disabled:cursor-not-allowed px-3 flex items-center justify-center rounded-sm border-none transition-all cursor-pointer"
+                              title="Save Tracking ID"
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[12px] font-black text-[#382d24]">{RS}{(item.price * item.qty).toLocaleString()}</p>
+
+                      {/* Dangerous Actions / Cancellation */}
+                      <div className="flex flex-col justify-end">
+                        <button
+                          onClick={() => triggerStageChangeConfirm("Cancelled")}
+                          className="w-full py-2 px-4 text-[8.5px] font-bold uppercase tracking-wider rounded-sm transition-all border border-red-600 bg-red-600 hover:bg-red-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Cancel Entire Order
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* Cart Items — Redesigned */}
+              <div>
+                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Cart Items</span>
+                <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/50">
+                  {/* Table Header */}
+                  <div className="hidden md:grid grid-cols-[1fr_80px_60px_120px] gap-4 px-4 py-3 bg-[#224870]/5 border-b border-neutral-200 text-[7.5px] font-bold tracking-[0.2em] text-[#615e56] uppercase">
+                    <span>Product Details</span>
+                    <span className="text-center">Size</span>
+                    <span className="text-center">Qty</span>
+                    <span className="text-right">Total</span>
+                  </div>
+                  
+                  {/* Cart Items */}
+                  {activeOrderDetails.items.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_80px_60px_120px] gap-3 md:gap-4 px-4 py-3.5 items-center border-b border-neutral-100 last:border-b-0 hover:bg-[#224870]/2 transition-colors">
+                      {/* Product Info */}
+                      <div className="flex gap-3 items-center">
+                        <div className="w-12 h-12 rounded-sm overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-[10.5px] font-black text-[#382d24] uppercase truncate leading-tight">{item.name}</h4>
+                          <span className="text-[8px] text-neutral-400 font-semibold font-mono block mt-0.5">{item.sku}</span>
+                        </div>
+                      </div>
+                      {/* Size */}
+                      <div className="flex md:block items-center justify-between md:text-center">
+                        <span className="md:hidden text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Size</span>
+                        <span className="text-[10px] font-extrabold text-[#615e56] bg-neutral-100 border border-neutral-200 px-2.5 py-0.5 rounded-sm inline-block">{item.size}</span>
+                      </div>
+                      {/* Qty */}
+                      <div className="flex md:block items-center justify-between md:text-center">
+                        <span className="md:hidden text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Qty</span>
+                        <span className="text-[11px] font-extrabold text-[#382d24]">×{item.qty}</span>
+                      </div>
+                      {/* Total + Unit Price */}
+                      <div className="flex md:block items-center justify-between md:text-right">
+                        <span className="md:hidden text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Total</span>
+                        <div>
+                          <span className="text-[12px] font-black text-[#382d24]">{RS}{(item.price * item.qty).toLocaleString()}</span>
+                          <span className="text-[8.5px] text-neutral-400 font-semibold block md:block">({RS}{item.price.toLocaleString()} ea)</span>
+                        </div>
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Cart Summary Footer */}
+                  {activeOrderDetails.items.length > 1 && (
+                    <div className="px-4 py-3 bg-[#224870]/5 border-t border-neutral-200 flex justify-between items-center text-[10px] font-semibold text-[#615e56]">
+                      <span>{activeOrderDetails.items.reduce((sum, i) => sum + i.qty, 0)} units across {activeOrderDetails.items.length} items</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Admin Notes */}
-              <div>
-                <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase block mb-2">Internal Admin Notes</span>
-                <textarea
-                  rows={3}
-                  value={panelNotes}
-                  onChange={(e) => setPanelNotes(e.target.value)}
-                  placeholder="Add delivery instructions, special handling, returns notes…"
-                  className="w-full bg-card border border-neutral-200 px-3 py-2.5 text-[10px] font-semibold focus:outline-none focus:border-[#224870] rounded-sm leading-relaxed transition-all"
-                />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-5 border-t border-neutral-200 flex items-center justify-end gap-3 bg-card sticky bottom-0">
+            <div className="p-5 border-t border-neutral-200 flex items-center justify-end gap-3 bg-card sticky bottom-0 z-30">
               <button
                 onClick={() => setSelectedOrderId(null)}
                 className="border border-neutral-200 hover:border-neutral-400 text-neutral-500 text-[9.5px] font-bold tracking-widest px-6 py-2.5 uppercase bg-transparent cursor-pointer rounded-full transition-all"
@@ -819,6 +1314,603 @@ export function OrdersPage() {
                 className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-6 py-2.5 uppercase cursor-pointer rounded-full border-none transition-all"
               >
                 Save & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal overlay */}
+      {pendingStatusChange && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[60] p-4" onClick={() => setPendingStatusChange(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-[#382d24] uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-[#224870]" /> Confirm Status Change
+            </h3>
+            <p className="text-[10px] text-[#615e56] font-semibold leading-relaxed">
+              Are you sure you want to change the status of this order to <strong className="text-[#382d24] uppercase">{pendingStatusChange.status}</strong>?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setPendingStatusChange(null)}
+                className="border border-neutral-300 hover:border-neutral-500 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-sm"
+              >
+                No
+              </button>
+              <button
+                onClick={() => {
+                  handleUpdateStatus(pendingStatusChange.status);
+                  if (pendingStatusChange.status === "Shipped" && activeOrderDetails) {
+                    setShowEmailDispatchedAlert({
+                      email: activeOrderDetails.email,
+                      trackingId: panelTracking,
+                      customerName: activeOrderDetails.customer
+                    });
+                  }
+                  setPendingStatusChange(null);
+                }}
+                className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Yes, Change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Tracking Required Alert */}
+      {showTrackingRequiredAlert && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[60] p-4" onClick={() => setShowTrackingRequiredAlert(false)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-red-600 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-red-600" /> Tracking ID Required
+            </h3>
+            <p className="text-[10px] text-[#615e56] font-semibold leading-relaxed">
+              Courier Tracking ID is required to mark the order status as <strong className="text-[#382d24]">SHIPPED</strong>. Please enter the tracking ID before proceeding.
+            </p>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowTrackingRequiredAlert(false)}
+                className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Acknowledge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Email Dispatched Alert */}
+      {showEmailDispatchedAlert && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[60] p-4" onClick={() => setShowEmailDispatchedAlert(null)}>
+          <div className="bg-card border-2 border-green-600 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-green-700 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-green-700" /> Dispatch Successful
+            </h3>
+            <p className="text-[10px] text-[#615e56] font-semibold leading-relaxed">
+              An email containing the shipping confirmation and tracking link (<strong>https://dripdoggy.com/track?id={showEmailDispatchedAlert.trackingId}</strong>) has been successfully sent to <strong>{showEmailDispatchedAlert.customerName}</strong> ({showEmailDispatchedAlert.email}).
+            </p>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowEmailDispatchedAlert(null)}
+                className="bg-green-700 hover:bg-green-700/85 text-white text-[9px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Custom Sequence Error Alert */}
+      {showSequenceErrorAlert && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[60] p-4" onClick={() => setShowSequenceErrorAlert(null)}>
+          <div className="bg-card border-2 border-[#224870] p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-amber-600" /> Sequential Transition Required
+            </h3>
+            <p className="text-[10px] text-[#615e56] font-semibold leading-relaxed">
+              You cannot skip stages in the order progress lifecycle. Before transitioning this order to <strong className="text-[#382d24] uppercase">{showSequenceErrorAlert.targetStage}</strong>, you must first mark it as <strong className="text-[#382d24] uppercase">{showSequenceErrorAlert.requiredStage}</strong>.
+            </p>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowSequenceErrorAlert(null)}
+                className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Acknowledge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Custom Tracking Saved Alert */}
+      {showTrackingSavedAlert && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[60] p-4" onClick={() => setShowTrackingSavedAlert(false)}>
+          <div className="bg-card border-2 border-green-600 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-green-700 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-green-700" /> Tracking Updated
+            </h3>
+            <p className="text-[10px] text-[#615e56] font-semibold leading-relaxed">
+              The Courier Tracking ID has been updated successfully for this order.
+            </p>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowTrackingSavedAlert(false)}
+                className="bg-green-700 hover:bg-green-700/85 text-white text-[9px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Refund Modal ─── */}
+      {showRefundModal && activeOrderDetails && (
+        <div
+          className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[70] p-4"
+          onClick={() => { setShowRefundModal(false); setRefundConfirmed(false); }}
+        >
+          <div
+            className="bg-card w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border border-red-200 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-red-100 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-50 border border-red-200 flex items-center justify-center rounded-sm">
+                  <Banknote className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <span className="text-[8px] font-bold tracking-[0.25em] text-red-600 uppercase">COD Refund</span>
+                  <h3 className="text-[14px] font-[950] text-[#382d24] uppercase tracking-wider mt-0.5">
+                    Initiate Refund — {activeOrderDetails.id}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowRefundModal(false); setRefundConfirmed(false); }}
+                className="p-1.5 border border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-[#382d24] bg-transparent cursor-pointer rounded-full transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Refund Process Explanation */}
+            <div className="px-5 pt-4 pb-2">
+              <div className="bg-blue-50/60 border border-blue-200/70 p-4 rounded-sm">
+                <div className="flex items-start gap-2.5">
+                  <ArrowLeftRight className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                  <div className="text-[8.5px] text-blue-800/90 font-semibold leading-relaxed">
+                    <span className="text-[9px] font-black text-blue-800 uppercase tracking-wider block mb-1.5">
+                      COD Refund Process
+                    </span>
+                    <p className="mb-1">Since this order was paid via <strong>Cash on Delivery (COD)</strong>, the refund cannot be reversed automatically to a card. The customer has submitted their bank details below for a direct bank transfer.</p>
+                    <ol className="list-decimal list-inside space-y-0.5 mt-1.5">
+                      <li>The customer provided their banking details from their account portal</li>
+                      <li>Review the details below and perform the <strong className="text-blue-900">NEFT/IMPS bank transfer</strong> of <strong className="text-blue-900">{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</strong></li>
+                      <li>Confirm the transfer by checking the box below and clicking <strong className="text-blue-900">Yes, Refund</strong></li>
+                      <li>The order payment status will be updated to <strong className="text-blue-900">COD - Refunded</strong> and the order stage to <strong className="text-blue-900">Cancelled</strong></li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Customer's Banking Details — Read-only */}
+            <div className="px-5 py-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-black text-[#382d24] uppercase tracking-wider">
+                  Customer's Bank Details
+                </span>
+                {activeOrderDetails.customerBankDetails && (
+                  <span className="text-[7px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Submitted: {activeOrderDetails.customerBankDetails.submittedAt}
+                  </span>
+                )}
+              </div>
+
+              {activeOrderDetails.customerBankDetails ? (
+                <>
+                  <div className="border-2 border-[#224870]/20 bg-[#224870]/3 rounded-sm divide-y divide-neutral-200/60">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Account Holder</span>
+                      <span className="text-[10.5px] font-extrabold text-[#382d24] font-mono">{activeOrderDetails.customerBankDetails.accountHolderName}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Bank Name</span>
+                      <span className="text-[10.5px] font-extrabold text-[#382d24] font-mono">{activeOrderDetails.customerBankDetails.bankName}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Account Number</span>
+                      <span className="text-[10.5px] font-extrabold text-[#382d24] font-mono tracking-wider">
+                        {activeOrderDetails.customerBankDetails.accountNumber.replace(/\d(?=\d{4})/g, "•")}
+                        <button
+                          onClick={() => navigator.clipboard.writeText(activeOrderDetails.customerBankDetails!.accountNumber)}
+                          className="ml-2 text-[#224870] hover:text-[#224870]/70 text-[8px] font-bold lowercase bg-transparent border-none cursor-pointer"
+                          title="Copy account number"
+                        >
+                          [Copy]
+                        </button>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">IFSC Code</span>
+                      <span className="text-[10.5px] font-extrabold text-[#382d24] font-mono tracking-wider">
+                        {activeOrderDetails.customerBankDetails.ifscCode}
+                        <button
+                          onClick={() => navigator.clipboard.writeText(activeOrderDetails.customerBankDetails!.ifscCode)}
+                          className="ml-2 text-[#224870] hover:text-[#224870]/70 text-[8px] font-bold lowercase bg-transparent border-none cursor-pointer"
+                          title="Copy IFSC code"
+                        >
+                          [Copy]
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Confirmation Checkbox */}
+                  <div className="mt-4 p-3 bg-amber-50/50 border border-amber-200/60 rounded-sm">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={refundConfirmed}
+                        onChange={(e) => setRefundConfirmed(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-[#224870] cursor-pointer"
+                      />
+                      <span className="text-[9px] text-amber-800 font-bold leading-relaxed">
+                        I confirm that I have initiated/completed the NEFT/IMPS bank transfer of <strong className="text-red-600">{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</strong> to the customer's bank account shown above.
+                      </span>
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <div className="border-2 border-dashed border-neutral-300 p-6 text-center">
+                  <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
+                    Customer has not submitted their banking details yet
+                  </p>
+                  <p className="text-[8.5px] text-neutral-400 font-semibold mt-1.5">
+                    Ask the customer to add their bank details from their account portal to proceed with the refund.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-neutral-200 flex items-center justify-between gap-3 bg-neutral-50/50">
+              <div className="text-[9px] text-[#615e56] font-bold">
+                Refund Amount: <span className="text-red-600 font-black">{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setShowRefundModal(false); setRefundConfirmed(false); }}
+                  className="border border-neutral-300 hover:border-neutral-500 text-neutral-500 text-[9px] font-bold tracking-widest px-5 py-2.5 uppercase bg-transparent cursor-pointer rounded-sm transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={!refundConfirmed || !activeOrderDetails.customerBankDetails}
+                  onClick={() => setShowRefundConfirm(true)}
+                  className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed text-[9px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer border-none rounded-sm transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Yes, Refund
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Refund Confirm Modal ─── */}
+      {showRefundConfirm && activeOrderDetails && (
+        <div
+          className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[75] p-4"
+          onClick={() => setShowRefundConfirm(false)}
+        >
+          <div className="bg-card border-2 border-red-500 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-red-600 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-red-600" /> Confirm Refund
+            </h3>
+            <div className="space-y-2 text-[9.5px] text-[#615e56] font-semibold leading-relaxed">
+              <p>This will permanently mark order <strong>{activeOrderDetails.id}</strong> as <strong className="text-red-600">COD - Refunded</strong> and update the order stage to <strong className="text-red-600">Cancelled</strong>.</p>
+              <p className="text-amber-700 font-bold text-[8.5px] flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> Please verify that the bank transfer has been completed before confirming.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowRefundConfirm(false)}
+                className="border border-neutral-300 hover:border-neutral-500 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowRefundConfirm(false);
+                  setShowRefundModal(false);
+                  setRefundConfirmed(false);
+                  setOrders((prev) =>
+                    prev.map((o) => (o.id === selectedOrderId ? { ...o, payment: "Refunded", status: "Cancelled" } : o))
+                  );
+                  setShowRefundSuccess(true);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none rounded-sm shadow-sm"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Yes, Mark as Refunded
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Refund Success Modal ─── */}
+      {showRefundSuccess && activeOrderDetails && (
+        <div
+          className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[80] p-4"
+          onClick={() => setShowRefundSuccess(false)}
+        >
+          <div className="bg-card border-2 border-green-600 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-[12px] font-black text-green-700 uppercase tracking-wider">Refund Recorded</h3>
+                <p className="text-[9px] text-[#615e56] font-semibold mt-0.5">
+                  Payment marked as COD - Refunded. Order has been cancelled.
+                </p>
+              </div>
+            </div>
+            <div className="border border-green-100 bg-green-50/50 p-3 rounded-sm space-y-1 text-[9px] font-mono font-bold">
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Order ID</span>
+                <span className="text-[#382d24]">{activeOrderDetails.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Refund Amount</span>
+                <span className="text-green-700 font-black">{RS}{getOrderTotal(activeOrderDetails).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Bank Transfer To</span>
+                <span className="text-[#382d24]">{activeOrderDetails.customerBankDetails?.bankName || "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Beneficiary</span>
+                <span className="text-[#382d24]">{activeOrderDetails.customerBankDetails?.accountHolderName || "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Payment Status</span>
+                <span className="text-green-700 font-black uppercase tracking-wider">COD - Refunded</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Order Stage</span>
+                <span className="text-red-600 font-black uppercase tracking-wider">Cancelled</span>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowRefundSuccess(false)}
+                className="bg-green-700 hover:bg-green-700/85 text-white text-[9px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Return Approve Confirm Modal ─── */}
+      {returnApproveConfirmOrder && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[75] p-4" onClick={() => setReturnApproveConfirmOrder(null)}>
+          <div className="bg-card border-2 border-green-600 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-green-700 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-green-700" /> Confirm Refund Processing
+            </h3>
+            <div className="space-y-3 text-[9.5px] text-[#615e56] font-semibold leading-relaxed">
+              <p>You are about to approve the return and confirm manual payment payout of <strong className="text-green-700">{RS}{getOrderTotal(returnApproveConfirmOrder).toLocaleString()}</strong> to the customer's selected destination:</p>
+              
+              <div className="bg-neutral-50 border border-neutral-200 p-3 rounded-sm space-y-1 font-mono text-[9px]">
+                <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Method:</span> <span className="text-[#382d24] font-extrabold uppercase">{returnApproveConfirmOrder.returnRequest?.refundDetails.method.replace("_", " ")}</span></p>
+                
+                {returnApproveConfirmOrder.returnRequest?.refundDetails.method === "qr_code" && (
+                  <div className="pt-1.5 flex flex-col items-center">
+                    <p className="text-[8px] text-neutral-400 font-bold mb-1 uppercase tracking-wider">Scannable QR Image</p>
+                    <img src={returnApproveConfirmOrder.returnRequest?.refundDetails.qrCodeImage} className="w-32 h-32 border border-neutral-300 bg-white object-contain" alt="Refund UPI QR" />
+                  </div>
+                )}
+                {returnApproveConfirmOrder.returnRequest?.refundDetails.method === "upi" && (
+                  <>
+                    <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">UPI ID:</span> <span className="text-[#382d24] font-extrabold">{returnApproveConfirmOrder.returnRequest?.refundDetails.upiId || "N/A"}</span></p>
+                    <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Phone:</span> <span className="text-[#382d24] font-extrabold">{returnApproveConfirmOrder.returnRequest?.refundDetails.phoneNumber || "N/A"}</span></p>
+                  </>
+                )}
+                {returnApproveConfirmOrder.returnRequest?.refundDetails.method === "bank_transfer" && (
+                  <>
+                    <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Account Holder:</span> <span className="text-[#382d24] font-extrabold">{returnApproveConfirmOrder.returnRequest?.refundDetails.accountHolderName}</span></p>
+                    <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Bank Name:</span> <span className="text-[#382d24] font-extrabold">{returnApproveConfirmOrder.returnRequest?.refundDetails.bankName}</span></p>
+                    <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Account No:</span> <span className="text-[#382d24] font-extrabold">{returnApproveConfirmOrder.returnRequest?.refundDetails.accountNumber}</span></p>
+                    <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">IFSC Code:</span> <span className="text-[#382d24] font-extrabold">{returnApproveConfirmOrder.returnRequest?.refundDetails.ifscCode}</span></p>
+                  </>
+                )}
+              </div>
+
+              {/* Transaction ID Input */}
+              <div className="space-y-1">
+                <label className="block text-[8px] font-bold text-[#615e56] uppercase tracking-wider">
+                  Transaction Payout Reference ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={adminTxId}
+                  onChange={(e) => setAdminTxId(e.target.value)}
+                  placeholder="e.g. UPI8472940294"
+                  className="w-full border border-neutral-300 px-2.5 py-1.5 text-[9.5px] font-bold font-mono focus:outline-none focus:border-green-600 rounded-sm"
+                />
+              </div>
+
+              {/* Screenshot Receipt Upload */}
+              <div className="space-y-1">
+                <label className="block text-[8px] font-bold text-[#615e56] uppercase tracking-wider">
+                  Payment Receipt Screenshot <span className="text-red-500">*</span>
+                </label>
+                <div className="border border-dashed border-neutral-300 p-3 flex flex-col items-center justify-center cursor-pointer relative bg-neutral-50/50 hover:bg-neutral-50 rounded-sm">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const r = new FileReader();
+                        r.onloadend = () => setAdminReceiptScreenshot(r.result as string);
+                        r.readAsDataURL(file);
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  {adminReceiptScreenshot ? (
+                    <img src={adminReceiptScreenshot} alt="Receipt Preview" className="h-16 object-contain border border-neutral-200" />
+                  ) : (
+                    <div className="text-center py-1">
+                      <Upload className="h-4 w-4 text-neutral-400 mx-auto mb-0.5" />
+                      <span className="text-[8px] text-neutral-500 font-bold uppercase">Upload Receipt Image</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-amber-700 font-bold text-[8.5px] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> Payout Transaction ID & Receipt are required to confirm refund. A confirmation email will be sent automatically.
+              </p>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setReturnApproveConfirmOrder(null)}
+                className="border border-neutral-300 hover:border-neutral-500 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!adminTxId || !adminReceiptScreenshot}
+                onClick={() => {
+                  setOrders((prev) =>
+                    prev.map((o) =>
+                      o.id === returnApproveConfirmOrder.id
+                        ? {
+                            ...o,
+                            payment: "Refunded",
+                            status: "Cancelled",
+                            returnRequest: o.returnRequest
+                              ? { ...o.returnRequest, status: "completed" }
+                              : undefined,
+                          }
+                        : o
+                    )
+                  );
+                  setShowReturnSuccessAlert({
+                    email: returnApproveConfirmOrder.email,
+                    txId: adminTxId,
+                    customerName: returnApproveConfirmOrder.customer,
+                    receiptScreenshot: adminReceiptScreenshot
+                  });
+                  setReturnApproveConfirmOrder(null);
+                }}
+                className={`text-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none rounded-sm shadow-sm flex items-center gap-1.5 ${
+                  adminTxId && adminReceiptScreenshot ? "bg-green-700 hover:bg-green-800" : "bg-neutral-300 cursor-not-allowed"
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Confirm Payout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Return Reject Confirm Modal ─── */}
+      {returnRejectConfirmOrder && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[75] p-4" onClick={() => setReturnRejectConfirmOrder(null)}>
+          <div className="bg-card border-2 border-red-500 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-black text-red-600 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-red-600" /> Reject Return Request
+            </h3>
+            <p className="text-[10px] text-[#615e56] font-semibold leading-relaxed">
+              Are you sure you want to reject the return request for order <strong>{returnRejectConfirmOrder.id}</strong>? Please provide a brief reason:
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Returned item does not match product condition tags..."
+              rows={3}
+              className="w-full border border-neutral-300 p-2.5 text-[10px] font-bold focus:outline-none focus:border-[#224870] rounded-sm transition-all"
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setReturnRejectConfirmOrder(null)}
+                className="border border-neutral-300 hover:border-neutral-500 text-neutral-500 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setOrders((prev) =>
+                    prev.map((o) =>
+                      o.id === returnRejectConfirmOrder.id
+                        ? {
+                            ...o,
+                            returnRequest: o.returnRequest
+                              ? { ...o.returnRequest, status: "rejected", reason: rejectReason ? `${o.returnRequest.reason} (Rejected: ${rejectReason})` : o.returnRequest.reason }
+                              : undefined,
+                          }
+                        : o
+                    )
+                  );
+                  setReturnRejectConfirmOrder(null);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none rounded-sm shadow-sm"
+              >
+                Reject Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Return Success Modal ─── */}
+      {showReturnSuccessAlert && (
+        <div className="fixed inset-0 bg-[#382d24]/50 backdrop-blur-xs flex items-center justify-center z-[80] p-4" onClick={() => setShowReturnSuccessAlert(null)}>
+          <div className="bg-card border-2 border-green-600 p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-[12px] font-black text-green-700 uppercase tracking-wider">Refund Email Dispatched</h3>
+                <p className="text-[9px] text-[#615e56] font-semibold mt-0.5">
+                  A return approval & refund confirmation email has been dispatched to <strong>{showReturnSuccessAlert.customerName}</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="border border-green-100 bg-green-50/50 p-3 rounded-sm space-y-1.5 text-[9px] font-mono font-bold">
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Customer Email</span>
+                <span className="text-[#382d24]">{showReturnSuccessAlert.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Transaction ID</span>
+                <span className="text-green-700">{showReturnSuccessAlert.txId}</span>
+              </div>
+              {showReturnSuccessAlert.receiptScreenshot && (
+                <div className="pt-2 flex flex-col items-center border-t border-green-100 mt-2">
+                  <span className="text-neutral-500 text-[8px] uppercase tracking-wider mb-1 block self-start">Sent Payout Receipt</span>
+                  <img src={showReturnSuccessAlert.receiptScreenshot} className="h-24 border border-green-200 bg-white object-contain" alt="Receipt Attachment" />
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => setShowReturnSuccessAlert(null)}
+                className="bg-green-700 hover:bg-green-800 text-white text-[9px] font-bold tracking-widest px-5 py-2 uppercase cursor-pointer border-none rounded-sm"
+              >
+                Done
               </button>
             </div>
           </div>
