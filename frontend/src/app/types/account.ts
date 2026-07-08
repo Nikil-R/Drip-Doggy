@@ -1,8 +1,28 @@
+export type RefundMethod = "qr_code" | "upi" | "bank_transfer";
+
+export interface RefundDetails {
+  method: RefundMethod;
+  qrCodeImage?: string; // base64 data URL
+  upiId?: string;
+  phoneNumber?: string;
+  accountHolderName?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+}
+
+export interface ReturnRequest {
+  reason: string;
+  refundDetails: RefundDetails;
+  submittedAt: string;
+  status: "pending" | "approved" | "completed" | "rejected";
+}
+
 export interface Order {
   id: string;
   date: string;
   total: number;
-  status: "Delivered" | "Shipped" | "Processing";
+  status: "Delivered" | "Shipped" | "Processing" | "Pending" | "Cancelled" | "Return Requested";
   items: {
     name: string;
     brand: string;
@@ -12,6 +32,7 @@ export interface Order {
     quantity: number;
     image: string;
   }[];
+  returnRequest?: ReturnRequest;
 }
 
 export interface AddressItem {

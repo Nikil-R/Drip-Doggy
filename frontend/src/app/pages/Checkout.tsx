@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   ShieldCheck, ArrowLeft, CheckCircle2, Home, Briefcase, MapPin, ShoppingBag,
-  Trash2, Edit2, Plus, Check, Mail, Phone, Truck, Zap, ChevronRight, Clock, CreditCard,
+  Trash2, Edit2, Plus, Check, Mail, Phone, Truck, Zap, ChevronRight, Clock, CreditCard, X,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuth } from "../context/AuthContext";
 import { OTPInput } from "input-otp";
-
+import { addressApi } from "../lib/address-api";
+import { getSessionToken } from "../lib/auth-storage";
 interface CartItem {
   id: number; brand: string; name: string; size: string; color: string;
   price: number; quantity: number; image: string;
@@ -173,8 +174,7 @@ export function Checkout() {
     try {
       const stored = localStorage.getItem("addresses");
       if (stored) {
-        const list = JSON.parse(stored);
-        return list.filter((a: any) => a.name !== "Nikil" && a.firstName !== "Nikil");
+        return JSON.parse(stored);
       }
     } catch { /* noop */ }
     return [];
@@ -184,6 +184,26 @@ export function Checkout() {
     const defaultAddr = addresses.find(a => a.isDefault);
     return defaultAddr ? defaultAddr.id : addresses[0]?.id || null;
   });
+
+  const [showAddressSelectorModal, setShowAddressSelectorModal] = useState(false);
+
+  useEffect(() => {
+    async function loadApiAddresses() {
+      if (getSessionToken()) {
+        try {
+          const list = await addressApi.getAddresses();
+          if (list) {
+            setAddresses(list);
+            const defaultAddr = list.find(a => a.isDefault);
+            setSelectedAddressId(defaultAddr ? defaultAddr.id : list[0]?.id || null);
+          }
+        } catch (err) {
+          console.error("Failed to load addresses from API", err);
+        }
+      }
+    }
+    loadApiAddresses();
+  }, []);
 
   useEffect(() => {
     if (addresses.length > 0 && selectedAddressId === null) {
@@ -195,8 +215,10 @@ export function Checkout() {
   }, [addresses, selectedAddressId]);
 
   // Promo from cart (carried via localStorage)
-  const [appliedPromo] = useState<string | null>(() => localStorage.getItem("appliedPromo"));
-  const [promoDiscount] = useState<number>(() => Number(localStorage.getItem("promoDiscount")) || 0);
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(() => localStorage.getItem("appliedPromo"));
+  const [promoDiscount, setPromoDiscount] = useState<number>(() => Number(localStorage.getItem("promoDiscount")) || 0);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   // Address form state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -211,8 +233,9 @@ export function Checkout() {
   const [isOrdered, setIsOrdered] = useState(false);
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = subtotal > 1999 || subtotal === 0 ? 0 : 90;
-  const shippingCost = shippingMethod === "express" ? 150.0 : deliveryFee;
+  const deliveryFee = subtotal === 0 ? 0 : 90; // Standard is always paid (₹90) by default
+  const isFreeShippingPromo = appliedPromo === "FREESHIP" || appliedPromo === "FREE";
+  const shippingCost = isFreeShippingPromo ? 0 : (shippingMethod === "express" ? 150.0 : deliveryFee);
   const total = subtotal + shippingCost - promoDiscount;
   const totalItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -244,8 +267,15 @@ export function Checkout() {
     setIsFormOpen(true);
   };
 
-  const handleDeleteAddress = (id: number, e: React.MouseEvent) => {
+  const handleDeleteAddress = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (getSessionToken()) {
+      try {
+        await addressApi.deleteAddress(id);
+      } catch (err) {
+        console.error("Failed to delete address via API", err);
+      }
+    }
     const updated = addresses.filter(a => a.id !== id);
     setAddresses(updated);
     if (selectedAddressId === id) {
@@ -253,29 +283,47 @@ export function Checkout() {
     }
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalType = addressForm.type === "OTHER"
       ? (addressForm.otherName.trim() || "OTHER").toUpperCase()
       : addressForm.type;
 
+    const requestData = {
+      type: finalType, firstName: addressForm.firstName, lastName: addressForm.lastName,
+      buildingNo: addressForm.buildingNo, buildingName: addressForm.buildingName, street: addressForm.street,
+      area: addressForm.area, city: addressForm.city, state: addressForm.state,
+      postalCode: addressForm.postalCode, phone: addressForm.phone, isDefault: addressForm.isDefault
+    };
+
     if (editingAddressId !== null) {
+      if (getSessionToken()) {
+        try {
+          await addressApi.updateAddress(editingAddressId, requestData);
+        } catch (err) {
+          console.error("Failed to update address via API", err);
+        }
+      }
       setAddresses(prev => prev.map(addr => {
         if (addr.id === editingAddressId) {
-          return { ...addr, type: finalType, firstName: addressForm.firstName, lastName: addressForm.lastName,
-            buildingNo: addressForm.buildingNo, buildingName: addressForm.buildingName, street: addressForm.street,
-            area: addressForm.area, city: addressForm.city, state: addressForm.state,
-            postalCode: addressForm.postalCode, phone: addressForm.phone, isDefault: addressForm.isDefault ? true : addr.isDefault };
+          return { ...addr, ...requestData };
         }
         return addressForm.isDefault ? { ...addr, isDefault: false } : addr;
       }));
     } else {
+      let savedId = Date.now();
+      if (getSessionToken()) {
+        try {
+          const res = await addressApi.createAddress(requestData);
+          if (res && res.data && res.data.id) {
+            savedId = res.data.id;
+          }
+        } catch (err) {
+          console.error("Failed to create address via API", err);
+        }
+      }
       const newAddress: Address = {
-        id: Date.now(), type: finalType, isDefault: addressForm.isDefault || addresses.length === 0,
-        firstName: addressForm.firstName, lastName: addressForm.lastName,
-        buildingNo: addressForm.buildingNo, buildingName: addressForm.buildingName,
-        street: addressForm.street, area: addressForm.area, city: addressForm.city,
-        state: addressForm.state, postalCode: addressForm.postalCode, phone: addressForm.phone,
+        id: savedId, ...requestData, isDefault: addressForm.isDefault || addresses.length === 0
       };
       setAddresses(prev => addressForm.isDefault
         ? prev.map(a => ({ ...a, isDefault: false })).concat(newAddress)
@@ -854,53 +902,115 @@ export function Checkout() {
                         </div>
                       </form>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {addresses.map((addr) => {
-                          const isSelected = selectedAddressId === addr.id;
-                          return (
-                            <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)}
-                              className={`relative p-5 border cursor-pointer transition-all ${
-                                isSelected ? "border-2 border-[#030213] bg-[#FAF8F5]/30 shadow-sm" : "border border-neutral-200 bg-white hover:border-neutral-400"
-                              }`}>
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-1.5">
-                                  {addr.type === "HOME" ? <Home className="h-3 w-3 text-neutral-500 stroke-[1.5]" /> : addr.type === "OFFICE" ? <Briefcase className="h-3 w-3 text-neutral-500 stroke-[1.5]" /> : <MapPin className="h-3 w-3 text-neutral-500 stroke-[1.5]" />}
-                                  <span className="text-[8px] font-black tracking-widest text-[#b2533e] uppercase">{addr.type}</span>
-                                  {addr.isDefault && <span className="bg-[#030213] text-white text-[7px] font-black tracking-wider px-1.5 py-0.5 uppercase">Default</span>}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <button onClick={(e) => handleOpenEditForm(addr, e)} className="p-1 text-neutral-400 hover:text-[#030213] transition-colors bg-transparent border-none cursor-pointer">
-                                    <Edit2 className="h-3 w-3 stroke-[1.8]" />
-                                  </button>
-                                  <button onClick={(e) => handleDeleteAddress(addr.id, e)} className="p-1 text-neutral-400 hover:text-[#b2533e] transition-colors bg-transparent border-none cursor-pointer">
-                                    <Trash2 className="h-3 w-3 stroke-[1.8]" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="text-[10px] leading-relaxed text-neutral-600 font-bold uppercase tracking-wider">
-                                <p className="font-extrabold text-[#030213] text-xs mb-1">{addr.firstName} {addr.lastName}</p>
-                                <p>{addr.buildingNo && `${addr.buildingNo}, `}{addr.buildingName && `${addr.buildingName}, `}{addr.street}</p>
-                                <p>{addr.area}</p>
-                                <p>{addr.city}, {addr.state} — {addr.postalCode}</p>
-                                <p className="text-[8px] font-extrabold text-[#b2533e] mt-2 tracking-widest">PH: {addr.phone}</p>
-                              </div>
-                              <div className="mt-3 pt-3 border-t border-neutral-100">
-                                {isSelected ? (
-                                  <div className="flex items-center gap-2 text-[8px] font-extrabold tracking-widest text-[#030213] uppercase">
-                                    <Check className="h-3 w-3 stroke-[2.5]" /> <span>Selected for this order</span>
-                                  </div>
+                      <div className="space-y-4">
+                        {/* Display Active Address (Default or manually selected) */}
+                        {activeAddress ? (
+                          <div className="border border-neutral-200 bg-white p-5 rounded-sm relative">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-1.5">
+                                {activeAddress.type === "HOME" ? (
+                                  <Home className="h-3 w-3 text-[#030213]" />
+                                ) : activeAddress.type === "OFFICE" ? (
+                                  <Briefcase className="h-3 w-3 text-[#030213]" />
                                 ) : (
-                                  <span className="text-[8px] font-extrabold tracking-widest text-neutral-400 uppercase">Select address</span>
+                                  <MapPin className="h-3 w-3 text-[#030213]" />
+                                )}
+                                <span className="text-[8px] font-black tracking-widest text-[#030213] uppercase">{activeAddress.type}</span>
+                                {activeAddress.isDefault && (
+                                  <span className="bg-[#030213] text-white text-[7px] font-black tracking-wider px-1.5 py-0.5 uppercase">Default</span>
                                 )}
                               </div>
+                              <span className="text-[8px] font-black text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 uppercase tracking-wider">
+                                Selected Destination
+                              </span>
                             </div>
-                          );
-                        })}
-                        <div onClick={handleOpenAddForm}
-                          className="border border-dashed border-neutral-300 hover:border-[#030213] bg-white/40 hover:bg-white p-5 flex flex-col items-center justify-center cursor-pointer transition-all min-h-[220px]">
-                          <Plus className="h-6 w-6 text-neutral-300 mb-2 stroke-[1.5]" />
-                          <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">Add New Destination</span>
-                          <span className="text-[8px] text-neutral-400 font-medium mt-1">Home, studio, office or other</span>
+                            <div className="text-[10px] leading-relaxed text-neutral-600 font-bold uppercase tracking-wider">
+                              <p className="font-extrabold text-[#030213] text-xs mb-1">{activeAddress.firstName} {activeAddress.lastName}</p>
+                              <p>{activeAddress.buildingNo && `${activeAddress.buildingNo}, `}{activeAddress.buildingName && `${activeAddress.buildingName}, `}{activeAddress.street}</p>
+                              <p>{activeAddress.area}</p>
+                              <p>{activeAddress.city}, {activeAddress.state} — {activeAddress.postalCode}</p>
+                              <p className="text-[8px] font-extrabold text-[#030213] mt-2 tracking-widest">PH: {activeAddress.phone}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="border border-dashed border-neutral-300 p-6 text-center rounded-sm bg-white">
+                            <MapPin className="h-6 w-6 text-neutral-300 mx-auto mb-2" />
+                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">No address selected</p>
+                          </div>
+                        )}
+
+                        {/* Action buttons to change/choose or manage in account */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          {addresses.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddressSelectorModal(true)}
+                              className="border border-[#030213] hover:bg-neutral-50 text-[#030213] text-[9px] font-extrabold tracking-widest px-4 py-2.5 uppercase transition-all flex items-center gap-1.5 cursor-pointer bg-white"
+                            >
+                              Choose Other Saved Address
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleOpenAddForm}
+                            className="border border-neutral-300 hover:border-[#030213] text-[#b2533e] text-[9px] font-extrabold tracking-widest px-4 py-2.5 uppercase transition-all flex items-center gap-1.5 cursor-pointer bg-white"
+                          >
+                            <Plus className="h-3 w-3 stroke-[2]" /> Add New Address
+                          </button>
+                          <Link
+                            to="/account#addresses"
+                            className="text-[9px] font-extrabold tracking-widest text-[#030213] hover:underline uppercase flex items-center gap-1.5 ml-auto pt-2 sm:pt-0"
+                          >
+                            Manage Addresses in Account
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Address Selector Modal */}
+                    {showAddressSelectorModal && (
+                      <div className="fixed inset-0 bg-[#030213]/50 backdrop-blur-xs flex items-center justify-center z-[100] p-4" onClick={() => setShowAddressSelectorModal(false)}>
+                        <div className="bg-[#FAF8F5] border border-neutral-200 p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto space-y-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+                            <h3 className="text-xs font-black tracking-[0.2em] text-[#030213] uppercase flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-[#030213]" /> Select Delivery Destination
+                            </h3>
+                            <button onClick={() => setShowAddressSelectorModal(false)} className="text-neutral-400 hover:text-black bg-transparent border-none cursor-pointer">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {addresses.map((addr) => {
+                              const isSelected = selectedAddressId === addr.id;
+                              return (
+                                <div key={addr.id}
+                                  onClick={() => {
+                                    setSelectedAddressId(addr.id);
+                                    setShowAddressSelectorModal(false);
+                                  }}
+                                  className={`relative p-5 border cursor-pointer transition-all ${
+                                    isSelected ? "border-2 border-[#030213] bg-[#FAF8F5]/30 shadow-sm" : "border border-neutral-200 bg-white hover:border-neutral-400"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-1.5">
+                                      {addr.type === "HOME" ? <Home className="h-3 w-3 text-neutral-500 stroke-[1.5]" /> : addr.type === "OFFICE" ? <Briefcase className="h-3 w-3 text-neutral-500 stroke-[1.5]" /> : <MapPin className="h-3 w-3 text-neutral-500 stroke-[1.5]" />}
+                                      <span className="text-[8px] font-black tracking-widest text-[#b2533e] uppercase">{addr.type}</span>
+                                      {addr.isDefault && <span className="bg-[#030213] text-white text-[7px] font-black tracking-wider px-1.5 py-0.5 uppercase">Default</span>}
+                                    </div>
+                                  </div>
+                                  <div className="text-[10px] leading-relaxed text-neutral-600 font-bold uppercase tracking-wider">
+                                    <p className="font-extrabold text-[#030213] text-xs mb-1">{addr.firstName} {addr.lastName}</p>
+                                    <p>{addr.buildingNo && `${addr.buildingNo}, `}{addr.buildingName && `${addr.buildingName}, `}{addr.street}</p>
+                                    <p>{addr.area}</p>
+                                    <p>{addr.city}, {addr.state} — {addr.postalCode}</p>
+                                    <p className="text-[8px] font-extrabold text-[#b2533e] mt-2 tracking-widest">PH: {addr.phone}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1059,6 +1169,80 @@ export function Checkout() {
                 </div>
               ))}
             </div>
+
+            {/* Promo Code Input */}
+            <div className="pt-4 border-t border-neutral-200/60">
+              <span className="block text-[8px] font-black tracking-widest text-neutral-400 uppercase mb-2">Have a Promo Code?</span>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="ENTER COUPON CODE"
+                  value={promoInput}
+                  onChange={(e) => {
+                    setPromoInput(e.target.value);
+                    setPromoError(null);
+                  }}
+                  className="flex-1 border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213] uppercase tracking-widest bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const code = promoInput.trim().toUpperCase();
+                    if (!code) return;
+                    if (code === "FREESHIP" || code === "FREE") {
+                      setAppliedPromo(code);
+                      setPromoDiscount(0);
+                      localStorage.setItem("appliedPromo", code);
+                      localStorage.setItem("promoDiscount", "0");
+                      setPromoInput("");
+                      setPromoError(null);
+                    } else if (code === "DRIP10") {
+                      const disc = subtotal * 0.1;
+                      setAppliedPromo(code);
+                      setPromoDiscount(disc);
+                      localStorage.setItem("appliedPromo", code);
+                      localStorage.setItem("promoDiscount", disc.toString());
+                      setPromoInput("");
+                      setPromoError(null);
+                    } else if (code === "DRIP20") {
+                      const disc = subtotal * 0.2;
+                      setAppliedPromo(code);
+                      setPromoDiscount(disc);
+                      localStorage.setItem("appliedPromo", code);
+                      localStorage.setItem("promoDiscount", disc.toString());
+                      setPromoInput("");
+                      setPromoError(null);
+                    } else {
+                      setPromoError("Invalid coupon code.");
+                    }
+                  }}
+                  className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase transition-colors cursor-pointer"
+                >
+                  Apply
+                </button>
+              </div>
+              {promoError && (
+                <p className="text-[8.5px] font-extrabold text-red-600 uppercase mt-1.5 tracking-wider">{promoError}</p>
+              )}
+              {appliedPromo && (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 p-2.5 mt-2.5 text-[8.5px] font-extrabold tracking-wider text-green-700 uppercase">
+                  <span>Coupon {appliedPromo} Applied</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedPromo(null);
+                      setPromoDiscount(0);
+                      localStorage.removeItem("appliedPromo");
+                      localStorage.removeItem("promoDiscount");
+                    }}
+                    className="text-red-600 hover:text-red-700 bg-transparent border-none cursor-pointer text-[8px] font-black"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-3.5 pt-5 border-t border-neutral-200/80 text-[10px] font-bold tracking-wider text-neutral-600 uppercase">
               <div className="flex justify-between"><span>Subtotal</span><span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(0)}</span></div>
               {promoDiscount > 0 && (
