@@ -3,6 +3,7 @@ package com.dripdoggy.backend.serviceImpl;
 import com.dripdoggy.backend.Iservice.ICouponService;
 import com.dripdoggy.backend.RequestDto.CouponRequestDto;
 import com.dripdoggy.backend.ResponseDto.CouponResponseDto;
+import com.dripdoggy.backend.ResponseDto.CustomerCouponResponseDto;
 import com.dripdoggy.backend.ResponseDto.CouponValidationResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import com.dripdoggy.backend.entity.Coupon;
@@ -265,6 +266,27 @@ public class CouponService implements ICouponService {
             coupon.setIsActive(false);
         }
         couponRepository.save(coupon);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomerCouponResponseDto> fetchAvailableCoupons() {
+        LocalDate today = LocalDate.now();
+        return couponRepository.findAvailableCoupons(today).stream()
+                .map(this::convertToCustomerResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    private CustomerCouponResponseDto convertToCustomerResponseDto(Coupon coupon) {
+        return new CustomerCouponResponseDto(
+                coupon.getCode(),
+                mapToString(coupon.getDiscountType()),
+                coupon.getDiscountValue(),
+                coupon.getMinOrder(),
+                coupon.getExpiryDate(),
+                coupon.getDescription(),
+                coupon.getFirstOrderOnly()
+        );
     }
 
     // Mapping Helpers

@@ -4,6 +4,7 @@ import com.dripdoggy.backend.Iservice.ICouponService;
 import com.dripdoggy.backend.RequestDto.CouponRequestDto;
 import com.dripdoggy.backend.RequestDto.CouponValidateRequestDto;
 import com.dripdoggy.backend.ResponseDto.CouponResponseDto;
+import com.dripdoggy.backend.ResponseDto.CustomerCouponResponseDto;
 import com.dripdoggy.backend.ResponseDto.CouponValidationResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
@@ -65,6 +66,18 @@ public class CouponController {
     }
 
     // ─── PUBLIC ENDPOINTS ───
+
+    @GetMapping("/api/public/coupons")
+    public ResponseEntity<List<CustomerCouponResponseDto>> fetchAvailableCouponsPublic() {
+        List<CustomerCouponResponseDto> response = couponService.fetchAvailableCoupons();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/api/customer/coupons")
+    public ResponseEntity<List<CustomerCouponResponseDto>> fetchAvailableCouponsCustomer() {
+        List<CustomerCouponResponseDto> response = couponService.fetchAvailableCoupons();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 
     @PostMapping("/api/customer/coupons/validate")
     public ResponseEntity<CouponValidationResponseDto> validateCoupon(
