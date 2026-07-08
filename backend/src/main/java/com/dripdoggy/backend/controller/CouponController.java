@@ -66,6 +66,18 @@ public class CouponController {
 
     // ─── PUBLIC ENDPOINTS ───
 
+    @GetMapping("/api/public/coupons")
+    public ResponseEntity<List<CouponResponseDto>> fetchAvailableCouponsPublic() {
+        List<CouponResponseDto> response = couponService.fetchAvailableCoupons();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/api/customer/coupons")
+    public ResponseEntity<List<CouponResponseDto>> fetchAvailableCouponsCustomer() {
+        List<CouponResponseDto> response = couponService.fetchAvailableCoupons();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @PostMapping("/api/customer/coupons/validate")
     public ResponseEntity<CouponValidationResponseDto> validateCoupon(
             @Valid @RequestBody CouponValidateRequestDto request) {

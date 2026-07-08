@@ -267,6 +267,15 @@ public class CouponService implements ICouponService {
         couponRepository.save(coupon);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponResponseDto> fetchAvailableCoupons() {
+        LocalDate today = LocalDate.now();
+        return couponRepository.findAvailableCoupons(today).stream()
+                .map(this::convertToResponseDto)
+                .collect(Collectors.toList());
+    }
+
     // Mapping Helpers
     private DiscountType mapToDiscountType(String typeStr) {
         if (typeStr == null) {

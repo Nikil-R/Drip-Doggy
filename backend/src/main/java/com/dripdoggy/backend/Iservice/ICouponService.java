@@ -17,4 +17,5 @@ public interface ICouponService {
     ResponseMsgDto toggleCouponIsActive(Long id);
     CouponValidationResponseDto validateAndCalculateDiscount(String code, BigDecimal orderAmount);
     void incrementUsageCount(String code);
+    List<CouponResponseDto> fetchAvailableCoupons();
 }
