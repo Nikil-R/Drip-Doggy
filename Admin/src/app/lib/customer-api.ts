@@ -36,13 +36,18 @@ export interface CustomerDetail {
     id: number;
     firstName: string;
     lastName: string;
-    addressLine1: string;
-    addressLine2: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    buildingNo?: string;
+    buildingName?: string;
+    street?: string;
+    area?: string;
     city: string;
     state: string;
     postalCode: string;
-    country: string;
+    country?: string;
     phone: string;
+    type?: string;
   }[];
   purchaseSummary: {
     totalOrders: number;
