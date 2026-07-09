@@ -11,6 +11,10 @@ export const API_CONFIG = {
     SUBCATEGORY_BY_ID: "/dripdoggy/api/public/subcategories",
     PUBLIC_COUPONS: "/dripdoggy/api/public/coupons",
     CUSTOMER_COUPONS: "/dripdoggy/api/customer/coupons",
-    VALIDATE_COUPON: "/dripdoggy/api/customer/coupons/validate"
+    VALIDATE_COUPON: "/dripdoggy/api/customer/coupons/validate",
+    ORDERS_SEND_OTP: "/dripdoggy/api/customer/orders/send-otp",
+    ORDERS_VERIFY_OTP: "/dripdoggy/api/customer/orders/verify-otp",
+    ORDERS_PREVIEW: "/dripdoggy/api/customer/orders/preview",
+    ORDERS_PLACE: "/dripdoggy/api/customer/orders"
   }
 };

@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { addressApi } from "../lib/address-api";
 import { cartApi } from "../lib/cart-api";
 import { couponApi } from "../lib/coupon-api";
+import { orderApi } from "../lib/order-api";
 import { getSessionToken } from "../lib/auth-storage";
 
 interface CartItem {
@@ -306,13 +307,51 @@ export function Checkout() {
   });
 
   const [isOrdered, setIsOrdered] = useState(false);
+  const [placedOrderInfo, setPlacedOrderInfo] = useState<any>(null);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [orderSubmitError, setOrderSubmitError] = useState<string | null>(null);
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = subtotal === 0 ? 0 : 90;
-  const isFreeShippingPromo = appliedPromo === "FREESHIP" || appliedPromo === "FREE";
-  const shippingCost = isFreeShippingPromo ? 0 : (shippingMethod === "express" ? 150.0 : deliveryFee);
-  const total = subtotal + shippingCost - promoDiscount;
+  const [subtotal, setSubtotal] = useState(0);
+  const [tax, setTax] = useState(0);
+  const [shippingCost, setShippingCost] = useState(90);
+  const [total, setTotal] = useState(0);
   const totalItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = subtotal === 0 ? 0 : 90;
+
+  useEffect(() => {
+    async function updateOrderPreview() {
+      if (cartItems.length === 0) return;
+      try {
+        const preview = await orderApi.previewOrder({
+          deliveryMethod: shippingMethod.toUpperCase(),
+          couponCode: appliedPromo || undefined
+        });
+        setSubtotal((preview as any).subTotal ?? preview.subtotal ?? 0);
+        setPromoDiscount(preview.discount ?? 0);
+        setTax(preview.tax ?? 0);
+        setShippingCost(preview.shippingFee ?? 0);
+        setTotal(preview.grandTotal ?? 0);
+      } catch (err) {
+        console.error("Failed to preview order from backend", err);
+        const localSubtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const localDeliveryFee = localSubtotal === 0 ? 0 : 90;
+        const localIsFreeShippingPromo = appliedPromo === "FREESHIP" || appliedPromo === "FREE";
+        const localShippingCost = localIsFreeShippingPromo ? 0 : (shippingMethod === "express" ? 150.0 : localDeliveryFee);
+        const localDiscount = Number(localStorage.getItem("promoDiscount")) || 0;
+        const localDiscountedSubtotal = Math.max(0, localSubtotal - localDiscount);
+        const localTax = localDiscountedSubtotal * 0.18;
+        
+        setSubtotal(localSubtotal);
+        setPromoDiscount(localDiscount);
+        setTax(localTax);
+        setShippingCost(localShippingCost);
+        setTotal(localDiscountedSubtotal + localTax + localShippingCost);
+      }
+    }
+    updateOrderPreview();
+  }, [cartItems, shippingMethod, appliedPromo]);
+
 
   useEffect(() => { localStorage.setItem("addresses", JSON.stringify(addresses)); }, [addresses]);
 
@@ -361,38 +400,63 @@ export function Checkout() {
     setEditingAddressId(null);
   };
 
-  const startVerification = (target: "email" | "phone") => {
+  const startVerification = async (target: "email" | "phone") => {
     if (target === "email") {
       if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         setEmailError("Please enter a valid email address before verifying.");
         return;
       }
       setEmailError(null);
+      setVerifyingTarget(target);
+      setOtpCode("");
+      setOtpError(null);
     } else {
-      if (!phone.trim() || phone.replace(/\D/g, "").length < 10) {
+      const cleanPhone = phone.replace(/\D/g, "");
+      if (!phone.trim() || cleanPhone.length !== 10) {
         setPhoneError("Please enter a valid 10-digit phone number before verifying.");
         return;
       }
       setPhoneError(null);
+      setIsSendingOtp(true);
+      try {
+        await orderApi.sendCheckoutOtp(cleanPhone);
+        setVerifyingTarget(target);
+        setOtpCode("");
+        setOtpError(null);
+      } catch (err: any) {
+        console.error("Failed to send OTP to phone", err);
+        setPhoneError(err?.response?.data?.message || "Failed to send OTP. Please try again.");
+      } finally {
+        setIsSendingOtp(false);
+      }
     }
-    setVerifyingTarget(target);
-    setOtpCode("");
-    setOtpError(null);
   };
 
-  const handleVerifyOtpLocal = () => {
+  const handleVerifyOtpLocal = async () => {
     setOtpError(null);
     setIsVerifyingOtp(true);
-    setTimeout(() => {
-      if (otpCode === "123456") {
-        if (verifyingTarget === "email") { setIsEmailVerifiedLocally(true); setEmailError(null); }
-        else if (verifyingTarget === "phone") { setIsPhoneVerifiedLocally(true); setPhoneError(null); }
+    try {
+      if (verifyingTarget === "email") {
+        if (otpCode === "123456") {
+          setIsEmailVerifiedLocally(true);
+          setEmailError(null);
+          setVerifyingTarget(null);
+        } else {
+          setOtpError("Invalid code. Please enter 123456 to verify.");
+        }
+      } else if (verifyingTarget === "phone") {
+        const cleanPhone = phone.replace(/\D/g, "");
+        await orderApi.verifyCheckoutOtp(cleanPhone, otpCode);
+        setIsPhoneVerifiedLocally(true);
+        setPhoneError(null);
         setVerifyingTarget(null);
-      } else {
-        setOtpError("Invalid code. Please enter 123456 to verify.");
       }
+    } catch (err: any) {
+      console.error("Failed to verify OTP", err);
+      setOtpError(err?.response?.data?.message || "Invalid or expired OTP. Please try again.");
+    } finally {
       setIsVerifyingOtp(false);
-    }, 600);
+    }
   };
 
   const validateStep1 = (): boolean => {
@@ -415,19 +479,54 @@ export function Checkout() {
   const handleContinueToDelivery = () => { if (validateStep1()) setStep(2); };
   const handleContinueToReview = () => setStep(3);
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsOrdered(true);
-    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-    // Clear backend cart if authenticated
-    const token = getSessionToken();
-    if (token) {
-      cartApi.clearCart().catch(err => console.error("Failed to clear backend cart", err));
+    if (!activeAddress) {
+      setOrderSubmitError("Please select a valid delivery address.");
+      return;
     }
-    localStorage.removeItem("cart");
-    localStorage.removeItem("appliedPromo");
-    localStorage.removeItem("promoDiscount");
-    window.dispatchEvent(new Event("cart-updated"));
+    setOrderSubmitError(null);
+    setIsSubmittingOrder(true);
+
+    try {
+      const cleanPhone = phone.replace(/\D/g, "");
+      const response = await orderApi.placeOrder({
+        addressId: activeAddress.id,
+        phoneNo: cleanPhone,
+        deliveryMethod: shippingMethod.toUpperCase(),
+        couponCode: appliedPromo || undefined
+      });
+
+      setPlacedOrderInfo(response);
+      setIsOrdered(true);
+      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+
+      // Save order items description in a shared cookie for the admin panel to read!
+      const productNames = cartItems.map(item => item.name).join(", ");
+      const existingMapStr = document.cookie.split("; ").find(row => row.startsWith("dd_placed_orders="))?.split("=")[1] || "{}";
+      try {
+        const decodedMap = JSON.parse(decodeURIComponent(existingMapStr));
+        decodedMap[response.orderNumber] = productNames;
+        document.cookie = `dd_placed_orders=${encodeURIComponent(JSON.stringify(decodedMap))}; path=/; max-age=31536000; domain=localhost`;
+      } catch (e) {
+        const newMap = { [response.orderNumber]: productNames };
+        document.cookie = `dd_placed_orders=${encodeURIComponent(JSON.stringify(newMap))}; path=/; max-age=31536000; domain=localhost`;
+      }
+
+      const token = getSessionToken();
+      if (token) {
+        cartApi.clearCart().catch(err => console.error("Failed to clear backend cart", err));
+      }
+      localStorage.removeItem("cart");
+      localStorage.removeItem("appliedPromo");
+      localStorage.removeItem("promoDiscount");
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch (err: any) {
+      console.error("Failed to place order via API", err);
+      setOrderSubmitError(err?.response?.data?.message || "Failed to place order. Please try again.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
   };
 
   const applyPromoCode = async () => {
@@ -511,9 +610,38 @@ export function Checkout() {
             <CheckCircle2 className="h-8 w-8 text-green-600 stroke-[1.2]" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-[0.05em] mb-4 uppercase">Order Placed Successfully</h1>
+          
+          {placedOrderInfo && (
+            <div className="bg-white border border-neutral-200 p-5 text-left space-y-3.5 mb-8 text-[9px] font-bold uppercase tracking-wider text-neutral-600">
+              <div className="flex justify-between border-b border-neutral-100 pb-2">
+                <span>Order Code:</span>
+                <span className="text-[#030213] font-extrabold">{placedOrderInfo.orderNumber}</span>
+              </div>
+              <div className="flex justify-between border-b border-neutral-100 pb-2">
+                <span>Total Amount:</span>
+                <span className="text-[#030213] font-extrabold">₹{placedOrderInfo.totalAmount?.toLocaleString("en-IN")}</span>
+              </div>
+              {placedOrderInfo.discount > 0 && (
+                <div className="flex justify-between border-b border-neutral-100 pb-2">
+                  <span>Discount Applied:</span>
+                  <span className="text-green-600 font-extrabold">-₹{placedOrderInfo.discount?.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-b border-neutral-100 pb-2">
+                <span>Shipping Method:</span>
+                <span className="text-[#030213] font-extrabold">{placedOrderInfo.deliveryMethod}</span>
+              </div>
+              <div className="flex flex-col border-b border-neutral-100 pb-2 gap-1 text-left">
+                <span>Deliver To:</span>
+                <span className="text-[#030213] font-extrabold normal-case font-medium text-[10px] leading-relaxed">
+                  {placedOrderInfo.destinationAddress || placedOrderInfo.destination}
+                </span>
+              </div>
+            </div>
+          )}
+
           <p className="text-neutral-500 text-xs leading-relaxed mb-8 uppercase tracking-wider font-bold">
-            Your Cash on Delivery order is confirmed! A notification will be sent to{" "}
-            <span className="font-semibold text-neutral-900">{phone}</span> shortly.
+            Your Cash on Delivery order is confirmed! A notification will be sent shortly.
           </p>
           <Link to="/"
             className="block w-full bg-[#030213] text-white py-4 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase">
@@ -952,15 +1080,27 @@ export function Checkout() {
                   By placing this order, you confirm that your shipping and payment details are accurate. Your order will be processed upon confirmation.
                 </p>
 
+                {orderSubmitError && (
+                  <div className="bg-red-50 border border-red-200 text-red-650 p-3.5 text-[9px] font-[900] uppercase tracking-widest text-center">
+                    {orderSubmitError}
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmitOrder} className="flex flex-col md:flex-row gap-3">
-                  <button type="button" onClick={() => setStep(2)}
-                    className="w-full md:w-1/3 border border-neutral-200 hover:bg-neutral-50 bg-white text-neutral-500 py-3.5 text-[9px] font-extrabold tracking-wider uppercase flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                  <button type="button" onClick={() => setStep(2)} disabled={isSubmittingOrder}
+                    className="w-full md:w-1/3 border border-neutral-200 hover:bg-neutral-50 bg-white text-neutral-500 py-3.5 text-[9px] font-extrabold tracking-wider uppercase flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40">
                     <ArrowLeft className="h-3 w-3 stroke-[2]" /> Back to Delivery
                   </button>
-                  <button type="submit"
-                    className="w-full md:w-2/3 bg-[#030213] hover:bg-neutral-800 text-white py-3.5 text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 uppercase cursor-pointer border-none">
-                    <CheckCircle2 className="h-4 w-4 stroke-[2]" /> Confirm & Place Order
-                    <span className="text-white/70 font-bold text-[10px]">(₹{Math.max(0, total).toFixed(0)})</span>
+                  <button type="submit" disabled={isSubmittingOrder}
+                    className="w-full md:w-2/3 bg-[#030213] hover:bg-neutral-800 text-white py-3.5 text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 uppercase cursor-pointer border-none disabled:opacity-50">
+                    {isSubmittingOrder ? (
+                      <span>Placing Order...</span>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 stroke-[2]" /> Confirm & Place Order
+                        <span className="text-white/70 font-bold text-[10px]">(₹{Math.max(0, total).toFixed(0)})</span>
+                      </>
+                    )}
                   </button>
                 </form>
               </div>
@@ -1066,6 +1206,10 @@ export function Checkout() {
                     <span>-₹{promoDiscount.toFixed(0)}</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span>GST (18%)</span>
+                  <span className="font-extrabold text-neutral-950">₹{tax.toFixed(0)}</span>
+                </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
                   <span className={`font-extrabold ${shippingCost === 0 ? "text-green-600" : "text-neutral-950"}`}>
