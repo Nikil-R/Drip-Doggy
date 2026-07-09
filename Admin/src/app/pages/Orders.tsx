@@ -6,6 +6,8 @@ import {
   Banknote, ArrowLeftRight, Upload
 } from "lucide-react";
 import { INVOICE_CONFIG } from "../lib/invoice-config";
+import { customerApi } from "../lib/customer-api";
+import { useAuthStore } from "@/app/store/auth-store";
 
 const RS = "₹";
 
@@ -60,6 +62,12 @@ interface Order {
   trackingNumber?: string;
   notes?: string;
   returnRequest?: ReturnRequest;
+  customerBankDetails?: {
+    accountHolderName: string;
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+  };
 }
 
 const initialOrders: Order[] = [
@@ -355,6 +363,110 @@ function StatusBadge({ val }: { val: string }) {
 
 export function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const { token } = useAuthStore();
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function loadBackendOrders() {
+      try {
+        const customersList = await customerApi.getAllCustomers(token);
+        if (!customersList || customersList.length === 0) return;
+
+        const detailsPromises = customersList.map((c: any) =>
+          customerApi.getCustomerDetails(c.id, token).catch(() => null)
+        );
+        const detailsList = await Promise.all(detailsPromises);
+
+        const backendOrders: Order[] = [];
+        let indexNo = initialOrders.length + 1;
+
+        for (const detail of detailsList) {
+          if (!detail || !detail.recentOrders || detail.recentOrders.length === 0) continue;
+
+          const defAddr = detail.shippingAddresses?.find((a: any) => a.isDefault) || detail.shippingAddresses?.[0] || {};
+          const deliveryLoc = defAddr.city ? `${defAddr.city}, ${defAddr.state || ""}` : "Unspecified";
+
+          for (const ro of detail.recentOrders) {
+            let mappedPayment: "Paid" | "Unpaid" | "Refunded" = "Unpaid";
+            if (ro.payment === "PAID" || ro.payment === "COMPLETED") mappedPayment = "Paid";
+            else if (ro.payment === "REFUNDED") mappedPayment = "Refunded";
+
+            let mappedStatus: Order["status"] = "Pending";
+            const sUpper = ro.status?.toUpperCase() || "";
+            if (sUpper === "DELIVERED") mappedStatus = "Delivered";
+            else if (sUpper === "SHIPPED") mappedStatus = "Shipped";
+            else if (sUpper === "PROCESSING") mappedStatus = "Processing";
+            else if (sUpper === "CANCELLED" || sUpper === "CANCELED") mappedStatus = "Cancelled";
+            else if (sUpper === "RETURN_REQUESTED") mappedStatus = "Return Requested";
+
+            if (initialOrders.some(io => io.id === ro.id)) continue;
+
+            let orderProductsName = "Structured Canvas Jacket";
+            const cookieMatch = document.cookie.split("; ").find(row => row.startsWith("dd_placed_orders="));
+            if (cookieMatch) {
+              try {
+                const decodedMap = JSON.parse(decodeURIComponent(cookieMatch.split("=")[1]));
+                if (decodedMap[ro.id]) {
+                  orderProductsName = decodedMap[ro.id];
+                }
+              } catch (e) {
+                console.error("Failed to parse shared cookie", e);
+              }
+            }
+
+            const genericItems: OrderItem[] = [
+              {
+                name: orderProductsName,
+                sku: `DD-GEN-${ro.id.replace(/\D/g, "")}`,
+                size: "M",
+                qty: 1,
+                price: ro.amount,
+                image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop"
+              }
+            ];
+
+            backendOrders.push({
+              no: indexNo++,
+              id: ro.id,
+              customer: `${detail.onboardingProfile?.firstName || ""} ${detail.onboardingProfile?.lastName || ""}`.trim() || "Customer",
+              email: detail.onboardingProfile?.email || "customer@dripdoggy.com",
+              phone: detail.onboardingProfile?.phone || "",
+              date: ro.date?.split(" ")?.[0] || "2026-07-08",
+              payment: mappedPayment,
+              status: mappedStatus,
+              delivery: deliveryLoc,
+              addressLine1: defAddr.buildingNo ? `${defAddr.buildingNo}, ${defAddr.buildingName || ""}` : "",
+              addressLine2: defAddr.street ? `${defAddr.street}, ${defAddr.area || ""}` : "",
+              city: defAddr.city || "",
+              state: defAddr.state || "",
+              postalCode: defAddr.postalCode || "",
+              country: defAddr.country || "India",
+              deliveryPhone: defAddr.phone || detail.onboardingProfile?.phone || "",
+              items: genericItems,
+              trackingNumber: "",
+              notes: ""
+            });
+          }
+        }
+
+        setOrders(prev => {
+          const merged = [...backendOrders, ...initialOrders];
+          const seen = new Set();
+          return merged.filter(o => {
+            if (seen.has(o.id)) return false;
+            seen.add(o.id);
+            return true;
+          });
+        });
+      } catch (err) {
+        console.error("Failed to load dynamic backend orders:", err);
+      }
+    }
+
+    loadBackendOrders();
+  }, []);
+
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -423,11 +535,19 @@ export function OrdersPage() {
 
   const ITEMS_PER_PAGE = 5;
 
-  const getOrderTotal = (order: Order) =>
-    order.items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const getOrderTotal = (order: Order) => {
+    if (order.items && order.items.length > 0) {
+      return order.items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    }
+    return (order as any).totalAmount || 0;
+  };
 
-  const getOrderQty = (order: Order) =>
-    order.items.reduce((sum, item) => sum + item.qty, 0);
+  const getOrderQty = (order: Order) => {
+    if (order.items && order.items.length > 0) {
+      return order.items.reduce((sum, item) => sum + item.qty, 0);
+    }
+    return (order as any).totalQty || 1;
+  };
 
   const activeOrderDetails = useMemo(
     () => orders.find((o) => o.id === selectedOrderId) || null,
@@ -1193,7 +1313,7 @@ export function OrdersPage() {
               <th className="p-4">Payment</th>
               <th className="p-4">Status</th>
               <th className="p-4">Date</th>
-              <th className="p-4 text-right">Actions</th>
+              <th className="p-4 text-center">Bill</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100/80">
@@ -1227,19 +1347,19 @@ export function OrdersPage() {
                 <td className="p-4"><PaymentBadge val={order.payment} /></td>
                 <td className="p-4"><StatusBadge val={order.status} /></td>
                 <td className="p-4 text-[9.5px] text-[#736e64] font-semibold">{order.date}</td>
-                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      onClick={() => handlePrintInvoice(order)}
-                      className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[8px] font-extrabold tracking-widest px-2.5 py-1.5 uppercase cursor-pointer transition-all rounded-sm flex items-center gap-1 inline-flex"
-                    >
-                      <FileText className="w-3 h-3" /> Invoice
-                    </button>
+                <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-center gap-1.5">
                     <button
                       onClick={() => handlePrintSimpleBill(order)}
-                      className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[8px] font-extrabold tracking-widest px-2.5 py-1.5 uppercase cursor-pointer transition-all rounded-sm flex items-center gap-1 inline-flex"
+                      className="bg-card hover:bg-neutral-50 text-[#615e56] border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[8.5px] font-[900] tracking-wider uppercase px-2.5 py-1.5 transition-all cursor-pointer rounded-sm"
                     >
-                      <FileText className="w-3 h-3" /> Bill
+                      Bill
+                    </button>
+                    <button
+                      onClick={() => handlePrintInvoice(order)}
+                      className="bg-[#224870] hover:bg-neutral-800 text-white border-none text-[8.5px] font-[900] tracking-wider uppercase px-2.5 py-1.5 transition-all cursor-pointer rounded-sm"
+                    >
+                      Invoice
                     </button>
                   </div>
                 </td>
@@ -1312,16 +1432,11 @@ export function OrdersPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handlePrintSimpleBill(activeOrderDetails)}
-                  className="bg-card border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[#615e56] text-[8px] font-extrabold tracking-widest px-3 py-2 uppercase cursor-pointer transition-all rounded-sm flex items-center gap-1.5"
-                >
-                  <FileText className="w-3.5 h-3.5" /> Bill
-                </button>
-                <button
                   onClick={() => handlePrintInvoice(activeOrderDetails)}
-                  className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[8px] font-extrabold tracking-widest px-3 py-2 uppercase cursor-pointer flex items-center gap-1.5 border-none transition-all rounded-sm shadow-sm"
+                  className="p-2 border border-neutral-200 text-neutral-500 hover:border-[#224870] hover:text-[#224870] cursor-pointer bg-card rounded-full transition-all"
+                  title="Print Invoice"
                 >
-                  <FileText className="w-3.5 h-3.5" /> Tax Invoice
+                  <FileText className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setSelectedOrderId(null)}
