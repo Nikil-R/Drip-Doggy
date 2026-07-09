@@ -4,6 +4,8 @@ import { LoginPage } from "./pages/Login";
 import { DashboardPage } from "./pages/Dashboard";
 import { ProductsPage } from "./pages/Products";
 import { OrdersPage } from "./pages/Orders";
+import { ReturnsPage } from "./pages/Returns";
+import { ExchangesPage } from "./pages/Exchanges";
 import { CustomersPage } from "./pages/Customers";
 import { CategoriesPage } from "./pages/Categories";
 import { TransactionsPage } from "./pages/Transactions";
@@ -48,6 +50,8 @@ export default function App() {
           <Route path="products/new" element={<AddProductPage />} />
           <Route path="products/edit/:id" element={<AddProductPage />} />
           <Route path="orders" element={<OrdersPage />} />
+          <Route path="returns" element={<ReturnsPage />} />
+          <Route path="exchanges" element={<ExchangesPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="transactions" element={<TransactionsPage />} />

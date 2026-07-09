@@ -338,12 +338,15 @@ export function Checkout() {
         const localDeliveryFee = localSubtotal === 0 ? 0 : 90;
         const localIsFreeShippingPromo = appliedPromo === "FREESHIP" || appliedPromo === "FREE";
         const localShippingCost = localIsFreeShippingPromo ? 0 : (shippingMethod === "express" ? 150.0 : localDeliveryFee);
+        const localDiscount = Number(localStorage.getItem("promoDiscount")) || 0;
+        const localDiscountedSubtotal = Math.max(0, localSubtotal - localDiscount);
+        const localTax = localDiscountedSubtotal * 0.18;
         
         setSubtotal(localSubtotal);
-        setPromoDiscount(Number(localStorage.getItem("promoDiscount")) || 0);
-        setTax(0);
+        setPromoDiscount(localDiscount);
+        setTax(localTax);
         setShippingCost(localShippingCost);
-        setTotal(localSubtotal + localShippingCost - (Number(localStorage.getItem("promoDiscount")) || 0));
+        setTotal(localDiscountedSubtotal + localTax + localShippingCost);
       }
     }
     updateOrderPreview();
@@ -1203,6 +1206,10 @@ export function Checkout() {
                     <span>-₹{promoDiscount.toFixed(0)}</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span>GST (18%)</span>
+                  <span className="font-extrabold text-neutral-950">₹{tax.toFixed(0)}</span>
+                </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
                   <span className={`font-extrabold ${shippingCost === 0 ? "text-green-600" : "text-neutral-950"}`}>

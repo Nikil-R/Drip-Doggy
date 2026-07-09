@@ -24,6 +24,8 @@ import {
   Sparkles,
   Shield,
   Menu,
+  RotateCcw,
+  RefreshCw,
 } from "lucide-react";
 
 
@@ -52,6 +54,8 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/customers",    label: "Customers",       icon: Users },
       { to: "/admin/roles",        label: "Members & Roles", icon: Shield },
       { to: "/admin/orders",       icon: ShoppingBag,        label: "Orders" },
+      { to: "/admin/returns",      icon: RotateCcw,          label: "Returns" },
+      { to: "/admin/exchanges",    icon: RefreshCw,          label: "Exchanges" },
       { to: "/admin/coupons",      label: "Coupon Code",     icon: Ticket },
       { to: "/admin/transactions", label: "Payment Ledger",  icon: ArrowRightLeft },
     ],
