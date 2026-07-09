@@ -132,7 +132,7 @@ public class AddressService implements IAddressService {
         validateRegisteredUser(user);
 
         Address address = addressRepository.findByIdAndUserAndIsActiveTrue(addressId, user)
-                .orElseThrow(() -> new AddressNotFoundException("Address not found with ID: " + addressId));
+                .orElseThrow(() -> new AddressNotFoundException("Address not found"));
 
         List<Address> activeAddresses = addressRepository.findByUserAndIsActiveTrue(user);
 
@@ -188,7 +188,7 @@ public class AddressService implements IAddressService {
         validateRegisteredUser(user);
 
         Address address = addressRepository.findByIdAndUserAndIsActiveTrue(addressId, user)
-                .orElseThrow(() -> new AddressNotFoundException("Address not found with ID: " + addressId));
+                .orElseThrow(() -> new AddressNotFoundException("Address not found"));
 
         boolean wasDefault = Boolean.TRUE.equals(address.getIsDefault());
 
@@ -215,7 +215,7 @@ public class AddressService implements IAddressService {
         validateRegisteredUser(user);
 
         Address address = addressRepository.findByIdAndUserAndIsActiveTrue(addressId, user)
-                .orElseThrow(() -> new AddressNotFoundException("Address not found with ID: " + addressId));
+                .orElseThrow(() -> new AddressNotFoundException("Address not found"));
 
         if (!Boolean.TRUE.equals(address.getIsDefault())) {
             List<Address> activeAddresses = addressRepository.findByUserAndIsActiveTrue(user);

@@ -82,6 +82,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(DuplicateProductSkuException.class)
+    public ResponseEntity<ResponseMsgDto> handleDuplicateProductSku(DuplicateProductSkuException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(InvalidCountryCodeException.class)
     public ResponseEntity<ResponseMsgDto> handleInvalidCountryCode(InvalidCountryCodeException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
@@ -181,6 +187,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(CartEmptyException.class)
+    public ResponseEntity<ResponseMsgDto> handleCartEmpty(CartEmptyException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<ResponseMsgDto> handleMaxUploadSizeExceededException(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Maximum upload size exceeded. The total request size must not exceed 200MB, and each individual file must not exceed 100MB.");
@@ -189,6 +201,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CouponExpiredException.class)
     public ResponseEntity<ResponseMsgDto> handleCouponExpired(CouponExpiredException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(CouponFirstOrderOnlyException.class)
+    public ResponseEntity<ResponseMsgDto> handleCouponFirstOrderOnly(CouponFirstOrderOnlyException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DiscountNotAppliedException.class)
+    public ResponseEntity<ResponseMsgDto> handleDiscountNotApplied(DiscountNotAppliedException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }

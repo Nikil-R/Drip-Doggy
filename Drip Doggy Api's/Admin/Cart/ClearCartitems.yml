@@ -1,18 +1,11 @@
 info:
-  name: Untitled
+  name: ClearCartitems
   type: http
-  seq: 1
+  seq: 4
 
 http:
-  method: POST
+  method: DELETE
   url: http://localhost:8081/dripdoggy/api/cart
-  body:
-    type: json
-    data: |-
-      {
-        "productVariantSizeId":1,
-        "quantity":14
-      }
   auth:
     type: bearer
     token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw

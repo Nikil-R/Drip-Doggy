@@ -14,7 +14,7 @@ http:
         value: legginesTOPS
       - name: skuCode
         type: text
-        value: gymgsp-02
+        value: gymgsp-03
       - name: categoryId
         type: text
         value: "1"
@@ -36,7 +36,7 @@ http:
         value: Blue Leggins
       - name: variants[0].skuCode
         type: text
-        value: bL-001
+        value: bL-002
       - name: variants[0].mrp
         type: text
         value: "150"
@@ -99,7 +99,7 @@ http:
         value: green Leggines
       - name: variants[1].skuCode
         type: text
-        value: Gl-01
+        value: Gl-02
       - name: variants[1].mrp
         type: text
         value: "500.0"

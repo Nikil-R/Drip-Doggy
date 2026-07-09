@@ -132,7 +132,7 @@ public class CartService implements ICartService {
 
         User user = getCurrentUser();
         ProductVariantSize size = productVariantSizeRepository.findById(request.getProductVariantSizeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product variant size not found with ID: " + request.getProductVariantSizeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Product variant size not found"));
 
         ProductVariant variant = size.getProductVariant();
         if (variant == null || Boolean.TRUE.equals(variant.getIsDeleted()) || !Boolean.TRUE.equals(variant.getIsActive())) {
@@ -168,12 +168,12 @@ public class CartService implements ICartService {
             if (Boolean.TRUE.equals(existingCart.getIsActive())) {
                 int newQuantity = existingCart.getQuantity() + request.getQuantity();
                 if (newQuantity > availableStock) {
-                    throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
+                    throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
                 }
                 existingCart.setQuantity(newQuantity);
             } else {
                 if (request.getQuantity() > availableStock) {
-                    throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
+                    throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
                 }
                 existingCart.setIsActive(true);
                 existingCart.setQuantity(request.getQuantity());
@@ -181,7 +181,7 @@ public class CartService implements ICartService {
             cartRepository.save(existingCart);
         } else {
             if (request.getQuantity() > availableStock) {
-                throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
+                throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
             }
             Cart newCart = new Cart();
             newCart.setUser(user);
@@ -202,7 +202,7 @@ public class CartService implements ICartService {
 
         User user = getCurrentUser();
         Cart cartItem = cartRepository.findByIdAndUserAndIsActiveTrue(cartItemId, user)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive for ID: " + cartItemId));
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive"));
 
         ProductVariantSize size = cartItem.getProductVariantSize();
         if (size == null || !Boolean.TRUE.equals(size.getIsActive())) {
@@ -231,7 +231,7 @@ public class CartService implements ICartService {
 
         int availableStock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
         if (quantity > availableStock) {
-            throw new CustomerCartSizeforParticularSizeexxceedException("Insufficient stock available in Customer cart . Only " + availableStock + " units left.");
+            throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
         }
 
         cartItem.setQuantity(quantity);
@@ -244,7 +244,7 @@ public class CartService implements ICartService {
     public ResponseMsgDto removeCartItem(Long cartItemId) {
         User user = getCurrentUser();
         Cart cartItem = cartRepository.findByIdAndUserAndIsActiveTrue(cartItemId, user)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive for ID: " + cartItemId));
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found or inactive"));
 
         // Soft Delete
         cartItem.setIsActive(false);

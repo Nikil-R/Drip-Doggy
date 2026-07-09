@@ -1,0 +1,28 @@
+info:
+  name: AddCoupon
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/admin/coupons
+  body:
+    type: json
+    data: |-
+      {
+        "code":"dd-001",
+        "discountType":"FLAT",
+        "discountValue":500,
+        "minOrder":2000,
+        "limit":2,
+        "description":"simple welocme customers"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMyNzg4MzksImV4cCI6MTc4NTAwNjgzOX0.G4G60ZILfQZaGsJV_SjJa_3U4eqQq8hlHtWZrhS4Qpph1Zn8gsecJhcucwD84x7RGVjAk7tKnZlxWGSCHK3t5Q
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

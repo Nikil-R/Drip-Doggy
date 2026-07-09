@@ -36,9 +36,13 @@ public class SmsService {
     }
 
     public void sendOtpSms(String phoneNumber, String otpCode) {
-        String formattedPhoneNumber = phoneNumber;
-        if (!phoneNumber.startsWith("+")) {
-            formattedPhoneNumber = "+" + phoneNumber;
+        String formattedPhoneNumber = phoneNumber.trim();
+        if (!formattedPhoneNumber.startsWith("+")) {
+            if (formattedPhoneNumber.length() == 10) {
+                formattedPhoneNumber = "+91" + formattedPhoneNumber;
+            } else {
+                formattedPhoneNumber = "+" + formattedPhoneNumber;
+            }
         }
         String message = "Your OTP code is: " + otpCode;
         PublishRequest request = PublishRequest.builder()
