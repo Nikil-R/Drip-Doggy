@@ -67,6 +67,7 @@ interface Order {
     bankName: string;
     accountNumber: string;
     ifscCode: string;
+    submittedAt?: string;
   };
 }
 
@@ -370,11 +371,11 @@ export function OrdersPage() {
 
     async function loadBackendOrders() {
       try {
-        const customersList = await customerApi.getAllCustomers(token);
+        const customersList = await customerApi.getAllCustomers(token!);
         if (!customersList || customersList.length === 0) return;
 
         const detailsPromises = customersList.map((c: any) =>
-          customerApi.getCustomerDetails(c.id, token).catch(() => null)
+          customerApi.getCustomerDetails(c.id, token!).catch(() => null)
         );
         const detailsList = await Promise.all(detailsPromises);
 
