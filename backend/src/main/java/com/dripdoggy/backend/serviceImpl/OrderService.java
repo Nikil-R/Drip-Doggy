@@ -189,20 +189,9 @@ public class OrderService implements IOrderService {
 
         Orders savedOrder = ordersRepository.save(order);
 
-        // 9. Convert Cart Items to OrderItems, Deduct Stock, and Soft Delete Cart Items
+        // 9. Convert Cart Items to OrderItems, and Soft Delete Cart Items
         for (Cart cart : cartItems) {
             ProductVariantSize size = cart.getProductVariantSize();
-            
-            // Validate Stock Quantity
-            int stock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
-            if (cart.getQuantity() > stock) {
-                throw new CustomerCartSizeforParticularSizeexxceedException(
-                        "Insufficient stock for variant size: " + size.getSizeName() + ". Only " + stock + " left."
-                );
-            }
-            
-            // Deduct stock
-            size.setStockQuantity(stock - cart.getQuantity());
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(savedOrder);

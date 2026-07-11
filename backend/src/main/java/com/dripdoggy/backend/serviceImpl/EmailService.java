@@ -1,15 +1,20 @@
 package com.dripdoggy.backend.serviceImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     public void sendOtpEmail(String toEmail, String otpCode) {
         sendOtpEmail(toEmail, otpCode, false);
@@ -20,6 +25,7 @@ public class EmailService {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
             
+            helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             
             String label = isLogin ? "login otp" : "signup otp";
@@ -31,6 +37,7 @@ public class EmailService {
             mailSender.send(mimeMessage);
         } catch (Exception e) {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(toEmail);
             String label = isLogin ? "LOGIN OTP" : "SIGNUP OTP";
             message.setSubject(isLogin ? "Your Login OTP" : "Your Signup OTP");
@@ -41,6 +48,7 @@ public class EmailService {
 
     public void sendWelcomeAdminEmail(String toEmail) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
         message.setTo(toEmail);
         message.setSubject("DripDoggy Admin Access Granted");
         message.setText("Welcome to DripDoggy,\n\n" +
@@ -62,6 +70,7 @@ public class EmailService {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
             
+            helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject("DripDoggy Order Placed Successfully - " + orderNumber);
             
@@ -76,6 +85,7 @@ public class EmailService {
             mailSender.send(mimeMessage);
         } catch (Exception e) {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(toEmail);
             message.setSubject("DripDoggy Order Placed Successfully - " + orderNumber);
             message.setText("Dear " + customerName + ",\n\n" +
@@ -83,6 +93,318 @@ public class EmailService {
                     "Total Amount: ₹" + totalAmount + "\n" +
                     "Payment Method: Cash on Delivery (COD)\n\n" +
                     "Thank you for shopping with us!\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendAdminReturnRequestNotification(String adminEmail, String orderNumber, String requestType, String customerName, String customerEmail, String productName, String reason) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(adminEmail);
+            helper.setSubject("New " + requestType + " Request Submitted - " + orderNumber);
+            
+            String htmlContent = "<h3>New Return/Exchange Request Submitted</h3>" +
+                    "<p>A new <b>" + requestType + "</b> request has been submitted for order <b>" + orderNumber + "</b>.</p>" +
+                    "<p><b>Customer:</b> " + customerName + " (" + customerEmail + ")</p>" +
+                    "<p><b>Product:</b> " + productName + "</p>" +
+                    "<p><b>Reason:</b> " + reason + "</p>" +
+                    "<p>Please log in to the Admin Dashboard to review and approve/reject the request.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy System</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(adminEmail);
+            message.setSubject("New " + requestType + " Request Submitted - " + orderNumber);
+            message.setText("Dear Admin,\n\n" +
+                    "A new " + requestType + " request has been submitted for order " + orderNumber + ".\n\n" +
+                    "Customer: " + customerName + " (" + customerEmail + ")\n" +
+                    "Product: " + productName + "\n" +
+                    "Reason: " + reason + "\n\n" +
+                    "Please log in to the Admin Dashboard to review the request.\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy System");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerReturnInitiatedEmail(String toEmail, String orderNumber, String requestType, String customerName, String productName) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy " + requestType + " Request Initiated - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>We have successfully received your <b>" + requestType + "</b> request for order <b>" + orderNumber + "</b>.</p>" +
+                    "<p><b>Product:</b> " + productName + "</p>" +
+                    "<p>Our admin team is currently reviewing your request (defect images & reasons). We will update you once it is approved or rejected.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy " + requestType + " Request Initiated - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "We have successfully received your " + requestType + " request for order " + orderNumber + ".\n\n" +
+                    "Product: " + productName + "\n\n" +
+                    "Our admin team is currently reviewing your request. We will update you once it is approved or rejected.\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerReturnStatusUpdateEmail(String toEmail, String orderNumber, String requestType, String customerName, String status) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy " + requestType + " Request Status Update: " + status + " - " + orderNumber);
+            
+            String statusText = status.equalsIgnoreCase("APPROVED") 
+                    ? "approved! Our courier partner will pick up the package from your address shortly." 
+                    : "rejected after reviewing. If you believe this is an error, please contact support.";
+                    
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your <b>" + requestType + "</b> request for order <b>" + orderNumber + "</b> has been " + statusText + "</p>" +
+                    "<p>Current Request Status: <b>" + status + "</b></p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy " + requestType + " Request Status Update: " + status + " - " + orderNumber);
+            
+            String text = status.equalsIgnoreCase("APPROVED")
+                    ? "approved! Our courier partner will pick up the package from your address shortly."
+                    : "rejected. If you believe this is an error, please contact support.";
+                    
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your " + requestType + " request for order " + orderNumber + " has been " + text + "\n\n" +
+                    "Current Request Status: " + status + "\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerReturnLogisticsEmail(String toEmail, String orderNumber, String customerName, String deliveryStatus) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Return Package Update: " + deliveryStatus + " - " + orderNumber);
+            
+            String updateMessage = "";
+            if (deliveryStatus.contains("PICKUPED")) {
+                updateMessage = "has been successfully picked up by our courier partner from your address.";
+            } else if (deliveryStatus.contains("SHIPPED")) {
+                updateMessage = "has been shipped and is in transit back to our warehouse.";
+            } else if (deliveryStatus.contains("OUT_OF_DELIVERY")) {
+                updateMessage = "is out for delivery to our warehouse for final inspection.";
+            } else if (deliveryStatus.contains("DELIVERED")) {
+                updateMessage = "has been safely received at our warehouse. We are now processing your refund/replacement.";
+            } else {
+                updateMessage = "status has been updated to: " + deliveryStatus;
+            }
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your return package for order <b>" + orderNumber + "</b> " + updateMessage + "</p>" +
+                    "<p>Logistics Status: <b>" + deliveryStatus + "</b></p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Return Package Update: " + deliveryStatus + " - " + orderNumber);
+            
+            String updateMessage = "";
+            if (deliveryStatus.contains("PICKUPED")) {
+                updateMessage = "has been successfully picked up by our courier partner from your address.";
+            } else if (deliveryStatus.contains("SHIPPED")) {
+                updateMessage = "has been shipped and is in transit back to our warehouse.";
+            } else if (deliveryStatus.contains("OUT_OF_DELIVERY")) {
+                updateMessage = "is out for delivery to our warehouse.";
+            } else if (deliveryStatus.contains("DELIVERED")) {
+                updateMessage = "has been safely received at our warehouse. We are now processing your refund/replacement.";
+            } else {
+                updateMessage = "status has been updated to: " + deliveryStatus;
+            }
+            
+            message.setText("Dear " + customerName + ",\n\n" +
+                       "Your return package for order " + orderNumber + " " + updateMessage + "\n\n" +
+                       "Logistics Status: " + deliveryStatus + "\n\n" +
+                       "Best regards,\n" +
+                       "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Refund Processed Successfully - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your refund for order <b>" + orderNumber + "</b> has been successfully processed.</p>" +
+                    "<p><b>Product:</b> " + productName + "</p>" +
+                    "<p><b>Refund Proof Transaction Receipt:</b> <a href=\"" + proofImageUrl + "\">Click here to view transaction proof receipt</a></p>" +
+                    "<p>Please allow 2-3 business days for the funds to reflect in your account.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            
+            if (proofImage != null && !proofImage.isEmpty()) {
+                String fileName = proofImage.getOriginalFilename();
+                if (fileName == null || fileName.isEmpty()) {
+                    fileName = "refund_proof.png";
+                }
+                helper.addAttachment(fileName, proofImage);
+            }
+            
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Refund Processed Successfully - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your refund for order " + orderNumber + " has been successfully processed.\n\n" +
+                    "Product: " + productName + "\n" +
+                    "Refund Transaction Receipt URL: " + proofImageUrl + "\n\n" +
+                    "Please allow 2-3 business days for the funds to reflect in your account.\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerExchangeCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String targetSize, String trackingNumber) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Replacement Order Shipped - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your exchange request for order <b>" + orderNumber + "</b> has been completed.</p>" +
+                    "<p>Your replacement item <b>" + productName + " (Size: " + targetSize + ")</b> has been shipped!</p>" +
+                    "<p><b>New Tracking ID:</b> " + (trackingNumber != null && !trackingNumber.isEmpty() ? trackingNumber : "N/A") + "</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Replacement Order Shipped - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your exchange request for order " + orderNumber + " has been completed.\n\n" +
+                    "Your replacement item " + productName + " (Size: " + targetSize + ") has been shipped!\n" +
+                    "New Tracking ID: " + (trackingNumber != null && !trackingNumber.isEmpty() ? trackingNumber : "N/A") + "\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerExchangePaymentRequestEmail(String toEmail, String orderNumber, String customerName, String productName, String variantName, double amount, MultipartFile qrCode) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Exchange Request - Payment Required - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your exchange request for order <b>" + orderNumber + "</b> requires a net difference payment of <b>₹" + amount + "</b>.</p>" +
+                    "<p><b>Product:</b> " + productName + " (" + variantName + ")</p>" +
+                    "<p>Please scan the attached QR code to pay the amount via UPI.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+            
+            helper.setText(htmlContent, true);
+            
+            if (qrCode != null && !qrCode.isEmpty()) {
+                String fileName = qrCode.getOriginalFilename();
+                if (fileName == null || fileName.isEmpty()) {
+                    fileName = "payment_qr.png";
+                }
+                helper.addAttachment(fileName, qrCode);
+            }
+            
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Exchange Request - Payment Required - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your exchange request for order " + orderNumber + " requires a net difference payment of ₹" + amount + ".\n\n" +
+                    "Product: " + productName + " (" + variantName + ")\n" +
+                    "Please scan the QR code or pay the amount via UPI to: dripdoggyofficial@gmail.com\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerExchangeRefundInitiatedEmail(String toEmail, String orderNumber, String customerName, String productName, String variantName, double refundAmount) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Exchange Request Initiated - Refund Pending - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your exchange request for order <b>" + orderNumber + "</b> has been successfully initiated.</p>" +
+                    "<p><b>Product:</b> " + productName + " (" + variantName + ")</p>" +
+                    "<p>Because the replacement item is cheaper, you are owed a refund of <b>₹" + refundAmount + "</b> which will be processed upon approval.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+            
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Exchange Request Initiated - Refund Pending - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your exchange request for order " + orderNumber + " has been successfully initiated.\n\n" +
+                    "Product: " + productName + " (" + variantName + ")\n" +
+                    "Because the replacement item is cheaper, you are owed a refund of ₹" + refundAmount + " which will be processed upon approval.\n\n" +
                     "Best regards,\n" +
                     "The DripDoggy Team");
             mailSender.send(message);

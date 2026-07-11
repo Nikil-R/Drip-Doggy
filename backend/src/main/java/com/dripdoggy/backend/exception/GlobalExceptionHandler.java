@@ -16,6 +16,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(OrderAlreadyShippedException.class)
+    public ResponseEntity<ResponseMsgDto> handleOrderAlreadyShipped(OrderAlreadyShippedException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(400, ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(CategoryNotFoundException.class)
     public ResponseEntity<ResponseMsgDto> handleCategoryNotFound(CategoryNotFoundException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
@@ -213,6 +219,24 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DiscountNotAppliedException.class)
     public ResponseEntity<ResponseMsgDto> handleDiscountNotApplied(DiscountNotAppliedException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidOrderStateException.class)
+    public ResponseEntity<ResponseMsgDto> handleInvalidOrderState(InvalidOrderStateException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MissingRefundProofException.class)
+    public ResponseEntity<ResponseMsgDto> handleMissingRefundProof(MissingRefundProofException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ReturnRequestAlreadyResolvedException.class)
+    public ResponseEntity<ResponseMsgDto> handleReturnRequestAlreadyResolved(ReturnRequestAlreadyResolvedException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }

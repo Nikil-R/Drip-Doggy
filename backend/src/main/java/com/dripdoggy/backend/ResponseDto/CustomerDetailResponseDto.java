@@ -236,6 +236,12 @@ public class CustomerDetailResponseDto {
         private double amount;
         private String status;
         private String payment;
+        private String trackingNumber;
+        private String pendingAt;
+        private String processingAt;
+        private String shippedAt;
+        private String deliveredAt;
+        private String cancelledAt;
 
         public RecentOrder() {
         }
@@ -246,6 +252,20 @@ public class CustomerDetailResponseDto {
             this.amount = amount;
             this.status = status;
             this.payment = payment;
+        }
+
+        public RecentOrder(String id, String date, double amount, String status, String payment, String trackingNumber, String pendingAt, String processingAt, String shippedAt, String deliveredAt, String cancelledAt) {
+            this.id = id;
+            this.date = date;
+            this.amount = amount;
+            this.status = status;
+            this.payment = payment;
+            this.trackingNumber = trackingNumber;
+            this.pendingAt = pendingAt;
+            this.processingAt = processingAt;
+            this.shippedAt = shippedAt;
+            this.deliveredAt = deliveredAt;
+            this.cancelledAt = cancelledAt;
         }
 
         // Getters and Setters
@@ -287,6 +307,54 @@ public class CustomerDetailResponseDto {
 
         public void setPayment(String payment) {
             this.payment = payment;
+        }
+
+        public String getTrackingNumber() {
+            return trackingNumber;
+        }
+
+        public void setTrackingNumber(String trackingNumber) {
+            this.trackingNumber = trackingNumber;
+        }
+
+        public String getPendingAt() {
+            return pendingAt;
+        }
+
+        public void setPendingAt(String pendingAt) {
+            this.pendingAt = pendingAt;
+        }
+
+        public String getProcessingAt() {
+            return processingAt;
+        }
+
+        public void setProcessingAt(String processingAt) {
+            this.processingAt = processingAt;
+        }
+
+        public String getShippedAt() {
+            return shippedAt;
+        }
+
+        public void setShippedAt(String shippedAt) {
+            this.shippedAt = shippedAt;
+        }
+
+        public String getDeliveredAt() {
+            return deliveredAt;
+        }
+
+        public void setDeliveredAt(String deliveredAt) {
+            this.deliveredAt = deliveredAt;
+        }
+
+        public String getCancelledAt() {
+            return cancelledAt;
+        }
+
+        public void setCancelledAt(String cancelledAt) {
+            this.cancelledAt = cancelledAt;
         }
     }
 }
