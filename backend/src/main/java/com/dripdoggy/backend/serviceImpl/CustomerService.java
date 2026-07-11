@@ -4,6 +4,7 @@ import com.dripdoggy.backend.Iservice.ICustomerService;
 import com.dripdoggy.backend.ResponseDto.*;
 import com.dripdoggy.backend.entity.*;
 import com.dripdoggy.backend.enums.UserRole;
+import com.dripdoggy.backend.enums.PaymentStatus;
 import com.dripdoggy.backend.repository.UserRepository;
 import com.dripdoggy.backend.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,12 +136,24 @@ public class CustomerService implements ICustomerService {
             }
 
             for (Orders ord : sortedOrders) {
+                String pendingAt = ord.getOrderTimestamp() != null ? ord.getOrderTimestamp().format(DATE_TIME_FORMATTER) : null;
+                String processingAt = ord.getProcessingTimestamp() != null ? ord.getProcessingTimestamp().format(DATE_TIME_FORMATTER) : null;
+                String shippedAt = ord.getShippedTimestamp() != null ? ord.getShippedTimestamp().format(DATE_TIME_FORMATTER) : null;
+                String deliveredAt = ord.getDeliveredTimestamp() != null ? ord.getDeliveredTimestamp().format(DATE_TIME_FORMATTER) : null;
+                String cancelledAt = ord.getCancelledTimestamp() != null ? ord.getCancelledTimestamp().format(DATE_TIME_FORMATTER) : null;
+
                 recentOrders.add(new CustomerDetailResponseDto.RecentOrder(
                         "#DD-" + ord.getId(),
                         ord.getOrderTimestamp().format(DATE_TIME_FORMATTER),
                         ord.getTotalAmount().doubleValue(),
                         ord.getDeliveryStatus() != null ? ord.getDeliveryStatus().name() : "Pending",
-                        ord.getPaymentStatus() != null ? ord.getPaymentStatus().name() : "Unpaid"
+                        ord.getPaymentStatus() == PaymentStatus.SUCCESS ? "PAID" : (ord.getPaymentStatus() != null ? ord.getPaymentStatus().name() : "Unpaid"),
+                        ord.getTrackingNumber(),
+                        pendingAt,
+                        processingAt,
+                        shippedAt,
+                        deliveredAt,
+                        cancelledAt
                 ));
             }
         }

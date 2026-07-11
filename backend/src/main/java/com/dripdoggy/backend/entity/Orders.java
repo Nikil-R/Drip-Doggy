@@ -46,6 +46,27 @@ public class Orders {
     @Column(name = "delivery_status")
     private DeliveryStatus deliveryStatus;
 
+    @Column(name = "tracking_number")
+    private String trackingNumber;
+
+    @Column(name = "cancelled_by")
+    private String cancelledBy;
+
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
+    @Column(name = "processing_timestamp")
+    private LocalDateTime processingTimestamp;
+
+    @Column(name = "shipped_timestamp")
+    private LocalDateTime shippedTimestamp;
+
+    @Column(name = "delivered_timestamp")
+    private LocalDateTime deliveredTimestamp;
+
+    @Column(name = "cancelled_timestamp")
+    private LocalDateTime cancelledTimestamp;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonIgnore
@@ -201,5 +222,61 @@ public class Orders {
 
     public void setShippingFee(BigDecimal shippingFee) {
         this.shippingFee = shippingFee;
+    }
+
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    public void setTrackingNumber(String trackingNumber) {
+        this.trackingNumber = trackingNumber;
+    }
+
+    public LocalDateTime getProcessingTimestamp() {
+        return processingTimestamp;
+    }
+
+    public void setProcessingTimestamp(LocalDateTime processingTimestamp) {
+        this.processingTimestamp = processingTimestamp;
+    }
+
+    public LocalDateTime getShippedTimestamp() {
+        return shippedTimestamp;
+    }
+
+    public void setShippedTimestamp(LocalDateTime shippedTimestamp) {
+        this.shippedTimestamp = shippedTimestamp;
+    }
+
+    public LocalDateTime getDeliveredTimestamp() {
+        return deliveredTimestamp;
+    }
+
+    public void setDeliveredTimestamp(LocalDateTime deliveredTimestamp) {
+        this.deliveredTimestamp = deliveredTimestamp;
+    }
+
+    public LocalDateTime getCancelledTimestamp() {
+        return cancelledTimestamp;
+    }
+
+    public void setCancelledTimestamp(LocalDateTime cancelledTimestamp) {
+        this.cancelledTimestamp = cancelledTimestamp;
+    }
+
+    public String getCancelledBy() {
+        return cancelledBy;
+    }
+
+    public void setCancelledBy(String cancelledBy) {
+        this.cancelledBy = cancelledBy;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
     }
 }

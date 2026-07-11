@@ -158,31 +158,19 @@ public class CartService implements ICartService {
             throw new ResourceNotFoundException("Product size is deactivated.");
         }
 
-        // Check overall stock
-        int availableStock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
-
         Optional<Cart> existingCartOpt = cartRepository.findByUserAndProductVariantSize(user, size);
 
         if (existingCartOpt.isPresent()) {
             Cart existingCart = existingCartOpt.get();
             if (Boolean.TRUE.equals(existingCart.getIsActive())) {
                 int newQuantity = existingCart.getQuantity() + request.getQuantity();
-                if (newQuantity > availableStock) {
-                    throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
-                }
                 existingCart.setQuantity(newQuantity);
             } else {
-                if (request.getQuantity() > availableStock) {
-                    throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
-                }
                 existingCart.setIsActive(true);
                 existingCart.setQuantity(request.getQuantity());
             }
             cartRepository.save(existingCart);
         } else {
-            if (request.getQuantity() > availableStock) {
-                throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
-            }
             Cart newCart = new Cart();
             newCart.setUser(user);
             newCart.setProductVariantSize(size);
@@ -227,11 +215,6 @@ public class CartService implements ICartService {
         SubCategory subCategory = product.getSubCategory();
         if (subCategory == null || Boolean.TRUE.equals(subCategory.getIsDeleted()) || !Boolean.TRUE.equals(subCategory.getIsActive())) {
             throw new IllegalArgumentException("This product's subcategory is no longer active.");
-        }
-
-        int availableStock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
-        if (quantity > availableStock) {
-            throw new CustomerCartSizeforParticularSizeexxceedException("Customer has exceeded quantity. Only " + availableStock + " units left.");
         }
 
         cartItem.setQuantity(quantity);

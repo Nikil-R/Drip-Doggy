@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { products } from "../data/products";
 import { cartApi } from "../lib/cart-api";
 import { syncCart } from "../lib/cart-sync";
+import { couponApi } from "../lib/coupon-api";
 
 interface CartItem {
   id: number;
@@ -64,6 +65,33 @@ export function Cart() {
   const [appliedPromo, setAppliedPromo] = useState<string | null>(() => localStorage.getItem("appliedPromo") || null);
   const [promoDiscount, setPromoDiscount] = useState<number>(() => Number(localStorage.getItem("promoDiscount")) || 0);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+
+  // Fetch available coupons on mount (public + customer-specific if logged in)
+  useEffect(() => {
+    async function loadCoupons() {
+      try {
+        const token = localStorage.getItem("dripdoggy_auth_token");
+        if (token) {
+          // Prefer customer-specific coupons for authenticated users
+          const customerCoupons = await couponApi.fetchCustomerCoupons();
+          setAvailableCoupons(customerCoupons);
+        } else {
+          const publicCoupons = await couponApi.fetchPublicCoupons();
+          setAvailableCoupons(publicCoupons);
+        }
+      } catch (err) {
+        console.error("Failed to load coupons", err);
+        // Fallback: try public coupons if customer-specific ones fail
+        try {
+          const publicCoupons = await couponApi.fetchPublicCoupons();
+          setAvailableCoupons(publicCoupons);
+        } catch { /* ignore */ }
+      }
+    }
+    loadCoupons();
+  }, []);
 
   // Sync state with localStorage
   useEffect(() => {
@@ -165,9 +193,51 @@ export function Cart() {
     } catch { /* noop */ }
   };
 
-  const applyPromo = () => {
+  const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();
-    if (code === "DRIP20") {
+    if (!code || isApplyingPromo) return;
+
+    setIsApplyingPromo(true);
+
+    // Try backend validation first (if authenticated)
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (token) {
+      try {
+        const result = await couponApi.validateCoupon(code, subtotal);
+        if (result.valid) {
+          const discount = result.discountAmount || (
+            result.discountType === "percentage"
+              ? Math.round((result.discountValue || 0) / 100 * subtotal)
+              : result.discountValue || 0
+          );
+          setAppliedPromo(code);
+          setPromoDiscount(discount);
+          setPromoError(null);
+          localStorage.setItem("appliedPromo", code);
+          localStorage.setItem("promoDiscount", String(discount));
+          setIsApplyingPromo(false);
+          return;
+        }
+        // Backend said invalid — fall through to hardcoded fallback
+      } catch (err) {
+        console.error("Backend coupon validation failed, falling back to code", err);
+      }
+    }
+    // Fallback to hardcoded codes (also runs when backend returns invalid or is unreachable)
+    if (code === "FREESHIP" || code === "FREE") {
+      setAppliedPromo(code);
+      setPromoDiscount(0);
+      setPromoError(null);
+      localStorage.setItem("appliedPromo", code);
+      localStorage.setItem("promoDiscount", "0");
+    } else if (code === "DD-WELCOME") {
+      const disc = Math.round(subtotal * 0.15);
+      setAppliedPromo(code);
+      setPromoDiscount(disc);
+      setPromoError(null);
+      localStorage.setItem("appliedPromo", code);
+      localStorage.setItem("promoDiscount", String(disc));
+    } else if (code === "DRIP20") {
       setAppliedPromo("DRIP20");
       setPromoDiscount(Math.round(subtotal * 0.2));
       setPromoError(null);
@@ -180,8 +250,9 @@ export function Cart() {
       localStorage.setItem("appliedPromo", "FREE50");
       localStorage.setItem("promoDiscount", "50");
     } else {
-      setPromoError(`Invalid code "${code}". Try DRIP20 (20% off) or FREE50 (₹50 off).`);
+      setPromoError(`Invalid code "${code}".`);
     }
+    setIsApplyingPromo(false);
   };
 
   const removePromo = () => {
@@ -461,15 +532,35 @@ export function Cart() {
                     <input type="text" placeholder="ENTER CODE (TRY DRIP20)"
                       value={promoCode} onChange={(e) => setPromoCode(e.target.value)}
                       className="flex-1 bg-white border border-neutral-300 px-3 py-2 text-[10px] tracking-wider placeholder-neutral-400 focus:outline-none focus:border-neutral-900 uppercase font-bold" />
-                    <button onClick={applyPromo}
-                      className="bg-black hover:bg-neutral-800 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase transition-all duration-300 cursor-pointer border border-black">
-                      APPLY
+                    <button onClick={applyPromo} disabled={isApplyingPromo}
+                      className="bg-black hover:bg-neutral-800 disabled:bg-neutral-400 text-white text-[9px] font-extrabold tracking-widest px-4 py-2 uppercase transition-all duration-300 cursor-pointer disabled:cursor-not-allowed border border-black flex items-center gap-1.5">
+                      {isApplyingPromo ? (
+                        <><span className="inline-block h-3 w-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> APPLYING</>
+                      ) : "APPLY"}
                     </button>
                   </div>
                 )}
                 {promoError && <p className="text-[#ba1a1a] text-[9px] mt-1.5 font-bold uppercase tracking-wider">{promoError}</p>}
-                {!appliedPromo && !promoError && (
-                  <p className="text-[7px] text-neutral-400 font-medium mt-1.5 tracking-wide">Try <strong>DRIP20</strong> for 20% off or <strong>FREE50</strong> for ₹50 off.</p>
+                {!appliedPromo && !promoError && availableCoupons.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[7px] text-neutral-400 font-medium tracking-wide uppercase">Available Coupons:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableCoupons.map((cpn: any) => (
+                        <button
+                          key={cpn.id || cpn.code}
+                          onClick={() => {
+                            setPromoCode(cpn.code);
+                          }}
+                          className="text-[7px] font-extrabold tracking-wider text-[#b2533e] bg-red-50 border border-red-100 px-1.5 py-0.5 uppercase hover:bg-red-100 transition-colors cursor-pointer"
+                        >
+                          {cpn.code}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!appliedPromo && !promoError && availableCoupons.length === 0 && (
+                  <p className="text-[7px] text-neutral-400 font-medium mt-1.5 tracking-wide">Enter a promo code if you have one.</p>
                 )}
               </div>
             </div>

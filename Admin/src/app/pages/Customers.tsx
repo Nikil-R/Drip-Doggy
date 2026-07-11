@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuthStore } from "@/app/store/auth-store";
 import { customerApi, CustomerStats, CustomerListItem, CustomerDetail } from "@/app/lib/customer-api";
+import { productApi, BackendProduct } from "@/app/lib/product-api";
 import {
   Search, MoreVertical, Phone, MapPin, Clock, X, Mail,
   Download, CheckCircle, ShoppingBag, Tag,
@@ -353,12 +354,57 @@ function CustomerAvatar({ name }: { name: string }) {
   );
 }
 
+function getWishlistItemInfo(wName: string) {
+  const nameLower = wName.toLowerCase();
+  
+  let productName = wName;
+  let color = wName;
+  let size = "M";
+  let price = 2499;
+  let imageUrl = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop";
+
+  if (nameLower.includes("hoodie") || nameLower === "olive" || nameLower === "classic grey") {
+    productName = "French Terry Hoodie";
+    color = nameLower.includes("olive") || nameLower === "olive" ? "Olive" : "Classic Grey";
+    price = 3400;
+    imageUrl = "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=120&auto=format&fit=crop";
+  } else if (nameLower.includes("jacket") || nameLower.includes("tan") || nameLower === "tan beige") {
+    productName = "Structured Canvas Jacket";
+    color = "Tan Beige";
+    price = 5800;
+    imageUrl = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop";
+  } else if (nameLower.includes("trench") || nameLower.includes("coat") || nameLower.includes("navy") || nameLower.includes("blue") || nameLower === "midnight navy") {
+    productName = "Sartorial Trench Coat";
+    color = "Midnight Navy";
+    price = 8999;
+    imageUrl = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop";
+  } else if (nameLower.includes("blouse") || nameLower.includes("silk") || nameLower.includes("black") || nameLower === "midnight black") {
+    productName = "Signature Silk Blouse";
+    color = "Midnight Black";
+    price = 1699;
+    imageUrl = "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop";
+  } else if (nameLower.includes("pant") || nameLower.includes("trouser") || nameLower.includes("charcoal") || nameLower === "charcoal") {
+    productName = "Relaxed Tailored Trousers";
+    color = "Charcoal";
+    price = 4200;
+    imageUrl = "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=120&auto=format&fit=crop";
+  } else if (nameLower.includes("tee") || nameLower.includes("t-shirt") || nameLower.includes("white") || nameLower === "chalk white") {
+    productName = "Heavyweight Boxy Tee";
+    color = "Chalk White";
+    price = 1800;
+    imageUrl = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=120&auto=format&fit=crop";
+  }
+  
+  return { productName, color, size, price, imageUrl };
+}
+
 export function CustomersPage() {
   const { token } = useAuthStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<CustomerStats | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<CustomerDetail | null>(null);
+  const [allProducts, setAllProducts] = useState<BackendProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -432,8 +478,17 @@ export function CustomersPage() {
       setLoadingDetail(true);
       try {
         const rawId = Number(selectedCustomerId.replace(/\D/g, ""));
-        const detail = await customerApi.getCustomerDetails(rawId, token);
+        const [detail, prodList] = await Promise.all([
+          customerApi.getCustomerDetails(rawId, token),
+          productApi.fetchAllProducts(token).catch(e => {
+            console.error("Failed to load products in customers page drawer", e);
+            return [];
+          })
+        ]);
         setSelectedDetail(detail);
+        if (prodList) {
+          setAllProducts(prodList);
+        }
       } catch (err) {
         console.error("Error loading customer details", err);
       } finally {
@@ -870,23 +925,48 @@ export function CustomersPage() {
                           <div key={idx} className="border border-neutral-200 p-4 bg-background/50 rounded-sm space-y-2">
                             <div className="flex justify-between items-center pb-1.5 border-b border-neutral-100">
                               <span className="bg-[#224870]/10 text-[#224870] px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-widest rounded-sm">
-                                Address #{idx + 1}
+                                {(addr as any).label || addr.type || `Address #${idx + 1}`}
                               </span>
                             </div>
                             <div className="text-[10px] text-[#615e56] font-semibold space-y-1">
                               <p className="text-[#382d24] font-black uppercase tracking-wide">
                                 {addr.firstName} {addr.lastName}
                               </p>
-                              <p className="uppercase">{addr.addressLine1}</p>
-                              <p className="uppercase">{addr.addressLine2}</p>
+                              
+                              {/* Display Building/Name/Number */}
+                              {(addr.buildingNo || addr.buildingName || (addr as any).building) && (
+                                <p className="uppercase">
+                                  {addr.buildingNo ? `${addr.buildingNo}, ` : ""}
+                                  {addr.buildingName ? `${addr.buildingName}` : ""}
+                                  {(addr as any).building ? `${(addr as any).building}` : ""}
+                                </p>
+                              )}
+                              
+                              {/* Display Street & Area */}
+                              {(addr.street || addr.area) && (
+                                <p className="uppercase">
+                                  {addr.street ? `${addr.street}` : ""}
+                                  {addr.street && addr.area ? ", " : ""}
+                                  {addr.area ? `${addr.area}` : ""}
+                                </p>
+                              )}
+
+                              {/* Fallback to legacy address lines if they were supplied */}
+                              {!addr.buildingNo && !addr.buildingName && !(addr as any).building && (
+                                <>
+                                  {addr.addressLine1 && <p className="uppercase">{addr.addressLine1}</p>}
+                                  {addr.addressLine2 && <p className="uppercase">{addr.addressLine2}</p>}
+                                </>
+                              )}
+
                               <p className="uppercase font-bold text-[#382d24]">
-                                {addr.city}, {addr.state} — {addr.postalCode}
+                                {addr.city}, {addr.state} — {addr.postalCode || (addr as any).pincode}
                               </p>
-                              <p className="uppercase text-[8px] text-neutral-400">{addr.country}</p>
-                              {addr.phone && (
+                              {addr.country && <p className="uppercase text-[8px] text-neutral-400">{addr.country}</p>}
+                              {(addr.phone || (addr as any).deliveryPhone) && (
                                 <div className="pt-1.5 border-t border-neutral-100/50 flex items-center gap-1.5 text-neutral-400 font-bold text-[8.5px]">
                                   <span>Contact Phone:</span>
-                                  <span className="text-[#224870] select-all">{addr.phone}</span>
+                                  <span className="text-[#224870] select-all">{addr.phone || (addr as any).deliveryPhone}</span>
                                 </div>
                               )}
                             </div>
@@ -957,17 +1037,17 @@ export function CustomersPage() {
                     Shopping Cart Items
                   </span>
                   {selectedDetail.shoppingCartItems && selectedDetail.shoppingCartItems.length > 0 ? (
-                    <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30">
+                    <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30 shadow-xs">
                       {selectedDetail.shoppingCartItems.map((item, index) => (
-                        <div key={index} className="p-3.5 flex items-center justify-between border-b border-neutral-200 last:border-b-0">
+                        <div key={index} className="p-3.5 flex items-center justify-between border-b border-neutral-200 last:border-b-0 hover:bg-neutral-50/50 transition-all">
                           <div className="flex items-center gap-3">
-                            <img src={item.imageUrl} alt={item.productName} className="w-10 h-10 object-cover border border-neutral-200 rounded-sm" />
+                            <img src={(item as any).primaryImageUrl || item.imageUrl} alt={item.productName} className="w-10 h-10 object-cover border border-neutral-200 rounded-sm" />
                             <div>
                               <p className="text-[10px] font-black text-[#382d24] uppercase tracking-wide">{item.productName}</p>
                               <div className="flex gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">
-                                <span>Color: {item.color}</span>
+                                <span>Color: {(item as any).variantName || item.color || "Default"}</span>
                                 <span>•</span>
-                                <span>Size: {item.size}</span>
+                                <span>Size: {(item as any).sizeName || item.size || "M"}</span>
                               </div>
                             </div>
                           </div>
@@ -991,12 +1071,62 @@ export function CustomersPage() {
                     Wishlist Styles
                   </span>
                   {selectedDetail.wishlistStyles && selectedDetail.wishlistStyles.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDetail.wishlistStyles.map(w => (
-                        <span key={w} className="bg-[#224870]/8 border border-[#224870]/20 text-[#224870] px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider rounded-sm">
-                          {w}
-                        </span>
-                      ))}
+                    <div className="border border-neutral-200 rounded-sm overflow-hidden bg-background/30 shadow-xs">
+                      {selectedDetail.wishlistStyles.map((w, index) => {
+                        let resolvedName = w;
+                        let resolvedImage = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=120&auto=format&fit=crop";
+                        let resolvedPrice = 2499;
+                        let resolvedColor = w;
+                        let resolvedSize = "M";
+
+                        const matchLower = w.toLowerCase();
+                        let found = false;
+
+                        for (const p of allProducts) {
+                          if (p.variants) {
+                            for (const v of p.variants) {
+                              if (v.variantName && v.variantName.toLowerCase() === matchLower) {
+                                resolvedName = p.productName;
+                                resolvedImage = v.primaryImageUrl || v.imageUrls?.[0] || resolvedImage;
+                                resolvedPrice = v.price || v.mrp || resolvedPrice;
+                                resolvedColor = v.variantName;
+                                resolvedSize = v.sizes?.[0]?.sizeName || "M";
+                                found = true;
+                                break;
+                              }
+                            }
+                          }
+                          if (found) break;
+                        }
+
+                        if (!found) {
+                          const staticInfo = getWishlistItemInfo(w);
+                          resolvedName = staticInfo.productName;
+                          resolvedImage = staticInfo.imageUrl;
+                          resolvedPrice = staticInfo.price;
+                          resolvedColor = staticInfo.color;
+                          resolvedSize = staticInfo.size;
+                        }
+
+                        return (
+                          <div key={index} className="p-3.5 flex items-center justify-between border-b border-neutral-200 last:border-b-0 hover:bg-[#224870]/5 transition-all">
+                            <div className="flex items-center gap-3">
+                              <img src={resolvedImage} alt={resolvedName} className="w-10 h-10 object-cover border border-neutral-200 rounded-sm" />
+                              <div>
+                                <p className="text-[10px] font-black text-[#382d24] uppercase tracking-wide">{resolvedName}</p>
+                                <div className="flex gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5">
+                                  <span>Color: {resolvedColor}</span>
+                                  <span>•</span>
+                                  <span>Size: {resolvedSize}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10.5px] font-black text-[#382d24]">{RS}{resolvedPrice.toLocaleString("en-IN")}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="border border-neutral-200 p-4 text-center text-[9px] font-bold text-neutral-400 uppercase tracking-wider bg-background/10 rounded-sm">

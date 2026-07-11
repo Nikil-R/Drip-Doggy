@@ -8,6 +8,9 @@ import { AddressesTab } from "../components/account/AddressesTab";
 import { WishlistTab } from "../components/account/WishlistTab";
 import type { AddressItem } from "../types/account";
 import { addressApi } from "../lib/address-api";
+import { wishlistApi } from "../lib/wishlist-api";
+import { syncWishlist } from "../lib/wishlist-sync";
+import { productApi } from "../lib/product-api";
 
 type TabKey = "profile" | "orders" | "addresses" | "wishlist";
 
@@ -106,25 +109,122 @@ export function Profile() {
     ];
   });
 
-  const [wishlistItems, setWishlistItems] = useState<any[]>(() => {
-    try {
-      const stored = localStorage.getItem("wishlist");
-      if (stored) return JSON.parse(stored);
-    } catch { /* noop */ }
-    return [
-      { id: 1, brand: "CONCRETE CULTURE", name: "Reflective Utility Sling", price: 45.00,
-        image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600" },
-      { id: 2, brand: "ARCHITECTURAL PRECISION", name: "Structure Tactical Layer", price: 485.00,
-        image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=600", outOfStock: true },
-    ];
-  });
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
 
-  const removeWishlistItem = (id: number) => {
+  // Load wishlist from backend API on mount
+  useEffect(() => {
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    if (!token) return;
+    async function loadWishlist() {
+      try {
+        // Fetch raw wishlist items from backend
+        const [backendItems, products] = await Promise.all([
+          wishlistApi.getWishlist(),
+          productApi.fetchProducts()
+        ]);
+
+        // Build a map from sizeId to product details
+        const sizeToDetailsMap = new Map<string, any>();
+        products.forEach((p: any) => {
+          if (p.rawVariants) {
+            p.rawVariants.forEach((v: any) => {
+              if (v.sizes) {
+                v.sizes.forEach((s: any) => {
+                  sizeToDetailsMap.set(String(s.id), {
+                    productId: p.id,
+                    brand: p.brand,
+                    name: p.name,
+                    mrp: v.mrp || 0,
+                    price: v.price || v.mrp || 0,
+                    discountType: v.discountType || "",
+                    discountValue: v.discountValue || 0
+                  });
+                });
+              }
+            });
+          }
+        });
+
+        const mapped = backendItems
+          .filter((item: any) => item.isActive !== false)
+          .map((item: any) => {
+            const details = sizeToDetailsMap.get(String(item.productVariantSizeId));
+            const productId = details ? details.productId : item.productVariantSizeId;
+            const mrp = details ? details.mrp : (item.price || 0);
+            const price = details ? details.price : (item.price || 0);
+            return {
+              id: productId,
+              brand: details ? details.brand : "Drip Doggy",
+              name: item.productName || (details ? details.name : "Product"),
+              price,
+              originalPrice: mrp,
+              discountType: details ? details.discountType : "",
+              discountValue: details ? details.discountValue : 0,
+              image: item.primaryImageUrl || "",
+              backendId: item.id
+            };
+          });
+
+        setWishlistItems(mapped);
+        localStorage.setItem("wishlist", JSON.stringify(mapped));
+        window.dispatchEvent(new Event("wishlist-updated"));
+      } catch (err) {
+        console.error("Error loading wishlist from backend:", err);
+        // Fall back to localStorage
+        try {
+          const stored = localStorage.getItem("wishlist");
+          if (stored) setWishlistItems(JSON.parse(stored));
+        } catch { /* noop */ }
+      }
+    }
+    loadWishlist();
+  }, [user]);
+
+  const removeWishlistItem = async (id: number) => {
+    // Find the item to get its backendId
+    const item = wishlistItems.find((i: any) => i.id === id);
+    const backendId = item?.backendId;
+
+    // Optimistically remove from UI immediately
     setWishlistItems(prev => {
-      const updated = prev.filter((item: any) => item.id !== id);
-      try { localStorage.setItem("wishlist", JSON.stringify(updated)); window.dispatchEvent(new Event("wishlist-updated")); } catch { /* noop */ }
+      const updated = prev.filter((i: any) => i.id !== id);
+      try {
+        localStorage.setItem("wishlist", JSON.stringify(updated));
+        window.dispatchEvent(new Event("wishlist-updated"));
+      } catch { /* noop */ }
       return updated;
     });
+
+    // Call backend delete API so it persists in the database
+    if (backendId) {
+      try {
+        await wishlistApi.removeFromWishlist(backendId);
+        // Re-sync to ensure localStorage matches backend
+        await syncWishlist();
+        const stored = localStorage.getItem("wishlist");
+        if (stored) setWishlistItems(JSON.parse(stored));
+      } catch (err) {
+        console.error("Failed to remove wishlist item from backend:", err);
+      }
+    }
+  };
+
+  const toggleWishlistArchive = async (item: any) => {
+    const backendId = item?.backendId;
+    if (backendId) {
+      try {
+        await wishlistApi.toggleWishlistActive(backendId);
+        // Re-sync after toggling
+        await syncWishlist();
+        const stored = localStorage.getItem("wishlist");
+        if (stored) {
+          const refreshed = JSON.parse(stored);
+          setWishlistItems(refreshed);
+        }
+      } catch (err) {
+        console.error("Failed to toggle wishlist archive:", err);
+      }
+    }
   };
 
   const addWishlistToCart = (item: any, e: React.MouseEvent) => {
@@ -202,7 +302,9 @@ export function Profile() {
               <AddressesTab addresses={addresses} setAddresses={setAddresses} profile={profile} />
             )}
             {activeTab === "wishlist" && (
-              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart} />
+              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
+                onToggleArchive={toggleWishlistArchive}
+              />
             )}
           </div>
         </div>

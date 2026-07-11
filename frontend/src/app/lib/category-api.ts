@@ -23,5 +23,23 @@ export const categoryApi = {
     const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.CATEGORIES;
     const response = await axios.get<Category[]>(url);
     return response.data || [];
+  },
+
+  fetchCategoryById: async (id: number): Promise<Category> => {
+    const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.CATEGORY_BY_ID + `/${id}`;
+    const response = await axios.get<Category>(url);
+    return response.data;
+  },
+
+  fetchSubCategories: async (): Promise<SubCategory[]> => {
+    const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.SUBCATEGORIES;
+    const response = await axios.get<SubCategory[]>(url);
+    return response.data?.details || response.data || [];
+  },
+
+  fetchSubCategoryById: async (id: number): Promise<SubCategory> => {
+    const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.SUBCATEGORY_BY_ID + `/${id}`;
+    const response = await axios.get<SubCategory>(url);
+    return response.data;
   }
 };
