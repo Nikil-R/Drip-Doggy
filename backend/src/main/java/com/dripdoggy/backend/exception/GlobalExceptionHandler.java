@@ -241,6 +241,24 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidOrderItemIDException.class)
+    public ResponseEntity<ResponseMsgDto> handleInvalidOrderItemID(InvalidOrderItemIDException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MissingTrackingNumberException.class)
+    public ResponseEntity<ResponseMsgDto> handleMissingTrackingNumber(MissingTrackingNumberException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ResponseMsgDto> handleIllegalArgument(IllegalArgumentException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseMsgDto> handleGlobalException(Exception ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());

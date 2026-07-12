@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -42,25 +43,24 @@ public class AdminOrderReturnController {
 	}
 
 	@PatchMapping("/returns/{returnId}/resolve")
-	public ResponseEntity<ResponseMsgDto> resolveReturnRequest (@PathVariable Long returnId,
+	public ResponseEntity<ResponseMsgDto> resolveReturnRequest(@PathVariable Long returnId,
 			@Valid @ModelAttribute ResolveReturnRequestDto dto) {
 		ResponseMsgDto response = orderReturnService.resolveReturnRequest(returnId, dto.getAction(),
 				dto.getTrackingNumber(), dto.getProofImage());
 		return ResponseEntity.ok(response);
 	}
 
-    @PatchMapping("/returns/{returnId}/payment-request")
-    public ResponseEntity<ResponseMsgDto> sendPaymentRequest(
-            @PathVariable Long returnId,
-            @RequestParam("qrCode") org.springframework.web.multipart.MultipartFile qrCode) {
-        ResponseMsgDto response = orderReturnService.sendExchangePaymentRequest(returnId, qrCode);
-        return ResponseEntity.ok(response);
-    }
+	@PatchMapping("/returns/{returnId}/payment-request")
+	public ResponseEntity<ResponseMsgDto> sendPaymentRequest(@PathVariable Long returnId,
+			@RequestParam("qrCode") MultipartFile qrCode) {
+		ResponseMsgDto response = orderReturnService.sendExchangePaymentRequest(returnId, qrCode);
+		return ResponseEntity.ok(response);
+	}
 
-    @PatchMapping("/{orderId}/cancel")
-    public ResponseEntity<ResponseMsgDto> adminCancelOrder(@PathVariable Long orderId,
-            @Valid @RequestBody OrderCancelRequestDto dto) {
-        ResponseMsgDto response = orderReturnService.cancelOrder(orderId, dto, "ADMIN");
-        return ResponseEntity.ok(response);
-    }
+	@PatchMapping("/{orderId}/cancel")
+	public ResponseEntity<ResponseMsgDto> adminCancelOrder(@PathVariable Long orderId,
+			@Valid @RequestBody OrderCancelRequestDto dto) {
+		ResponseMsgDto response = orderReturnService.cancelOrder(orderId, dto, "ADMIN");
+		return ResponseEntity.ok(response);
+	}
 }

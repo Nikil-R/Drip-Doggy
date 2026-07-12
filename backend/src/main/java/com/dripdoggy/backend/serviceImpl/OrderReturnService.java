@@ -91,7 +91,7 @@ public class OrderReturnService implements IOrderReturnService {
 		OrderItem orderItem = orderItemRepository.findById(dto.getOrderItemId()).orElseThrow(
 				() -> new ResourceNotFoundException("Order item not found with id: " + dto.getOrderItemId()));
 		if (!orderItem.getOrder().getId().equals(order.getId())) {
-			throw new IllegalArgumentException("Invalid order item for this order.");
+			throw new InvalidOrderItemIDException("Invalid order item for this order.");
 		}
 
 		// Enforce the One-Time Only request rule
@@ -143,6 +143,13 @@ public class OrderReturnService implements IOrderReturnService {
 		if (countMethods > 1) {
 			throw new InvalidOrderStateException(
 					"You can only submit one type of refund method. Please choose either QR Code, UPI ID, or Bank details, not multiple.");
+		}
+
+		if (isUpi && dto.getUpiPhone() != null && !dto.getUpiPhone().trim().isEmpty()) {
+			String phone = dto.getUpiPhone().trim();
+			if (!phone.matches("^\\d{10}$")) {
+				throw new InvalidOrderStateException("UPI Phone number must be exactly 10 digits.");
+			}
 		}
 
 		// Upload QR Code image if QR method is selected
@@ -245,7 +252,7 @@ public class OrderReturnService implements IOrderReturnService {
 		OrderItem orderItem = orderItemRepository.findById(dto.getOrderItemId()).orElseThrow(
 				() -> new ResourceNotFoundException("Order item not found with id: " + dto.getOrderItemId()));
 		if (!orderItem.getOrder().getId().equals(order.getId())) {
-			throw new IllegalArgumentException("Invalid order item for this order.");
+			throw new InvalidOrderItemIDException("Invalid order item for this order.");
 		}
 
 		// Enforce the One-Time Only request rule
@@ -271,7 +278,7 @@ public class OrderReturnService implements IOrderReturnService {
 			variantName = targetVariant.getVariantName();
 		}
 
-		java.math.BigDecimal difference = targetPrice.subtract(originalPrice);
+		java.math.BigDecimal difference = targetPrice.subtract(originalPrice).multiply(java.math.BigDecimal.valueOf(orderItem.getQuantity()));
 
 		// Validate refund details if target is cheaper (admin owes customer)
 		boolean isQr = (dto.getQrCodeImage() != null && !dto.getQrCodeImage().isEmpty());
@@ -293,6 +300,13 @@ public class OrderReturnService implements IOrderReturnService {
 			if (countMethods > 1) {
 				throw new InvalidOrderStateException("You can only submit one type of refund method. Please choose either QR Code, UPI ID, or Bank details, not multiple.");
 			}
+
+			if (isUpi && dto.getUpiPhone() != null && !dto.getUpiPhone().trim().isEmpty()) {
+				String phone = dto.getUpiPhone().trim();
+				if (!phone.matches("^\\d{10}$")) {
+					throw new InvalidOrderStateException("UPI Phone number must be exactly 10 digits.");
+				}
+			}
 		}
 
 		// Filter null or empty files
@@ -312,7 +326,7 @@ public class OrderReturnService implements IOrderReturnService {
 
 		// Upload QR Code image if QR method is selected for refund
 		String qrCodeImageUrl = null;
-		if (difference.compareTo(java.math.BigDecimal.ZERO) < 0 && isQr) {
+		if (isQr) {
 			try {
 				qrCodeImageUrl = s3Service.uploadFile(dto.getQrCodeImage());
 			} catch (IOException e) {
@@ -340,18 +354,16 @@ public class OrderReturnService implements IOrderReturnService {
 		orderReturn.setTargetVariantId(dto.getTargetVariantId());
 		orderReturn.setStatus(ReturnStatus.PENDING);
 
-		if (difference.compareTo(java.math.BigDecimal.ZERO) < 0) {
-			if (isQr) {
-				orderReturn.setQrCodeImageUrl(qrCodeImageUrl);
-			} else if (isUpi) {
-				orderReturn.setUpiId(dto.getUpiId());
-				orderReturn.setUpiPhone(dto.getUpiPhone());
-			} else if (isBank) {
-				orderReturn.setBankAccountName(dto.getBankAccountName());
-				orderReturn.setBankName(dto.getBankName());
-				orderReturn.setBankIfsc(dto.getBankIfsc());
-				orderReturn.setBankAccountNumber(dto.getBankAccountNumber());
-			}
+		if (isQr) {
+			orderReturn.setQrCodeImageUrl(qrCodeImageUrl);
+		} else if (isUpi) {
+			orderReturn.setUpiId(dto.getUpiId());
+			orderReturn.setUpiPhone(dto.getUpiPhone());
+		} else if (isBank) {
+			orderReturn.setBankAccountName(dto.getBankAccountName());
+			orderReturn.setBankName(dto.getBankName());
+			orderReturn.setBankIfsc(dto.getBankIfsc());
+			orderReturn.setBankAccountNumber(dto.getBankAccountNumber());
 		}
 
 		if (imageUrls.size() > 0)
@@ -364,7 +376,7 @@ public class OrderReturnService implements IOrderReturnService {
 		orderReturnRepository.save(orderReturn);
 
 		// Update parent order delivery status
-		order.setDeliveryStatus(DeliveryStatus.RETURN_INITIATED);
+		order.setDeliveryStatus(DeliveryStatus.EXCHANGE_INITIATED);
 		ordersRepository.save(order);
 
 		String productName = "";
@@ -534,8 +546,9 @@ public class OrderReturnService implements IOrderReturnService {
 			throw new InvalidOrderStateException("This return request is supposed to be a refund.");
 		}
 		if (returnRequest.getRequestType() == ReturnRequestType.EXCHANGE
-				&& !"EXCHANGE".equalsIgnoreCase(action.trim())) {
-			throw new InvalidOrderStateException("This return request is supposed to be an exchange.");
+				&& !"EXCHANGE".equalsIgnoreCase(action.trim())
+				&& !"REFUND".equalsIgnoreCase(action.trim())) {
+			throw new InvalidOrderStateException("An exchange request must be resolved via EXCHANGE or REFUND.");
 		}
 
 		if ("REFUND".equalsIgnoreCase(action.trim())) {
@@ -566,19 +579,27 @@ public class OrderReturnService implements IOrderReturnService {
 
 			// Notify customer via email with proof receipt image URL
 			try {
+				boolean wasExchangeFallback = (returnRequest.getRequestType() == ReturnRequestType.EXCHANGE);
 				emailService.sendCustomerRefundCompletedEmail(user.getEmail(), orderNumber, customerName, productName,
-						proofUrl, proofImage);
+						proofUrl, proofImage, wasExchangeFallback);
 			} catch (Exception e) {
 				// Ignore email failure
 				e.printStackTrace();
 			}
 
 		} else if ("EXCHANGE".equalsIgnoreCase(action.trim())) {
+			if (trackingNumber == null || trackingNumber.trim().isEmpty()) {
+				throw new MissingTrackingNumberException("Please enter the tracking ID.");
+			}
+			String trimmedTracking = trackingNumber.trim();
+			if (ordersRepository.existsByTrackingNumber(trimmedTracking)) {
+				throw new InvalidOrderStateException("Courier Tracking ID '" + trimmedTracking + "' is already assigned to another order.");
+			}
 			// Exchanges: Admin sends a replacement size
 			returnRequest.setStatus(ReturnStatus.EXCHANGE_COMPLETED);
 			returnRequest.setResolvedAt(LocalDateTime.now());
 
-			order.setDeliveryStatus(DeliveryStatus.RETURN_DELIVERED);
+			order.setDeliveryStatus(DeliveryStatus.EXCHANGE_DELIVERED);
 
 			ordersRepository.save(order);
 			orderReturnRepository.save(returnRequest);
@@ -681,13 +702,23 @@ public class OrderReturnService implements IOrderReturnService {
 			}
 		}
 
+		Double priceDifference = 0.0;
+		if (r.getRequestType() == ReturnRequestType.EXCHANGE && r.getTargetVariantId() != null && item != null) {
+			ProductVariant targetVariant = productVariantRepository.findById(r.getTargetVariantId()).orElse(null);
+			if (targetVariant != null) {
+				double targetPrice = targetVariant.getPrice().doubleValue();
+				double originalPrice = item.getPrice().doubleValue();
+				priceDifference = (targetPrice - originalPrice) * item.getQuantity();
+			}
+		}
+
 		return new AdminReturnResponseDto(r.getId(), order.getId(), orderNumber, r.getOrderItemId(),
 				r.getRequestType() != null ? r.getRequestType().name() : null, r.getCancelReason(),
 				r.getDefectImageUrl1(), r.getDefectImageUrl2(), r.getDefectImageUrl3(), r.getTargetSize(),
 				r.getTargetVariantId(), r.getStatus() != null ? r.getStatus().name() : null, r.getCreatedAt(),
 				r.getResolvedAt(), customerName, customerEmail, productName, productSize, productPrice, productQuantity,
 				r.getUpiId(), r.getUpiPhone(), r.getQrCodeImageUrl(), r.getBankAccountName(), r.getBankName(),
-				r.getBankIfsc(), r.getBankAccountNumber());
+				r.getBankIfsc(), r.getBankAccountNumber(), priceDifference);
 	}
 
 	@Override
@@ -699,8 +730,19 @@ public class OrderReturnService implements IOrderReturnService {
 		OrderReturn returnRequest = orderReturnRepository.findById(returnId)
 				.orElseThrow(() -> new ResourceNotFoundException("Return request not found"));
 
+		if (returnRequest.getStatus() == ReturnStatus.REFUND_COMPLETED || returnRequest.getStatus() == ReturnStatus.EXCHANGE_COMPLETED) {
+			throw new ReturnRequestAlreadyResolvedException("Cannot send payment request because this return request is already completed.");
+		}
+
 		if (returnRequest.getRequestType() != ReturnRequestType.EXCHANGE) {
 			throw new InvalidOrderStateException("Payment requests can only be sent for exchange requests.");
+		}
+
+		Orders order = returnRequest.getOrder();
+		User user = order.getUser();
+
+		if (user == null || user.getFirstName() == null || user.getFirstName().trim().isEmpty() || user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+			throw new UserNotRegisteredException("Cannot send payment request because the customer has not completed their registration.");
 		}
 
 		// Calculate price differences
@@ -735,8 +777,6 @@ public class OrderReturnService implements IOrderReturnService {
 		returnRequest.setQrCodeImageUrl(qrCodeUrl);
 		orderReturnRepository.save(returnRequest);
 
-		Orders order = returnRequest.getOrder();
-		User user = order.getUser();
 		String orderNumber = "#DD-" + order.getId();
 		String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
 				+ (user.getLastName() != null ? user.getLastName() : "")).trim();
