@@ -10,6 +10,7 @@ import com.dripdoggy.backend.ResponseDto.OrderResponseDto;
 import com.dripdoggy.backend.ResponseDto.OrderPreviewResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import com.dripdoggy.backend.ResponseDto.CouponValidationResponseDto;
+import com.dripdoggy.backend.ResponseDto.AdminOrderResponseDto;
 import com.dripdoggy.backend.entity.*;
 import com.dripdoggy.backend.enums.*;
 import com.dripdoggy.backend.exception.*;
@@ -295,5 +296,105 @@ public class OrderService implements IOrderService {
         BigDecimal grandTotal = discountedSubtotal.add(taxAmount).add(shippingFee);
 
         return new OrderPreviewResponseDto(subtotal, discountVal, taxAmount, shippingFee, grandTotal);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getCustomerOrders() {
+        User user = getCurrentCustomer();
+        List<Orders> orders = ordersRepository.findByUserOrderByOrderTimestampDesc(user);
+        return orders.stream().map(this::mapToDto).collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponseDto getCustomerOrderById(Long id) {
+        User user = getCurrentCustomer();
+        Orders order = ordersRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + id));
+
+        // Ownership validation (prevent IDOR)
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new OrderNotFoundException("Order not found with id: " + id);
+        }
+
+        return mapToDto(order);
+    }
+
+    private OrderResponseDto mapToDto(Orders order) {
+        String orderNumber = "#DD-" + order.getId();
+        User user = order.getUser();
+        String customerName = "";
+        String customerEmail = "";
+        if (user != null) {
+            customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                           (user.getLastName() != null ? user.getLastName() : "")).trim();
+            customerEmail = user.getEmail();
+        }
+
+        Address address = order.getAddress();
+        String destinationAddress = "";
+        if (address != null) {
+            destinationAddress = (address.getBuildingNo() != null ? address.getBuildingNo() + ", " : "") +
+                                 (address.getBuildingName() != null ? address.getBuildingName() + ", " : "") +
+                                 (address.getStreetName() != null ? address.getStreetName() + ", " : "") +
+                                 (address.getArea() != null ? address.getArea() + ", " : "") +
+                                 (address.getCity() != null ? address.getCity() + ", " : "") +
+                                 (address.getState() != null ? address.getState() + " - " : "") +
+                                 (address.getPincode() != null ? address.getPincode() : "");
+        }
+
+        List<AdminOrderResponseDto.OrderItemDetail> items = new java.util.ArrayList<>();
+        if (order.getOrderItems() != null) {
+            for (OrderItem oi : order.getOrderItems()) {
+                ProductVariantSize pvs = oi.getProductVariantSize();
+                String name = "";
+                String sku = "";
+                String size = "";
+                String image = "";
+                if (pvs != null) {
+                    size = pvs.getSizeName();
+                    ProductVariant pv = pvs.getProductVariant();
+                    if (pv != null) {
+                        sku = pv.getVariantName();
+                        if (pv.getImages() != null && !pv.getImages().isEmpty()) {
+                            image = pv.getImages().get(0).getImageUrl();
+                        }
+                        Product p = pv.getProduct();
+                        if (p != null) {
+                            name = p.getProductName();
+                        }
+                    }
+                }
+                items.add(new AdminOrderResponseDto.OrderItemDetail(
+                        oi.getId(),
+                        name,
+                        sku,
+                        size,
+                        oi.getQuantity(),
+                        oi.getPrice() != null ? oi.getPrice().doubleValue() : 0.0,
+                        image
+                ));
+            }
+        }
+
+        OrderResponseDto dto = new OrderResponseDto(
+                orderNumber,
+                order.getOrderTimestamp(),
+                order.getTotalAmount(),
+                order.getDiscount(),
+                order.getTax(),
+                order.getPlatformFee(),
+                order.getShippingFee(),
+                order.getDeliveryMethod(),
+                order.getDeliveryStatus() != null ? order.getDeliveryStatus().name() : "PLACED",
+                order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "UNPAID",
+                order.getPhoneNumber(),
+                customerEmail,
+                customerName,
+                destinationAddress
+        );
+        dto.setItems(items);
+        return dto;
     }
 }

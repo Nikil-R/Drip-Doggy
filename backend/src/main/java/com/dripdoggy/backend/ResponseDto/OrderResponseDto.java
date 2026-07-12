@@ -2,6 +2,8 @@ package com.dripdoggy.backend.ResponseDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import com.dripdoggy.backend.ResponseDto.AdminOrderResponseDto.OrderItemDetail;
 
 public class OrderResponseDto {
     private String orderNumber;
@@ -19,6 +21,7 @@ public class OrderResponseDto {
     private String customerName;
     private String destinationAddress;
     private BigDecimal subTotal;
+    private List<OrderItemDetail> items;
 
     // Constructors
     public OrderResponseDto() {
@@ -167,5 +170,13 @@ public class OrderResponseDto {
 
     public void setSubTotal(BigDecimal subTotal) {
         this.subTotal = subTotal;
+    }
+
+    public List<OrderItemDetail> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItemDetail> items) {
+        this.items = items;
     }
 }

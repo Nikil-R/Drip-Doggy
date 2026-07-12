@@ -9,6 +9,7 @@ import com.dripdoggy.backend.ResponseDto.OrderResponseDto;
 import com.dripdoggy.backend.ResponseDto.OrderPreviewResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +48,17 @@ public class OrderController {
     public ResponseEntity<OrderPreviewResponseDto> previewOrder(@Valid @RequestBody OrderPreviewRequestDto request) {
         OrderPreviewResponseDto response = orderService.previewOrder(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<OrderResponseDto>> getCustomerOrders() {
+        List<OrderResponseDto> response = orderService.getCustomerOrders();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponseDto> getCustomerOrderById(@PathVariable Long id) {
+        OrderResponseDto response = orderService.getCustomerOrderById(id);
+        return ResponseEntity.ok(response);
     }
 }
