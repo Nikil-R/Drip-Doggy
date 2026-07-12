@@ -24,6 +24,7 @@ public class AdminReturnResponseDto {
     private String productSize;
     private Double productPrice;
     private Integer productQuantity;
+    private Integer requestedQuantity;
 
     // Refund details
     private String upiId;
@@ -38,7 +39,7 @@ public class AdminReturnResponseDto {
     public AdminReturnResponseDto() {
     }
 
-    public AdminReturnResponseDto(Long id, Long orderId, String orderNumber, Long orderItemId, String requestType, String cancelReason, String defectImageUrl1, String defectImageUrl2, String defectImageUrl3, String targetSize, Long targetVariantId, String status, LocalDateTime createdAt, LocalDateTime resolvedAt, String customerName, String customerEmail, String productName, String productSize, Double productPrice, Integer productQuantity, String upiId, String upiPhone, String qrCodeImageUrl, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber, Double priceDifference) {
+    public AdminReturnResponseDto(Long id, Long orderId, String orderNumber, Long orderItemId, String requestType, String cancelReason, String defectImageUrl1, String defectImageUrl2, String defectImageUrl3, String targetSize, Long targetVariantId, String status, LocalDateTime createdAt, LocalDateTime resolvedAt, String customerName, String customerEmail, String productName, String productSize, Double productPrice, Integer productQuantity, Integer requestedQuantity, String upiId, String upiPhone, String qrCodeImageUrl, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber, Double priceDifference) {
         this.id = id;
         this.orderId = orderId;
         this.orderNumber = orderNumber;
@@ -59,6 +60,7 @@ public class AdminReturnResponseDto {
         this.productSize = productSize;
         this.productPrice = productPrice;
         this.productQuantity = productQuantity;
+        this.requestedQuantity = requestedQuantity;
         this.upiId = upiId;
         this.upiPhone = upiPhone;
         this.qrCodeImageUrl = qrCodeImageUrl;
@@ -109,6 +111,8 @@ public class AdminReturnResponseDto {
     public void setProductPrice(Double productPrice) { this.productPrice = productPrice; }
     public Integer getProductQuantity() { return productQuantity; }
     public void setProductQuantity(Integer productQuantity) { this.productQuantity = productQuantity; }
+    public Integer getRequestedQuantity() { return requestedQuantity; }
+    public void setRequestedQuantity(Integer requestedQuantity) { this.requestedQuantity = requestedQuantity; }
 
     public String getUpiId() { return upiId; }
     public void setUpiId(String upiId) { this.upiId = upiId; }

@@ -395,6 +395,10 @@ public class OrderService implements IOrderService {
                 destinationAddress
         );
         dto.setItems(items);
+        dto.setProcessingTimestamp(order.getProcessingTimestamp());
+        dto.setShippedTimestamp(order.getShippedTimestamp());
+        dto.setDeliveredTimestamp(order.getDeliveredTimestamp());
+        dto.setCancelledTimestamp(order.getCancelledTimestamp());
         return dto;
     }
 }

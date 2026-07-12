@@ -94,10 +94,25 @@ public class OrderReturnService implements IOrderReturnService {
 			throw new InvalidOrderItemIDException("Invalid order item for this order.");
 		}
 
-		// Enforce the One-Time Only request rule
-		boolean alreadyRequested = orderReturnRepository.existsByOrderIdAndOrderItemId(orderId, dto.getOrderItemId());
-		if (alreadyRequested) {
-			throw new InvalidOrderStateException("You have already sent the images, please wait for the admin.");
+		// Calculate the requested quantity
+		int requestedQuantity = (dto.getQuantity() != null && dto.getQuantity() > 0) ? dto.getQuantity() : orderItem.getQuantity();
+
+		if (requestedQuantity < 1) {
+			throw new InvalidOrderStateException("Requested quantity must be at least 1.");
+		}
+
+		// Enforce cumulative quantity check for active return/exchange requests
+		List<OrderReturn> existingRequests = orderReturnRepository.findByOrderItemId(dto.getOrderItemId());
+		int activeQuantity = 0;
+		for (OrderReturn r : existingRequests) {
+			if (r.getStatus() != ReturnStatus.REJECTED) {
+				activeQuantity += (r.getQuantity() != null) ? r.getQuantity() : orderItem.getQuantity();
+			}
+		}
+
+		if (activeQuantity + requestedQuantity > orderItem.getQuantity()) {
+			throw new InvalidOrderStateException("Cannot return/exchange more items than were originally ordered. " +
+					"Previously requested: " + activeQuantity + ", remaining available: " + (orderItem.getQuantity() - activeQuantity) + ".");
 		}
 
 		// Validate cancel reason word count (max 250 words)
@@ -115,9 +130,9 @@ public class OrderReturnService implements IOrderReturnService {
 			}
 		}
 
-		// Return requires exactly 3 images.
-		if (activeImages.size() != 3) {
-			throw new InvalidOrderStateException("You must upload exactly 3 defect images for a return request.");
+		// Return requires between 1 and 3 images.
+		if (activeImages.isEmpty() || activeImages.size() > 3) {
+			throw new InvalidOrderStateException("You must upload between 1 and 3 defect images.");
 		}
 
 		// Validate refund method details (exactly one option)
@@ -176,6 +191,7 @@ public class OrderReturnService implements IOrderReturnService {
 		OrderReturn orderReturn = new OrderReturn();
 		orderReturn.setOrder(order);
 		orderReturn.setOrderItemId(dto.getOrderItemId());
+		orderReturn.setQuantity(requestedQuantity);
 		orderReturn.setRequestType(ReturnRequestType.RETURN);
 		orderReturn.setCancelReason(dto.getCancelReason());
 		orderReturn.setStatus(ReturnStatus.PENDING);
@@ -255,10 +271,25 @@ public class OrderReturnService implements IOrderReturnService {
 			throw new InvalidOrderItemIDException("Invalid order item for this order.");
 		}
 
-		// Enforce the One-Time Only request rule
-		boolean alreadyRequested = orderReturnRepository.existsByOrderIdAndOrderItemId(orderId, dto.getOrderItemId());
-		if (alreadyRequested) {
-			throw new InvalidOrderStateException("You have already sent the images, please wait for the admin.");
+		// Calculate the requested quantity
+		int requestedQuantity = (dto.getQuantity() != null && dto.getQuantity() > 0) ? dto.getQuantity() : orderItem.getQuantity();
+
+		if (requestedQuantity < 1) {
+			throw new InvalidOrderStateException("Requested quantity must be at least 1.");
+		}
+
+		// Enforce cumulative quantity check for active return/exchange requests
+		List<OrderReturn> existingRequests = orderReturnRepository.findByOrderItemId(dto.getOrderItemId());
+		int activeQuantity = 0;
+		for (OrderReturn r : existingRequests) {
+			if (r.getStatus() != ReturnStatus.REJECTED) {
+				activeQuantity += (r.getQuantity() != null) ? r.getQuantity() : orderItem.getQuantity();
+			}
+		}
+
+		if (activeQuantity + requestedQuantity > orderItem.getQuantity()) {
+			throw new InvalidOrderStateException("Cannot return/exchange more items than were originally ordered. " +
+					"Previously requested: " + activeQuantity + ", remaining available: " + (orderItem.getQuantity() - activeQuantity) + ".");
 		}
 
 		// Validate exchange reason word count (max 250 words)
@@ -278,7 +309,7 @@ public class OrderReturnService implements IOrderReturnService {
 			variantName = targetVariant.getVariantName();
 		}
 
-		java.math.BigDecimal difference = targetPrice.subtract(originalPrice).multiply(java.math.BigDecimal.valueOf(orderItem.getQuantity()));
+		java.math.BigDecimal difference = targetPrice.subtract(originalPrice).multiply(java.math.BigDecimal.valueOf(requestedQuantity));
 
 		// Validate refund details if target is cheaper (admin owes customer)
 		boolean isQr = (dto.getQrCodeImage() != null && !dto.getQrCodeImage().isEmpty());
@@ -319,9 +350,9 @@ public class OrderReturnService implements IOrderReturnService {
 			}
 		}
 
-		// Exchange requires exactly 3 images.
-		if (activeImages.size() != 3) {
-			throw new InvalidOrderStateException("You must upload exactly 3 defect images for an exchange request.");
+		// Exchange requires between 1 and 3 images.
+		if (activeImages.isEmpty() || activeImages.size() > 3) {
+			throw new InvalidOrderStateException("You must upload between 1 and 3 defect images.");
 		}
 
 		// Upload QR Code image if QR method is selected for refund
@@ -348,6 +379,7 @@ public class OrderReturnService implements IOrderReturnService {
 		OrderReturn orderReturn = new OrderReturn();
 		orderReturn.setOrder(order);
 		orderReturn.setOrderItemId(dto.getOrderItemId());
+		orderReturn.setQuantity(requestedQuantity);
 		orderReturn.setRequestType(ReturnRequestType.EXCHANGE);
 		orderReturn.setCancelReason(dto.getExchangeReason());
 		orderReturn.setTargetSize(dto.getTargetSize());
@@ -665,7 +697,8 @@ public class OrderReturnService implements IOrderReturnService {
 		OrderItem exchangeItem = new OrderItem();
 		exchangeItem.setOrder(savedExchange);
 		exchangeItem.setProductVariantSize(targetSizeEntity);
-		exchangeItem.setQuantity(originalItem.getQuantity());
+		int exchangeQty = returnRequest.getQuantity() != null ? returnRequest.getQuantity() : originalItem.getQuantity();
+		exchangeItem.setQuantity(exchangeQty);
 		exchangeItem.setPrice(BigDecimal.ZERO);
 		exchangeItem.setSubTotal(BigDecimal.ZERO);
 
@@ -703,12 +736,13 @@ public class OrderReturnService implements IOrderReturnService {
 		}
 
 		Double priceDifference = 0.0;
+		int requestedQty = r.getQuantity() != null ? r.getQuantity() : productQuantity;
 		if (r.getRequestType() == ReturnRequestType.EXCHANGE && r.getTargetVariantId() != null && item != null) {
 			ProductVariant targetVariant = productVariantRepository.findById(r.getTargetVariantId()).orElse(null);
 			if (targetVariant != null) {
 				double targetPrice = targetVariant.getPrice().doubleValue();
 				double originalPrice = item.getPrice().doubleValue();
-				priceDifference = (targetPrice - originalPrice) * item.getQuantity();
+				priceDifference = (targetPrice - originalPrice) * requestedQty;
 			}
 		}
 
@@ -716,7 +750,7 @@ public class OrderReturnService implements IOrderReturnService {
 				r.getRequestType() != null ? r.getRequestType().name() : null, r.getCancelReason(),
 				r.getDefectImageUrl1(), r.getDefectImageUrl2(), r.getDefectImageUrl3(), r.getTargetSize(),
 				r.getTargetVariantId(), r.getStatus() != null ? r.getStatus().name() : null, r.getCreatedAt(),
-				r.getResolvedAt(), customerName, customerEmail, productName, productSize, productPrice, productQuantity,
+				r.getResolvedAt(), customerName, customerEmail, productName, productSize, productPrice, productQuantity, requestedQty,
 				r.getUpiId(), r.getUpiPhone(), r.getQrCodeImageUrl(), r.getBankAccountName(), r.getBankName(),
 				r.getBankIfsc(), r.getBankAccountNumber(), priceDifference);
 	}
@@ -759,7 +793,8 @@ public class OrderReturnService implements IOrderReturnService {
 
 		java.math.BigDecimal originalPrice = orderItem.getPrice();
 		java.math.BigDecimal targetPrice = targetVariant.getPrice();
-		java.math.BigDecimal difference = targetPrice.subtract(originalPrice);
+		int requestedQty = returnRequest.getQuantity() != null ? returnRequest.getQuantity() : orderItem.getQuantity();
+		java.math.BigDecimal difference = targetPrice.subtract(originalPrice).multiply(java.math.BigDecimal.valueOf(requestedQty));
 
 		if (difference.compareTo(java.math.BigDecimal.ZERO) <= 0) {
 			throw new InvalidOrderStateException("No additional payment is required for this exchange (target item is not more expensive).");
