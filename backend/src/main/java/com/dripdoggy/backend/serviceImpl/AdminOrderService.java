@@ -103,7 +103,7 @@ public class AdminOrderService implements IAdminOrderService {
             order.setPaymentStatus(PaymentStatus.SUCCESS);
 
             // Send exchange delivery email if this is an exchange order
-            if ("EXCHANGE".equalsIgnoreCase(order.getDeliveryMethod())) {
+            if (order.getDeliveryMethod() != null && "EXCHANGE".equalsIgnoreCase(order.getDeliveryMethod())) {
                 try {
                     User user = order.getUser();
                     if (user != null) {
