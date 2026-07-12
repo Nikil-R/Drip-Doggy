@@ -264,16 +264,24 @@ public class EmailService {
     }
 
     public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage) {
+        sendCustomerRefundCompletedEmail(toEmail, orderNumber, customerName, productName, proofImageUrl, proofImage, false);
+    }
+
+    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage, boolean wasExchangeFallback) {
         try {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
-            helper.setSubject("DripDoggy Refund Processed Successfully - " + orderNumber);
+            helper.setSubject(wasExchangeFallback ? "DripDoggy Exchange Refund Processed - " + orderNumber : "DripDoggy Refund Processed Successfully - " + orderNumber);
+            
+            String refundText = wasExchangeFallback 
+                    ? "Your refund for order <b>" + orderNumber + "</b> has been processed because the replacement item for your exchange request was out of stock."
+                    : "Your refund for order <b>" + orderNumber + "</b> has been successfully processed.";
             
             String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
-                    "<p>Your refund for order <b>" + orderNumber + "</b> has been successfully processed.</p>" +
+                    "<p>" + refundText + "</p>" +
                     "<p><b>Product:</b> " + productName + "</p>" +
                     "<p><b>Refund Proof Transaction Receipt:</b> <a href=\"" + proofImageUrl + "\">Click here to view transaction proof receipt</a></p>" +
                     "<p>Please allow 2-3 business days for the funds to reflect in your account.</p>" +
@@ -294,9 +302,14 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("DripDoggy Refund Processed Successfully - " + orderNumber);
+            message.setSubject(wasExchangeFallback ? "DripDoggy Exchange Refund Processed - " + orderNumber : "DripDoggy Refund Processed Successfully - " + orderNumber);
+            
+            String refundText = wasExchangeFallback
+                    ? "Your refund for order " + orderNumber + " has been processed because the replacement item for your exchange request was out of stock."
+                    : "Your refund for order " + orderNumber + " has been successfully processed.";
+            
             message.setText("Dear " + customerName + ",\n\n" +
-                    "Your refund for order " + orderNumber + " has been successfully processed.\n\n" +
+                    refundText + "\n\n" +
                     "Product: " + productName + "\n" +
                     "Refund Transaction Receipt URL: " + proofImageUrl + "\n\n" +
                     "Please allow 2-3 business days for the funds to reflect in your account.\n\n" +

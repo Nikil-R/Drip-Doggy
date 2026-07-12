@@ -62,13 +62,13 @@ public class AdminOrderService implements IAdminOrderService {
         }
 
         // 2. Terminal Delivered Check
-        if (currentStatus == DeliveryStatus.DELIVERED && targetStatus != DeliveryStatus.RETURN_INITIATED) {
-            throw new InvalidOrderStateException("Cannot change status of a delivered order except to initiate return.");
+        if (currentStatus == DeliveryStatus.DELIVERED && targetStatus != DeliveryStatus.RETURN_INITIATED && targetStatus != DeliveryStatus.EXCHANGE_INITIATED) {
+            throw new InvalidOrderStateException("Cannot change status of a delivered order except to initiate return or exchange.");
         }
 
-        // 3. Terminal Return Delivered Check
-        if (currentStatus == DeliveryStatus.RETURN_DELIVERED) {
-            throw new InvalidOrderStateException("Cannot change status of a returned order.");
+        // 3. Terminal Return/Exchange Delivered Check
+        if (currentStatus == DeliveryStatus.RETURN_DELIVERED || currentStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
+            throw new InvalidOrderStateException("Cannot change status of a returned/exchanged order.");
         }
 
         // 4. Sequential Transition Validations
@@ -106,7 +106,10 @@ public class AdminOrderService implements IAdminOrderService {
                 currentStatus == DeliveryStatus.DELIVERED || currentStatus == DeliveryStatus.CANCELLED ||
                 currentStatus == DeliveryStatus.RETURN_INITIATED || currentStatus == DeliveryStatus.RETURN_PICKUPED ||
                 currentStatus == DeliveryStatus.RETURN_SHIPPED || currentStatus == DeliveryStatus.RETURN_OUT_OF_DELIVERY ||
-                currentStatus == DeliveryStatus.RETURN_DELIVERED) {
+                currentStatus == DeliveryStatus.RETURN_DELIVERED ||
+                currentStatus == DeliveryStatus.EXCHANGE_INITIATED || currentStatus == DeliveryStatus.EXCHANGE_PICKUPED ||
+                currentStatus == DeliveryStatus.EXCHANGE_SHIPPED || currentStatus == DeliveryStatus.EXCHANGE_OUT_OF_DELIVERY ||
+                currentStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
                 throw new InvalidOrderStateException("Cannot cancel order at this stage.");
             }
             // Cannot cancel if courier tracking ID exists
@@ -118,21 +121,41 @@ public class AdminOrderService implements IAdminOrderService {
             if (currentStatus != DeliveryStatus.DELIVERED) {
                 throw new InvalidOrderStateException("Can only transition to RETURN_INITIATED from DELIVERED.");
             }
+        } else if (targetStatus == DeliveryStatus.EXCHANGE_INITIATED) {
+            if (currentStatus != DeliveryStatus.DELIVERED) {
+                throw new InvalidOrderStateException("Can only transition to EXCHANGE_INITIATED from DELIVERED.");
+            }
         } else if (targetStatus == DeliveryStatus.RETURN_PICKUPED) {
             if (currentStatus != DeliveryStatus.RETURN_INITIATED) {
                 throw new InvalidOrderStateException("Can only transition to RETURN_PICKUPED from RETURN_INITIATED.");
+            }
+        } else if (targetStatus == DeliveryStatus.EXCHANGE_PICKUPED) {
+            if (currentStatus != DeliveryStatus.EXCHANGE_INITIATED) {
+                throw new InvalidOrderStateException("Can only transition to EXCHANGE_PICKUPED from EXCHANGE_INITIATED.");
             }
         } else if (targetStatus == DeliveryStatus.RETURN_SHIPPED) {
             if (currentStatus != DeliveryStatus.RETURN_PICKUPED) {
                 throw new InvalidOrderStateException("Can only transition to RETURN_SHIPPED from RETURN_PICKUPED.");
             }
+        } else if (targetStatus == DeliveryStatus.EXCHANGE_SHIPPED) {
+            if (currentStatus != DeliveryStatus.EXCHANGE_PICKUPED) {
+                throw new InvalidOrderStateException("Can only transition to EXCHANGE_SHIPPED from EXCHANGE_PICKUPED.");
+            }
         } else if (targetStatus == DeliveryStatus.RETURN_OUT_OF_DELIVERY) {
             if (currentStatus != DeliveryStatus.RETURN_SHIPPED) {
                 throw new InvalidOrderStateException("Can only transition to RETURN_OUT_OF_DELIVERY from RETURN_SHIPPED.");
             }
+        } else if (targetStatus == DeliveryStatus.EXCHANGE_OUT_OF_DELIVERY) {
+            if (currentStatus != DeliveryStatus.EXCHANGE_SHIPPED) {
+                throw new InvalidOrderStateException("Can only transition to EXCHANGE_OUT_OF_DELIVERY from EXCHANGE_SHIPPED.");
+            }
         } else if (targetStatus == DeliveryStatus.RETURN_DELIVERED) {
             if (currentStatus != DeliveryStatus.RETURN_OUT_OF_DELIVERY && currentStatus != DeliveryStatus.RETURN_SHIPPED) {
                 throw new InvalidOrderStateException("Can only transition to RETURN_DELIVERED from RETURN_OUT_OF_DELIVERY or RETURN_SHIPPED.");
+            }
+        } else if (targetStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
+            if (currentStatus != DeliveryStatus.EXCHANGE_OUT_OF_DELIVERY && currentStatus != DeliveryStatus.EXCHANGE_SHIPPED) {
+                throw new InvalidOrderStateException("Can only transition to EXCHANGE_DELIVERED from EXCHANGE_OUT_OF_DELIVERY or EXCHANGE_SHIPPED.");
             }
         } else {
             throw new InvalidOrderStateException("Unsupported status transition: " + targetStatus);

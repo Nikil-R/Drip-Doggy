@@ -18,6 +18,7 @@ public class OrderResponseDto {
     private String customerEmail;
     private String customerName;
     private String destinationAddress;
+    private BigDecimal subTotal;
 
     // Constructors
     public OrderResponseDto() {
@@ -151,5 +152,20 @@ public class OrderResponseDto {
 
     public void setDestinationAddress(String destinationAddress) {
         this.destinationAddress = destinationAddress;
+    }
+
+    public BigDecimal getSubTotal() {
+        if (subTotal == null && totalAmount != null) {
+            BigDecimal disc = discount != null ? discount : BigDecimal.ZERO;
+            BigDecimal tx = tax != null ? tax : BigDecimal.ZERO;
+            BigDecimal ship = shippingFee != null ? shippingFee : BigDecimal.ZERO;
+            BigDecimal plat = platformFee != null ? platformFee : BigDecimal.ZERO;
+            return totalAmount.add(disc).subtract(tx).subtract(ship).subtract(plat);
+        }
+        return subTotal;
+    }
+
+    public void setSubTotal(BigDecimal subTotal) {
+        this.subTotal = subTotal;
     }
 }
