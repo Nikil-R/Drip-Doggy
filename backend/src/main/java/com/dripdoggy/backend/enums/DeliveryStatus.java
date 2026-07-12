@@ -1,6 +1,7 @@
 package com.dripdoggy.backend.enums;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 @JsonFormat(with = JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_VALUES)
 public enum DeliveryStatus {
@@ -22,5 +23,19 @@ public enum DeliveryStatus {
 	EXCHANGE_PICKUPED,
 	EXCHANGE_SHIPPED,
 	EXCHANGE_OUT_OF_DELIVERY,
-	EXCHANGE_DELIVERED
+	EXCHANGE_DELIVERED;
+
+	@JsonCreator
+	public static DeliveryStatus fromString(String value) {
+		if (value == null || value.trim().isEmpty()) {
+			return null;
+		}
+		// Convert spaces and hyphens to underscores, and trim/uppercase for standard enum parsing
+		String normalized = value.trim().toUpperCase().replace(" ", "_").replace("-", "_");
+		try {
+			return DeliveryStatus.valueOf(normalized);
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Unknown delivery status: " + value);
+		}
+	}
 }
