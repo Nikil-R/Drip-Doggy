@@ -8,7 +8,7 @@ import { AddressesTab } from "../components/account/AddressesTab";
 import { WishlistTab } from "../components/account/WishlistTab";
 import type { AddressItem } from "../types/account";
 import { addressApi } from "../lib/address-api";
-import { wishlistApi } from "../lib/wishlist-sync";
+import { wishlistApi } from "../lib/wishlist-api";
 import { syncWishlist } from "../lib/wishlist-sync";
 import { productApi } from "../lib/product-api";
 
@@ -241,9 +241,6 @@ export function Profile() {
               <AddressesTab addresses={addresses} setAddresses={setAddresses} profile={profile} />
             )}
             {activeTab === "wishlist" && (
-              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
-                onToggleArchive={toggleWishlistArchive}
-              />
               <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
                 onToggleArchive={toggleWishlistArchive}
               />
