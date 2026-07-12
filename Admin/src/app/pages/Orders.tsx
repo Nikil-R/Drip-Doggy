@@ -69,6 +69,15 @@ interface Order {
     ifscCode: string;
     submittedAt?: string;
   };
+  // Stage timestamp fields from backend
+  stageTimestamps?: {
+    placedAt?: string;
+    processingAt?: string;
+    packedAt?: string;
+    shippedAt?: string;
+    deliveredAt?: string;
+    cancelledAt?: string;
+  };
 }
 
 const initialOrders: Order[] = [
@@ -343,6 +352,7 @@ function StatusBadge({ val }: { val: string }) {
     Delivered: "bg-green-50 text-green-700 border-green-200",
     Shipped: "bg-blue-50 text-blue-700 border-blue-200",
     "Out for Delivery": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    Delivery: "bg-indigo-50 text-indigo-700 border-indigo-200",
     Processing: "bg-amber-50 text-amber-700 border-amber-200",
     Pending: "bg-neutral-50 text-neutral-700 border-neutral-200",
     Cancelled: "bg-red-50 text-red-700 border-red-200",
@@ -352,6 +362,7 @@ function StatusBadge({ val }: { val: string }) {
     Delivered: <CheckCircle2 className="w-3.5 h-3.5" />,
     Shipped: <Truck className="w-3 h-3" />,
     "Out for Delivery": <Truck className="w-3 h-3 text-indigo-600 animate-pulse" />,
+    Delivery: <Truck className="w-3 h-3 text-indigo-600 animate-pulse" />,
     Processing: <Clock className="w-3 h-3" />,
     Pending: <Clock className="w-3 h-3" />,
     Cancelled: <XCircle className="w-3 h-3" />,
@@ -367,7 +378,7 @@ function StatusBadge({ val }: { val: string }) {
 import { adminOrderApi, AdminOrderResponse } from "../lib/admin-order-api";
 
 export function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const { token } = useAuthStore();
 
   useEffect(() => {
@@ -376,7 +387,12 @@ export function OrdersPage() {
     async function loadBackendOrders() {
       try {
         const orderResponses = await adminOrderApi.getAllOrders(token!);
-        if (!orderResponses || orderResponses.length === 0) return;
+        console.log("getAllOrders raw response:", orderResponses);
+        if (!orderResponses || orderResponses.length === 0) {
+          console.log("No orders returned from API");
+          setOrders([]);
+          return;
+        }
 
         const backendOrders: Order[] = [];
         let indexNo = initialOrders.length + 1;
@@ -389,14 +405,20 @@ export function OrdersPage() {
 
           let mappedStatus: Order["status"] = "Placed";
           const sUpper = oRes.deliveryStatus?.toUpperCase() || "";
+          let hasActiveReturnRequest = false;
+
           if (sUpper === "DELIVERED") mappedStatus = "Delivered";
-          else if (sUpper === "OUT_FOR_DELIVERY" || sUpper === "OUT FOR DELIVERY") mappedStatus = "Out for Delivery";
+          else if (sUpper === "OUT_FOR_DELIVERY" || sUpper === "OUT FOR DELIVERY" || sUpper === "DELIVERY") mappedStatus = "Delivery";
           else if (sUpper === "SHIPPED") mappedStatus = "Shipped";
           else if (sUpper === "PACKED") mappedStatus = "Packed";
           else if (sUpper === "PROCESSING") mappedStatus = "Processing";
           else if (sUpper === "PLACED" || sUpper === "PENDING") mappedStatus = "Placed";
           else if (sUpper === "CANCELLED" || sUpper === "CANCELED") mappedStatus = "Cancelled";
-          else if (sUpper === "RETURN_REQUESTED") mappedStatus = "Return Requested";
+          else if (sUpper === "RETURN_REQUESTED" || sUpper.startsWith("RETURN_") || sUpper.startsWith("EXCHANGE_")) {
+            // Under return request, keep parent status as Delivered but flag the active return request
+            mappedStatus = "Delivered";
+            hasActiveReturnRequest = true;
+          }
 
           const itemsList: OrderItem[] = oRes.items.map((item: any) => ({
             name: item.name || item.productName || "Unknown Product",
@@ -433,19 +455,22 @@ export function OrdersPage() {
             taxAmount: oRes.tax,
             platformAmount: oRes.platformFee,
             shippingAmount: oRes.shippingFee,
-            totalAmount: oRes.totalAmount
+            totalAmount: oRes.totalAmount,
+            hasActiveReturnRequest,
+            // Stage timestamps from backend for Order Progress timeline
+            stageTimestamps: {
+              placedAt: oRes.pendingAt || oRes.orderTimestamp || undefined,
+              processingAt: oRes.processingAt || undefined,
+              packedAt: undefined, // Backend does not track packed timestamp separately
+              shippedAt: oRes.shippedAt || undefined,
+              deliveredAt: oRes.deliveredAt || undefined,
+              cancelledAt: oRes.cancelledAt || undefined
+            }
           } as any);
         }
 
-        setOrders(prev => {
-          const merged = [...backendOrders, ...initialOrders];
-          const seen = new Set();
-          return merged.filter(o => {
-            if (seen.has(o.id)) return false;
-            seen.add(o.id);
-            return true;
-          });
-        });
+        console.log("Setting backendOrders mapped values:", backendOrders);
+        setOrders(backendOrders);
       } catch (err) {
         console.error("Failed to load dynamic backend orders:", err);
       }
@@ -597,7 +622,7 @@ export function OrdersPage() {
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
       if (activeTab === "Completed" && o.status !== "Delivered") return false;
-      if (activeTab === "Processing" && o.status !== "Processing" && o.status !== "Packed" && o.status !== "Shipped" && o.status !== "Out for Delivery") return false;
+      if (activeTab === "Processing" && o.status !== "Processing" && o.status !== "Packed" && o.status !== "Shipped" && o.status !== "Delivery") return false;
       if (activeTab === "Canceled" && o.status !== "Cancelled") return false;
       if (activeTab === "Pending" && o.status !== "Placed") return false;
       if (dateRange.start && o.date < dateRange.start) return false;
@@ -626,7 +651,7 @@ export function OrdersPage() {
       total: filtered.reduce((sum, o) => sum + getOrderTotal(o), 0),
       allTimeTotal: all.reduce((sum, o) => sum + getOrderTotal(o), 0),
       delivered: filtered.filter((o) => o.status === "Delivered").length,
-      processing: filtered.filter((o) => o.status === "Processing" || o.status === "Packed" || o.status === "Shipped" || o.status === "Out for Delivery").length,
+      processing: filtered.filter((o) => o.status === "Processing" || o.status === "Packed" || o.status === "Shipped" || o.status === "Delivery").length,
       pending: filtered.filter((o) => o.status === "Placed").length,
       cancelled: filtered.filter((o) => o.status === "Cancelled").length,
       totalItems: filtered.reduce((sum, o) => sum + getOrderQty(o), 0),
@@ -635,7 +660,7 @@ export function OrdersPage() {
   }, [filteredOrders, orders]);
 
   const triggerStageChangeConfirm = (status: Order["status"]) => {
-    const stages: Order["status"][] = ["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+    const stages: Order["status"][] = ["Placed", "Processing", "Packed", "Shipped", "Delivery", "Delivered"];
     const currentIdx = stages.indexOf(activeOrderDetails?.status || "Placed");
     const targetIdx = stages.indexOf(status);
 
@@ -659,7 +684,7 @@ export function OrdersPage() {
     try {
       // Map visual status label to uppercase backend status strings
       let backendStatus = status.toUpperCase();
-      if (status === "Out for Delivery" || backendStatus === "OUT FOR DELIVERY") {
+      if (status === "Delivery" || status === "Out for Delivery" || backendStatus === "DELIVERY" || backendStatus === "OUT FOR DELIVERY" || backendStatus.replace(/ /g, "_") === "OUT_FOR_DELIVERY") {
         backendStatus = "OUT_FOR_DELIVERY";
       }
       
@@ -1415,7 +1440,16 @@ export function OrdersPage() {
                 </td>
                 <td className="p-4 font-black text-[11px] text-[#382d24]">{RS}{getOrderTotal(order).toLocaleString()}</td>
                 <td className="p-4"><PaymentBadge val={order.payment} /></td>
-                <td className="p-4"><StatusBadge val={order.status} /></td>
+                <td className="p-4">
+                  <div className="flex flex-col items-start gap-1">
+                    <StatusBadge val={order.status} />
+                    {(order as any).hasActiveReturnRequest && (
+                      <span className="inline-block text-[8px] font-black tracking-widest uppercase bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-sm">
+                        Return Requested
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="p-4 text-[9.5px] text-[#736e64] font-semibold">{order.date}</td>
                 <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-1.5">
@@ -1496,7 +1530,14 @@ export function OrdersPage() {
                 <span className="text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase">Order Details</span>
                 <h2 className="text-[18px] font-[950] text-[#224870] uppercase tracking-widest mt-0.5">{activeOrderDetails.id}</h2>
                 <div className="flex items-center gap-3 mt-1.5">
-                  <StatusBadge val={activeOrderDetails.status} />
+                  <div className="flex flex-col items-start gap-1">
+                    <StatusBadge val={activeOrderDetails.status} />
+                    {(activeOrderDetails as any).hasActiveReturnRequest && (
+                      <span className="inline-block text-[8px] font-black tracking-widest uppercase bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-sm">
+                        Return Requested
+                      </span>
+                    )}
+                  </div>
                   <PaymentBadge val={activeOrderDetails.payment} />
                 </div>
               </div>
@@ -1594,37 +1635,7 @@ export function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* Financial Actions Section */}
-                  {!activeOrderDetails.returnRequest && (
-                    <div className="mt-3 space-y-2">
-                      <span className="text-[7.5px] font-bold tracking-[0.2em] text-neutral-400 uppercase block">Financial Actions</span>
-                      <div className="border border-neutral-200/80 p-3 bg-background/50 rounded-sm text-[9px] font-bold">
-                        {activeOrderDetails.payment === "Refunded" ? (
-                          <div className="flex items-center gap-2 text-green-700">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span className="uppercase tracking-wider">Refund Completed — Amount credited via bank transfer</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <p className="text-[9px] text-[#615e56] font-semibold leading-relaxed">
-                              {activeOrderDetails.payment === "Paid"
-                                ? "Initiate a refund to transfer the order amount directly to the customer's bank account."
-                                : "Payment is yet to be collected. Refund option is unavailable for unpaid orders."
-                              }
-                            </p>
-                            {activeOrderDetails.payment === "Paid" && (
-                              <button
-                                onClick={() => setShowRefundModal(true)}
-                                className="w-full py-2 px-3 text-[8.5px] font-bold uppercase tracking-wider rounded-sm transition-all border border-red-600 bg-red-600 hover:bg-red-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
-                              >
-                                <Banknote className="w-3.5 h-3.5" /> Initiate Refund — {RS}{getOrderTotal(activeOrderDetails).toLocaleString()}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+
                 </div>
               </div>
 
@@ -1635,9 +1646,9 @@ export function OrdersPage() {
                   <div className="border border-neutral-200 p-6 bg-[#224870]/5 rounded-sm space-y-6">
                     
                     {/* Stepper Timeline */}
-                    <div className="relative flex justify-between items-center max-w-xl mx-auto px-4 h-16">
+                    <div className="relative flex justify-between items-start max-w-xl mx-auto px-4 pt-2 pb-4">
                       {(() => {
-                        const stages: Order["status"][] = ["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+                        const stages: Order["status"][] = ["Placed", "Processing", "Packed", "Shipped", "Delivery", "Delivered"];
                         const currentIdx = stages.indexOf(activeOrderDetails.status);
                         return (
                           <>
@@ -1650,12 +1661,33 @@ export function OrdersPage() {
                         );
                       })()}
                       
-                      {(["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"] as Order["status"][]).map((st, idx) => {
-                        const stages = ["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+                    {(["Placed", "Processing", "Packed", "Shipped", "Delivery", "Delivered"] as Order["status"][]).map((st, idx) => {
+                        const stages = ["Placed", "Processing", "Packed", "Shipped", "Delivery", "Delivered"];
                         const isActive = activeOrderDetails.status === st;
                         const currentIdx = stages.indexOf(activeOrderDetails.status);
                         const isCompleted = currentIdx > idx && activeOrderDetails.status !== "Cancelled";
                         const isDisabled = activeOrderDetails.status === "Cancelled" || idx <= currentIdx;
+
+                        // Resolve which timestamp to display under each stage label
+                        const ts = (activeOrderDetails as any).stageTimestamps;
+                        const stageTs: Record<string, string | undefined> = {
+                          "Placed":      ts?.placedAt,
+                          "Processing":  ts?.processingAt,
+                          "Packed":      ts?.packedAt || (ts?.processingAt ? undefined : undefined),
+                          "Shipped":     ts?.shippedAt,
+                          "Delivery":    ts?.shippedAt,
+                          "Delivered":   ts?.deliveredAt,
+                        };
+                        const stageTime = stageTs[st];
+                        // Format: show only date + time if present
+                        const formattedTime = stageTime
+                          ? (() => {
+                              const d = new Date(stageTime.replace(" ", "T"));
+                              if (isNaN(d.getTime())) return stageTime.substring(0, 16);
+                              return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) +
+                                     " " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+                            })()
+                          : null;
                         
                         return (
                           <button
@@ -1678,6 +1710,14 @@ export function OrdersPage() {
                             }`}>
                               {st}
                             </span>
+                            {/* Date/time stamp below stage label */}
+                            {(isCompleted || isActive) && formattedTime ? (
+                              <span className="text-[7px] font-semibold text-neutral-400 mt-0.5 whitespace-nowrap">
+                                {formattedTime}
+                              </span>
+                            ) : (
+                              <span className="text-[7px] text-neutral-300 mt-0.5">—</span>
+                            )}
                           </button>
                         );
                       })}
@@ -1732,15 +1772,17 @@ export function OrdersPage() {
                         </div>
                       </div>
 
-                      {/* Dangerous Actions / Cancellation */}
-                      <div className="flex flex-col justify-end">
-                        <button
-                          onClick={() => triggerStageChangeConfirm("Cancelled")}
-                          className="w-full py-2 px-4 text-[8.5px] font-bold uppercase tracking-wider rounded-sm transition-all border border-red-600 bg-red-600 hover:bg-red-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          <XCircle className="w-3.5 h-3.5" /> Cancel Entire Order
-                        </button>
-                      </div>
+                      {/* Dangerous Actions / Cancellation — hidden for completed/delivered orders */}
+                      {activeOrderDetails.status !== "Delivered" && activeOrderDetails.status !== "Cancelled" && (
+                        <div className="flex flex-col justify-end">
+                          <button
+                            onClick={() => triggerStageChangeConfirm("Cancelled")}
+                            className="w-full py-2 px-4 text-[8.5px] font-bold uppercase tracking-wider rounded-sm transition-all border border-red-600 bg-red-600 hover:bg-red-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                          >
+                            <XCircle className="w-3.5 h-3.5" /> Cancel Entire Order
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -1785,12 +1827,11 @@ export function OrdersPage() {
                           <span className="md:hidden text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Qty</span>
                           <span className="text-[11px] font-extrabold text-[#382d24]">×{itemQty}</span>
                         </div>
-                        {/* Total + Unit Price */}
+                        {/* Total — no unit price bracket */}
                         <div className="flex md:block items-center justify-between md:text-right">
                           <span className="md:hidden text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Total</span>
                           <div>
                             <span className="text-[12px] font-black text-[#382d24]">{RS}{(itemPrice * itemQty).toLocaleString()}</span>
-                            <span className="text-[8.5px] text-neutral-400 font-semibold block md:block">({RS}{itemPrice.toLocaleString()} ea)</span>
                           </div>
                         </div>
                       </div>

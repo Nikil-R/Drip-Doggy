@@ -82,10 +82,10 @@ export const orderApi = {
     return response.data;
   },
 
-  getCustomerOrders: async (customerId: number): Promise<any[]> => {
-    const url = `${BASE_URL}/dripdoggy/api/admin/customers/${customerId}`;
+  getCustomerOrders: async (customerId?: number): Promise<any[]> => {
+    const url = `${BASE_URL}/dripdoggy/api/customer/orders`;
     const response = await axios.get(url, { headers: getHeaders() });
-    return response.data?.data?.recentOrders || [];
+    return response.data || [];
   },
 
   cancelOrder: async (orderId: string, reason: string): Promise<any> => {

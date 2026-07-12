@@ -65,6 +65,7 @@ interface ReturnRequest {
   timeline: StatusTimeline[];
   receiptScreenshot?: string | null;
   emailSent?: boolean;
+  orderDbId?: number;
 }
 
 const DELIVERY_STAGES: { key: DeliveryStatus; label: string; icon: React.ComponentType<any> }[] = [
@@ -83,51 +84,12 @@ const APPROVAL_META: Record<ReturnStatus, { bg: string; text: string; border: st
   "COMPLETED": { bg: "bg-green-50",   text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Completed" },
 };
 
-const initialReturns: ReturnRequest[] = [
-  {
-    id: "RET-1082", orderId: "#DD-6545", customerName: "Ananya Sharma",
-    email: "ananya.s@gmail.com", phone: "+91 98765 43210", date: "2026-06-25", amount: 5800,
-    reason: "Size is too large, fabric feels heavy.",
-    approvalStatus: "PENDING",
-    deliveryStatus: "RETURN_INITIATED",
-    items: [{ name: "Structured Canvas Jacket", sku: "DD-STR-001", size: "L", qty: 1, price: 5800, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop" }],
-    refundMethod: "bank_transfer",
-    refundDetails: { accountHolderName: "Ananya Sharma", bankName: "State Bank of India", accountNumber: "12345678901", ifscCode: "SBIN0000001" },
-    timeline: [{ status: "PENDING", timestamp: "2026-06-25 14:30", note: "Customer submitted return request online. Status set to Pending." }]
-  },
-  {
-    id: "RET-1081", orderId: "#DD-6543", customerName: "Rohan Mehta",
-    email: "rohan.mehta@yahoo.com", phone: "+91 91234 56789", date: "2026-06-24", amount: 3200,
-    reason: "Colour discrepancy from website photo.",
-    approvalStatus: "APPROVED",
-    deliveryStatus: "OUT_FOR_PICKUP",
-    items: [{ name: "Everyday Relaxed Shift Dress", sku: "DD-EVE-002", size: "M", qty: 1, price: 3200, image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop" }],
-    refundMethod: "upi",
-    refundDetails: { upiId: "rohanmehta@okaxis", phoneNumber: "+91 91234 56789" },
-    timeline: [
-      { status: "PENDING", timestamp: "2026-06-24 10:15", note: "Customer submitted return request." },
-      { status: "APPROVED", timestamp: "2026-06-24 16:00", note: "Admin approved return request." },
-      { status: "OUT_FOR_PICKUP", timestamp: "2026-06-25 11:00", note: "Courier package collected from customer." }
-    ]
-  },
-  {
-    id: "RET-1080", orderId: "#DD-6541", customerName: "Priya Patel",
-    email: "priya.p@gmail.com", phone: "+91 98989 89898", date: "2026-06-22", amount: 4500,
-    reason: "Defective stitching on left side seam.",
-    approvalStatus: "COMPLETED",
-    deliveryStatus: "REFUND_COMPLETED",
-    items: [{ name: "Modern Oversized Knitwear", sku: "DD-MOD-003", size: "S", qty: 1, price: 4500, image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop" }],
-    refundMethod: "qr_code",
-    refundDetails: { qrCodeImage: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?q=80&w=200&auto=format&fit=crop" },
-    timeline: [
-      { status: "PENDING", timestamp: "2026-06-22 09:00", note: "Return request submitted." },
-      { status: "APPROVED", timestamp: "2026-06-22 13:00", note: "Admin approved request." },
-      { status: "OUT_FOR_PICKUP", timestamp: "2026-06-23 14:00", note: "Pickup completed." },
-      { status: "RECEIVED_AT_WAREHOUSE", timestamp: "2026-06-25 16:30", note: "Received at warehouse." },
-      { status: "COMPLETED", timestamp: "2026-06-26 12:00", note: "Refund paid out." }
-    ]
-  }
-];
+// Helper function to format return ID in the frontend (e.g. 4 -> RET-004)
+function formatReturnId(id: string | number) {
+  const numericId = Number(id);
+  if (isNaN(numericId)) return String(id);
+  return `RET-${String(numericId).padStart(3, "0")}`;
+}
 
 function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
   const m = APPROVAL_META[status];
@@ -142,7 +104,7 @@ function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
 import { adminOrderApi, AdminReturnResponse } from "../lib/admin-order-api";
 
 export function ReturnsPage() {
-  const [returns, setReturns] = useState<ReturnRequest[]>(initialReturns);
+  const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"All" | "Pending Review" | "Active Logistics" | "Completed">("All");
@@ -150,6 +112,8 @@ export function ReturnsPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailStatusMessage, setEmailStatusMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingStageChange, setPendingStageChange] = useState<{ id: string; stage: DeliveryStatus } | null>(null);
   const ITEMS_PER_PAGE = 5;
   const { token } = useAuthStore();
 
@@ -157,8 +121,24 @@ export function ReturnsPage() {
     if (!token) return;
     async function load() {
       try {
-        const backendRequests = await adminOrderApi.getAllReturnRequests(token!);
+        const [backendRequests, allOrders] = await Promise.all([
+          adminOrderApi.getAllReturnRequests(token!),
+          adminOrderApi.getAllOrders(token!)
+        ]);
         if (!backendRequests) return;
+
+        // Map order database ID to its delivery status for tracking manual stages across refreshes
+        const orderStatusMap = new Map<number, string>();
+        if (allOrders) {
+          allOrders.forEach(o => {
+            // Find database ID corresponding to order if possible, or build lookup
+            // Typically order matches orderNumber/id
+            // Let's index by orderNumber
+            if (o.orderNumber) {
+              orderStatusMap.set(Number(o.orderNumber.replace("#DD-", "").replace("DD-", "")), o.deliveryStatus);
+            }
+          });
+        }
 
         // Filter for RETURN types
         const returnRequests = backendRequests.filter(r => r.requestType === "RETURN");
@@ -184,6 +164,24 @@ export function ReturnsPage() {
             mappedDelivery = "REFUND_COMPLETED";
           }
 
+          // If the parent order exists and has progressed to active logistics stages, override mappedDelivery
+          if (r.orderId) {
+            const orderDelivery = orderStatusMap.get(Number(r.orderId));
+            if (orderDelivery) {
+              const oUpper = orderDelivery.toUpperCase();
+              if (oUpper === "RETURN_PICKUPED" || oUpper === "OUT_FOR_PICKUP") {
+                mappedDelivery = "OUT_FOR_PICKUP";
+                if (mappedApproval === "PENDING") mappedApproval = "APPROVED";
+              } else if (oUpper === "RETURN_SHIPPED" || oUpper === "RECEIVED_AT_WAREHOUSE") {
+                mappedDelivery = "RECEIVED_AT_WAREHOUSE";
+                mappedApproval = "RECEIVED";
+              } else if (oUpper === "RETURN_DELIVERED" || oUpper === "REFUND_COMPLETED") {
+                mappedDelivery = "REFUND_COMPLETED";
+                mappedApproval = "COMPLETED";
+              }
+            }
+          }
+
           let mappedMethod: "qr_code" | "upi" | "bank_transfer" = "bank_transfer";
           if (r.qrCodeImageUrl) mappedMethod = "qr_code";
           else if (r.upiId || r.upiPhone) mappedMethod = "upi";
@@ -193,7 +191,7 @@ export function ReturnsPage() {
             orderId: r.orderNumber,
             customerName: r.customerName || "Customer",
             email: r.customerEmail || "",
-            phone: r.customerEmail || "",
+            phone: r.upiPhone || r.phone || "",
             date: r.createdAt?.split("T")?.[0] || "2026-07-08",
             amount: r.productPrice * r.productQuantity,
             reason: r.cancelReason || "No reason provided",
@@ -220,19 +218,12 @@ export function ReturnsPage() {
             timeline: [
               { status: "PENDING", timestamp: r.createdAt || "2026-07-08 12:00", note: "Return request submitted." },
               r.resolvedAt ? { status: "COMPLETED", timestamp: r.resolvedAt, note: "Return request resolved." } : null
-            ].filter(Boolean) as any[]
+            ].filter(Boolean) as any[],
+            orderDbId: r.orderId
           };
         });
 
-        setReturns(prev => {
-          const merged = [...loaded, ...initialReturns];
-          const seen = new Set<string>();
-          return merged.filter(r => {
-            if (seen.has(r.id)) return false;
-            seen.add(r.id);
-            return true;
-          });
-        });
+        setReturns(loaded);
       } catch (e) {
         console.error("Failed to load return requests:", e);
       }
@@ -255,6 +246,8 @@ export function ReturnsPage() {
 
   // Handles transition of administrative status
   const updateApprovalStatus = async (id: string, s: ReturnStatus) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Map visual approved state to status endpoints
       if (s === "APPROVED" || s === "REJECTED") {
@@ -282,24 +275,41 @@ export function ReturnsPage() {
       }));
     } catch (e) {
       console.error("Failed to update return approval status:", e);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Handles updating physical logistics timeline tracking
   const updateDeliveryStatus = async (id: string, ds: DeliveryStatus) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
-      // If setting resolved states like received at warehouse, we map to status endpoint updates
-      if (ds === "RECEIVED_AT_WAREHOUSE") {
-        await adminOrderApi.updateReturnStatus(Number(id), "RECEIVED", token!);
+      const returnRequest = returns.find(r => r.id === id);
+      const orderDbId = returnRequest?.orderDbId;
+
+      // Map admin delivery stages to Order DeliveryStatus backend enums
+      const backendStatusMap: Partial<Record<DeliveryStatus, string>> = {
+        "OUT_FOR_PICKUP": "RETURN_PICKUPED",
+        "RECEIVED_AT_WAREHOUSE": "RETURN_SHIPPED", // or RETURN_SHIPPED/RETURN_OUT_OF_DELIVERY transitions
+        "REFUND_COMPLETED": "RETURN_DELIVERED"
+      };
+      const backendStatus = backendStatusMap[ds];
+
+      if (backendStatus && orderDbId) {
+        await adminOrderApi.updateOrderStatus(orderDbId, backendStatus, token!);
       }
+
       setReturns(prev => prev.map(r => {
         if (r.id !== id) return r;
         const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
         
-        // Auto transition approval status to RECEIVED once courier drops it back
+        // Auto transition approval status based on delivery stage
         let appStatus = r.approvalStatus;
         if (ds === "RECEIVED_AT_WAREHOUSE" && appStatus === "APPROVED") {
           appStatus = "RECEIVED";
+        } else if (ds === "REFUND_COMPLETED") {
+          appStatus = "COMPLETED";
         }
 
         return {
@@ -311,7 +321,17 @@ export function ReturnsPage() {
       }));
     } catch (e) {
       console.error("Failed to update return logistics delivery status:", e);
+    } finally {
+      setIsSubmitting(false);
+      setPendingStageChange(null);
     }
+  };
+
+  // Called when admin clicks a manual logistics stage node
+  const handleStageClick = (id: string, stage: DeliveryStatus) => {
+    // RETURN_INITIATED is auto-set on creation, RETURN_APPROVED is auto-set on approval — non-clickable
+    if (stage === "RETURN_INITIATED" || stage === "RETURN_APPROVED") return;
+    setPendingStageChange({ id, stage });
   };
 
   const uploadProof = (id: string, url: string) => setReturns(prev => prev.map(r => r.id === id ? { ...r, receiptScreenshot: url } : r));
@@ -442,7 +462,7 @@ export function ReturnsPage() {
           <tbody className="divide-y divide-neutral-100/80">
             {paginated.map(ret => (
               <tr key={ret.id} onClick={() => setSelectedId(ret.id)} className="hover:bg-[#224870]/5 transition-colors cursor-pointer">
-                <td className="p-4 font-mono text-[10.5px] text-[#224870] font-black">{ret.id}</td>
+                <td className="p-4 font-mono text-[10.5px] text-[#224870] font-black">{formatReturnId(ret.id)}</td>
                 <td className="p-4 font-mono text-[10px] text-neutral-600 font-bold">{ret.orderId}</td>
                 <td className="p-4">
                   <p className="font-bold text-[11px] text-[#382d24]">{ret.customerName}</p>
@@ -505,7 +525,7 @@ export function ReturnsPage() {
             <div className="sticky top-0 bg-white z-20 px-6 py-5 border-b border-neutral-200/60 flex items-start justify-between">
               <div>
                 <span className="text-[8.5px] font-bold tracking-[0.3em] text-[#615e56] uppercase block">Return Request</span>
-                <h2 className="text-lg font-bold text-[#382d24] uppercase tracking-tight mt-0.5">{active.id}</h2>
+                <h2 className="text-lg font-bold text-[#382d24] uppercase tracking-tight mt-0.5">{formatReturnId(active.id)}</h2>
                 <p className="text-[10px] text-[#615e56] font-semibold mt-1">Order {active.orderId} · {active.date}</p>
               </div>
               <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center border border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-[#382d24] bg-transparent cursor-pointer rounded-full transition-all">
@@ -523,13 +543,12 @@ export function ReturnsPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[12px] text-[#382d24]">{active.customerName}</p>
                   <p className="text-[9.5px] text-[#615e56] mt-0.5">{active.email}</p>
-                  <p className="text-[9.5px] text-[#615e56]">{active.phone}</p>
+                  {active.phone && active.phone !== active.email && (
+                    <p className="text-[9.5px] text-[#615e56]">{active.phone}</p>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <ApprovalStatusBadge status={active.approvalStatus} />
-                  <span className="text-[8px] font-black uppercase bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-sm">
-                    {active.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
-                  </span>
                 </div>
               </div>
 
@@ -593,13 +612,44 @@ export function ReturnsPage() {
                       const stageIdx = DELIVERY_STAGES.findIndex(s => s.key === active.deliveryStatus);
                       const isDone = idx <= stageIdx;
                       const isCurrent = idx === stageIdx;
+                      const isAutoManaged = stage.key === "RETURN_INITIATED" || stage.key === "RETURN_APPROVED";
+                      const isClickable = !isAutoManaged;
                       const log = active.timeline.find(t => t.status === stage.key);
                       const Icon = stage.icon;
+
+                      // Determine if clicking this stage is disabled
+                      let isDisabledStage = false;
+                      let disableReason = "";
+
+                      if (isDone && !isCurrent) {
+                        // 1. Disable clicking on previously completed stages
+                        isDisabledStage = true;
+                        disableReason = "Stage already completed";
+                      } else if (stage.key === "REFUND_COMPLETED") {
+                        // 2. Disable clicking REFUND_COMPLETED until receipt screenshot is uploaded AND email sent
+                        const hasProof = !!active.receiptScreenshot;
+                        const emailSent = active.approvalStatus === "COMPLETED";
+                        if (!hasProof || !emailSent) {
+                          isDisabledStage = true;
+                          disableReason = !hasProof
+                            ? "Upload receipt screenshot first"
+                            : "Confirm and Send Email to customer first";
+                        }
+                      }
+
                       return (
                         <div key={stage.key} className="relative flex items-start gap-4 pb-5">
                           <button
-                            onClick={() => updateDeliveryStatus(active.id, stage.key)}
-                            className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${
+                            disabled={isDisabledStage}
+                            onClick={() => isClickable && !isDisabledStage && handleStageClick(active.id, stage.key)}
+                            title={isAutoManaged ? "Auto-managed stage" : disableReason || `Set to: ${stage.label}`}
+                            className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
+                              isAutoManaged
+                                ? "cursor-default"
+                                : isDisabledStage
+                                ? "cursor-not-allowed opacity-50"
+                                : "cursor-pointer hover:scale-105"
+                            } ${
                               isCurrent ? "bg-[#224870] border-[#224870] text-white shadow-md scale-105" :
                               isDone ? "bg-white border-[#224870] text-[#224870]" :
                               "bg-white border-neutral-200 text-neutral-300"
@@ -610,7 +660,10 @@ export function ReturnsPage() {
                           <div className="flex-1 min-w-0 pt-2">
                             <div className="flex items-center justify-between gap-2">
                               <p className={`text-[10.5px] font-bold uppercase tracking-wide ${isCurrent ? "text-[#224870]" : isDone ? "text-[#382d24]" : "text-neutral-300"}`}>{stage.label}</p>
-                              {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Active</span>}
+                              <div className="flex items-center gap-1.5">
+                                {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Active</span>}
+                                {isAutoManaged && <span className="text-[7px] font-bold uppercase tracking-widest bg-neutral-100 text-neutral-400 px-1.5 py-0.5 rounded-full">Auto</span>}
+                              </div>
                             </div>
                             {log ? <p className="text-[9.5px] text-[#615e56] mt-0.5 leading-relaxed">{log.note}</p> : !isDone ? <p className="text-[9.5px] text-neutral-300 mt-0.5 italic">Awaiting shipment scan</p> : null}
                             {log && <p className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</p>}
@@ -708,6 +761,50 @@ export function ReturnsPage() {
           </div>
         </div>
       )}
+
+      {/* ─── Stage Change Confirmation Modal ─── */}
+      {pendingStageChange && (() => {
+        const stageMeta = DELIVERY_STAGES.find(s => s.key === pendingStageChange.stage);
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="bg-white border border-neutral-200 w-full max-w-[420px] p-6 rounded-sm shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-full shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#382d24] uppercase tracking-wider">Confirm Stage Change</h3>
+                  <p className="text-[10.5px] text-[#615e56] font-semibold mt-1.5 leading-relaxed">
+                    Are you sure you want to advance this return to:
+                  </p>
+                  <p className="text-[13px] font-black text-[#224870] uppercase tracking-wider mt-1">
+                    {stageMeta?.label}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[9.5px] text-[#615e56] font-medium leading-relaxed bg-neutral-50 border border-neutral-200 p-3 rounded-sm">
+                This will update the logistics stage for the customer and notify them of the progress.
+              </p>
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => setPendingStageChange(null)}
+                  className="flex-1 border border-neutral-200 hover:bg-neutral-50 text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-sm cursor-pointer transition-all bg-white disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => updateDeliveryStatus(pendingStageChange.id, pendingStageChange.stage)}
+                  className="flex-1 bg-[#224870] hover:bg-[#1a3858] text-white text-[10px] font-black uppercase tracking-wider py-2.5 rounded-sm cursor-pointer transition-all border-none disabled:opacity-50"
+                >
+                  Yes, Change
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ─── Confirmation Modal ─── */}
       {showConfirmModal && active && (

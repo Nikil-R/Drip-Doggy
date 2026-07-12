@@ -175,6 +175,7 @@ export const ExchangesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExchangeId, setSelectedExchangeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const ITEMS_PER_PAGE = 6;
   const { token } = useAuthStore();
 
@@ -274,6 +275,8 @@ export const ExchangesPage = () => {
   };
 
   const updateApprovalStatus = async (id: string, s: ReturnStatus) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (s === "APPROVED" || s === "REJECTED") {
         await adminOrderApi.updateReturnStatus(Number(id), s, token!);
@@ -296,10 +299,14 @@ export const ExchangesPage = () => {
       }));
     } catch (err) {
       console.error("Failed to update exchange approval status:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const updateDeliveryStatus = async (id: string, ds: DeliveryStatus) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (ds === "RECEIVED_AT_WAREHOUSE") {
         await adminOrderApi.updateReturnStatus(Number(id), "RECEIVED", token!);
@@ -330,10 +337,14 @@ export const ExchangesPage = () => {
       }));
     } catch (err) {
       console.error("Failed to update exchange logistics status:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const verifyPayment = async (id: string) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Mock payment verification resolves completed exchanges
       await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "EXCH-SHP-" + id, null, token!);
@@ -348,10 +359,14 @@ export const ExchangesPage = () => {
       }));
     } catch (err) {
       console.error("Failed to verify exchange payment on backend:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const uploadProof = async (id: string, url: string) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       let receiptFile: File | null = null;
       if (url) {
@@ -373,6 +388,8 @@ export const ExchangesPage = () => {
       }));
     } catch (err) {
       console.error("Failed to submit refund proof on backend:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

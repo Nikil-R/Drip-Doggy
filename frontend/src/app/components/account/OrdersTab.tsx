@@ -33,49 +33,108 @@ const VARIANT_CATALOG: Record<string, { sizes: string[]; colors: { name: string;
   }
 };
 
-const ORDER_DATA: Order[] = [
-  {
-    id: "DD-90210", date: "05 June 2026", total: 185.00, status: "Shipped",
-    items: [{ name: "Vanguard Tactical Vest", brand: "CONCRETE CULTURE", size: "Medium", color: "Stealth Black", price: 185.00, quantity: 1, image: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&q=80&w=600&crop=focalpoint&fp-x=0.3&fp-y=0.65&z=2.0" }],
-  },
-  {
-    id: "DD-87321", date: "12 May 2026", total: 600.00, status: "Delivered",
-    items: [{ name: "Heavyweight Hoodie", brand: "CONCRETE CULTURE", size: "Small", color: "Sandstone", price: 300.00, quantity: 2, image: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&q=80&w=600" }],
-  },
-];
+
+
+// Converts backend snake_case/UPPER_SNAKE status strings into human-readable "Title Case" display labels.
+// Optionally strips a known prefix (e.g. "RETURN_" or "EXCHANGE_") before formatting.
+function formatStatusLabel(raw: string, stripPrefix?: string): string {
+  if (!raw) return "";
+  let str = raw.toUpperCase();
+  if (stripPrefix && str.startsWith(stripPrefix.toUpperCase())) {
+    str = str.slice(stripPrefix.length);
+  }
+  return str
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function getTimelineSteps(order: Order, datePlaced: string) {
-  const isReturn = order.status === "Return Requested" || !!order.returnRequest;
-  const isExchange = order.status === "Exchange Requested" || !!(order as any).exchangeRequest;
+  const rawDeliveryStatus = ((order as any).rawDeliveryStatus || "").toUpperCase();
+  // Unified stage key from returnReq (set during mapping) takes priority
+  const returnReqRaw = ((order.returnRequest as any)?.rawDeliveryStatus || "").toUpperCase();
+  // Use the unified stage key if available, otherwise fallback to order raw
+  const effectiveRaw = returnReqRaw || rawDeliveryStatus;
+
+  const isReturn =
+    effectiveRaw.startsWith("RETURN_") ||
+    effectiveRaw === "OUT_FOR_PICKUP" ||
+    effectiveRaw === "RECEIVED_AT_WAREHOUSE" ||
+    effectiveRaw === "REFUND_COMPLETED" ||
+    order.status === "Return Requested" ||
+    !!order.returnRequest;
+  const isExchange = rawDeliveryStatus.startsWith("EXCHANGE_") || order.status === "Exchange Requested" || !!(order as any).exchangeRequest;
 
   if (isReturn) {
-    const returnStatus = order.returnRequest?.status || "pending";
-    const isApproved = returnStatus === "approved" || returnStatus === "completed";
-    const isOutForPickup = returnStatus === "completed"; // Mock transition
-    const isReceived = returnStatus === "completed";
-    const isCompleted = returnStatus === "completed";
+    // All 5 admin stages mapped to boolean flags:
+    // RETURN_INITIATED → RETURN_APPROVED → OUT_FOR_PICKUP → RECEIVED_AT_WAREHOUSE → REFUND_COMPLETED
+    const isInitiated = true;
+    const isApproved =
+      order.returnRequest?.status === "approved" ||
+      order.returnRequest?.status === "completed" ||
+      effectiveRaw === "RETURN_APPROVED" ||
+      effectiveRaw === "OUT_FOR_PICKUP" ||
+      effectiveRaw === "RECEIVED_AT_WAREHOUSE" ||
+      effectiveRaw === "REFUND_COMPLETED" ||
+      effectiveRaw === "RETURN_PICKUPED" ||
+      effectiveRaw === "RETURN_SHIPPED" ||
+      effectiveRaw === "RETURN_OUT_OF_DELIVERY" ||
+      effectiveRaw === "RETURN_DELIVERED";
+    const isPickedup =
+      effectiveRaw === "OUT_FOR_PICKUP" ||
+      effectiveRaw === "RECEIVED_AT_WAREHOUSE" ||
+      effectiveRaw === "REFUND_COMPLETED" ||
+      effectiveRaw === "RETURN_PICKUPED" ||
+      effectiveRaw === "RETURN_SHIPPED" ||
+      effectiveRaw === "RETURN_OUT_OF_DELIVERY" ||
+      effectiveRaw === "RETURN_DELIVERED";
+    const isReceived =
+      effectiveRaw === "RECEIVED_AT_WAREHOUSE" ||
+      effectiveRaw === "REFUND_COMPLETED" ||
+      effectiveRaw === "RETURN_SHIPPED" ||
+      effectiveRaw === "RETURN_OUT_OF_DELIVERY" ||
+      effectiveRaw === "RETURN_DELIVERED";
+    const isCompleted =
+      effectiveRaw === "REFUND_COMPLETED" ||
+      effectiveRaw === "RETURN_DELIVERED" ||
+      order.returnRequest?.status === "completed";
 
     return [
-      { title: "Return Initiated", description: "Return request submitted", date: datePlaced, done: true },
-      { title: "Return Approved", description: "Request approved by warehouse", date: isApproved ? "Pending Approval" : "Pending", done: isApproved },
-      { title: "Out for Pickup", description: "Courier pickup agent assigned", date: "Pending", done: isOutForPickup },
-      { title: "Received at Warehouse", description: "Undergoing quality inspection", date: "Pending", done: isReceived },
-      { title: "Refund Completed", description: "Refund sent back to payment source", date: "Pending", done: isCompleted }
+      { title: "Return Initiated", description: "Return request submitted", date: datePlaced, done: isInitiated },
+      { title: "Return Approved", description: "Request approved by warehouse", date: isApproved ? "Approved" : "Pending", done: isApproved },
+      { title: "Out for Pickup", description: "Courier pickup agent assigned", date: isPickedup ? "In Progress" : "Pending", done: isPickedup },
+      { title: "Received at Warehouse", description: "Undergoing quality inspection", date: isReceived ? "In Progress" : "Pending", done: isReceived },
+      { title: "Refund Completed", description: "Refund sent back to payment source", date: isCompleted ? "Completed" : "Pending", done: isCompleted }
     ];
   }
 
   if (isExchange) {
-    const exchangeStatus = (order as any).exchangeRequest?.status || "pending";
-    const isApproved = exchangeStatus === "approved" || exchangeStatus === "completed";
-    const isOutForPickup = exchangeStatus === "completed";
-    const isReceived = exchangeStatus === "completed";
-    const isDispatched = exchangeStatus === "completed";
-    const isCompleted = exchangeStatus === "completed";
+    const isInitiated = true;
+    const isApproved =
+      (order as any).exchangeRequest?.status === "approved" ||
+      (order as any).exchangeRequest?.status === "completed" ||
+      rawDeliveryStatus === "EXCHANGE_PICKUPED" ||
+      rawDeliveryStatus === "EXCHANGE_SHIPPED" ||
+      rawDeliveryStatus === "EXCHANGE_OUT_OF_DELIVERY" ||
+      rawDeliveryStatus === "EXCHANGE_DELIVERED";
+    const isPickedup =
+      rawDeliveryStatus === "EXCHANGE_PICKUPED" ||
+      rawDeliveryStatus === "EXCHANGE_SHIPPED" ||
+      rawDeliveryStatus === "EXCHANGE_OUT_OF_DELIVERY" ||
+      rawDeliveryStatus === "EXCHANGE_DELIVERED";
+    const isReceived =
+      rawDeliveryStatus === "EXCHANGE_SHIPPED" ||
+      rawDeliveryStatus === "EXCHANGE_OUT_OF_DELIVERY" ||
+      rawDeliveryStatus === "EXCHANGE_DELIVERED";
+    const isDispatched =
+      rawDeliveryStatus === "EXCHANGE_OUT_OF_DELIVERY" ||
+      rawDeliveryStatus === "EXCHANGE_DELIVERED";
+    const isCompleted = rawDeliveryStatus === "EXCHANGE_DELIVERED" || (order as any).exchangeRequest?.status === "completed";
 
     return [
-      { title: "Exchange Initiated", description: "Exchange request submitted", date: datePlaced, done: true },
-      { title: "Exchange Approved", description: "Request approved by warehouse", date: isApproved ? "Pending Approval" : "Pending", done: isApproved },
-      { title: "Out for Pickup", description: "Courier pickup agent assigned", date: "Pending", done: isOutForPickup },
+      { title: "Exchange Initiated", description: "Exchange request submitted", date: datePlaced, done: isInitiated },
+      { title: "Exchange Approved", description: "Request approved by warehouse", date: isApproved ? "Approved" : "Pending", done: isApproved },
+      { title: "Out for Pickup", description: "Courier pickup agent assigned", date: "Pending", done: isPickedup },
       { title: "Received at Warehouse", description: "Undergoing quality inspection", date: "Pending", done: isReceived },
       { title: "Replacement Dispatched", description: "New variant shipped out", date: "Pending", done: isDispatched },
       { title: "Exchange Completed", description: "Replacement variant delivered", date: "Pending", done: isCompleted }
@@ -99,21 +158,8 @@ function getTimelineSteps(order: Order, datePlaced: string) {
 }
 
 function isWithinReturnWindow(orderDateStr: string): boolean {
-  try {
-    const orderDate = new Date(orderDateStr);
-    if (isNaN(orderDate.getTime())) return true;
-    
-    const deliveryDate = new Date(orderDate);
-    deliveryDate.setDate(deliveryDate.getDate() + 3);
-    
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - deliveryDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays <= 7;
-  } catch {
-    return true;
-  }
+  // If the order has been delivered, always allow returns/exchanges
+  return true;
 }
 
 export function OrdersTab() {
@@ -126,41 +172,134 @@ export function OrdersTab() {
     if (!user?.id) return;
     async function loadStorefrontOrders() {
       try {
-        const orderHistory = await orderApi.getCustomerOrders(user.id);
+        const orderHistory = await orderApi.getCustomerOrders();
         const mappedOrders: Order[] = orderHistory.map(oh => {
           let mappedPayment: "Paid" | "Unpaid" | "Refunded" = "Unpaid";
           if (oh.paymentStatus === "PAID" || oh.paymentStatus === "COMPLETED") mappedPayment = "Paid";
           else if (oh.paymentStatus === "REFUNDED") mappedPayment = "Refunded";
 
           let mappedStatus = oh.deliveryStatus || "Placed";
-          const genericItems = [{
-            name: "Structured Canvas Jacket",
+          
+          // Map items returned from backend
+          const itemsList = (oh.items || []).map((item: any) => ({
+            id: item.id,
+            name: item.name || "Unknown Product",
             brand: "CONCRETE CULTURE",
-            size: "M",
-            color: "Navy Blue",
-            price: oh.totalAmount,
-            quantity: 1,
-            image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
-          }];
+            size: item.size || "M",
+            color: item.color || "Default",
+            price: Number(item.price || 0),
+            quantity: Number(item.qty || item.quantity || 1),
+            image: item.image || item.imageUrl || ""
+          }));
+
+          // Fallback if item list is empty
+          if (itemsList.length === 0) {
+            itemsList.push({
+              name: "Structured Canvas Jacket",
+              brand: "CONCRETE CULTURE",
+              size: "M",
+              color: "Navy Blue",
+              price: oh.totalAmount,
+              quantity: 1,
+              image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+            });
+          }
+
+          const rawStatus = (oh.deliveryStatus || "Placed").toUpperCase();
+
+          // Helper: is this order in a return logistics flow?
+          const isReturnFlow =
+            rawStatus.startsWith("RETURN_") ||
+            rawStatus === "OUT_FOR_PICKUP" ||
+            rawStatus === "RECEIVED_AT_WAREHOUSE" ||
+            rawStatus === "REFUND_COMPLETED";
+
+          // Map backend deliveryStatus to friendly frontend order status
+          if (rawStatus === "DELIVERED") mappedStatus = "Delivered";
+          else if (rawStatus === "CANCELLED" || rawStatus === "CANCELED") mappedStatus = "Cancelled";
+          else if (rawStatus === "PLACED") mappedStatus = "Placed";
+          else if (rawStatus === "PROCESSING") mappedStatus = "Processing";
+          else if (rawStatus === "PACKED") mappedStatus = "Packed";
+          else if (rawStatus === "SHIPPED") mappedStatus = "Shipped";
+          else if (rawStatus === "OUT_FOR_DELIVERY") mappedStatus = "Out for Delivery";
+          // Treat all return-related statuses as "Return Requested"
+          else if (isReturnFlow) mappedStatus = "Return Requested";
+          // Treat all exchange-related statuses as "Exchange Requested"
+          else if (rawStatus.startsWith("EXCHANGE_")) mappedStatus = "Exchange Requested";
+          else mappedStatus = oh.deliveryStatus?.charAt(0).toUpperCase() + (oh.deliveryStatus?.slice(1).toLowerCase() || "");
+
+          // Build returnRequest from deliveryStatus if it's a return order
+          let returnReq = null;
+          let exchangeReq = null;
+
+          if (isReturnFlow) {
+            // Map backend raw delivery status → unified return stage key
+            // Admin stages: RETURN_INITIATED → RETURN_APPROVED → OUT_FOR_PICKUP → RECEIVED_AT_WAREHOUSE → REFUND_COMPLETED
+            let approvalStatus = "pending";
+            let unifiedRawStatus = rawStatus;
+            if (rawStatus === "RETURN_APPROVED" || rawStatus === "RETURN_ACCEPTED") {
+              approvalStatus = "approved";
+              unifiedRawStatus = "RETURN_APPROVED";
+            } else if (rawStatus === "OUT_FOR_PICKUP" || rawStatus === "RETURN_PICKUPED") {
+              approvalStatus = "approved";
+              unifiedRawStatus = "OUT_FOR_PICKUP";
+            } else if (rawStatus === "RECEIVED_AT_WAREHOUSE" || rawStatus === "RETURN_SHIPPED" || rawStatus === "RETURN_OUT_OF_DELIVERY") {
+              approvalStatus = "approved";
+              unifiedRawStatus = "RECEIVED_AT_WAREHOUSE";
+            } else if (rawStatus === "REFUND_COMPLETED" || rawStatus === "RETURN_DELIVERED") {
+              approvalStatus = "completed";
+              unifiedRawStatus = "REFUND_COMPLETED";
+            }
+            returnReq = {
+              reason: oh.returnRequest?.cancelReason || oh.returnRequest?.reason || "Return requested",
+              status: approvalStatus,
+              submittedAt: oh.returnRequest?.createdAt || "",
+              rawDeliveryStatus: unifiedRawStatus
+            };
+          } else if (oh.returnRequest) {
+            returnReq = {
+              reason: oh.returnRequest.cancelReason || oh.returnRequest.reason || "",
+              status: oh.returnRequest.status?.toLowerCase() || "pending",
+              submittedAt: oh.returnRequest.createdAt || "",
+              rawDeliveryStatus: rawStatus
+            };
+          }
+
+          if (rawStatus.startsWith("EXCHANGE_")) {
+            let approvalStatus = "pending";
+            if (rawStatus === "EXCHANGE_PICKUPED" || rawStatus === "EXCHANGE_SHIPPED" || rawStatus === "EXCHANGE_OUT_OF_DELIVERY") {
+              approvalStatus = "approved";
+            } else if (rawStatus === "EXCHANGE_DELIVERED") {
+              approvalStatus = "completed";
+            }
+            exchangeReq = {
+              reason: "Exchange requested",
+              status: approvalStatus,
+              submittedAt: "",
+              rawDeliveryStatus: rawStatus
+            };
+          } else if (oh.exchangeRequest) {
+            exchangeReq = {
+              reason: oh.exchangeRequest.cancelReason || oh.exchangeRequest.reason || "",
+              status: oh.exchangeRequest.status?.toLowerCase() || "pending",
+              submittedAt: oh.exchangeRequest.createdAt || "",
+              rawDeliveryStatus: rawStatus
+            };
+          }
 
           return {
             id: oh.orderNumber,
-            date: oh.orderTimestamp?.split(" ")?.[0] || "2026-07-08",
+            date: oh.orderTimestamp?.split("T")?.[0] || oh.orderTimestamp?.split(" ")?.[0] || "2026-07-08",
             total: oh.totalAmount,
             status: mappedStatus,
-            items: genericItems
+            items: itemsList,
+            returnRequest: returnReq as any,
+            exchangeRequest: exchangeReq as any,
+            rawDeliveryStatus: rawStatus as any
           };
         });
 
-        setOrders(prev => {
-          const merged = [...mappedOrders, ...ORDER_DATA];
-          const seen = new Set();
-          return merged.filter(o => {
-            if (seen.has(o.id)) return false;
-            seen.add(o.id);
-            return true;
-          });
-        });
+        setOrders(mappedOrders);
       } catch (err) {
         console.error("Failed to load storefront order history:", err);
       }
@@ -199,6 +338,8 @@ export function OrdersTab() {
     phone: user?.phone || "",
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleCancelOrder = async (orderId: string) => {
     if (confirm("Are you sure you want to cancel this order?")) {
       try {
@@ -233,12 +374,43 @@ export function OrdersTab() {
     }
   };
 
+  // Prevent background scrolling when Return/Exchange modal is active
+  useEffect(() => {
+    if (selectedOrder) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [selectedOrder]);
+
   const handleDefectImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSizeBytes = 3 * 1024 * 1024; // 3MB limit
+
     const availableSlots = 3 - defectImages.length;
-    const filesToUpload = Array.from(files).slice(0, availableSlots);
+    const incomingFiles = Array.from(files);
+
+    // Validate type and size for each incoming file
+    const validFiles: File[] = [];
+    for (const file of incomingFiles) {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File "${file.name}" has an unsupported format. Please upload JPEG, PNG, or WebP images.`);
+        return;
+      }
+      if (file.size > maxSizeBytes) {
+        alert(`File "${file.name}" exceeds the 3MB size limit. Please upload a smaller image.`);
+        return;
+      }
+      validFiles.push(file);
+    }
+
+    const filesToUpload = validFiles.slice(0, availableSlots);
 
     setDefectFiles(prev => [...prev, ...filesToUpload]);
 
@@ -259,6 +431,18 @@ export function OrdersTab() {
   const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSizeBytes = 3 * 1024 * 1024; // 3MB limit
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Unsupported format. Please upload a JPEG, PNG, or WebP image for your QR Code.");
+      return;
+    }
+    if (file.size > maxSizeBytes) {
+      alert("The QR Code image exceeds the 3MB size limit.");
+      return;
+    }
 
     setQrFile(file);
 
@@ -291,24 +475,29 @@ export function OrdersTab() {
     const finalReason = reason === "Other" ? `Other: ${otherReasonText}` : reason;
     const adjustment = calculateAdjustment();
 
-    // The backend maps orderItemId from the order items
-    // In our simplified interface, we use a default of 1 if none found
-    const defaultOrderItemId = 1;
+    // Read the correct order item ID dynamically from the mapped order
+    const orderItemId = selectedOrder.items[0]?.id || 1;
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
       if (requestType === "return") {
         if (refundMethod === "qr_code" && !refundDetails.qrCodeImage) {
           alert("Please upload your UPI QR Code image.");
+          setIsSubmitting(false);
           return;
         }
         if (refundMethod === "upi" && !refundDetails.upiId && !refundDetails.phoneNumber) {
           alert("Please fill in either your UPI ID or Phone Number.");
+          setIsSubmitting(false);
           return;
         }
         if (refundMethod === "bank_transfer") {
           const { accountHolderName, bankName, accountNumber, ifscCode } = refundDetails;
           if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
             alert("Please fill in all bank transfer fields.");
+            setIsSubmitting(false);
             return;
           }
         }
@@ -316,7 +505,7 @@ export function OrdersTab() {
         // Call backend API return submission
         await orderApi.submitReturn(
           selectedOrder.id,
-          defaultOrderItemId,
+          orderItemId,
           finalReason,
           defectFiles,
           refundMethod,
@@ -334,23 +523,26 @@ export function OrdersTab() {
           status: "pending"
         };
 
-        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Return Requested", returnRequest: returnReq as any } : o));
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Return Requested", returnRequest: returnReq as any, rawDeliveryStatus: "RETURN_INITIATED" } : o));
         setToastMessage("Return request submitted successfully. Our team will review your defect images and complete your refund.");
       } else {
         const isCheaper = adjustment < 0;
         if (isCheaper) {
           if (refundMethod === "qr_code" && !refundDetails.qrCodeImage) {
             alert("Please upload your UPI QR Code image for the partial refund.");
+            setIsSubmitting(false);
             return;
           }
           if (refundMethod === "upi" && !refundDetails.upiId && !refundDetails.phoneNumber) {
             alert("Please fill in your UPI ID for the partial refund.");
+            setIsSubmitting(false);
             return;
           }
           if (refundMethod === "bank_transfer") {
             const { accountHolderName, bankName, accountNumber, ifscCode } = refundDetails;
             if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
               alert("Please complete the bank payout transfer details.");
+              setIsSubmitting(false);
               return;
             }
           }
@@ -360,10 +552,10 @@ export function OrdersTab() {
         // Map targetVariantId (using orderItemId placeholder)
         await orderApi.submitExchange(
           selectedOrder.id,
-          defaultOrderItemId,
+          orderItemId,
           finalReason,
           selectedExchangeSize,
-          defaultOrderItemId,
+          orderItemId,
           defectFiles,
           isCheaper ? refundMethod : undefined,
           isCheaper ? { ...refundDetails, qrCodeFile: qrFile } : undefined
@@ -382,7 +574,7 @@ export function OrdersTab() {
           status: "pending"
         };
 
-        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Exchange Requested", exchangeRequest: exchangeReq as any } : o));
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Exchange Requested", exchangeRequest: exchangeReq as any, rawDeliveryStatus: "EXCHANGE_INITIATED" } : o));
         setToastMessage(
           adjustment > 0
             ? `Exchange request submitted. Doorstep COD of ${RS}${adjustment} will be collected during delivery.`
@@ -392,7 +584,10 @@ export function OrdersTab() {
     } catch (err) {
       console.error("Failed to submit request to backend:", err);
       alert("Error submitting request to database. Please verify your connection or uploads.");
+      setIsSubmitting(false);
       return;
+    } finally {
+      setIsSubmitting(false);
     }
 
     // Unconditionally close the modal and reset steps
@@ -460,11 +655,29 @@ export function OrdersTab() {
                   <div className="flex items-center self-start sm:self-center">
                     {order.returnRequest ? (
                       <span className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-200">
-                        Return: {(order.returnRequest as any).status.toUpperCase()}
+                        {(() => {
+                          // Use the unified rawDeliveryStatus from returnReq (set during mapping)
+                          const effectiveRaw = ((order.returnRequest as any).rawDeliveryStatus || "").toUpperCase();
+                          if (effectiveRaw === "REFUND_COMPLETED" || effectiveRaw === "RETURN_DELIVERED") return "Refund Completed";
+                          if (effectiveRaw === "RECEIVED_AT_WAREHOUSE" || effectiveRaw === "RETURN_SHIPPED" || effectiveRaw === "RETURN_OUT_OF_DELIVERY") return "Received at Warehouse";
+                          if (effectiveRaw === "OUT_FOR_PICKUP" || effectiveRaw === "RETURN_PICKUPED") return "Out for Pickup";
+                          if (effectiveRaw === "RETURN_APPROVED" || effectiveRaw === "RETURN_ACCEPTED") return "Return Approved";
+                          return "Return Initiated";
+                        })()}
                       </span>
                     ) : (order as any).exchangeRequest ? (
                       <span className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-200">
-                        Exchange: {((order as any).exchangeRequest).status?.toUpperCase() || "PENDING"}
+                        Exchange: {(() => {
+                          const reqStatus = ((order as any).exchangeRequest).status?.toUpperCase() || "";
+                          const rawDel = ((order as any).rawDeliveryStatus || "").toUpperCase();
+                          if (reqStatus === "APPROVED" || rawDel === "EXCHANGE_PICKUPED" || rawDel === "EXCHANGE_SHIPPED" || rawDel === "EXCHANGE_OUT_OF_DELIVERY") {
+                            return "Approved";
+                          }
+                          if (reqStatus === "COMPLETED" || rawDel === "EXCHANGE_DELIVERED") {
+                            return "Completed";
+                          }
+                          return formatStatusLabel((order as any).rawDeliveryStatus || ((order as any).exchangeRequest).status || "Pending", "EXCHANGE_");
+                        })()}
                       </span>
                     ) : order.status === "Delivered" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-700 border border-green-200/60">
@@ -860,9 +1073,10 @@ export function OrdersTab() {
                     </button>
                     <button
                       type="submit"
-                      className="w-1/2 bg-[#030213] hover:bg-neutral-800 text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase transition-colors cursor-pointer border-none"
+                      disabled={isSubmitting}
+                      className="w-1/2 bg-[#030213] hover:bg-neutral-800 disabled:bg-neutral-400 text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase transition-colors cursor-pointer border-none flex items-center justify-center gap-1.5"
                     >
-                      Submit Request
+                      {isSubmitting ? "Submitting..." : "Submit Request"}
                     </button>
                   </div>
                 </div>
