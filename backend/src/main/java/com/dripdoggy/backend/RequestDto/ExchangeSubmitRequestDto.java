@@ -17,6 +17,8 @@ public class ExchangeSubmitRequestDto {
 
     private Long targetVariantId; // Optional: specify if requesting a different color/variant
 
+    private Integer quantity; // Optional: defaults to original quantity if not provided
+
     private List<MultipartFile> images;
 
     // Refund details (in case target variant is cheaper than original variant)
@@ -32,11 +34,12 @@ public class ExchangeSubmitRequestDto {
     public ExchangeSubmitRequestDto() {
     }
 
-    public ExchangeSubmitRequestDto(Long orderItemId, String exchangeReason, String targetSize, Long targetVariantId, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
+    public ExchangeSubmitRequestDto(Long orderItemId, String exchangeReason, String targetSize, Long targetVariantId, Integer quantity, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
         this.orderItemId = orderItemId;
         this.exchangeReason = exchangeReason;
         this.targetSize = targetSize;
         this.targetVariantId = targetVariantId;
+        this.quantity = quantity;
         this.images = images;
         this.upiId = upiId;
         this.upiPhone = upiPhone;
@@ -45,6 +48,10 @@ public class ExchangeSubmitRequestDto {
         this.bankName = bankName;
         this.bankIfsc = bankIfsc;
         this.bankAccountNumber = bankAccountNumber;
+    }
+
+    public ExchangeSubmitRequestDto(Long orderItemId, String exchangeReason, String targetSize, Long targetVariantId, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
+        this(orderItemId, exchangeReason, targetSize, targetVariantId, null, images, upiId, upiPhone, qrCodeImage, bankAccountName, bankName, bankIfsc, bankAccountNumber);
     }
 
     public Long getOrderItemId() {
@@ -141,5 +148,13 @@ public class ExchangeSubmitRequestDto {
 
     public void setBankAccountNumber(String bankAccountNumber) {
         this.bankAccountNumber = bankAccountNumber;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 }

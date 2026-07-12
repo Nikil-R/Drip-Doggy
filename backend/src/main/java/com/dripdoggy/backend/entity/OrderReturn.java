@@ -41,6 +41,9 @@ public class OrderReturn {
     @Column(name = "target_variant_id")
     private Long targetVariantId;
 
+    @Column(name = "quantity")
+    private Integer quantity;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private ReturnStatus status; // PENDING, APPROVED, REJECTED, RECEIVED, REFUND_COMPLETED, EXCHANGE_COMPLETED
@@ -244,5 +247,13 @@ public class OrderReturn {
 
     public void setRefundProofImageUrl(String refundProofImageUrl) {
         this.refundProofImageUrl = refundProofImageUrl;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 }

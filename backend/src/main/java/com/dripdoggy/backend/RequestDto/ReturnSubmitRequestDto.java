@@ -11,6 +11,8 @@ public class ReturnSubmitRequestDto {
     @NotNull(message = "Reason is required")
     private String cancelReason;
 
+    private Integer quantity; // Optional: defaults to original quantity if not provided
+
     private List<MultipartFile> images;
 
     // Refund details
@@ -26,9 +28,10 @@ public class ReturnSubmitRequestDto {
     public ReturnSubmitRequestDto() {
     }
 
-    public ReturnSubmitRequestDto(Long orderItemId, String cancelReason, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
+    public ReturnSubmitRequestDto(Long orderItemId, String cancelReason, Integer quantity, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
         this.orderItemId = orderItemId;
         this.cancelReason = cancelReason;
+        this.quantity = quantity;
         this.images = images;
         this.upiId = upiId;
         this.upiPhone = upiPhone;
@@ -37,6 +40,10 @@ public class ReturnSubmitRequestDto {
         this.bankName = bankName;
         this.bankIfsc = bankIfsc;
         this.bankAccountNumber = bankAccountNumber;
+    }
+
+    public ReturnSubmitRequestDto(Long orderItemId, String cancelReason, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
+        this(orderItemId, cancelReason, null, images, upiId, upiPhone, qrCodeImage, bankAccountName, bankName, bankIfsc, bankAccountNumber);
     }
 
     public Long getOrderItemId() {
@@ -117,5 +124,13 @@ public class ReturnSubmitRequestDto {
 
     public void setBankAccountNumber(String bankAccountNumber) {
         this.bankAccountNumber = bankAccountNumber;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 }

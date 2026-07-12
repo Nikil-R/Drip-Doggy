@@ -20,6 +20,10 @@ public class OrderResponseDto {
     private String customerEmail;
     private String customerName;
     private String destinationAddress;
+    private LocalDateTime processingTimestamp;
+    private LocalDateTime shippedTimestamp;
+    private LocalDateTime deliveredTimestamp;
+    private LocalDateTime cancelledTimestamp;
     private BigDecimal subTotal;
     private List<OrderItemDetail> items;
 
@@ -178,5 +182,37 @@ public class OrderResponseDto {
 
     public void setItems(List<OrderItemDetail> items) {
         this.items = items;
+    }
+
+    public LocalDateTime getProcessingTimestamp() {
+        return processingTimestamp;
+    }
+
+    public void setProcessingTimestamp(LocalDateTime processingTimestamp) {
+        this.processingTimestamp = processingTimestamp;
+    }
+
+    public LocalDateTime getShippedTimestamp() {
+        return shippedTimestamp;
+    }
+
+    public void setShippedTimestamp(LocalDateTime shippedTimestamp) {
+        this.shippedTimestamp = shippedTimestamp;
+    }
+
+    public LocalDateTime getDeliveredTimestamp() {
+        return deliveredTimestamp;
+    }
+
+    public void setDeliveredTimestamp(LocalDateTime deliveredTimestamp) {
+        this.deliveredTimestamp = deliveredTimestamp;
+    }
+
+    public LocalDateTime getCancelledTimestamp() {
+        return cancelledTimestamp;
+    }
+
+    public void setCancelledTimestamp(LocalDateTime cancelledTimestamp) {
+        this.cancelledTimestamp = cancelledTimestamp;
     }
 }
