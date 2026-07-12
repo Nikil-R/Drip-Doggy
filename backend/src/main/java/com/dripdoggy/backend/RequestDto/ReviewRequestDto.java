@@ -2,6 +2,9 @@ package com.dripdoggy.backend.RequestDto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 public class ReviewRequestDto {
 
@@ -12,7 +15,10 @@ public class ReviewRequestDto {
     private Long productVariantId;
 
     @NotBlank(message = "Comment is required.")
+    @Size(max = 250, message = "Comment cannot exceed 250 characters.")
     private String comment;
+
+    private List<MultipartFile> images;
 
     public ReviewRequestDto() {
     }
@@ -21,6 +27,13 @@ public class ReviewRequestDto {
         this.orderId = orderId;
         this.productVariantId = productVariantId;
         this.comment = comment;
+    }
+
+    public ReviewRequestDto(Long orderId, Long productVariantId, String comment, List<MultipartFile> images) {
+        this.orderId = orderId;
+        this.productVariantId = productVariantId;
+        this.comment = comment;
+        this.images = images;
     }
 
     public Long getOrderId() {
@@ -45,5 +58,13 @@ public class ReviewRequestDto {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public List<MultipartFile> getImages() {
+        return images;
+    }
+
+    public void setImages(List<MultipartFile> images) {
+        this.images = images;
     }
 }

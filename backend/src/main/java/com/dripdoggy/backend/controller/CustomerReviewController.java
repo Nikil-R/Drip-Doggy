@@ -2,6 +2,7 @@ package com.dripdoggy.backend.controller;
 
 import com.dripdoggy.backend.Iservice.IReviewService;
 import com.dripdoggy.backend.RequestDto.ReviewRequestDto;
+import com.dripdoggy.backend.RequestDto.ReviewUpdateRequestDto;
 import com.dripdoggy.backend.ResponseDto.ReviewResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
@@ -24,7 +25,7 @@ public class CustomerReviewController {
     }
 
     @PostMapping
-    public ResponseEntity<ReviewResponseDto> createReview(@Valid @RequestBody ReviewRequestDto dto) {
+    public ResponseEntity<ReviewResponseDto> createReview(@Valid @ModelAttribute ReviewRequestDto dto) {
         ReviewResponseDto response = reviewService.createReview(dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -42,8 +43,8 @@ public class CustomerReviewController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ReviewResponseDto> updateReview(@PathVariable Long id, @Valid @RequestBody ReviewRequestDto dto) {
-        ReviewResponseDto response = reviewService.updateReview(id, dto.getComment());
+    public ResponseEntity<ReviewResponseDto> updateReview(@PathVariable Long id, @Valid @ModelAttribute ReviewUpdateRequestDto dto) {
+        ReviewResponseDto response = reviewService.updateReview(id, dto);
         return ResponseEntity.ok(response);
     }
 

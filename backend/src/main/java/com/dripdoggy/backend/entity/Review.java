@@ -2,6 +2,8 @@ package com.dripdoggy.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "reviews")
@@ -31,6 +33,9 @@ public class Review {
     @JsonIgnore
     private ProductVariant productVariant;
 
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Image> images = new ArrayList<>();
+
     // Constructors
     public Review() {
     }
@@ -42,6 +47,16 @@ public class Review {
         this.user = user;
         this.order = order;
         this.productVariant = productVariant;
+    }
+
+    public Review(Long id, String comment, Boolean isActive, User user, Orders order, ProductVariant productVariant, List<Image> images) {
+        this.id = id;
+        this.comment = comment;
+        this.isActive = isActive;
+        this.user = user;
+        this.order = order;
+        this.productVariant = productVariant;
+        this.images = images;
     }
 
     // Getters and Setters
@@ -91,5 +106,13 @@ public class Review {
 
     public void setProductVariant(ProductVariant productVariant) {
         this.productVariant = productVariant;
+    }
+
+    public List<Image> getImages() {
+        return images;
+    }
+
+    public void setImages(List<Image> images) {
+        this.images = images;
     }
 }

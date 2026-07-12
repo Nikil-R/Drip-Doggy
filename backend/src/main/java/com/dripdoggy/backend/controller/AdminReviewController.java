@@ -27,8 +27,8 @@ public class AdminReviewController {
     }
 
     @PatchMapping("/{id}/toggle-active")
-    public ResponseEntity<ReviewResponseDto> toggleReviewActiveStatus(@PathVariable Long id) {
-        ReviewResponseDto response = reviewService.toggleReviewActiveStatus(id);
+    public ResponseEntity<ResponseMsgDto> toggleReviewActiveStatus(@PathVariable Long id) {
+        ResponseMsgDto response = reviewService.toggleReviewActiveStatus(id);
         return ResponseEntity.ok(response);
     }
 
