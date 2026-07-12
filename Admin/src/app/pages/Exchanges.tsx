@@ -3,17 +3,26 @@ import {
   Search, ChevronLeft, ChevronRight, X,
   Package, Truck, Home, RefreshCw, Check,
   ArrowUpRight, Clock, User, AlertCircle,
-  TrendingUp, TrendingDown
+  TrendingUp, TrendingDown, Palette, Tag,
+  ArrowRight, CreditCard, Building, QrCode, Phone, Upload, CheckCircle2, ShieldAlert
 } from "lucide-react";
 
 const RS = "₹";
 
-type ExchangeStatus =
-  | "exchange initiated"
-  | "exchange pickuped"
-  | "exchange shipped"
-  | "exchange out of delivery"
-  | "exchange delivered";
+type DeliveryStatus =
+  | "EXCHANGE_INITIATED"
+  | "EXCHANGE_APPROVED"
+  | "OUT_FOR_PICKUP"
+  | "RECEIVED_AT_WAREHOUSE"
+  | "REPLACEMENT_DISPATCHED"
+  | "EXCHANGE_COMPLETED";
+
+type ReturnStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "RECEIVED"
+  | "COMPLETED";
 
 interface StatusTimeline {
   status: string;
@@ -26,8 +35,11 @@ interface ExchangeItem {
   sku: string;
   originalSize: string;
   requestedSize: string;
+  originalColor: string;
+  requestedColor: string;
   qty: number;
-  price: number;
+  originalPrice: number;
+  replacementPrice: number;
   image: string;
 }
 
@@ -39,66 +51,112 @@ interface ExchangeRequest {
   phone: string;
   date: string;
   reason: string;
-  status: ExchangeStatus;
+  approvalStatus: ReturnStatus;
+  deliveryStatus: DeliveryStatus;
   items: ExchangeItem[];
+  paymentStatus: "paid" | "pending_payment" | "refunded" | "pending_refund" | "no_adjustment";
+  adjustmentAmount: number; // Positive = customer pays more, Negative = customer gets refund
+  refundMethod?: "qr_code" | "upi" | "bank_transfer";
+  refundDetails?: {
+    upiId?: string;
+    phoneNumber?: string;
+    accountHolderName?: string;
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    qrCodeImage?: string;
+  };
+  receiptScreenshot?: string | null;
   timeline: StatusTimeline[];
 }
 
-const EXCHANGE_STAGES: { key: ExchangeStatus; label: string; icon: React.ComponentType<any> }[] = [
-  { key: "exchange initiated",        label: "Initiated",          icon: RefreshCw },
-  { key: "exchange pickuped",         label: "Picked Up",          icon: Package },
-  { key: "exchange shipped",          label: "Replacement Sent",   icon: Truck },
-  { key: "exchange out of delivery",  label: "Out for Delivery",   icon: ArrowUpRight },
-  { key: "exchange delivered",        label: "Delivered",          icon: Home },
+const DELIVERY_STAGES: { key: DeliveryStatus; label: string; icon: React.ComponentType<any> }[] = [
+  { key: "EXCHANGE_INITIATED",    label: "Exchange Initiated",    icon: RefreshCw },
+  { key: "EXCHANGE_APPROVED",     label: "Exchange Approved",     icon: Clock },
+  { key: "OUT_FOR_PICKUP",        label: "Out for Pickup",        icon: Package },
+  { key: "RECEIVED_AT_WAREHOUSE", label: "Received at Warehouse", icon: Building },
+  { key: "REPLACEMENT_DISPATCHED",label: "Replacement Dispatched",icon: Truck },
+  { key: "EXCHANGE_COMPLETED",    label: "Exchange Completed",    icon: Home },
 ];
 
-const STATUS_META: Record<ExchangeStatus, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  "exchange initiated":       { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-500",   label: "Initiated" },
-  "exchange pickuped":        { bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-500",    label: "Picked Up" },
-  "exchange shipped":         { bg: "bg-indigo-50",  text: "text-indigo-700",  border: "border-indigo-200",  dot: "bg-indigo-500",  label: "Replacement Sent" },
-  "exchange out of delivery": { bg: "bg-violet-50",  text: "text-violet-700",  border: "border-violet-200",  dot: "bg-violet-500",  label: "Out for Delivery" },
-  "exchange delivered":       { bg: "bg-green-50",   text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Delivered" },
+const APPROVAL_META: Record<ReturnStatus, { bg: string; text: string; border: string; dot: string; label: string }> = {
+  "PENDING":   { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-500",   label: "Pending Review" },
+  "APPROVED":  { bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-500",    label: "Approved" },
+  "REJECTED":  { bg: "bg-red-50",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500",     label: "Rejected" },
+  "RECEIVED":  { bg: "bg-indigo-50",  text: "text-indigo-700",  border: "border-indigo-200",  dot: "bg-indigo-500",  label: "Package Received" },
+  "COMPLETED": { bg: "bg-green-50",   text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Completed" },
 };
 
 const initialExchanges: ExchangeRequest[] = [
   {
     id: "EXC-2012", orderId: "#DD-6544", customerName: "Karan Johar",
     email: "karan.j@gmail.com", phone: "+91 99999 77777", date: "2026-06-26",
-    reason: "Jacket fits too snug around shoulders. Requesting size up.",
-    status: "exchange initiated",
-    items: [{ name: "Structured Canvas Jacket", sku: "DD-STR-001", originalSize: "M", requestedSize: "L", qty: 1, price: 5800, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop" }],
-    timeline: [{ status: "exchange initiated", timestamp: "2026-06-26 11:20", note: "Customer submitted exchange request via profile dashboard." }]
+    reason: "Jacket fits too snug around shoulders. Requesting size up and different color.",
+    approvalStatus: "PENDING",
+    deliveryStatus: "EXCHANGE_INITIATED",
+    paymentStatus: "no_adjustment",
+    adjustmentAmount: 0,
+    items: [{
+      name: "Structured Canvas Jacket", sku: "DD-STR-001",
+      originalSize: "M", requestedSize: "L",
+      originalColor: "Navy Blue", requestedColor: "Sage Green",
+      qty: 1, originalPrice: 5800, replacementPrice: 5800,
+      image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+    }],
+    timeline: [{ status: "EXCHANGE_INITIATED", timestamp: "2026-06-26 11:20", note: "Customer submitted exchange request via profile dashboard." }]
   },
   {
     id: "EXC-2011", orderId: "#DD-6542", customerName: "Meera Patel",
     email: "meera.p@yahoo.com", phone: "+91 98765 00000", date: "2026-06-25",
-    reason: "Dress size feels too loose. Requesting size S instead of M.",
-    status: "exchange shipped",
-    items: [{ name: "Everyday Relaxed Shift Dress", sku: "DD-EVE-002", originalSize: "M", requestedSize: "S", qty: 1, price: 3200, image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop" }],
+    reason: "Dress size feels too loose. Requesting size S and upgraded premium fabric color variant.",
+    approvalStatus: "APPROVED",
+    deliveryStatus: "OUT_FOR_PICKUP",
+    paymentStatus: "pending_payment",
+    adjustmentAmount: 600,
+    items: [{
+      name: "Everyday Relaxed Shift Dress", sku: "DD-EVE-002",
+      originalSize: "M", requestedSize: "S",
+      originalColor: "Classic Denim", requestedColor: "Indigo Linen",
+      qty: 1, originalPrice: 3200, replacementPrice: 3800,
+      image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop"
+    }],
     timeline: [
-      { status: "exchange initiated", timestamp: "2026-06-25 09:45", note: "Customer requested exchange." },
-      { status: "exchange pickuped", timestamp: "2026-06-26 14:00", note: "Original item collected by courier pickup agent." },
-      { status: "exchange shipped", timestamp: "2026-06-27 10:30", note: "Replacement (Size S) dispatched to customer address." }
+      { status: "PENDING", timestamp: "2026-06-25 09:45", note: "Customer requested exchange." },
+      { status: "APPROVED", timestamp: "2026-06-25 15:00", note: "Admin approved exchange. Awaiting adjustment payment." }
     ]
   },
   {
     id: "EXC-2010", orderId: "#DD-6538", customerName: "Vikram Nair",
     email: "vikram.n@gmail.com", phone: "+91 90000 11111", date: "2026-06-21",
-    reason: "Wrong color delivered — requested Black instead of Navy.",
-    status: "exchange delivered",
-    items: [{ name: "Modern Oversized Knitwear", sku: "DD-MOD-003", originalSize: "L", requestedSize: "L", qty: 1, price: 4200, image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop" }],
+    reason: "Downgrading to standard cotton knitwear and smaller size.",
+    approvalStatus: "COMPLETED",
+    deliveryStatus: "EXCHANGE_COMPLETED",
+    paymentStatus: "refunded",
+    adjustmentAmount: -700,
+    refundMethod: "bank_transfer",
+    refundDetails: {
+      accountHolderName: "Vikram Nair",
+      bankName: "HDFC Bank",
+      accountNumber: "50100293847291",
+      ifscCode: "HDFC0000001"
+    },
+    items: [{
+      name: "French Terry Hoodie", sku: "DD-FTH-001",
+      originalSize: "M", requestedSize: "S",
+      originalColor: "Charcoal Grey", requestedColor: "Sandstone",
+      qty: 1, originalPrice: 3900, replacementPrice: 3200,
+      image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=200&auto=format&fit=crop"
+    }],
     timeline: [
-      { status: "exchange initiated", timestamp: "2026-06-21 08:00", note: "Exchange request raised." },
-      { status: "exchange pickuped", timestamp: "2026-06-22 11:30", note: "Incorrect item collected from customer." },
-      { status: "exchange shipped", timestamp: "2026-06-23 09:00", note: "Correct Black color variant dispatched." },
-      { status: "exchange out of delivery", timestamp: "2026-06-24 12:00", note: "Out for delivery to customer." },
-      { status: "exchange delivered", timestamp: "2026-06-24 17:30", note: "Customer received correct item. Exchange complete." }
+      { status: "PENDING", timestamp: "2026-06-21 14:10", note: "Customer requested exchange." },
+      { status: "APPROVED", timestamp: "2026-06-21 16:30", note: "Admin approved request." },
+      { status: "EXCHANGE_COMPLETED", timestamp: "2026-06-23 11:15", note: "Logistics complete. Replacement item delivered." }
     ]
   }
 ];
 
-function StatusBadge({ status }: { status: ExchangeStatus }) {
-  const m = STATUS_META[status];
+function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
+  const m = APPROVAL_META[status];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[9px] font-bold uppercase tracking-widest border ${m.bg} ${m.text} ${m.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
@@ -107,20 +165,24 @@ function StatusBadge({ status }: { status: ExchangeStatus }) {
   );
 }
 
-export function ExchangesPage() {
-  const [exchanges, setExchanges] = useState<ExchangeRequest[]>(initialExchanges);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export const ExchangesPage = () => {
+  const [exchanges, setExchanges] = useState<ExchangeRequest[]>(() => {
+    const saved = localStorage.getItem("dd_admin_exchanges");
+    if (saved) return JSON.parse(saved);
+    return initialExchanges;
+  });
+  const [activeTab, setActiveTab] = useState<"All" | "Pending Review" | "Active Logistics" | "Completed">("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"All" | "Pending" | "In Progress" | "Completed">("All");
+  const [selectedExchangeId, setSelectedExchangeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 6;
 
-  const active = useMemo(() => exchanges.find(e => e.id === selectedId) || null, [exchanges, selectedId]);
+  const active = exchanges.find(e => e.id === selectedExchangeId);
 
   const filtered = useMemo(() => exchanges.filter(e => {
-    if (activeTab === "Pending" && e.status !== "exchange initiated") return false;
-    if (activeTab === "In Progress" && !["exchange pickuped", "exchange shipped", "exchange out of delivery"].includes(e.status)) return false;
-    if (activeTab === "Completed" && e.status !== "exchange delivered") return false;
+    if (activeTab === "Pending Review" && e.approvalStatus !== "PENDING") return false;
+    if (activeTab === "Active Logistics" && (e.approvalStatus === "PENDING" || e.approvalStatus === "COMPLETED" || e.approvalStatus === "REJECTED")) return false;
+    if (activeTab === "Completed" && e.approvalStatus !== "COMPLETED") return false;
     const q = searchQuery.toLowerCase();
     return e.id.toLowerCase().includes(q) || e.orderId.toLowerCase().includes(q) || e.customerName.toLowerCase().includes(q) || e.email.toLowerCase().includes(q);
   }), [exchanges, activeTab, searchQuery]);
@@ -128,17 +190,81 @@ export function ExchangesPage() {
   const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
 
-  const updateStatus = (id: string, s: ExchangeStatus) => {
+  const setSelectedId = (id: string | null) => {
+    setSelectedExchangeId(id);
+  };
+
+  const updateApprovalStatus = (id: string, s: ReturnStatus) => {
     setExchanges(prev => prev.map(e => {
       if (e.id !== id) return e;
       const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      return { ...e, status: s, timeline: [...e.timeline, { status: s, timestamp: ts, note: `Status updated to "${s}".` }] };
+      let dStatus = e.deliveryStatus;
+      if (s === "APPROVED" && e.deliveryStatus === "EXCHANGE_INITIATED") {
+        dStatus = "EXCHANGE_APPROVED";
+      } else if (s === "RECEIVED") {
+        dStatus = "RECEIVED_AT_WAREHOUSE";
+      }
+      return {
+        ...e,
+        approvalStatus: s,
+        deliveryStatus: dStatus,
+        timeline: [...e.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }]
+      };
     }));
   };
 
-  const pendingCount = exchanges.filter(e => e.status === "exchange initiated").length;
-  const inProgressCount = exchanges.filter(e => ["exchange pickuped", "exchange shipped", "exchange out of delivery"].includes(e.status)).length;
-  const completedCount = exchanges.filter(e => e.status === "exchange delivered").length;
+  const updateDeliveryStatus = (id: string, ds: DeliveryStatus) => {
+    setExchanges(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+      let appStatus = e.approvalStatus;
+      let payStatus = e.paymentStatus;
+      if (ds === "EXCHANGE_COMPLETED") {
+        if (appStatus === "APPROVED" || appStatus === "RECEIVED") {
+          appStatus = "COMPLETED";
+        }
+        if (payStatus === "pending_payment") {
+          payStatus = "paid";
+        }
+      }
+      return {
+        ...e,
+        deliveryStatus: ds,
+        approvalStatus: appStatus,
+        paymentStatus: payStatus,
+        timeline: [...e.timeline, { status: ds, timestamp: ts, note: `Logistics update: exchange package is now ${ds.replaceAll("_", " ")}.` }]
+      };
+    }));
+  };
+
+  const verifyPayment = (id: string) => {
+    setExchanges(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+      return {
+        ...e,
+        paymentStatus: "paid",
+        timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Additional payment of ${RS}${e.adjustmentAmount} verified by admin.` }]
+      };
+    }));
+  };
+
+  const uploadProof = (id: string, url: string) => {
+    setExchanges(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+      return {
+        ...e,
+        receiptScreenshot: url,
+        paymentStatus: "refunded",
+        timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Refund payout of ${RS}${Math.abs(e.adjustmentAmount)} confirmed.` }]
+      };
+    }));
+  };
+
+  const pendingCount = exchanges.filter(e => e.approvalStatus === "PENDING").length;
+  const activeLogisticsCount = exchanges.filter(e => e.approvalStatus === "APPROVED" || e.approvalStatus === "RECEIVED").length;
+  const completedCount = exchanges.filter(e => e.approvalStatus === "COMPLETED").length;
   const totalItems = exchanges.reduce((s, e) => s + e.items.reduce((a, i) => a + i.qty, 0), 0);
 
   return (
@@ -148,8 +274,8 @@ export function ExchangesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Exchanges", value: exchanges.length.toString(), trend: "up" as const, change: `${totalItems} items`, subtitle: "All time exchange requests" },
-          { label: "Pending Pickup", value: pendingCount.toString(), trend: pendingCount > 0 ? "down" as const : "up" as const, change: `${exchanges.length > 0 ? Math.round((pendingCount / exchanges.length) * 100) : 0}% share`, subtitle: "Awaiting agent pickup" },
-          { label: "In Progress", value: inProgressCount.toString(), trend: "up" as const, change: `${exchanges.length > 0 ? Math.round((inProgressCount / exchanges.length) * 100) : 0}% share`, subtitle: "Replacement in transit" },
+          { label: "Pending Review", value: pendingCount.toString(), trend: pendingCount > 0 ? "down" as const : "up" as const, change: `${exchanges.length > 0 ? Math.round((pendingCount / exchanges.length) * 100) : 0}% share`, subtitle: "Awaiting review approval" },
+          { label: "Active Logistics", value: activeLogisticsCount.toString(), trend: "up" as const, change: `${exchanges.length > 0 ? Math.round((activeLogisticsCount / exchanges.length) * 100) : 0}% share`, subtitle: "Logistics in execution" },
           { label: "Completed", value: completedCount.toString(), trend: "up" as const, change: `${exchanges.length > 0 ? Math.round((completedCount / exchanges.length) * 100) : 0}% rate`, subtitle: "Exchanges fulfilled" },
         ].map((stat, idx) => (
           <div key={idx} className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] hover:shadow-sm transition-shadow">
@@ -172,7 +298,7 @@ export function ExchangesPage() {
       <div className="bg-card border border-neutral-200/80 p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div className="flex flex-nowrap items-center gap-3 shrink-0">
           <div className="flex bg-background border border-neutral-200 p-1 rounded-full gap-0.5">
-            {(["All", "Pending", "In Progress", "Completed"] as const).map(tab => (
+            {(["All", "Pending Review", "Active Logistics", "Completed"] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
@@ -203,10 +329,10 @@ export function ExchangesPage() {
               <th className="p-4">Exch. ID</th>
               <th className="p-4">Order</th>
               <th className="p-4">Customer</th>
-              <th className="p-4">Item</th>
-              <th className="p-4">Size Swap</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Date</th>
+              <th className="p-4">Item Swap details</th>
+              <th className="p-4">Price Adjustment</th>
+              <th className="p-4">Review Status</th>
+              <th className="p-4">Logistics status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100/80">
@@ -221,18 +347,43 @@ export function ExchangesPage() {
                 <td className="p-4">
                   <div className="flex items-center gap-2.5">
                     <img src={exc.items[0]?.image} alt="" className="w-9 h-9 object-cover border border-neutral-200 shrink-0" />
-                    <p className="text-[10.5px] font-bold text-[#382d24] leading-tight">{exc.items[0]?.name}</p>
+                    <div>
+                      <p className="text-[10.5px] font-bold text-[#382d24] leading-tight">{exc.items[0]?.name}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-neutral-100 text-neutral-600 rounded-sm">
+                          {exc.items[0]?.originalSize} / {exc.items[0]?.originalColor}
+                        </span>
+                        <span className="text-[8.5px] text-neutral-400 font-bold">→</span>
+                        <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-[#224870]/10 text-[#224870] rounded-sm">
+                          {exc.items[0]?.requestedSize} / {exc.items[0]?.requestedColor}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black uppercase px-2.5 py-1 bg-red-50 text-red-600 border border-red-200 rounded-sm">{exc.items[0]?.originalSize}</span>
-                    <span className="text-[10px] text-neutral-300 font-bold">→</span>
-                    <span className="text-[9px] font-black uppercase px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded-sm">{exc.items[0]?.requestedSize}</span>
-                  </div>
+                <td className="p-4 font-bold text-[11px]">
+                  {exc.adjustmentAmount === 0 ? (
+                    <span className="text-neutral-500">Even Swap (₹0)</span>
+                  ) : exc.adjustmentAmount > 0 ? (
+                    <div>
+                      <span className="text-red-600 font-extrabold">+{RS}{exc.adjustmentAmount}</span>
+                      <p className={`text-[8.5px] font-bold uppercase mt-0.5 ${exc.paymentStatus === "paid" ? "text-green-600" : "text-amber-600"}`}>
+                        {exc.paymentStatus === "paid" ? "Paid" : "Awaiting Pay"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-green-700 font-extrabold">-{RS}{Math.abs(exc.adjustmentAmount)}</span>
+                      <p className={`text-[8.5px] font-bold uppercase mt-0.5 ${exc.paymentStatus === "refunded" ? "text-green-600" : "text-blue-600"}`}>
+                        {exc.paymentStatus === "refunded" ? "Refunded" : "Awaiting Ref"}
+                      </p>
+                    </div>
+                  )}
                 </td>
-                <td className="p-4"><StatusBadge status={exc.status} /></td>
-                <td className="p-4 text-[10px] text-[#615e56] font-semibold">{exc.date}</td>
+                <td className="p-4"><ApprovalStatusBadge status={exc.approvalStatus} /></td>
+                <td className="p-4 text-[9.5px] text-[#615e56] font-bold uppercase tracking-wider">
+                  {exc.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
+                </td>
               </tr>
             ))}
             {paginated.length === 0 && (
@@ -275,7 +426,7 @@ export function ExchangesPage() {
             {/* Header */}
             <div className="sticky top-0 bg-white z-20 px-6 py-5 border-b border-neutral-200/60 flex items-start justify-between">
               <div>
-                <span className="text-[8.5px] font-bold tracking-[0.3em] text-[#615e56] uppercase block">Exchange Details</span>
+                <span className="text-[8.5px] font-bold tracking-[0.3em] text-[#615e56] uppercase block">Exchange Request</span>
                 <h2 className="text-lg font-bold text-[#382d24] uppercase tracking-tight mt-0.5">{active.id}</h2>
                 <p className="text-[10px] text-[#615e56] font-semibold mt-1">Order {active.orderId} · {active.date}</p>
               </div>
@@ -296,8 +447,39 @@ export function ExchangesPage() {
                   <p className="text-[9.5px] text-[#615e56] mt-0.5">{active.email}</p>
                   <p className="text-[9.5px] text-[#615e56]">{active.phone}</p>
                 </div>
-                <StatusBadge status={active.status} />
+                <div className="flex flex-col items-end gap-1.5">
+                  <ApprovalStatusBadge status={active.approvalStatus} />
+                  <span className="text-[8px] font-black uppercase bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-sm">
+                    {active.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
+                  </span>
+                </div>
               </div>
+
+              {/* Step 1: Administrative Approval review (when Pending) */}
+              {active.approvalStatus === "PENDING" && (
+                <div className="border border-amber-200 bg-amber-50/50 p-4 rounded-sm space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700 font-extrabold text-[10px] uppercase">
+                    <ShieldAlert className="w-4.5 h-4.5" /> Administrative Approval Needed
+                  </div>
+                  <p className="text-[10px] text-[#615e56] leading-relaxed">
+                    Verify request variant defect claims. Approving begins the logistics courier pickup journey.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => updateApprovalStatus(active.id, "REJECTED")}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white text-[9.5px] font-bold uppercase tracking-widest py-2 rounded-sm cursor-pointer transition-all border-none"
+                    >
+                      Reject Request
+                    </button>
+                    <button
+                      onClick={() => updateApprovalStatus(active.id, "APPROVED")}
+                      className="flex-1 bg-green-700 hover:bg-green-800 text-white text-[9.5px] font-bold uppercase tracking-widest py-2 rounded-sm cursor-pointer transition-all border-none"
+                    >
+                      Approve Request
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Items with size swap */}
               <div>
@@ -309,72 +491,157 @@ export function ExchangesPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-bold text-[#382d24] uppercase tracking-wide truncate">{item.name}</p>
                         <p className="text-[9.5px] text-[#615e56] mt-0.5">SKU: {item.sku} · Qty: <strong className="text-[#382d24]">{item.qty}</strong></p>
-                        <p className="text-[12px] font-bold text-[#224870] mt-1">{RS}{item.price.toLocaleString()}</p>
                       </div>
                     </div>
                     {/* Size swap row */}
-                    <div className="border-t border-neutral-200/60 px-4 py-3 bg-background/40 flex items-center justify-center gap-5">
-                      <div className="text-center">
-                        <p className="text-[8.5px] font-bold uppercase tracking-widest text-[#615e56] mb-2">Original Size</p>
-                        <span className="inline-flex items-center justify-center w-12 h-12 bg-red-50 border-2 border-red-200 text-red-700 font-bold text-lg">{item.originalSize}</span>
+                    <div className="border-t border-neutral-200/60 p-4 bg-background/40 grid grid-cols-2 gap-4">
+                      {/* Left: Original */}
+                      <div className="border-r border-neutral-200/60 pr-2">
+                        <p className="text-[8.5px] font-bold uppercase tracking-widest text-red-600 mb-2">Original Choice</p>
+                        <div className="space-y-1 text-[10px]">
+                          <p className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-neutral-400" /> Size: <strong className="text-[#382d24]">{item.originalSize}</strong></p>
+                          <p className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-neutral-400" /> Color: <strong className="text-[#382d24]">{item.originalColor}</strong></p>
+                          <p className="text-[#615e56] mt-1 font-semibold">Price Paid: <strong>{RS}{item.originalPrice}</strong></p>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="w-6 h-[2px] bg-neutral-200" />
-                        <span className="text-[7.5px] font-bold uppercase tracking-widest text-neutral-400">Swap</span>
-                        <div className="w-6 h-[2px] bg-neutral-200" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[8.5px] font-bold uppercase tracking-widest text-[#615e56] mb-2">New Size</p>
-                        <span className="inline-flex items-center justify-center w-12 h-12 bg-green-50 border-2 border-green-300 text-green-700 font-bold text-lg">{item.requestedSize}</span>
+
+                      {/* Right: Requested */}
+                      <div className="pl-2">
+                        <p className="text-[8.5px] font-bold uppercase tracking-widest text-green-700 mb-2">Replacement Choice</p>
+                        <div className="space-y-1 text-[10px]">
+                          <p className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-neutral-400" /> Size: <strong className="text-[#382d24]">{item.requestedSize}</strong></p>
+                          <p className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-neutral-400" /> Color: <strong className="text-[#382d24]">{item.requestedColor}</strong></p>
+                          <p className="text-[#615e56] mt-1 font-semibold">New Price: <strong>{RS}{item.replacementPrice}</strong></p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
-                <div className="mt-3 px-3.5 py-3 bg-amber-50 border border-amber-200/60 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="mt-3 px-3.5 py-3 bg-neutral-50 border border-neutral-200/60 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-amber-700">Reason for Exchange</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#615e56]">Reason for Exchange</p>
                     <p className="text-[10.5px] font-semibold text-[#382d24] mt-0.5">{active.reason}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Vertical Timeline */}
+              {/* Price adjustment & Transaction ledger */}
               <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-4">Exchange Journey</span>
-                <div className="relative">
-                  <div className="absolute left-[19px] top-3 bottom-3 w-[2px] bg-neutral-100" />
-                  {EXCHANGE_STAGES.map((stage, idx) => {
-                    const stageIdx = EXCHANGE_STAGES.findIndex(s => s.key === active.status);
-                    const isDone = idx <= stageIdx;
-                    const isCurrent = idx === stageIdx;
-                    const log = active.timeline.find(t => t.status === stage.key);
-                    const Icon = stage.icon;
-                    return (
-                      <div key={stage.key} className="relative flex items-start gap-4 pb-5">
-                        <button
-                          onClick={() => updateStatus(active.id, stage.key)}
-                          className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${
-                            isCurrent ? "bg-[#224870] border-[#224870] text-white shadow-md scale-105" :
-                            isDone ? "bg-white border-[#224870] text-[#224870]" :
-                            "bg-white border-neutral-200 text-neutral-300"
-                          }`}
-                        >
-                          {isDone && !isCurrent ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-4 h-4" />}
-                        </button>
-                        <div className="flex-1 min-w-0 pt-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className={`text-[10.5px] font-bold uppercase tracking-wide ${isCurrent ? "text-[#224870]" : isDone ? "text-[#382d24]" : "text-neutral-300"}`}>{stage.label}</p>
-                            {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Current</span>}
-                          </div>
-                          {log ? <p className="text-[9.5px] text-[#615e56] mt-0.5 leading-relaxed">{log.note}</p> : !isDone ? <p className="text-[9.5px] text-neutral-300 mt-0.5 italic">Awaiting update</p> : null}
-                          {log && <p className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</p>}
-                        </div>
+                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Price Adjustment Status</span>
+                <div className="border border-neutral-200/80 bg-card rounded-sm p-4 space-y-3">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-neutral-500 font-semibold">Replacement item price:</span>
+                    <span className="font-bold text-[#382d24]">{RS}{active.items[0]?.replacementPrice}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] border-b border-neutral-200/50 pb-2">
+                    <span className="text-neutral-500 font-semibold">Original item price:</span>
+                    <span className="font-bold text-[#382d24]">{RS}{active.items[0]?.originalPrice}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10.5px] font-bold text-[#382d24] uppercase">Net Adjustment:</span>
+                    {active.adjustmentAmount === 0 ? (
+                      <span className="text-[12px] font-bold text-[#382d24]">Even Swap (₹0)</span>
+                    ) : active.adjustmentAmount > 0 ? (
+                      <div className="text-right">
+                        <span className="text-[13px] font-bold text-red-600">+{RS}{active.adjustmentAmount}</span>
+                        <p className={`text-[8.5px] font-bold uppercase ${active.paymentStatus === "paid" ? "text-green-600" : "text-amber-600"}`}>
+                          {active.paymentStatus === "paid" ? "Payment Completed" : "Awaiting Pay"}
+                        </p>
                       </div>
-                    );
-                  })}
+                    ) : (
+                      <div className="text-right">
+                        <span className="text-[13px] font-bold text-green-700">Refund Customer {RS}{Math.abs(active.adjustmentAmount)}</span>
+                        <p className={`text-[8.5px] font-bold uppercase ${active.paymentStatus === "refunded" ? "text-green-600" : "text-blue-600"}`}>
+                          {active.paymentStatus === "refunded" ? "Refund Transferred" : "Pending Refund Process"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Step 2: Physical courier logistics tracking */}
+              {active.approvalStatus !== "PENDING" && active.approvalStatus !== "REJECTED" && (
+                <div>
+                  <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-4">Package Logistics Tracking</span>
+                  <div className="relative">
+                    <div className="absolute left-[19px] top-3 bottom-3 w-[2px] bg-neutral-100" />
+                    {DELIVERY_STAGES.map((stage, idx) => {
+                      const stageIdx = DELIVERY_STAGES.findIndex(s => s.key === active.deliveryStatus);
+                      const isDone = idx <= stageIdx;
+                      const isCurrent = idx === stageIdx;
+                      const log = active.timeline.find(t => t.status === stage.key);
+                      const Icon = stage.icon;
+                      return (
+                        <div key={stage.key} className="relative flex items-start gap-4 pb-5">
+                          <button
+                            disabled={active.adjustmentAmount > 0 && active.paymentStatus === "pending_payment" && idx > 0}
+                            onClick={() => updateDeliveryStatus(active.id, stage.key)}
+                            className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${
+                              isCurrent ? "bg-[#224870] border-[#224870] text-white shadow-md scale-105" :
+                              isDone ? "bg-white border-[#224870] text-[#224870]" :
+                              "bg-white border-neutral-200 text-neutral-300"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {isDone && !isCurrent ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-4 h-4" />}
+                          </button>
+                          <div className="flex-1 min-w-0 pt-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className={`text-[10.5px] font-bold uppercase tracking-wide ${isCurrent ? "text-[#224870]" : isDone ? "text-[#382d24]" : "text-neutral-300"}`}>{stage.label}</p>
+                              {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Active</span>}
+                            </div>
+                            {log ? <p className="text-[9.5px] text-[#615e56] mt-0.5 leading-relaxed">{log.note}</p> : !isDone ? <p className="text-[9.5px] text-neutral-300 mt-0.5 italic">Awaiting transit scan</p> : null}
+                            {log && <p className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* If Refund is Due & Not refunded yet, show refund inputs */}
+              {active.adjustmentAmount < 0 && (
+                <div className="space-y-4">
+                  {/* Bank Details section */}
+                  <div>
+                    <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund Bank Details</span>
+                    <div className="border border-neutral-200/80 bg-card rounded-sm p-4 space-y-2.5 text-[10.5px]">
+                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">Account Holder</span><span className="font-bold text-[#382d24]">{active.refundDetails?.accountHolderName || active.customerName}</span></div>
+                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">Bank Name</span><span className="font-bold text-[#382d24]">{active.refundDetails?.bankName || "HDFC Bank"}</span></div>
+                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">Account Number</span><span className="font-bold text-[#382d24] font-mono">{active.refundDetails?.accountNumber || "50100293847291"}</span></div>
+                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">IFSC Code</span><span className="font-bold text-[#382d24] font-mono">{active.refundDetails?.ifscCode || "HDFC0000001"}</span></div>
+                    </div>
+                  </div>
+
+                  {/* Proof upload */}
+                  <div>
+                    <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Upload Refund Payout Proof</span>
+                    {active.receiptScreenshot ? (
+                      <div className="border border-green-200 bg-green-50 p-4 flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-[9.5px] font-bold uppercase tracking-widest text-green-700">Refund Transferred</p>
+                          <p className="text-[9.5px] text-green-600 font-semibold mt-0.5">Transaction receipt recorded.</p>
+                        </div>
+                        <img src={active.receiptScreenshot} alt="Proof" className="w-12 h-12 object-cover border border-green-200 rounded-sm" />
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-3 border-2 border-dashed border-neutral-200 hover:border-[#224870] p-4 cursor-pointer transition-all group bg-card hover:bg-[#224870]/3">
+                        <div className="w-9 h-9 bg-neutral-100 group-hover:bg-[#224870]/10 flex items-center justify-center transition-all shrink-0">
+                          <Upload className="w-4 h-4 text-neutral-400 group-hover:text-[#224870] transition-colors" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-[#615e56] group-hover:text-[#224870] transition-colors">Upload Payout Screenshot</p>
+                          <p className="text-[9.5px] text-[#615e56] font-semibold mt-0.5">Upload bank screenshot of refund transfer.</p>
+                        </div>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadProof(active.id, URL.createObjectURL(f)); }} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>

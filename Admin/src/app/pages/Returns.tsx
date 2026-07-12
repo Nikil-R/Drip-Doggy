@@ -4,19 +4,26 @@ import {
   Package, Truck, Home, RotateCcw, Check,
   ArrowUpRight, Clock, User, AlertCircle,
   Upload, Building, Phone, QrCode,
-  TrendingUp, TrendingDown
+  TrendingUp, TrendingDown, Mail, AlertTriangle, XCircle, ShieldAlert
 } from "lucide-react";
 import { customerApi } from "../lib/customer-api";
 import { useAuthStore } from "@/app/store/auth-store";
 
 const RS = "₹";
 
+type DeliveryStatus =
+  | "RETURN_INITIATED"
+  | "RETURN_APPROVED"
+  | "OUT_FOR_PICKUP"
+  | "RECEIVED_AT_WAREHOUSE"
+  | "REFUND_COMPLETED";
+
 type ReturnStatus =
-  | "return initiated"
-  | "return pickuped"
-  | "return shipped"
-  | "return out of delivery"
-  | "return delivered";
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "RECEIVED"
+  | "COMPLETED";
 
 interface StatusTimeline {
   status: string;
@@ -42,7 +49,8 @@ interface ReturnRequest {
   date: string;
   amount: number;
   reason: string;
-  status: ReturnStatus;
+  approvalStatus: ReturnStatus;
+  deliveryStatus: DeliveryStatus;
   items: ReturnItem[];
   refundMethod: "qr_code" | "upi" | "bank_transfer";
   refundDetails: {
@@ -56,22 +64,23 @@ interface ReturnRequest {
   };
   timeline: StatusTimeline[];
   receiptScreenshot?: string | null;
+  emailSent?: boolean;
 }
 
-const RETURN_STAGES: { key: ReturnStatus; label: string; icon: React.ComponentType<any> }[] = [
-  { key: "return initiated",        label: "Initiated",        icon: RotateCcw },
-  { key: "return pickuped",         label: "Picked Up",        icon: Package },
-  { key: "return shipped",          label: "In Transit",       icon: Truck },
-  { key: "return out of delivery",  label: "Out for Delivery", icon: ArrowUpRight },
-  { key: "return delivered",        label: "Delivered",        icon: Home },
+const DELIVERY_STAGES: { key: DeliveryStatus; label: string; icon: React.ComponentType<any> }[] = [
+  { key: "RETURN_INITIATED",     label: "Return Initiated",     icon: RotateCcw },
+  { key: "RETURN_APPROVED",      label: "Return Approved",      icon: Clock },
+  { key: "OUT_FOR_PICKUP",       label: "Out for Pickup",       icon: Package },
+  { key: "RECEIVED_AT_WAREHOUSE",label: "Received at Warehouse",icon: Building },
+  { key: "REFUND_COMPLETED",     label: "Refund Completed",     icon: Home },
 ];
 
-const STATUS_META: Record<ReturnStatus, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  "return initiated":       { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-500",   label: "Initiated" },
-  "return pickuped":        { bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-500",    label: "Picked Up" },
-  "return shipped":         { bg: "bg-indigo-50",  text: "text-indigo-700",  border: "border-indigo-200",  dot: "bg-indigo-500",  label: "In Transit" },
-  "return out of delivery": { bg: "bg-violet-50",  text: "text-violet-700",  border: "border-violet-200",  dot: "bg-violet-500",  label: "Out for Delivery" },
-  "return delivered":       { bg: "bg-green-50",   text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Delivered" },
+const APPROVAL_META: Record<ReturnStatus, { bg: string; text: string; border: string; dot: string; label: string }> = {
+  "PENDING":   { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-500",   label: "Pending Review" },
+  "APPROVED":  { bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-500",    label: "Approved" },
+  "REJECTED":  { bg: "bg-red-50",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500",     label: "Rejected" },
+  "RECEIVED":  { bg: "bg-indigo-50",  text: "text-indigo-700",  border: "border-indigo-200",  dot: "bg-indigo-500",  label: "Package Received" },
+  "COMPLETED": { bg: "bg-green-50",   text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Completed" },
 };
 
 const initialReturns: ReturnRequest[] = [
@@ -79,45 +88,49 @@ const initialReturns: ReturnRequest[] = [
     id: "RET-1082", orderId: "#DD-6545", customerName: "Ananya Sharma",
     email: "ananya.s@gmail.com", phone: "+91 98765 43210", date: "2026-06-25", amount: 5800,
     reason: "Size is too large, fabric feels heavy.",
-    status: "return initiated",
+    approvalStatus: "PENDING",
+    deliveryStatus: "RETURN_INITIATED",
     items: [{ name: "Structured Canvas Jacket", sku: "DD-STR-001", size: "L", qty: 1, price: 5800, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop" }],
     refundMethod: "bank_transfer",
     refundDetails: { accountHolderName: "Ananya Sharma", bankName: "State Bank of India", accountNumber: "12345678901", ifscCode: "SBIN0000001" },
-    timeline: [{ status: "return initiated", timestamp: "2026-06-25 14:30", note: "Customer submitted return request online." }]
+    timeline: [{ status: "PENDING", timestamp: "2026-06-25 14:30", note: "Customer submitted return request online. Status set to Pending." }]
   },
   {
     id: "RET-1081", orderId: "#DD-6543", customerName: "Rohan Mehta",
     email: "rohan.mehta@yahoo.com", phone: "+91 91234 56789", date: "2026-06-24", amount: 3200,
     reason: "Colour discrepancy from website photo.",
-    status: "return pickuped",
+    approvalStatus: "APPROVED",
+    deliveryStatus: "OUT_FOR_PICKUP",
     items: [{ name: "Everyday Relaxed Shift Dress", sku: "DD-EVE-002", size: "M", qty: 1, price: 3200, image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop" }],
     refundMethod: "upi",
     refundDetails: { upiId: "rohanmehta@okaxis", phoneNumber: "+91 91234 56789" },
     timeline: [
-      { status: "return initiated", timestamp: "2026-06-24 10:15", note: "Customer submitted return request online." },
-      { status: "return pickuped", timestamp: "2026-06-25 11:00", note: "Pickup agent collected the package from customer." }
+      { status: "PENDING", timestamp: "2026-06-24 10:15", note: "Customer submitted return request." },
+      { status: "APPROVED", timestamp: "2026-06-24 16:00", note: "Admin approved return request." },
+      { status: "OUT_FOR_PICKUP", timestamp: "2026-06-25 11:00", note: "Courier package collected from customer." }
     ]
   },
   {
     id: "RET-1080", orderId: "#DD-6541", customerName: "Priya Patel",
     email: "priya.p@gmail.com", phone: "+91 98989 89898", date: "2026-06-22", amount: 4500,
     reason: "Defective stitching on left side seam.",
-    status: "return delivered",
+    approvalStatus: "COMPLETED",
+    deliveryStatus: "REFUND_COMPLETED",
     items: [{ name: "Modern Oversized Knitwear", sku: "DD-MOD-003", size: "S", qty: 1, price: 4500, image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop" }],
     refundMethod: "qr_code",
     refundDetails: { qrCodeImage: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?q=80&w=200&auto=format&fit=crop" },
     timeline: [
-      { status: "return initiated", timestamp: "2026-06-22 09:00", note: "Return request submitted by customer." },
-      { status: "return pickuped", timestamp: "2026-06-23 14:00", note: "Pickup agent collected the package." },
-      { status: "return shipped", timestamp: "2026-06-24 08:30", note: "Package handed to logistics partner for transit." },
-      { status: "return out of delivery", timestamp: "2026-06-25 10:00", note: "Out for warehouse delivery." },
-      { status: "return delivered", timestamp: "2026-06-25 16:30", note: "Package received and inspected at warehouse." }
+      { status: "PENDING", timestamp: "2026-06-22 09:00", note: "Return request submitted." },
+      { status: "APPROVED", timestamp: "2026-06-22 13:00", note: "Admin approved request." },
+      { status: "OUT_FOR_PICKUP", timestamp: "2026-06-23 14:00", note: "Pickup completed." },
+      { status: "RECEIVED_AT_WAREHOUSE", timestamp: "2026-06-25 16:30", note: "Received at warehouse." },
+      { status: "COMPLETED", timestamp: "2026-06-26 12:00", note: "Refund paid out." }
     ]
   }
 ];
 
-function StatusBadge({ status }: { status: ReturnStatus }) {
-  const m = STATUS_META[status];
+function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
+  const m = APPROVAL_META[status];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[9px] font-bold uppercase tracking-widest border ${m.bg} ${m.text} ${m.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
@@ -130,8 +143,11 @@ export function ReturnsPage() {
   const [returns, setReturns] = useState<ReturnRequest[]>(initialReturns);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"All" | "Pending" | "In Transit" | "Completed">("All");
+  const [activeTab, setActiveTab] = useState<"All" | "Pending Review" | "Active Logistics" | "Completed">("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatusMessage, setEmailStatusMessage] = useState("");
   const ITEMS_PER_PAGE = 5;
   const { token } = useAuthStore();
 
@@ -155,11 +171,12 @@ export function ReturnsPage() {
               email: d.onboardingProfile?.email || "", phone: d.onboardingProfile?.phone || "",
               date: ro.date?.split(" ")?.[0] || "2026-07-08", amount: ro.amount,
               reason: "Customer requested return via dashboard.",
-              status: "return initiated",
+              approvalStatus: "PENDING",
+              deliveryStatus: "RETURN_INITIATED",
               items: [{ name: "Structured Canvas Jacket", sku: `DD-${ro.id}`, size: "M", qty: 1, price: ro.amount - 90, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop" }],
               refundMethod: "bank_transfer",
               refundDetails: { accountHolderName: `${d.onboardingProfile?.firstName || ""} ${d.onboardingProfile?.lastName || ""}`.trim() || "Customer", bankName: "HDFC Bank", accountNumber: "50100293847291", ifscCode: "HDFC0000001" },
-              timeline: [{ status: "return initiated", timestamp: ro.date || "2026-07-08 12:00", note: "Return request submitted." }]
+              timeline: [{ status: "PENDING", timestamp: ro.date || "2026-07-08 12:00", note: "Return request submitted." }]
             });
           }
         }
@@ -172,9 +189,9 @@ export function ReturnsPage() {
   const active = useMemo(() => returns.find(r => r.id === selectedId) || null, [returns, selectedId]);
 
   const filtered = useMemo(() => returns.filter(r => {
-    if (activeTab === "Pending" && r.status !== "return initiated") return false;
-    if (activeTab === "In Transit" && !["return pickuped", "return shipped", "return out of delivery"].includes(r.status)) return false;
-    if (activeTab === "Completed" && r.status !== "return delivered") return false;
+    if (activeTab === "Pending Review" && r.approvalStatus !== "PENDING") return false;
+    if (activeTab === "Active Logistics" && (r.approvalStatus === "PENDING" || r.approvalStatus === "COMPLETED" || r.approvalStatus === "REJECTED")) return false;
+    if (activeTab === "Completed" && r.approvalStatus !== "COMPLETED") return false;
     const q = searchQuery.toLowerCase();
     return r.id.toLowerCase().includes(q) || r.orderId.toLowerCase().includes(q) || r.customerName.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
   }), [returns, activeTab, searchQuery]);
@@ -182,31 +199,95 @@ export function ReturnsPage() {
   const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
 
-  const updateStatus = (id: string, s: ReturnStatus) => {
+  // Handles transition of administrative status
+  const updateApprovalStatus = (id: string, s: ReturnStatus) => {
     setReturns(prev => prev.map(r => {
       if (r.id !== id) return r;
       const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      return { ...r, status: s, timeline: [...r.timeline, { status: s, timestamp: ts, note: `Status updated to "${s}".` }] };
+      let updatedTimeline = [...r.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }];
+      
+      // Auto-drive deliveryStatus based on approval transitions
+      let dStatus = r.deliveryStatus;
+      if (s === "APPROVED" && r.deliveryStatus === "RETURN_INITIATED") {
+        dStatus = "RETURN_APPROVED";
+      } else if (s === "RECEIVED") {
+        dStatus = "RECEIVED_AT_WAREHOUSE";
+      }
+
+      return {
+        ...r,
+        approvalStatus: s,
+        deliveryStatus: dStatus,
+        timeline: updatedTimeline
+      };
+    }));
+  };
+
+  // Handles updating physical logistics timeline tracking
+  const updateDeliveryStatus = (id: string, ds: DeliveryStatus) => {
+    setReturns(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+      
+      // Auto transition approval status to RECEIVED once courier drops it back
+      let appStatus = r.approvalStatus;
+      if (ds === "RECEIVED_AT_WAREHOUSE" && appStatus === "APPROVED") {
+        appStatus = "RECEIVED";
+      }
+
+      return {
+        ...r,
+        deliveryStatus: ds,
+        approvalStatus: appStatus,
+        timeline: [...r.timeline, { status: ds, timestamp: ts, note: `Logistics update: package is now ${ds.replaceAll("_", " ")}.` }]
+      };
     }));
   };
 
   const uploadProof = (id: string, url: string) => setReturns(prev => prev.map(r => r.id === id ? { ...r, receiptScreenshot: url } : r));
 
-  const pendingCount = returns.filter(r => r.status === "return initiated").length;
-  const inTransitCount = returns.filter(r => ["return pickuped", "return shipped", "return out of delivery"].includes(r.status)).length;
-  const completedCount = returns.filter(r => r.status === "return delivered").length;
+  const handleConfirmRefundPayout = () => {
+    if (!active) return;
+    setSendingEmail(true);
+    setEmailStatusMessage("Simulating customer notification dispatch...");
+
+    setTimeout(() => {
+      setReturns(prev => prev.map(r => {
+        if (r.id !== active.id) return r;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        return {
+          ...r,
+          approvalStatus: "COMPLETED",
+          emailSent: true,
+          timeline: [
+            ...r.timeline,
+            { status: "COMPLETED", timestamp: ts, note: `Refund of ${RS}${r.amount} paid out. Request COMPLETED.` }
+          ]
+        };
+      }));
+
+      setSendingEmail(false);
+      setShowConfirmModal(false);
+      setEmailStatusMessage("");
+      alert(`Success! Email notification sent to ${active.customerName} (${active.email}) along with the receipt proof attachment of ${RS}${active.amount}.`);
+    }, 1500);
+  };
+
+  const pendingCount = returns.filter(r => r.approvalStatus === "PENDING").length;
+  const activeLogisticsCount = returns.filter(r => r.approvalStatus === "APPROVED" || r.approvalStatus === "RECEIVED").length;
+  const completedCount = returns.filter(r => r.approvalStatus === "COMPLETED").length;
   const totalRefund = returns.reduce((s, r) => s + r.amount, 0);
 
   return (
     <div className="space-y-6 font-sans">
 
-      {/* ─── KPI Cards ─── (same pattern as Orders page) */}
+      {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Refund Value", value: `${RS}${totalRefund.toLocaleString("en-IN")}`, trend: "up" as const, change: `${returns.length} returns`, subtitle: "Across all return cases" },
-          { label: "Pending Pickup", value: pendingCount.toString(), trend: pendingCount > 0 ? "down" as const : "up" as const, change: `${returns.length > 0 ? Math.round((pendingCount / returns.length) * 100) : 0}% share`, subtitle: "Awaiting agent pickup" },
-          { label: "In Transit", value: inTransitCount.toString(), trend: "up" as const, change: `${returns.length > 0 ? Math.round((inTransitCount / returns.length) * 100) : 0}% share`, subtitle: "On the way to warehouse" },
-          { label: "Completed", value: completedCount.toString(), trend: "up" as const, change: `${returns.length > 0 ? Math.round((completedCount / returns.length) * 100) : 0}% rate`, subtitle: "Return fulfilled" },
+          { label: "Pending Review", value: pendingCount.toString(), trend: pendingCount > 0 ? "down" as const : "up" as const, change: `${returns.length > 0 ? Math.round((pendingCount / returns.length) * 100) : 0}% share`, subtitle: "Awaiting approval review" },
+          { label: "Active Logistics", value: activeLogisticsCount.toString(), trend: "up" as const, change: `${returns.length > 0 ? Math.round((activeLogisticsCount / returns.length) * 100) : 0}% share`, subtitle: "In-pickup or warehouse transit" },
+          { label: "Completed", value: completedCount.toString(), trend: "up" as const, change: `${returns.length > 0 ? Math.round((completedCount / returns.length) * 100) : 0}% rate`, subtitle: "Fulfillment complete" },
         ].map((stat, idx) => (
           <div key={idx} className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[110px] hover:shadow-sm transition-shadow">
             <div className="flex items-start justify-between">
@@ -228,7 +309,7 @@ export function ReturnsPage() {
       <div className="bg-card border border-neutral-200/80 p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div className="flex flex-nowrap items-center gap-3 shrink-0">
           <div className="flex bg-background border border-neutral-200 p-1 rounded-full gap-0.5">
-            {(["All", "Pending", "In Transit", "Completed"] as const).map(tab => (
+            {(["All", "Pending Review", "Active Logistics", "Completed"] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
@@ -261,8 +342,8 @@ export function ReturnsPage() {
               <th className="p-4">Customer</th>
               <th className="p-4">Item</th>
               <th className="p-4">Refund Amt</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Date</th>
+              <th className="p-4">Review Status</th>
+              <th className="p-4">Logistics status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100/80">
@@ -284,8 +365,10 @@ export function ReturnsPage() {
                   </div>
                 </td>
                 <td className="p-4 font-bold text-[12px] text-[#382d24]">{RS}{ret.amount.toLocaleString()}</td>
-                <td className="p-4"><StatusBadge status={ret.status} /></td>
-                <td className="p-4 text-[10px] text-[#615e56] font-semibold">{ret.date}</td>
+                <td className="p-4"><ApprovalStatusBadge status={ret.approvalStatus} /></td>
+                <td className="p-4 text-[9.5px] text-[#615e56] font-bold uppercase tracking-wider">
+                  {ret.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
+                </td>
               </tr>
             ))}
             {paginated.length === 0 && (
@@ -328,7 +411,7 @@ export function ReturnsPage() {
             {/* Header */}
             <div className="sticky top-0 bg-white z-20 px-6 py-5 border-b border-neutral-200/60 flex items-start justify-between">
               <div>
-                <span className="text-[8.5px] font-bold tracking-[0.3em] text-[#615e56] uppercase block">Return Details</span>
+                <span className="text-[8.5px] font-bold tracking-[0.3em] text-[#615e56] uppercase block">Return Request</span>
                 <h2 className="text-lg font-bold text-[#382d24] uppercase tracking-tight mt-0.5">{active.id}</h2>
                 <p className="text-[10px] text-[#615e56] font-semibold mt-1">Order {active.orderId} · {active.date}</p>
               </div>
@@ -349,8 +432,39 @@ export function ReturnsPage() {
                   <p className="text-[9.5px] text-[#615e56] mt-0.5">{active.email}</p>
                   <p className="text-[9.5px] text-[#615e56]">{active.phone}</p>
                 </div>
-                <StatusBadge status={active.status} />
+                <div className="flex flex-col items-end gap-1.5">
+                  <ApprovalStatusBadge status={active.approvalStatus} />
+                  <span className="text-[8px] font-black uppercase bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-sm">
+                    {active.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
+                  </span>
+                </div>
               </div>
+
+              {/* Step 1: Administrative Approval review (when Pending) */}
+              {active.approvalStatus === "PENDING" && (
+                <div className="border border-amber-200 bg-amber-50/50 p-4 rounded-sm space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700 font-extrabold text-[10px] uppercase">
+                    <ShieldAlert className="w-4.5 h-4.5" /> Administrative Approval Action Needed
+                  </div>
+                  <p className="text-[10px] text-[#615e56] leading-relaxed">
+                    Verify request defect claims. Approving begins the logistics courier pickup journey.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => updateApprovalStatus(active.id, "REJECTED")}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white text-[9.5px] font-bold uppercase tracking-widest py-2 rounded-sm cursor-pointer transition-all border-none"
+                    >
+                      Reject Request
+                    </button>
+                    <button
+                      onClick={() => updateApprovalStatus(active.id, "APPROVED")}
+                      className="flex-1 bg-green-700 hover:bg-green-800 text-white text-[9.5px] font-bold uppercase tracking-widest py-2 rounded-sm cursor-pointer transition-all border-none"
+                    >
+                      Approve Request
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Items */}
               <div>
@@ -367,55 +481,57 @@ export function ReturnsPage() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 px-3.5 py-3 bg-amber-50 border border-amber-200/60 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="mt-3 px-3.5 py-3 bg-neutral-50 border border-neutral-200/60 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-amber-700">Reason for Return</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#615e56]">Reason for Return</p>
                     <p className="text-[10.5px] font-semibold text-[#382d24] mt-0.5">{active.reason}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Vertical Timeline */}
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-4">Return Journey</span>
-                <div className="relative">
-                  <div className="absolute left-[19px] top-3 bottom-3 w-[2px] bg-neutral-100" />
-                  {RETURN_STAGES.map((stage, idx) => {
-                    const stageIdx = RETURN_STAGES.findIndex(s => s.key === active.status);
-                    const isDone = idx <= stageIdx;
-                    const isCurrent = idx === stageIdx;
-                    const log = active.timeline.find(t => t.status === stage.key);
-                    const Icon = stage.icon;
-                    return (
-                      <div key={stage.key} className="relative flex items-start gap-4 pb-5">
-                        <button
-                          onClick={() => updateStatus(active.id, stage.key)}
-                          className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${
-                            isCurrent ? "bg-[#224870] border-[#224870] text-white shadow-md scale-105" :
-                            isDone ? "bg-white border-[#224870] text-[#224870]" :
-                            "bg-white border-neutral-200 text-neutral-300"
-                          }`}
-                        >
-                          {isDone && !isCurrent ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-4 h-4" />}
-                        </button>
-                        <div className="flex-1 min-w-0 pt-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className={`text-[10.5px] font-bold uppercase tracking-wide ${isCurrent ? "text-[#224870]" : isDone ? "text-[#382d24]" : "text-neutral-300"}`}>{stage.label}</p>
-                            {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Current</span>}
+              {/* Step 2: Physical Package Logistics timeline (only if approved) */}
+              {active.approvalStatus !== "PENDING" && active.approvalStatus !== "REJECTED" && (
+                <div>
+                  <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-4">Package Logistics Tracking</span>
+                  <div className="relative">
+                    <div className="absolute left-[19px] top-3 bottom-3 w-[2px] bg-neutral-100" />
+                    {DELIVERY_STAGES.map((stage, idx) => {
+                      const stageIdx = DELIVERY_STAGES.findIndex(s => s.key === active.deliveryStatus);
+                      const isDone = idx <= stageIdx;
+                      const isCurrent = idx === stageIdx;
+                      const log = active.timeline.find(t => t.status === stage.key);
+                      const Icon = stage.icon;
+                      return (
+                        <div key={stage.key} className="relative flex items-start gap-4 pb-5">
+                          <button
+                            onClick={() => updateDeliveryStatus(active.id, stage.key)}
+                            className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${
+                              isCurrent ? "bg-[#224870] border-[#224870] text-white shadow-md scale-105" :
+                              isDone ? "bg-white border-[#224870] text-[#224870]" :
+                              "bg-white border-neutral-200 text-neutral-300"
+                            }`}
+                          >
+                            {isDone && !isCurrent ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-4 h-4" />}
+                          </button>
+                          <div className="flex-1 min-w-0 pt-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className={`text-[10.5px] font-bold uppercase tracking-wide ${isCurrent ? "text-[#224870]" : isDone ? "text-[#382d24]" : "text-neutral-300"}`}>{stage.label}</p>
+                              {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Active</span>}
+                            </div>
+                            {log ? <p className="text-[9.5px] text-[#615e56] mt-0.5 leading-relaxed">{log.note}</p> : !isDone ? <p className="text-[9.5px] text-neutral-300 mt-0.5 italic">Awaiting shipment scan</p> : null}
+                            {log && <p className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</p>}
                           </div>
-                          {log ? <p className="text-[9.5px] text-[#615e56] mt-0.5 leading-relaxed">{log.note}</p> : !isDone ? <p className="text-[9.5px] text-neutral-300 mt-0.5 italic">Awaiting update</p> : null}
-                          {log && <p className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</p>}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Refund Details */}
               <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund Details</span>
+                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund details</span>
                 <div className="border border-neutral-200/80 bg-card">
                   <div className="px-4 py-3 border-b border-neutral-200/60 bg-background/40 flex items-center gap-2">
                     {active.refundMethod === "bank_transfer" && <Building className="w-4 h-4 text-[#224870]" />}
@@ -450,33 +566,110 @@ export function ReturnsPage() {
                 </div>
               </div>
 
-              {/* Proof Upload */}
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Payout Proof</span>
-                {active.receiptScreenshot ? (
-                  <div className="border border-green-200 bg-green-50 p-4 flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-[9.5px] font-bold uppercase tracking-widest text-green-700">Proof Uploaded</p>
-                      <p className="text-[9.5px] text-green-600 font-semibold mt-0.5">Transaction receipt recorded.</p>
+              {/* Step 3: Refund proof submission (only after package reaches RECEIVED or RETURN_DELIVERED stage) */}
+              {active.approvalStatus !== "PENDING" && active.approvalStatus !== "REJECTED" && (
+                <div>
+                  <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund Verification & Closeout</span>
+                  {active.receiptScreenshot ? (
+                    <div className="space-y-3">
+                      <div className="border border-green-200 bg-green-50 p-4 flex items-center gap-3 rounded-sm">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-[9.5px] font-bold uppercase tracking-widest text-green-700">Proof Uploaded</p>
+                          <p className="text-[9.5px] text-green-600 font-semibold mt-0.5">Transaction receipt recorded.</p>
+                        </div>
+                        <img src={active.receiptScreenshot} alt="Proof" className="w-12 h-12 object-cover border border-green-200" />
+                      </div>
+
+                      {active.approvalStatus !== "COMPLETED" && (
+                        <button
+                          onClick={() => setShowConfirmModal(true)}
+                          className="w-full bg-[#224870] hover:bg-[#1a3858] text-white text-[9.5px] font-black uppercase tracking-wider py-2.5 px-4 rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
+                        >
+                          <Mail className="w-4 h-4" /> Confirm & Send Email to Customer
+                        </button>
+                      )}
+
+                      {active.approvalStatus === "COMPLETED" && (
+                        <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold bg-green-50 border border-green-200 p-2.5 rounded-sm">
+                          <Check className="w-4 h-4" /> Refund complete. Email notifications sent successfully.
+                        </div>
+                      )}
                     </div>
-                    <img src={active.receiptScreenshot} alt="Proof" className="w-12 h-12 object-cover border border-green-200" />
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-3 border-2 border-dashed border-neutral-200 hover:border-[#224870] p-4 cursor-pointer transition-all group bg-card hover:bg-[#224870]/3">
-                    <div className="w-9 h-9 bg-neutral-100 group-hover:bg-[#224870]/10 flex items-center justify-center transition-all shrink-0">
-                      <Upload className="w-4 h-4 text-neutral-400 group-hover:text-[#224870] transition-colors" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#615e56] group-hover:text-[#224870] transition-colors">Upload Receipt Screenshot</p>
-                      <p className="text-[9.5px] text-[#615e56] font-semibold mt-0.5">Attach bank transaction proof to complete payout.</p>
-                    </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadProof(active.id, URL.createObjectURL(f)); }} />
-                  </label>
-                )}
-              </div>
+                  ) : (
+                    <label className="flex items-center gap-3 border-2 border-dashed border-neutral-200 hover:border-[#224870] p-4 cursor-pointer transition-all group bg-card hover:bg-[#224870]/3">
+                      <div className="w-9 h-9 bg-neutral-100 group-hover:bg-[#224870]/10 flex items-center justify-center transition-all shrink-0">
+                        <Upload className="w-4 h-4 text-neutral-400 group-hover:text-[#224870] transition-colors" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#615e56] group-hover:text-[#224870] transition-colors">Upload Receipt Screenshot</p>
+                        <p className="text-[9.5px] text-[#615e56] font-semibold mt-0.5">Attach bank transaction proof to unlock confirmation.</p>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadProof(active.id, URL.createObjectURL(f)); }} />
+                    </label>
+                  )}
+                </div>
+              )}
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Confirmation Modal ─── */}
+      {showConfirmModal && active && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white border border-neutral-200 w-full max-w-[450px] p-6 rounded-sm shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-50 text-amber-600 rounded-full shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-[#382d24] uppercase tracking-wider">Confirm Payout & Notify Customer</h3>
+                <p className="text-xs text-[#615e56] font-semibold mt-1">
+                  You are finalizing the refund of <strong>{RS}{active.amount}</strong> to <strong>{active.customerName}</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-neutral-50 p-3.5 border border-neutral-200/80 rounded-sm space-y-2 text-[10.5px]">
+              <p className="font-bold text-[#382d24] border-b border-neutral-200 pb-1.5 mb-1.5 uppercase text-[9px] tracking-wider">Recipient Payout Details</p>
+              {active.refundMethod === "bank_transfer" && (
+                <>
+                  <p><span className="text-[#615e56] font-medium">Bank Name:</span> <strong className="text-[#382d24]">{active.refundDetails.bankName}</strong></p>
+                  <p><span className="text-[#615e56] font-medium">Account Holder:</span> <strong className="text-[#382d24]">{active.refundDetails.accountHolderName}</strong></p>
+                  <p><span className="text-[#615e56] font-medium">Account Number:</span> <strong className="text-[#382d24] font-mono">{active.refundDetails.accountNumber}</strong></p>
+                  <p><span className="text-[#615e56] font-medium">IFSC Code:</span> <strong className="text-[#382d24] font-mono">{active.refundDetails.ifscCode}</strong></p>
+                </>
+              )}
+              {active.refundMethod === "upi" && (
+                <p><span className="text-[#615e56] font-medium">UPI Address:</span> <strong className="text-[#382d24] font-mono">{active.refundDetails.upiId}</strong></p>
+              )}
+            </div>
+
+            <p className="text-[10px] text-[#615e56] leading-relaxed font-semibold">
+              An email notification confirming payout credit with the transaction receipt attachment will be sent to <strong>{active.email}</strong>.
+            </p>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                disabled={sendingEmail}
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 border border-neutral-200 hover:bg-neutral-50 text-[10px] font-bold uppercase tracking-wider py-2 rounded-sm cursor-pointer transition-all bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={sendingEmail}
+                onClick={handleConfirmRefundPayout}
+                className="flex-1 bg-green-700 hover:bg-green-800 text-white text-[10px] font-bold uppercase tracking-wider py-2 rounded-sm cursor-pointer transition-all flex items-center justify-center gap-1 border-none disabled:opacity-50"
+              >
+                {sendingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Yes, Send Receipt"}
+              </button>
+            </div>
+            {emailStatusMessage && (
+              <p className="text-[9.5px] text-center text-blue-600 font-semibold animate-pulse">{emailStatusMessage}</p>
+            )}
           </div>
         </div>
       )}

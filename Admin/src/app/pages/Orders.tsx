@@ -48,7 +48,7 @@ interface Order {
   phone: string;
   date: string;
   payment: "Paid" | "Unpaid" | "Refunded";
-  status: "Delivered" | "Shipped" | "Processing" | "Pending" | "Cancelled" | "Return Requested";
+  status: "Placed" | "Processing" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled" | "Return Requested" | "Exchange Requested";
   delivery: string;
   // Full address fields
   addressLine1: string;
@@ -134,7 +134,7 @@ const initialOrders: Order[] = [
     phone: "+91 77665 44332",
     date: "2026-06-22",
     payment: "Paid",
-    status: "Processing",
+    status: "Packed",
     delivery: "Bangalore, KA",
     addressLine1: "House 15, GK II",
     addressLine2: "Outer Ring Road, Greater Kailash",
@@ -178,7 +178,7 @@ const initialOrders: Order[] = [
     phone: "+91 99008 87766",
     date: "2026-06-21",
     payment: "Unpaid",
-    status: "Pending",
+    status: "Placed",
     delivery: "Chennai, TN",
     addressLine1: "55, Anna Nagar",
     addressLine2: "2nd Main Road",
@@ -393,11 +393,14 @@ export function OrdersPage() {
             if (ro.payment === "PAID" || ro.payment === "COMPLETED") mappedPayment = "Paid";
             else if (ro.payment === "REFUNDED") mappedPayment = "Refunded";
 
-            let mappedStatus: Order["status"] = "Pending";
+            let mappedStatus: Order["status"] = "Placed";
             const sUpper = ro.status?.toUpperCase() || "";
             if (sUpper === "DELIVERED") mappedStatus = "Delivered";
+            else if (sUpper === "OUT_FOR_DELIVERY" || sUpper === "OUT FOR DELIVERY") mappedStatus = "Out for Delivery";
             else if (sUpper === "SHIPPED") mappedStatus = "Shipped";
+            else if (sUpper === "PACKED") mappedStatus = "Packed";
             else if (sUpper === "PROCESSING") mappedStatus = "Processing";
+            else if (sUpper === "PLACED" || sUpper === "PENDING") mappedStatus = "Placed";
             else if (sUpper === "CANCELLED" || sUpper === "CANCELED") mappedStatus = "Cancelled";
             else if (sUpper === "RETURN_REQUESTED") mappedStatus = "Return Requested";
 
@@ -611,9 +614,9 @@ export function OrdersPage() {
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
       if (activeTab === "Completed" && o.status !== "Delivered") return false;
-      if (activeTab === "Processing" && o.status !== "Processing" && o.status !== "Shipped") return false;
+      if (activeTab === "Processing" && o.status !== "Processing" && o.status !== "Packed" && o.status !== "Shipped" && o.status !== "Out for Delivery") return false;
       if (activeTab === "Canceled" && o.status !== "Cancelled") return false;
-      if (activeTab === "Pending" && o.status !== "Pending") return false;
+      if (activeTab === "Pending" && o.status !== "Placed") return false;
       if (dateRange.start && o.date < dateRange.start) return false;
       if (dateRange.end && o.date > dateRange.end) return false;
       const q = searchQuery.toLowerCase();
@@ -640,8 +643,8 @@ export function OrdersPage() {
       total: filtered.reduce((sum, o) => sum + getOrderTotal(o), 0),
       allTimeTotal: all.reduce((sum, o) => sum + getOrderTotal(o), 0),
       delivered: filtered.filter((o) => o.status === "Delivered").length,
-      processing: filtered.filter((o) => o.status === "Processing" || o.status === "Shipped").length,
-      pending: filtered.filter((o) => o.status === "Pending").length,
+      processing: filtered.filter((o) => o.status === "Processing" || o.status === "Packed" || o.status === "Shipped" || o.status === "Out for Delivery").length,
+      pending: filtered.filter((o) => o.status === "Placed").length,
       cancelled: filtered.filter((o) => o.status === "Cancelled").length,
       totalItems: filtered.reduce((sum, o) => sum + getOrderQty(o), 0),
       avgOrder: filtered.length > 0 ? Math.round(filtered.reduce((sum, o) => sum + getOrderTotal(o), 0) / filtered.length) : 0,
@@ -649,8 +652,8 @@ export function OrdersPage() {
   }, [filteredOrders, orders]);
 
   const triggerStageChangeConfirm = (status: Order["status"]) => {
-    const stages: Order["status"][] = ["Pending", "Processing", "Shipped", "Delivered"];
-    const currentIdx = stages.indexOf(activeOrderDetails?.status || "Pending");
+    const stages: Order["status"][] = ["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+    const currentIdx = stages.indexOf(activeOrderDetails?.status || "Placed");
     const targetIdx = stages.indexOf(status);
 
     if (targetIdx > currentIdx + 1) {
@@ -1628,19 +1631,23 @@ export function OrdersPage() {
                     {/* Stepper Timeline */}
                     <div className="relative flex justify-between items-center max-w-xl mx-auto px-4 h-16">
                       {(() => {
-                        const currentIdx = ["Pending", "Processing", "Shipped", "Delivered"].indexOf(activeOrderDetails.status);
+                        const stages: Order["status"][] = ["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+                        const currentIdx = stages.indexOf(activeOrderDetails.status);
                         return (
                           <>
-                            <div className={`absolute left-[6%] w-[29%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 1 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
-                            <div className={`absolute left-[35%] w-[29%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 2 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
-                            <div className={`absolute left-[64%] w-[29%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 3 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[5%] w-[17%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 1 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[23%] w-[17%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 2 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[41%] w-[17%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 3 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[59%] w-[17%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 4 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
+                            <div className={`absolute left-[77%] w-[17%] top-[20px] h-[3px] transition-all duration-300 ${currentIdx >= 5 && activeOrderDetails.status !== "Cancelled" ? "bg-[#224870]" : "bg-neutral-200"}`} />
                           </>
                         );
                       })()}
                       
-                      {(["Pending", "Processing", "Shipped", "Delivered"] as Order["status"][]).map((st, idx) => {
+                      {(["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"] as Order["status"][]).map((st, idx) => {
+                        const stages = ["Placed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
                         const isActive = activeOrderDetails.status === st;
-                        const currentIdx = ["Pending", "Processing", "Shipped", "Delivered"].indexOf(activeOrderDetails.status);
+                        const currentIdx = stages.indexOf(activeOrderDetails.status);
                         const isCompleted = currentIdx > idx && activeOrderDetails.status !== "Cancelled";
                         const isDisabled = activeOrderDetails.status === "Cancelled" || idx <= currentIdx;
                         
@@ -1663,7 +1670,7 @@ export function OrdersPage() {
                             <span className={`text-[8.5px] font-black uppercase tracking-wider mt-2 transition-colors ${
                               isActive ? "text-[#224870]" : "text-neutral-400"
                             }`}>
-                              {st}
+                              {st === "Out for Delivery" ? "Out" : st}
                             </span>
                           </button>
                         );
