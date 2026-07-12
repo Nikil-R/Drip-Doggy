@@ -12,8 +12,8 @@ http:
       {
         "addressId":3,
         "phoneNo":"8884094554",
-        "deliveryMethod":"STD",
-        "couponCode":"DD-001"
+        "deliveryMethod":"STD"
+      //   "couponCode":"DD-001"
       }
   auth:
     type: bearer

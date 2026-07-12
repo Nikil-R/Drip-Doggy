@@ -244,6 +244,9 @@ export function Profile() {
               <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
                 onToggleArchive={toggleWishlistArchive}
               />
+              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
+                onToggleArchive={toggleWishlistArchive}
+              />
             )}
           </div>
         </div>

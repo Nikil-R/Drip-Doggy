@@ -8,6 +8,9 @@ import {
 import { INVOICE_CONFIG } from "../lib/invoice-config";
 import { customerApi } from "../lib/customer-api";
 import { useAuthStore } from "@/app/store/auth-store";
+import { INVOICE_CONFIG } from "../lib/invoice-config";
+import { customerApi } from "../lib/customer-api";
+import { useAuthStore } from "@/app/store/auth-store";
 
 const RS = "₹";
 
@@ -1035,6 +1038,130 @@ export function OrdersPage() {
     <div class="invoice-sheet">
 
       <!-- HEADER -->
+    `).join("");
+
+    const addressParts = [
+      order.addressLine1,
+      order.addressLine2,
+      `${order.city}, ${order.state} \u2014 ${order.postalCode}`,
+      order.country,
+    ].filter(Boolean);
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Invoice \u2014 ${order.id}</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: #f5f2ed;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 24px 16px;
+      color: #1a1410;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .invoice-shell { width: 100%; display: flex; justify-content: center; }
+    .invoice-sheet {
+      width: min(100%, 820px);
+      background: #ffffff;
+      padding: 32px 36px;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+      border: 1px solid #e8e3dc;
+    }
+
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #1a1410; margin-bottom: 24px; }
+    .brand-name { font-size: 28px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; line-height: 1; color: #1a1410; }
+    .brand-tagline { font-size: 8px; color: #8a7f77; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 4px; font-weight: 600; }
+    .brand-gstin { font-size: 8px; color: #224870; letter-spacing: 1.5px; margin-top: 6px; font-weight: 700; }
+    .invoice-label { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #8a7f77; }
+    .invoice-id { font-size: 16px; font-weight: 900; margin-top: 2px; color: #224870; }
+    .header-meta { font-size: 8.5px; color: #615e56; margin-top: 3px; font-weight: 600; }
+
+    /* Info row */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+    .info-card { border: 1px solid #e8e3dc; padding: 16px; background: #faf8f5; }
+    .info-title { font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8a7f77; margin-bottom: 8px; }
+    .info-value { font-size: 10px; line-height: 1.7; font-weight: 600; color: #1a1410; }
+    .info-label { font-size: 7.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8a7f77; display: block; margin-top: 6px; margin-bottom: 1px; }
+    .info-section { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid #eeeae5; }
+    .info-section-title { font-size: 7px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: #a89f97; margin-bottom: 3px; }
+    .text-muted { color: #615e56; font-weight: 500; }
+    .text-accent { color: #224870; font-weight: 700; }
+    .payment-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .dot-paid { background: #059669; }
+    .dot-unpaid { background: #dc2626; }
+    .dot-refunded { background: #a89f97; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    th { font-size: 7.5px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8a7f77; text-align: left; padding: 10px 6px 12px 6px; border-bottom: 2px solid #d4cdc4; }
+    td { padding: 10px 6px; border-bottom: 1px solid #eeeae5; font-size: 10px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: 2px solid #d4cdc4; }
+    tbody tr:nth-child(even) { background: #faf8f5; }
+    .td-item { width: 38%; }
+    .td-meta { width: 12%; text-align: center; color: #615e56; font-weight: 600; }
+    .td-qty { width: 12%; text-align: center; font-weight: 700; }
+    .td-price { width: 19%; text-align: right; font-weight: 600; }
+    .td-amount { width: 19%; text-align: right; font-weight: 700; }
+    .product-name { display: block; font-weight: 700; font-size: 10px; }
+    .product-sku { display: block; font-size: 8px; color: #8a7f77; font-weight: 500; margin-top: 1px; letter-spacing: 0.5px; }
+    th.th-right { text-align: right; }
+    th.th-center { text-align: center; }
+    .tfoot-summary { display: flex; justify-content: flex-end; align-items: center; gap: 24px; padding: 8px 6px 0; font-size: 8px; color: #8a7f77; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; border-top: none; margin-top: 2px; }
+    .tfoot-summary span { display: inline-flex; align-items: center; gap: 4px; }
+
+    /* Totals */
+    .totals-box { margin-left: auto; width: 280px; border: 1px solid #e8e3dc; background: #faf8f5; padding: 16px 20px; }
+    .total-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 10px; }
+    .total-label { color: #8a7f77; font-weight: 600; letter-spacing: 0.5px; }
+    .total-value { font-weight: 700; color: #1a1410; }
+    .total-value.txt-free { color: #059669; }
+    .total-sep { border: none; border-top: 1px dashed #d4cdc4; margin: 2px 0; }
+    .gst-breakdown { font-size: 7.5px; color: #615e56; text-align: right; letter-spacing: 0.3px; padding: 2px 0 6px; }
+    .gst-breakdown .gst-badge { display: inline-block; background: #f0ede8; padding: 2px 8px; border-radius: 2px; font-weight: 600; }
+    .total-row.grand { border-top: 2px solid #1a1410; padding-top: 10px; margin-top: 2px; }
+    .total-row.grand .total-label { font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #1a1410; }
+    .total-row.grand .total-value { font-size: 15px; font-weight: 900; color: #224870; }
+    .total-note { font-size: 7px; color: #a89f97; text-align: right; margin-top: 6px; letter-spacing: 0.3px; font-weight: 500; }
+
+    /* Footer */
+    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid #d4cdc4; text-align: center; }
+    .footer-divider { width: 44px; height: 2px; background: #1a1410; margin: 0 auto 14px; }
+    .footer-thanks { font-size: 11px; font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; color: #1a1410; line-height: 1.2; }
+    .footer-thanks-sub { font-size: 7.5px; color: #8a7f77; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; margin-top: 3px; }
+    .footer-support { font-size: 8px; color: #615e56; margin-top: 14px; font-weight: 600; letter-spacing: 0.3px; }
+    .footer-support .sep { color: #d4cdc4; margin: 0 8px; }
+    .footer-legal { font-size: 7px; color: #8a7f77; margin-top: 6px; letter-spacing: 0.3px; font-weight: 500; }
+    .footer-legal .sep { color: #d4cdc4; margin: 0 6px; }
+    .footer-note { font-size: 7px; color: #a89f97; margin-top: 12px; letter-spacing: 0.3px; font-weight: 500; border-top: 1px solid #eeeae5; padding-top: 10px; }
+
+    /* Print */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .invoice-sheet { box-shadow: none; border: none; width: auto; padding: 0; margin: 0; }
+      .info-card { background: #faf8f5; }
+    }
+
+    /* Screen-only */
+    @media screen {
+      .invoice-sheet { border: 1px solid #e8e3dc; }
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-shell">
+    <div class="invoice-sheet">
+
+      <!-- HEADER -->
       <div class="header">
         <div>
           <div class="brand-name">${cfg.name}</div>
@@ -1378,6 +1505,7 @@ export function OrdersPage() {
               <th className="p-4">Status</th>
               <th className="p-4">Date</th>
               <th className="p-4 text-center">Bill</th>
+              <th className="p-4 text-center">Bill</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100/80">
@@ -1411,6 +1539,21 @@ export function OrdersPage() {
                 <td className="p-4"><PaymentBadge val={order.payment} /></td>
                 <td className="p-4"><StatusBadge val={order.status} /></td>
                 <td className="p-4 text-[9.5px] text-[#736e64] font-semibold">{order.date}</td>
+                <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <button
+                      onClick={() => handlePrintSimpleBill(order)}
+                      className="bg-card hover:bg-neutral-50 text-[#615e56] border border-neutral-200 hover:border-[#224870] hover:text-[#224870] text-[8.5px] font-[900] tracking-wider uppercase px-2.5 py-1.5 transition-all cursor-pointer rounded-sm"
+                    >
+                      Bill
+                    </button>
+                    <button
+                      onClick={() => handlePrintInvoice(order)}
+                      className="bg-[#224870] hover:bg-neutral-800 text-white border-none text-[8.5px] font-[900] tracking-wider uppercase px-2.5 py-1.5 transition-all cursor-pointer rounded-sm"
+                    >
+                      Invoice
+                    </button>
+                  </div>
                 <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-1.5">
                     <button
@@ -1495,11 +1638,15 @@ export function OrdersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePrintInvoice(activeOrderDetails)}
                   className="p-2 border border-neutral-200 text-neutral-500 hover:border-[#224870] hover:text-[#224870] cursor-pointer bg-card rounded-full transition-all"
                   title="Print Invoice"
+                  className="p-2 border border-neutral-200 text-neutral-500 hover:border-[#224870] hover:text-[#224870] cursor-pointer bg-card rounded-full transition-all"
+                  title="Print Invoice"
                 >
+                  <FileText className="w-4 h-4" />
                   <FileText className="w-4 h-4" />
                 </button>
                 <button

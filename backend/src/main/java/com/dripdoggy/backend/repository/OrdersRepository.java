@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface OrdersRepository extends JpaRepository<Orders, Long> {
     List<Orders> findByUserOrderByOrderTimestampDesc(User user);
+    boolean existsByTrackingNumberAndIdNot(String trackingNumber, Long id);
 }
