@@ -101,6 +101,25 @@ public class AdminOrderService implements IAdminOrderService {
             order.setDeliveredTimestamp(LocalDateTime.now());
             // Mark payment as SUCCESS (Paid) upon delivery
             order.setPaymentStatus(PaymentStatus.SUCCESS);
+
+            // Send exchange delivery email if this is an exchange order
+            if ("EXCHANGE".equalsIgnoreCase(order.getDeliveryMethod())) {
+                try {
+                    User user = order.getUser();
+                    if (user != null) {
+                        String orderNumber = "#DD-" + order.getId();
+                        String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                                               (user.getLastName() != null ? user.getLastName() : "")).trim();
+                        emailService.sendCustomerExchangeDeliveredEmail(
+                                user.getEmail(),
+                                orderNumber,
+                                customerName
+                        );
+                    }
+                } catch (Exception e) {
+                    // Ignore email failure to prevent rolling back successful DB transaction
+                }
+            }
         } else if (targetStatus == DeliveryStatus.CANCELLED) {
             if (currentStatus == DeliveryStatus.SHIPPED || currentStatus == DeliveryStatus.OUT_FOR_DELIVERY ||
                 currentStatus == DeliveryStatus.DELIVERED || currentStatus == DeliveryStatus.CANCELLED ||

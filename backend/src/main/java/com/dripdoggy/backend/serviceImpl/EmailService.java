@@ -423,4 +423,34 @@ public class EmailService {
             mailSender.send(message);
         }
     }
+
+    public void sendCustomerExchangeDeliveredEmail(String toEmail, String orderNumber, String customerName) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("DripDoggy Exchange Product Delivered - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your exchange product for order <b>" + orderNumber + "</b> has been successfully delivered to you.</p>" +
+                    "<p>Thank you for your time.</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("DripDoggy Exchange Product Delivered - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your exchange product for order " + orderNumber + " has been successfully delivered to you.\n\n" +
+                    "Thank you for your time.\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
 }
