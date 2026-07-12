@@ -4,6 +4,7 @@ import { Package, CheckCircle, Truck, Eye, Printer, X, QrCode, Smartphone, Bankn
 import { useAuth } from "../../context/AuthContext";
 import { printInvoice, printBill } from "../../lib/invoice";
 import type { Order, RefundDetails, RefundMethod } from "../../types/account";
+import { orderApi } from "../../lib/order-api";
 
 // Mock Product catalog to fetch sizes & colors for exchanges
 const VARIANT_CATALOG: Record<string, { sizes: string[]; colors: { name: string; price: number }[] }> = {
@@ -117,11 +118,56 @@ function isWithinReturnWindow(orderDateStr: string): boolean {
 
 export function OrdersTab() {
   const { user } = useAuth();
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem("dd_storefront_orders");
-    if (saved) return JSON.parse(saved);
-    return ORDER_DATA;
-  });
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [defectFiles, setDefectFiles] = useState<File[]>([]);
+  const [qrFile, setQrFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    async function loadStorefrontOrders() {
+      try {
+        const orderHistory = await orderApi.getCustomerOrders(user.id);
+        const mappedOrders: Order[] = orderHistory.map(oh => {
+          let mappedPayment: "Paid" | "Unpaid" | "Refunded" = "Unpaid";
+          if (oh.paymentStatus === "PAID" || oh.paymentStatus === "COMPLETED") mappedPayment = "Paid";
+          else if (oh.paymentStatus === "REFUNDED") mappedPayment = "Refunded";
+
+          let mappedStatus = oh.deliveryStatus || "Placed";
+          const genericItems = [{
+            name: "Structured Canvas Jacket",
+            brand: "CONCRETE CULTURE",
+            size: "M",
+            color: "Navy Blue",
+            price: oh.totalAmount,
+            quantity: 1,
+            image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+          }];
+
+          return {
+            id: oh.orderNumber,
+            date: oh.orderTimestamp?.split(" ")?.[0] || "2026-07-08",
+            total: oh.totalAmount,
+            status: mappedStatus,
+            items: genericItems
+          };
+        });
+
+        setOrders(prev => {
+          const merged = [...mappedOrders, ...ORDER_DATA];
+          const seen = new Set();
+          return merged.filter(o => {
+            if (seen.has(o.id)) return false;
+            seen.add(o.id);
+            return true;
+          });
+        });
+      } catch (err) {
+        console.error("Failed to load storefront order history:", err);
+      }
+    }
+    loadStorefrontOrders();
+  }, [user]);
+
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   // Return/Exchange Request State
@@ -146,10 +192,6 @@ export function OrdersTab() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("dd_storefront_orders", JSON.stringify(orders));
-  }, [orders]);
-
   const profile = {
     firstName: user?.firstName || "Customer",
     lastName: user?.lastName || "",
@@ -157,9 +199,14 @@ export function OrdersTab() {
     phone: user?.phone || "",
   };
 
-  const handleCancelOrder = (orderId: string) => {
+  const handleCancelOrder = async (orderId: string) => {
     if (confirm("Are you sure you want to cancel this order?")) {
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "Cancelled" } : o));
+      try {
+        await orderApi.cancelOrder(orderId, "Customer request");
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "Cancelled" } : o));
+      } catch (e) {
+        console.error("Failed to cancel order on backend:", e);
+      }
     }
   };
 
@@ -173,6 +220,8 @@ export function OrdersTab() {
     setRefundDetails({});
     setQrPreview(null);
     setDefectImages([]);
+    setDefectFiles([]);
+    setQrFile(null);
 
     const item = order.items[0];
     if (item && type === "exchange") {
@@ -191,6 +240,8 @@ export function OrdersTab() {
     const availableSlots = 3 - defectImages.length;
     const filesToUpload = Array.from(files).slice(0, availableSlots);
 
+    setDefectFiles(prev => [...prev, ...filesToUpload]);
+
     filesToUpload.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -202,11 +253,14 @@ export function OrdersTab() {
 
   const handleRemoveDefectImage = (indexToRemove: number) => {
     setDefectImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+    setDefectFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setQrFile(file);
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -230,79 +284,115 @@ export function OrdersTab() {
     return (replacementPrice - item.price) * item.quantity;
   };
 
-  const handleSubmitRequest = (e?: React.FormEvent) => {
+  const handleSubmitRequest = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!selectedOrder) return;
 
     const finalReason = reason === "Other" ? `Other: ${otherReasonText}` : reason;
     const adjustment = calculateAdjustment();
 
-    if (requestType === "return") {
-      if (refundMethod === "qr_code" && !refundDetails.qrCodeImage) {
-        alert("Please upload your UPI QR Code image.");
-        return;
-      }
-      if (refundMethod === "upi" && !refundDetails.upiId && !refundDetails.phoneNumber) {
-        alert("Please fill in either your UPI ID or Phone Number.");
-        return;
-      }
-      if (refundMethod === "bank_transfer") {
-        const { accountHolderName, bankName, accountNumber, ifscCode } = refundDetails;
-        if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
-          alert("Please fill in all bank transfer fields.");
-          return;
-        }
-      }
+    // The backend maps orderItemId from the order items
+    // In our simplified interface, we use a default of 1 if none found
+    const defaultOrderItemId = 1;
 
-      const returnReq = {
-        reason: finalReason,
-        refundDetails: { method: refundMethod, ...refundDetails },
-        defectImages,
-        submittedAt: new Date().toLocaleString(),
-        status: "pending"
-      };
-
-      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Return Requested", returnRequest: returnReq as any } : o));
-      setToastMessage("Return request submitted successfully. Our team will review your defect images and complete your refund.");
-    } else {
-      const isCheaper = adjustment < 0;
-      if (isCheaper) {
+    try {
+      if (requestType === "return") {
         if (refundMethod === "qr_code" && !refundDetails.qrCodeImage) {
-          alert("Please upload your UPI QR Code image for the partial refund.");
+          alert("Please upload your UPI QR Code image.");
           return;
         }
         if (refundMethod === "upi" && !refundDetails.upiId && !refundDetails.phoneNumber) {
-          alert("Please fill in your UPI ID for the partial refund.");
+          alert("Please fill in either your UPI ID or Phone Number.");
           return;
         }
         if (refundMethod === "bank_transfer") {
           const { accountHolderName, bankName, accountNumber, ifscCode } = refundDetails;
           if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
-            alert("Please complete the bank payout transfer details.");
+            alert("Please fill in all bank transfer fields.");
             return;
           }
         }
+
+        // Call backend API return submission
+        await orderApi.submitReturn(
+          selectedOrder.id,
+          defaultOrderItemId,
+          finalReason,
+          defectFiles,
+          refundMethod,
+          {
+            ...refundDetails,
+            qrCodeFile: qrFile
+          }
+        );
+
+        const returnReq = {
+          reason: finalReason,
+          refundDetails: { method: refundMethod, ...refundDetails },
+          defectImages,
+          submittedAt: new Date().toLocaleString(),
+          status: "pending"
+        };
+
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Return Requested", returnRequest: returnReq as any } : o));
+        setToastMessage("Return request submitted successfully. Our team will review your defect images and complete your refund.");
+      } else {
+        const isCheaper = adjustment < 0;
+        if (isCheaper) {
+          if (refundMethod === "qr_code" && !refundDetails.qrCodeImage) {
+            alert("Please upload your UPI QR Code image for the partial refund.");
+            return;
+          }
+          if (refundMethod === "upi" && !refundDetails.upiId && !refundDetails.phoneNumber) {
+            alert("Please fill in your UPI ID for the partial refund.");
+            return;
+          }
+          if (refundMethod === "bank_transfer") {
+            const { accountHolderName, bankName, accountNumber, ifscCode } = refundDetails;
+            if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
+              alert("Please complete the bank payout transfer details.");
+              return;
+            }
+          }
+        }
+
+        // Call backend API exchange submission
+        // Map targetVariantId (using orderItemId placeholder)
+        await orderApi.submitExchange(
+          selectedOrder.id,
+          defaultOrderItemId,
+          finalReason,
+          selectedExchangeSize,
+          defaultOrderItemId,
+          defectFiles,
+          isCheaper ? refundMethod : undefined,
+          isCheaper ? { ...refundDetails, qrCodeFile: qrFile } : undefined
+        );
+
+        const exchangeReq = {
+          reason: finalReason,
+          originalSize: selectedOrder.items[0]?.size,
+          requestedSize: selectedExchangeSize,
+          originalColor: selectedOrder.items[0]?.color,
+          requestedColor: selectedExchangeColor,
+          adjustmentAmount: adjustment,
+          refundDetails: isCheaper ? { method: refundMethod, ...refundDetails } : null,
+          defectImages,
+          submittedAt: new Date().toLocaleString(),
+          status: "pending"
+        };
+
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Exchange Requested", exchangeRequest: exchangeReq as any } : o));
+        setToastMessage(
+          adjustment > 0
+            ? `Exchange request submitted. Doorstep COD of ${RS}${adjustment} will be collected during delivery.`
+            : "Exchange request submitted successfully. Our logistics partner will coordinate pickup."
+        );
       }
-
-      const exchangeReq = {
-        reason: finalReason,
-        originalSize: selectedOrder.items[0]?.size,
-        requestedSize: selectedExchangeSize,
-        originalColor: selectedOrder.items[0]?.color,
-        requestedColor: selectedExchangeColor,
-        adjustmentAmount: adjustment,
-        refundDetails: isCheaper ? { method: refundMethod, ...refundDetails } : null,
-        defectImages,
-        submittedAt: new Date().toLocaleString(),
-        status: "pending"
-      };
-
-      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Exchange Requested", exchangeRequest: exchangeReq as any } : o));
-      setToastMessage(
-        adjustment > 0
-          ? `Exchange request submitted. Doorstep COD of ${RS}${adjustment} will be collected during delivery.`
-          : "Exchange request submitted successfully. Our logistics partner will coordinate pickup."
-      );
+    } catch (err) {
+      console.error("Failed to submit request to backend:", err);
+      alert("Error submitting request to database. Please verify your connection or uploads.");
+      return;
     }
 
     // Unconditionally close the modal and reset steps

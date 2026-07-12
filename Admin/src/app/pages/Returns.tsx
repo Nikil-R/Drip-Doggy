@@ -139,6 +139,8 @@ function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
   );
 }
 
+import { adminOrderApi, AdminReturnResponse } from "../lib/admin-order-api";
+
 export function ReturnsPage() {
   const [returns, setReturns] = useState<ReturnRequest[]>(initialReturns);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -155,33 +157,85 @@ export function ReturnsPage() {
     if (!token) return;
     async function load() {
       try {
-        const list = await customerApi.getAllCustomers(token);
-        if (!list?.length) return;
-        const details = await Promise.all(list.map((c: any) => customerApi.getCustomerDetails(c.id, token).catch(() => null)));
-        const loaded: ReturnRequest[] = [];
-        for (const d of details) {
-          if (!d?.recentOrders?.length) continue;
-          for (const ro of d.recentOrders) {
-            if (!ro.status?.toUpperCase().includes("RETURN")) continue;
-            const id = `RET-${ro.id.replace(/\D/g, "") || "100"}`;
-            if (returns.some(r => r.id === id || r.orderId === ro.id)) continue;
-            loaded.push({
-              id, orderId: ro.id,
-              customerName: `${d.onboardingProfile?.firstName || ""} ${d.onboardingProfile?.lastName || ""}`.trim() || "Customer",
-              email: d.onboardingProfile?.email || "", phone: d.onboardingProfile?.phone || "",
-              date: ro.date?.split(" ")?.[0] || "2026-07-08", amount: ro.amount,
-              reason: "Customer requested return via dashboard.",
-              approvalStatus: "PENDING",
-              deliveryStatus: "RETURN_INITIATED",
-              items: [{ name: "Structured Canvas Jacket", sku: `DD-${ro.id}`, size: "M", qty: 1, price: ro.amount - 90, image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop" }],
-              refundMethod: "bank_transfer",
-              refundDetails: { accountHolderName: `${d.onboardingProfile?.firstName || ""} ${d.onboardingProfile?.lastName || ""}`.trim() || "Customer", bankName: "HDFC Bank", accountNumber: "50100293847291", ifscCode: "HDFC0000001" },
-              timeline: [{ status: "PENDING", timestamp: ro.date || "2026-07-08 12:00", note: "Return request submitted." }]
-            });
+        const backendRequests = await adminOrderApi.getAllReturnRequests(token!);
+        if (!backendRequests) return;
+
+        // Filter for RETURN types
+        const returnRequests = backendRequests.filter(r => r.requestType === "RETURN");
+        const loaded: ReturnRequest[] = returnRequests.map(r => {
+          let mappedApproval: ReturnStatus = "PENDING";
+          let mappedDelivery: DeliveryStatus = "RETURN_INITIATED";
+          const statusUpper = r.status?.toUpperCase() || "";
+
+          if (statusUpper === "PENDING" || statusUpper === "INITIATED") {
+            mappedApproval = "PENDING";
+            mappedDelivery = "RETURN_INITIATED";
+          } else if (statusUpper === "APPROVED") {
+            mappedApproval = "APPROVED";
+            mappedDelivery = "RETURN_APPROVED";
+          } else if (statusUpper === "REJECTED") {
+            mappedApproval = "REJECTED";
+            mappedDelivery = "RETURN_INITIATED";
+          } else if (statusUpper === "RECEIVED") {
+            mappedApproval = "RECEIVED";
+            mappedDelivery = "RECEIVED_AT_WAREHOUSE";
+          } else if (statusUpper === "REFUND_COMPLETED" || statusUpper === "COMPLETED") {
+            mappedApproval = "COMPLETED";
+            mappedDelivery = "REFUND_COMPLETED";
           }
-        }
-        if (loaded.length) setReturns(prev => { const seen = new Set<string>(); return [...loaded, ...prev].filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; }); });
-      } catch (e) { console.error(e); }
+
+          let mappedMethod: "qr_code" | "upi" | "bank_transfer" = "bank_transfer";
+          if (r.qrCodeImageUrl) mappedMethod = "qr_code";
+          else if (r.upiId || r.upiPhone) mappedMethod = "upi";
+
+          return {
+            id: String(r.id),
+            orderId: r.orderNumber,
+            customerName: r.customerName || "Customer",
+            email: r.customerEmail || "",
+            phone: r.customerEmail || "",
+            date: r.createdAt?.split("T")?.[0] || "2026-07-08",
+            amount: r.productPrice * r.productQuantity,
+            reason: r.cancelReason || "No reason provided",
+            approvalStatus: mappedApproval,
+            deliveryStatus: mappedDelivery,
+            items: [{
+              name: r.productName,
+              sku: `DD-VAR-${r.orderItemId}`,
+              size: r.productSize || "M",
+              qty: r.productQuantity || 1,
+              price: r.productPrice,
+              image: r.defectImageUrl1 || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+            }],
+            refundMethod: mappedMethod,
+            refundDetails: {
+              upiId: r.upiId,
+              phoneNumber: r.upiPhone,
+              accountHolderName: r.bankAccountName,
+              bankName: r.bankName,
+              accountNumber: r.bankAccountNumber,
+              ifscCode: r.bankIfsc,
+              qrCodeImage: r.qrCodeImageUrl
+            },
+            timeline: [
+              { status: "PENDING", timestamp: r.createdAt || "2026-07-08 12:00", note: "Return request submitted." },
+              r.resolvedAt ? { status: "COMPLETED", timestamp: r.resolvedAt, note: "Return request resolved." } : null
+            ].filter(Boolean) as any[]
+          };
+        });
+
+        setReturns(prev => {
+          const merged = [...loaded, ...initialReturns];
+          const seen = new Set<string>();
+          return merged.filter(r => {
+            if (seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+          });
+        });
+      } catch (e) {
+        console.error("Failed to load return requests:", e);
+      }
     }
     load();
   }, [token]);
@@ -200,61 +254,95 @@ export function ReturnsPage() {
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
 
   // Handles transition of administrative status
-  const updateApprovalStatus = (id: string, s: ReturnStatus) => {
-    setReturns(prev => prev.map(r => {
-      if (r.id !== id) return r;
-      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      let updatedTimeline = [...r.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }];
-      
-      // Auto-drive deliveryStatus based on approval transitions
-      let dStatus = r.deliveryStatus;
-      if (s === "APPROVED" && r.deliveryStatus === "RETURN_INITIATED") {
-        dStatus = "RETURN_APPROVED";
-      } else if (s === "RECEIVED") {
-        dStatus = "RECEIVED_AT_WAREHOUSE";
+  const updateApprovalStatus = async (id: string, s: ReturnStatus) => {
+    try {
+      // Map visual approved state to status endpoints
+      if (s === "APPROVED" || s === "REJECTED") {
+        await adminOrderApi.updateReturnStatus(Number(id), s, token!);
       }
+      setReturns(prev => prev.map(r => {
+        if (r.id !== id) return r;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        let updatedTimeline = [...r.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }];
+        
+        // Auto-drive deliveryStatus based on approval transitions
+        let dStatus = r.deliveryStatus;
+        if (s === "APPROVED" && r.deliveryStatus === "RETURN_INITIATED") {
+          dStatus = "RETURN_APPROVED";
+        } else if (s === "RECEIVED") {
+          dStatus = "RECEIVED_AT_WAREHOUSE";
+        }
 
-      return {
-        ...r,
-        approvalStatus: s,
-        deliveryStatus: dStatus,
-        timeline: updatedTimeline
-      };
-    }));
+        return {
+          ...r,
+          approvalStatus: s,
+          deliveryStatus: dStatus,
+          timeline: updatedTimeline
+        };
+      }));
+    } catch (e) {
+      console.error("Failed to update return approval status:", e);
+    }
   };
 
   // Handles updating physical logistics timeline tracking
-  const updateDeliveryStatus = (id: string, ds: DeliveryStatus) => {
-    setReturns(prev => prev.map(r => {
-      if (r.id !== id) return r;
-      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      
-      // Auto transition approval status to RECEIVED once courier drops it back
-      let appStatus = r.approvalStatus;
-      if (ds === "RECEIVED_AT_WAREHOUSE" && appStatus === "APPROVED") {
-        appStatus = "RECEIVED";
+  const updateDeliveryStatus = async (id: string, ds: DeliveryStatus) => {
+    try {
+      // If setting resolved states like received at warehouse, we map to status endpoint updates
+      if (ds === "RECEIVED_AT_WAREHOUSE") {
+        await adminOrderApi.updateReturnStatus(Number(id), "RECEIVED", token!);
       }
+      setReturns(prev => prev.map(r => {
+        if (r.id !== id) return r;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        
+        // Auto transition approval status to RECEIVED once courier drops it back
+        let appStatus = r.approvalStatus;
+        if (ds === "RECEIVED_AT_WAREHOUSE" && appStatus === "APPROVED") {
+          appStatus = "RECEIVED";
+        }
 
-      return {
-        ...r,
-        deliveryStatus: ds,
-        approvalStatus: appStatus,
-        timeline: [...r.timeline, { status: ds, timestamp: ts, note: `Logistics update: package is now ${ds.replaceAll("_", " ")}.` }]
-      };
-    }));
+        return {
+          ...r,
+          deliveryStatus: ds,
+          approvalStatus: appStatus,
+          timeline: [...r.timeline, { status: ds, timestamp: ts, note: `Logistics update: package is now ${ds.replaceAll("_", " ")}.` }]
+        };
+      }));
+    } catch (e) {
+      console.error("Failed to update return logistics delivery status:", e);
+    }
   };
 
   const uploadProof = (id: string, url: string) => setReturns(prev => prev.map(r => r.id === id ? { ...r, receiptScreenshot: url } : r));
 
-  const handleConfirmRefundPayout = () => {
+  const handleConfirmRefundPayout = async () => {
     if (!active) return;
     setSendingEmail(true);
-    setEmailStatusMessage("Simulating customer notification dispatch...");
+    setEmailStatusMessage("Resolving return request & transferring payout proof...");
 
-    setTimeout(() => {
+    try {
+      // 1. Convert base64 mockup or screenshot url to File payload
+      let receiptFile: File | null = null;
+      if (active.receiptScreenshot) {
+        // Mock a File if it's already a string reference, or fetch file object
+        const response = await fetch(active.receiptScreenshot);
+        const blob = await response.blob();
+        receiptFile = new File([blob], `refund_receipt_${active.id}.png`, { type: "image/png" });
+      }
+
+      // 2. Resolve on backend (action: REFUND, passes proof image)
+      await adminOrderApi.resolveReturnRequest(
+        Number(active.id),
+        "REFUND",
+        "",
+        receiptFile,
+        token!
+      );
+
+      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
       setReturns(prev => prev.map(r => {
         if (r.id !== active.id) return r;
-        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
         return {
           ...r,
           approvalStatus: "COMPLETED",
@@ -269,8 +357,13 @@ export function ReturnsPage() {
       setSendingEmail(false);
       setShowConfirmModal(false);
       setEmailStatusMessage("");
-      alert(`Success! Email notification sent to ${active.customerName} (${active.email}) along with the receipt proof attachment of ${RS}${active.amount}.`);
-    }, 1500);
+      alert(`Success! Payout resolved and confirmation email dispatched to ${active.customerName} (${active.email}).`);
+    } catch (err) {
+      console.error("Failed to resolve return request on backend:", err);
+      setSendingEmail(false);
+      setEmailStatusMessage("");
+      alert("Error: Resolution failed. Please ensure refund transaction ID and proof screenshot are provided.");
+    }
   };
 
   const pendingCount = returns.filter(r => r.approvalStatus === "PENDING").length;

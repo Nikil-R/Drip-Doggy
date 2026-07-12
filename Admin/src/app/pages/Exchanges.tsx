@@ -165,17 +165,96 @@ function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
   );
 }
 
+import { useEffect } from "react";
+import { useAuthStore } from "@/app/store/auth-store";
+import { adminOrderApi } from "../lib/admin-order-api";
+
 export const ExchangesPage = () => {
-  const [exchanges, setExchanges] = useState<ExchangeRequest[]>(() => {
-    const saved = localStorage.getItem("dd_admin_exchanges");
-    if (saved) return JSON.parse(saved);
-    return initialExchanges;
-  });
+  const [exchanges, setExchanges] = useState<ExchangeRequest[]>(initialExchanges);
   const [activeTab, setActiveTab] = useState<"All" | "Pending Review" | "Active Logistics" | "Completed">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExchangeId, setSelectedExchangeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
+  const { token } = useAuthStore();
+
+  useEffect(() => {
+    if (!token) return;
+    async function load() {
+      try {
+        const backendRequests = await adminOrderApi.getAllReturnRequests(token!);
+        if (!backendRequests) return;
+
+        // Filter for EXCHANGE types
+        const exchangeRequests = backendRequests.filter(r => r.requestType === "EXCHANGE");
+        const loaded: ExchangeRequest[] = exchangeRequests.map(r => {
+          let mappedApproval: ReturnStatus = "PENDING";
+          let mappedDelivery: DeliveryStatus = "EXCHANGE_INITIATED";
+          const statusUpper = r.status?.toUpperCase() || "";
+
+          if (statusUpper === "PENDING" || statusUpper === "INITIATED") {
+            mappedApproval = "PENDING";
+            mappedDelivery = "EXCHANGE_INITIATED";
+          } else if (statusUpper === "APPROVED") {
+            mappedApproval = "APPROVED";
+            mappedDelivery = "EXCHANGE_APPROVED";
+          } else if (statusUpper === "REJECTED") {
+            mappedApproval = "REJECTED";
+            mappedDelivery = "EXCHANGE_INITIATED";
+          } else if (statusUpper === "RECEIVED") {
+            mappedApproval = "RECEIVED";
+            mappedDelivery = "RECEIVED_AT_WAREHOUSE";
+          } else if (statusUpper === "EXCHANGE_COMPLETED" || statusUpper === "COMPLETED") {
+            mappedApproval = "COMPLETED";
+            mappedDelivery = "EXCHANGE_COMPLETED";
+          }
+
+          return {
+            id: String(r.id),
+            orderId: r.orderNumber,
+            customerName: r.customerName || "Customer",
+            email: r.customerEmail || "",
+            phone: r.customerEmail || "",
+            date: r.createdAt?.split("T")?.[0] || "2026-07-08",
+            reason: r.cancelReason || "Exchange request submitted.",
+            approvalStatus: mappedApproval,
+            deliveryStatus: mappedDelivery,
+            paymentStatus: "no_adjustment",
+            adjustmentAmount: 0,
+            items: [{
+              name: r.productName,
+              sku: `DD-VAR-${r.orderItemId}`,
+              originalSize: r.productSize || "M",
+              requestedSize: r.targetSize || "M",
+              originalColor: "Standard",
+              requestedColor: "Standard",
+              qty: r.productQuantity || 1,
+              originalPrice: r.productPrice,
+              replacementPrice: r.productPrice,
+              image: r.defectImageUrl1 || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+            }],
+            timeline: [
+              { status: "PENDING", timestamp: r.createdAt || "2026-07-08 12:00", note: "Exchange request submitted." },
+              r.resolvedAt ? { status: "COMPLETED", timestamp: r.resolvedAt, note: "Exchange resolved." } : null
+            ].filter(Boolean) as any[]
+          };
+        });
+
+        setExchanges(prev => {
+          const merged = [...loaded, ...initialExchanges];
+          const seen = new Set<string>();
+          return merged.filter(e => {
+            if (seen.has(e.id)) return false;
+            seen.add(e.id);
+            return true;
+          });
+        });
+      } catch (err) {
+        console.error("Failed to load exchange requests:", err);
+      }
+    }
+    load();
+  }, [token]);
 
   const active = exchanges.find(e => e.id === selectedExchangeId);
 
@@ -194,72 +273,107 @@ export const ExchangesPage = () => {
     setSelectedExchangeId(id);
   };
 
-  const updateApprovalStatus = (id: string, s: ReturnStatus) => {
-    setExchanges(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      let dStatus = e.deliveryStatus;
-      if (s === "APPROVED" && e.deliveryStatus === "EXCHANGE_INITIATED") {
-        dStatus = "EXCHANGE_APPROVED";
-      } else if (s === "RECEIVED") {
-        dStatus = "RECEIVED_AT_WAREHOUSE";
+  const updateApprovalStatus = async (id: string, s: ReturnStatus) => {
+    try {
+      if (s === "APPROVED" || s === "REJECTED") {
+        await adminOrderApi.updateReturnStatus(Number(id), s, token!);
       }
-      return {
-        ...e,
-        approvalStatus: s,
-        deliveryStatus: dStatus,
-        timeline: [...e.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }]
-      };
-    }));
+      setExchanges(prev => prev.map(e => {
+        if (e.id !== id) return e;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        let dStatus = e.deliveryStatus;
+        if (s === "APPROVED" && e.deliveryStatus === "EXCHANGE_INITIATED") {
+          dStatus = "EXCHANGE_APPROVED";
+        } else if (s === "RECEIVED") {
+          dStatus = "RECEIVED_AT_WAREHOUSE";
+        }
+        return {
+          ...e,
+          approvalStatus: s,
+          deliveryStatus: dStatus,
+          timeline: [...e.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }]
+        };
+      }));
+    } catch (err) {
+      console.error("Failed to update exchange approval status:", err);
+    }
   };
 
-  const updateDeliveryStatus = (id: string, ds: DeliveryStatus) => {
-    setExchanges(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      let appStatus = e.approvalStatus;
-      let payStatus = e.paymentStatus;
-      if (ds === "EXCHANGE_COMPLETED") {
-        if (appStatus === "APPROVED" || appStatus === "RECEIVED") {
-          appStatus = "COMPLETED";
-        }
-        if (payStatus === "pending_payment") {
-          payStatus = "paid";
-        }
+  const updateDeliveryStatus = async (id: string, ds: DeliveryStatus) => {
+    try {
+      if (ds === "RECEIVED_AT_WAREHOUSE") {
+        await adminOrderApi.updateReturnStatus(Number(id), "RECEIVED", token!);
+      } else if (ds === "EXCHANGE_COMPLETED") {
+        // Resolve exchange directly on the backend
+        await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "EXCH-SHP-" + id, null, token!);
       }
-      return {
-        ...e,
-        deliveryStatus: ds,
-        approvalStatus: appStatus,
-        paymentStatus: payStatus,
-        timeline: [...e.timeline, { status: ds, timestamp: ts, note: `Logistics update: exchange package is now ${ds.replaceAll("_", " ")}.` }]
-      };
-    }));
+      setExchanges(prev => prev.map(e => {
+        if (e.id !== id) return e;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        let appStatus = e.approvalStatus;
+        let payStatus = e.paymentStatus;
+        if (ds === "EXCHANGE_COMPLETED") {
+          if (appStatus === "APPROVED" || appStatus === "RECEIVED") {
+            appStatus = "COMPLETED";
+          }
+          if (payStatus === "pending_payment") {
+            payStatus = "paid";
+          }
+        }
+        return {
+          ...e,
+          deliveryStatus: ds,
+          approvalStatus: appStatus,
+          paymentStatus: payStatus,
+          timeline: [...e.timeline, { status: ds, timestamp: ts, note: `Logistics update: exchange package is now ${ds.replaceAll("_", " ")}.` }]
+        };
+      }));
+    } catch (err) {
+      console.error("Failed to update exchange logistics status:", err);
+    }
   };
 
-  const verifyPayment = (id: string) => {
-    setExchanges(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      return {
-        ...e,
-        paymentStatus: "paid",
-        timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Additional payment of ${RS}${e.adjustmentAmount} verified by admin.` }]
-      };
-    }));
+  const verifyPayment = async (id: string) => {
+    try {
+      // Mock payment verification resolves completed exchanges
+      await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "EXCH-SHP-" + id, null, token!);
+      setExchanges(prev => prev.map(e => {
+        if (e.id !== id) return e;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        return {
+          ...e,
+          paymentStatus: "paid",
+          timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Additional payment of ${RS}${e.adjustmentAmount} verified by admin.` }]
+        };
+      }));
+    } catch (err) {
+      console.error("Failed to verify exchange payment on backend:", err);
+    }
   };
 
-  const uploadProof = (id: string, url: string) => {
-    setExchanges(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
-      return {
-        ...e,
-        receiptScreenshot: url,
-        paymentStatus: "refunded",
-        timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Refund payout of ${RS}${Math.abs(e.adjustmentAmount)} confirmed.` }]
-      };
-    }));
+  const uploadProof = async (id: string, url: string) => {
+    try {
+      let receiptFile: File | null = null;
+      if (url) {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        receiptFile = new File([blob], `exchange_refund_${id}.png`, { type: "image/png" });
+      }
+      // Resolve negative adjustment payout refunds
+      await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "", receiptFile, token!);
+      setExchanges(prev => prev.map(e => {
+        if (e.id !== id) return e;
+        const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
+        return {
+          ...e,
+          receiptScreenshot: url,
+          paymentStatus: "refunded",
+          timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Refund payout of ${RS}${Math.abs(e.adjustmentAmount)} confirmed.` }]
+        };
+      }));
+    } catch (err) {
+      console.error("Failed to submit refund proof on backend:", err);
+    }
   };
 
   const pendingCount = exchanges.filter(e => e.approvalStatus === "PENDING").length;
