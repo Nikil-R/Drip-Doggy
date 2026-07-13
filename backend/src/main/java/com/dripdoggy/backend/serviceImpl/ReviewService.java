@@ -7,6 +7,7 @@ import com.dripdoggy.backend.ResponseDto.ReviewResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import com.dripdoggy.backend.entity.*;
 import com.dripdoggy.backend.enums.UserRole;
+import com.dripdoggy.backend.enums.DeliveryStatus;
 import com.dripdoggy.backend.exception.*;
 import com.dripdoggy.backend.repository.*;
 import com.dripdoggy.backend.Configuration.S3Service;
@@ -70,13 +71,19 @@ public class ReviewService implements IReviewService {
         Orders order = ordersRepository.findById(dto.getOrderId())
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + dto.getOrderId()));
 
+        // Validate that rating is between 1 and 5
+        if (dto.getRating() == null || dto.getRating() < 1 || dto.getRating() > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5 stars.");
+        }
+
         // Validate order ownership
         if (!order.getUser().getId().equals(user.getId())) {
             throw new ReviewNotAllowedException("Access Denied: You do not own this order.");
         }
 
-        // Validate that order is not cancelled
-        if (order.getDeliveryStatus() == com.dripdoggy.backend.enums.DeliveryStatus.CANCELLED) {
+        // Validate that order is successfully delivered/completed
+        DeliveryStatus status = order.getDeliveryStatus();
+        if (status != DeliveryStatus.DELIVERED && status != DeliveryStatus.RETURN_DELIVERED && status != DeliveryStatus.EXCHANGE_DELIVERED) {
             throw new ProductNotPurchasedException("You didn't purchase this product, so you are not allowed to give a review.");
         }
 
@@ -123,6 +130,7 @@ public class ReviewService implements IReviewService {
 
         Review review = new Review();
         review.setComment(dto.getComment());
+        review.setRating(dto.getRating());
         review.setIsActive(true); // Active by default
         review.setUser(user);
         review.setOrder(order);
@@ -188,6 +196,9 @@ public class ReviewService implements IReviewService {
         }
 
         review.setComment(dto.getComment());
+        if (dto.getRating() != null) {
+            review.setRating(dto.getRating());
+        }
 
         // Handle optional image updates
         if (dto.getImages() != null) {
@@ -308,6 +319,7 @@ public class ReviewService implements IReviewService {
         return new ReviewResponseDto(
                 review.getId(),
                 review.getComment(),
+                review.getRating(),
                 review.getIsActive(),
                 userId,
                 customerName,

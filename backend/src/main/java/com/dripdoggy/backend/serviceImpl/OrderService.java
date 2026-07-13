@@ -29,8 +29,7 @@ import java.util.List;
 @Transactional
 public class OrderService implements IOrderService {
 
-    @Value("${order.tax.percentage}")
-    private double taxPercentage;
+
 
     private final OrdersRepository ordersRepository;
     private final OrderItemRepository orderItemRepository;
@@ -155,14 +154,12 @@ public class OrderService implements IOrderService {
             discountVal = couponResponse.getCalculatedDiscount();
         }
 
-        // 6. Calculate Tax (18% calculated after discount)
+        // 6. Calculate Tax (Tax calculations disabled - set to null as requested)
         BigDecimal discountedSubtotal = subtotal.subtract(discountVal);
         if (discountedSubtotal.compareTo(BigDecimal.ZERO) < 0) {
             discountedSubtotal = BigDecimal.ZERO;
         }
-        BigDecimal taxAmount = discountedSubtotal
-                .multiply(BigDecimal.valueOf(taxPercentage))
-                .divide(BigDecimal.valueOf(100.0), 2, RoundingMode.HALF_UP);
+        BigDecimal taxAmount = null;
 
         // 7. Calculate Delivery Fee
         BigDecimal shippingFee = new BigDecimal("90.00"); // Standard Delivery Fee
@@ -171,7 +168,8 @@ public class OrderService implements IOrderService {
         }
 
         // 8. Calculate Final Total Amount (Discounted Subtotal + Tax + Shipping)
-        BigDecimal totalAmount = discountedSubtotal.add(taxAmount).add(shippingFee);
+        BigDecimal taxForTotal = (taxAmount != null) ? taxAmount : BigDecimal.ZERO;
+        BigDecimal totalAmount = discountedSubtotal.add(taxForTotal).add(shippingFee);
 
         // 9. Create Order Record
         Orders order = new Orders();
@@ -277,14 +275,12 @@ public class OrderService implements IOrderService {
             discountVal = couponResponse.getCalculatedDiscount();
         }
 
-        // 4. Calculate Tax (18% calculated after discount)
+        // 4. Calculate Tax (Tax calculations disabled - set to null as requested)
         BigDecimal discountedSubtotal = subtotal.subtract(discountVal);
         if (discountedSubtotal.compareTo(BigDecimal.ZERO) < 0) {
             discountedSubtotal = BigDecimal.ZERO;
         }
-        BigDecimal taxAmount = discountedSubtotal
-                .multiply(BigDecimal.valueOf(taxPercentage))
-                .divide(BigDecimal.valueOf(100.0), 2, RoundingMode.HALF_UP);
+        BigDecimal taxAmount = null;
 
         // 5. Calculate Delivery Fee
         BigDecimal shippingFee = new BigDecimal("90.00"); // Standard Delivery Fee
@@ -293,7 +289,8 @@ public class OrderService implements IOrderService {
         }
 
         // 6. Calculate Final Total Amount
-        BigDecimal grandTotal = discountedSubtotal.add(taxAmount).add(shippingFee);
+        BigDecimal taxForTotal = (taxAmount != null) ? taxAmount : BigDecimal.ZERO;
+        BigDecimal grandTotal = discountedSubtotal.add(taxForTotal).add(shippingFee);
 
         return new OrderPreviewResponseDto(subtotal, discountVal, taxAmount, shippingFee, grandTotal);
     }

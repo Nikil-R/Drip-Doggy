@@ -82,8 +82,8 @@ public class AdminOrderService implements IAdminOrderService {
                 throw new InvalidOrderStateException("Can only transition to PACKED from PROCESSING.");
             }
         } else if (targetStatus == DeliveryStatus.SHIPPED) {
-            if (currentStatus != DeliveryStatus.PACKED && currentStatus != DeliveryStatus.PROCESSING) {
-                throw new InvalidOrderStateException("Can only transition to SHIPPED from PACKED or PROCESSING.");
+            if (currentStatus != DeliveryStatus.PACKED) {
+                throw new InvalidOrderStateException("Can only transition to SHIPPED from PACKED.");
             }
             // Courier Tracking ID verification
             if (order.getTrackingNumber() == null || order.getTrackingNumber().trim().isEmpty()) {
@@ -95,8 +95,8 @@ public class AdminOrderService implements IAdminOrderService {
                 throw new InvalidOrderStateException("Can only transition to OUT_FOR_DELIVERY from SHIPPED.");
             }
         } else if (targetStatus == DeliveryStatus.DELIVERED) {
-            if (currentStatus != DeliveryStatus.OUT_FOR_DELIVERY && currentStatus != DeliveryStatus.SHIPPED) {
-                throw new InvalidOrderStateException("Can only transition to DELIVERED from OUT_FOR_DELIVERY or SHIPPED.");
+            if (currentStatus != DeliveryStatus.OUT_FOR_DELIVERY) {
+                throw new InvalidOrderStateException("Can only transition to DELIVERED from OUT_FOR_DELIVERY.");
             }
             order.setDeliveredTimestamp(LocalDateTime.now());
             // Mark payment as SUCCESS (Paid) upon delivery
@@ -169,12 +169,12 @@ public class AdminOrderService implements IAdminOrderService {
                 throw new InvalidOrderStateException("Can only transition to EXCHANGE_OUT_OF_DELIVERY from EXCHANGE_SHIPPED.");
             }
         } else if (targetStatus == DeliveryStatus.RETURN_DELIVERED) {
-            if (currentStatus != DeliveryStatus.RETURN_OUT_OF_DELIVERY && currentStatus != DeliveryStatus.RETURN_SHIPPED) {
-                throw new InvalidOrderStateException("Can only transition to RETURN_DELIVERED from RETURN_OUT_OF_DELIVERY or RETURN_SHIPPED.");
+            if (currentStatus != DeliveryStatus.RETURN_OUT_OF_DELIVERY) {
+                throw new InvalidOrderStateException("Can only transition to RETURN_DELIVERED from RETURN_OUT_OF_DELIVERY.");
             }
         } else if (targetStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
-            if (currentStatus != DeliveryStatus.EXCHANGE_OUT_OF_DELIVERY && currentStatus != DeliveryStatus.EXCHANGE_SHIPPED) {
-                throw new InvalidOrderStateException("Can only transition to EXCHANGE_DELIVERED from EXCHANGE_OUT_OF_DELIVERY or EXCHANGE_SHIPPED.");
+            if (currentStatus != DeliveryStatus.EXCHANGE_OUT_OF_DELIVERY) {
+                throw new InvalidOrderStateException("Can only transition to EXCHANGE_DELIVERED from EXCHANGE_OUT_OF_DELIVERY.");
             }
         } else {
             throw new InvalidOrderStateException("Unsupported status transition: " + targetStatus);

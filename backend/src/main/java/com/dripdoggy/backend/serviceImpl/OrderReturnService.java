@@ -470,6 +470,13 @@ public class OrderReturnService implements IOrderReturnService {
 			if (!order.getUser().getId().equals(user.getId())) {
 				throw new InvalidCredentialsException("Access Denied: You do not own this order.");
 			}
+			DeliveryStatus currentStatus = order.getDeliveryStatus();
+			if (currentStatus == DeliveryStatus.PACKED
+					|| currentStatus == DeliveryStatus.SHIPPED
+					|| currentStatus == DeliveryStatus.OUT_FOR_DELIVERY
+					|| currentStatus == DeliveryStatus.DELIVERED) {
+				throw new OrderAlreadyPackedException("After packing, you cannot cancel the order.");
+			}
 		}
 
 		// Cancellations are only allowed before shipping
