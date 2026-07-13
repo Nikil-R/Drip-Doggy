@@ -263,11 +263,11 @@ public class EmailService {
         }
     }
 
-    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage) {
-        sendCustomerRefundCompletedEmail(toEmail, orderNumber, customerName, productName, proofImageUrl, proofImage, false);
+    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage, double refundAmount) {
+        sendCustomerRefundCompletedEmail(toEmail, orderNumber, customerName, productName, proofImageUrl, proofImage, false, refundAmount);
     }
 
-    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage, boolean wasExchangeFallback) {
+    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage, boolean wasExchangeFallback, double refundAmount) {
         try {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -283,6 +283,7 @@ public class EmailService {
             String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
                     "<p>" + refundText + "</p>" +
                     "<p><b>Product:</b> " + productName + "</p>" +
+                    "<p><b>Refund Amount:</b> ₹" + refundAmount + "</p>" +
                     "<p><b>Refund Proof Transaction Receipt:</b> <a href=\"" + proofImageUrl + "\">Click here to view transaction proof receipt</a></p>" +
                     "<p>Please allow 2-3 business days for the funds to reflect in your account.</p>" +
                     "<p>Best regards,<br/>The DripDoggy Team</p>";
@@ -311,6 +312,7 @@ public class EmailService {
             message.setText("Dear " + customerName + ",\n\n" +
                     refundText + "\n\n" +
                     "Product: " + productName + "\n" +
+                    "Refund Amount: ₹" + refundAmount + "\n" +
                     "Refund Transaction Receipt URL: " + proofImageUrl + "\n\n" +
                     "Please allow 2-3 business days for the funds to reflect in your account.\n\n" +
                     "Best regards,\n" +
@@ -448,6 +450,72 @@ public class EmailService {
             message.setText("Dear " + customerName + ",\n\n" +
                     "Your exchange product for order " + orderNumber + " has been successfully delivered to you.\n\n" +
                     "Thank you for your time.\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerExchangeSizeUnavailableEmail(String toEmail, String orderNumber, String customerName, String productName, String targetSize, Long returnId) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Action Required: Exchange Size Unavailable for Order " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>We went to process your exchange for the <b>" + productName + "</b> (Size: <b>" + targetSize + "</b>), but unfortunately this size is currently unavailable.</p>" +
+                    "<p>Please log in to your account or visit the following links to select how you would like to proceed:</p>" +
+                    "<ul>" +
+                    "<li><b>Option 1 (Refund):</b> <a href=\"http://localhost:3000/returns/" + returnId + "/resolution?choice=REFUND\">Request a full refund for these items</a></li>" +
+                    "<li><b>Option 2 (Keep Original):</b> <a href=\"http://localhost:3000/returns/" + returnId + "/resolution?choice=KEEP_ORIGINAL\">Keep the original items you already have (No refund)</a></li>" +
+                    "</ul>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Action Required: Exchange Size Unavailable for Order " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "We went to process your exchange for the " + productName + " (Size: " + targetSize + "), but unfortunately this size is currently unavailable.\n\n" +
+                    "Please choose how you would like to proceed:\n" +
+                    "Option 1 (Refund): http://localhost:3000/returns/" + returnId + "/resolution?choice=REFUND\n" +
+                    "Option 2 (Keep Original): http://localhost:3000/returns/" + returnId + "/resolution?choice=KEEP_ORIGINAL\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerExchangeUnavailableClosedEmail(String toEmail, String orderNumber, String customerName) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Exchange Request Closed - " + orderNumber);
+            
+            String htmlContent = "<h3>Hello, " + customerName + "!</h3>" +
+                    "<p>Your exchange request for order <b>" + orderNumber + "</b> has been closed as you chose to keep the original products.</p>" +
+                    "<p>Thank you for shopping with us!</p>" +
+                    "<p>Best regards,<br/>The DripDoggy Team</p>";
+                    
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Exchange Request Closed - " + orderNumber);
+            message.setText("Dear " + customerName + ",\n\n" +
+                    "Your exchange request for order " + orderNumber + " has been closed as you chose to keep the original products.\n\n" +
+                    "Thank you for shopping with us!\n\n" +
                     "Best regards,\n" +
                     "The DripDoggy Team");
             mailSender.send(message);

@@ -94,12 +94,11 @@ public class OrderReturnService implements IOrderReturnService {
 			throw new InvalidOrderItemIDException("Invalid order item for this order.");
 		}
 
-		// Calculate the requested quantity
-		int requestedQuantity = (dto.getQuantity() != null && dto.getQuantity() > 0) ? dto.getQuantity() : orderItem.getQuantity();
-
-		if (requestedQuantity < 1) {
-			throw new InvalidOrderStateException("Requested quantity must be at least 1.");
+		// Validate and extract quantity (must not be null and must be at least 1)
+		if (dto.getQuantity() == null || dto.getQuantity() < 1) {
+			throw new InvalidReturnQuantityException(orderItem.getQuantity(), dto.getQuantity() != null ? dto.getQuantity() : 0, 0);
 		}
+		int requestedQuantity = dto.getQuantity();
 
 		// Enforce cumulative quantity check for active return/exchange requests
 		List<OrderReturn> existingRequests = orderReturnRepository.findByOrderItemId(dto.getOrderItemId());
@@ -111,8 +110,7 @@ public class OrderReturnService implements IOrderReturnService {
 		}
 
 		if (activeQuantity + requestedQuantity > orderItem.getQuantity()) {
-			throw new InvalidOrderStateException("Cannot return/exchange more items than were originally ordered. " +
-					"Previously requested: " + activeQuantity + ", remaining available: " + (orderItem.getQuantity() - activeQuantity) + ".");
+			throw new InvalidReturnQuantityException(orderItem.getQuantity(), requestedQuantity, activeQuantity);
 		}
 
 		// Validate cancel reason word count (max 250 words)
@@ -271,12 +269,11 @@ public class OrderReturnService implements IOrderReturnService {
 			throw new InvalidOrderItemIDException("Invalid order item for this order.");
 		}
 
-		// Calculate the requested quantity
-		int requestedQuantity = (dto.getQuantity() != null && dto.getQuantity() > 0) ? dto.getQuantity() : orderItem.getQuantity();
-
-		if (requestedQuantity < 1) {
-			throw new InvalidOrderStateException("Requested quantity must be at least 1.");
+		// Validate and extract quantity (must not be null and must be at least 1)
+		if (dto.getQuantity() == null || dto.getQuantity() < 1) {
+			throw new InvalidReturnQuantityException(orderItem.getQuantity(), dto.getQuantity() != null ? dto.getQuantity() : 0, 0);
 		}
+		int requestedQuantity = dto.getQuantity();
 
 		// Enforce cumulative quantity check for active return/exchange requests
 		List<OrderReturn> existingRequests = orderReturnRepository.findByOrderItemId(dto.getOrderItemId());
@@ -288,8 +285,7 @@ public class OrderReturnService implements IOrderReturnService {
 		}
 
 		if (activeQuantity + requestedQuantity > orderItem.getQuantity()) {
-			throw new InvalidOrderStateException("Cannot return/exchange more items than were originally ordered. " +
-					"Previously requested: " + activeQuantity + ", remaining available: " + (orderItem.getQuantity() - activeQuantity) + ".");
+			throw new InvalidReturnQuantityException(orderItem.getQuantity(), requestedQuantity, activeQuantity);
 		}
 
 		// Validate exchange reason word count (max 250 words)
@@ -602,18 +598,21 @@ public class OrderReturnService implements IOrderReturnService {
 			returnRequest.setRefundProofImageUrl(proofUrl);
 			returnRequest.setStatus(ReturnStatus.REFUND_COMPLETED);
 			returnRequest.setResolvedAt(LocalDateTime.now());
-
-			order.setDeliveryStatus(DeliveryStatus.RETURN_DELIVERED);
-			order.setPaymentStatus(PaymentStatus.REFUNDED);
-
-			ordersRepository.save(order);
 			orderReturnRepository.save(returnRequest);
+
+			updateParentOrderStatusAfterResolution(order);
+			ordersRepository.save(order);
 
 			// Notify customer via email with proof receipt image URL
 			try {
 				boolean wasExchangeFallback = (returnRequest.getRequestType() == ReturnRequestType.EXCHANGE);
+				double refundAmt = 0.0;
+				if (orderItem != null) {
+					int qty = returnRequest.getQuantity() != null ? returnRequest.getQuantity() : orderItem.getQuantity();
+					refundAmt = orderItem.getPrice().doubleValue() * qty;
+				}
 				emailService.sendCustomerRefundCompletedEmail(user.getEmail(), orderNumber, customerName, productName,
-						proofUrl, proofImage, wasExchangeFallback);
+						proofUrl, proofImage, wasExchangeFallback, refundAmt);
 			} catch (Exception e) {
 				// Ignore email failure
 				e.printStackTrace();
@@ -627,14 +626,55 @@ public class OrderReturnService implements IOrderReturnService {
 			if (ordersRepository.existsByTrackingNumber(trimmedTracking)) {
 				throw new InvalidOrderStateException("Courier Tracking ID '" + trimmedTracking + "' is already assigned to another order.");
 			}
+			if (orderItem == null) {
+				throw new ResourceNotFoundException("Original order item not found");
+			}
+
+			// Verify if the replacement size is available and has sufficient stock
+			ProductVariant variant;
+			if (returnRequest.getTargetVariantId() != null) {
+				variant = productVariantRepository.findById(returnRequest.getTargetVariantId())
+						.orElseThrow(() -> new ResourceNotFoundException("Target product variant not found with id: " + returnRequest.getTargetVariantId()));
+			} else {
+				variant = orderItem.getProductVariantSize().getProductVariant();
+			}
+
+			int requiredQty = returnRequest.getQuantity() != null ? returnRequest.getQuantity() : orderItem.getQuantity();
+			java.util.Optional<ProductVariantSize> targetSizeOpt = variant.getProductVariantSizes().stream()
+					.filter(s -> s.getSizeName().equalsIgnoreCase(returnRequest.getTargetSize())).findFirst();
+
+			boolean isAvailable = targetSizeOpt.isPresent() && targetSizeOpt.get().getStockQuantity() >= requiredQty;
+
+			if (!isAvailable) {
+				// Handle size unavailability case
+				returnRequest.setStatus(ReturnStatus.REPLACEMENT_UNAVAILABLE);
+				orderReturnRepository.save(returnRequest);
+
+				// Send unavailability email notification
+				try {
+					emailService.sendCustomerExchangeSizeUnavailableEmail(
+							user.getEmail(),
+							orderNumber,
+							customerName,
+							productName,
+							returnRequest.getTargetSize(),
+							returnRequest.getId()
+					);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				return new ResponseMsgDto(200, "Replacement size '" + returnRequest.getTargetSize() 
+						+ "' is unavailable. Customer has been notified to choose between a refund and keeping their original items.");
+			}
+
 			// Exchanges: Admin sends a replacement size
 			returnRequest.setStatus(ReturnStatus.EXCHANGE_COMPLETED);
 			returnRequest.setResolvedAt(LocalDateTime.now());
-
-			order.setDeliveryStatus(DeliveryStatus.EXCHANGE_DELIVERED);
-
-			ordersRepository.save(order);
 			orderReturnRepository.save(returnRequest);
+
+			updateParentOrderStatusAfterResolution(order);
+			ordersRepository.save(order);
 
 			// Generate linked exchange order with $0.00 price
 			generateExchangeOrder(returnRequest, trackingNumber);
@@ -746,13 +786,15 @@ public class OrderReturnService implements IOrderReturnService {
 			}
 		}
 
+		Double refundAmount = productPrice * requestedQty;
+
 		return new AdminReturnResponseDto(r.getId(), order.getId(), orderNumber, r.getOrderItemId(),
 				r.getRequestType() != null ? r.getRequestType().name() : null, r.getCancelReason(),
 				r.getDefectImageUrl1(), r.getDefectImageUrl2(), r.getDefectImageUrl3(), r.getTargetSize(),
 				r.getTargetVariantId(), r.getStatus() != null ? r.getStatus().name() : null, r.getCreatedAt(),
 				r.getResolvedAt(), customerName, customerEmail, productName, productSize, productPrice, productQuantity, requestedQty,
 				r.getUpiId(), r.getUpiPhone(), r.getQrCodeImageUrl(), r.getBankAccountName(), r.getBankName(),
-				r.getBankIfsc(), r.getBankAccountNumber(), priceDifference);
+				r.getBankIfsc(), r.getBankAccountNumber(), priceDifference, refundAmount);
 	}
 
 	@Override
@@ -841,6 +883,106 @@ public class OrderReturnService implements IOrderReturnService {
 		}
 
 		return new ResponseMsgDto(200, "Payment request email sent successfully to the customer with the uploaded QR code.");
+	}
+
+	private void updateParentOrderStatusAfterResolution(Orders order) {
+		// Calculate total quantity of items originally purchased
+		int totalPurchased = 0;
+		if (order.getOrderItems() != null) {
+			for (OrderItem item : order.getOrderItems()) {
+				totalPurchased += item.getQuantity();
+			}
+		}
+
+		// Calculate total quantity of items returned/exchanged in completed return requests
+		int totalReturnedOrExchanged = 0;
+		List<OrderReturn> completedRequests = orderReturnRepository.findByOrderId(order.getId());
+		if (completedRequests != null) {
+			for (OrderReturn req : completedRequests) {
+				if (req.getStatus() == ReturnStatus.REFUND_COMPLETED || req.getStatus() == ReturnStatus.EXCHANGE_COMPLETED) {
+					totalReturnedOrExchanged += (req.getQuantity() != null) ? req.getQuantity() : 0;
+				}
+			}
+		}
+
+		// Perform conditional update
+		if (totalReturnedOrExchanged >= totalPurchased) {
+			boolean hasRefund = false;
+			boolean hasExchange = false;
+			for (OrderReturn req : completedRequests) {
+				if (req.getStatus() == ReturnStatus.REFUND_COMPLETED) {
+					hasRefund = true;
+				}
+				if (req.getStatus() == ReturnStatus.EXCHANGE_COMPLETED) {
+					hasExchange = true;
+				}
+			}
+			if (hasRefund && !hasExchange) {
+				order.setDeliveryStatus(DeliveryStatus.RETURN_DELIVERED);
+				order.setPaymentStatus(PaymentStatus.REFUNDED);
+			} else if (hasExchange && !hasRefund) {
+				order.setDeliveryStatus(DeliveryStatus.EXCHANGE_DELIVERED);
+			} else {
+				order.setDeliveryStatus(DeliveryStatus.RETURN_DELIVERED);
+				order.setPaymentStatus(PaymentStatus.REFUNDED);
+			}
+		} else {
+			// Partial Return/Exchange -> Keep parent order as DELIVERED and Payment as SUCCESS
+			order.setDeliveryStatus(DeliveryStatus.DELIVERED);
+			order.setPaymentStatus(PaymentStatus.SUCCESS);
+		}
+	}
+
+	@Override
+	public ResponseMsgDto handleUnavailabilityChoice(Long returnId, String choice) {
+		User user = getCurrentCustomer();
+		OrderReturn returnRequest = orderReturnRepository.findById(returnId)
+				.orElseThrow(() -> new ResourceNotFoundException("Return request not found"));
+
+		// Validate ownership
+		if (!returnRequest.getOrder().getUser().getId().equals(user.getId())) {
+			throw new InvalidCredentialsException("Access Denied: You do not own this order.");
+		}
+
+		if (returnRequest.getStatus() != ReturnStatus.REPLACEMENT_UNAVAILABLE) {
+			throw new InvalidOrderStateException("This return request does not have an unavailable replacement size.");
+		}
+
+		String normalizedChoice = choice.toUpperCase().trim();
+		Orders order = returnRequest.getOrder();
+
+		if ("REFUND".equals(normalizedChoice)) {
+			// Convert to return refund request
+			returnRequest.setRequestType(ReturnRequestType.RETURN);
+			returnRequest.setStatus(ReturnStatus.APPROVED); // Set to APPROVED so it's ready for admin resolution
+			orderReturnRepository.save(returnRequest);
+
+			return new ResponseMsgDto(200, "Your choice has been recorded. The exchange request has been converted to a refund request.");
+
+		} else if ("KEEP_ORIGINAL".equals(normalizedChoice)) {
+			// Close the return request as satisfied
+			returnRequest.setStatus(ReturnStatus.CLOSED_UNAVAILABLE_NO_REFUND);
+			returnRequest.setResolvedAt(LocalDateTime.now());
+			orderReturnRepository.save(returnRequest);
+
+			// Revert/update the parent order delivery status
+			updateParentOrderStatusAfterResolution(order);
+			ordersRepository.save(order);
+
+			// Notify customer via email
+			try {
+				String orderNumber = "#DD-" + order.getId();
+				String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+				emailService.sendCustomerExchangeUnavailableClosedEmail(user.getEmail(), orderNumber, customerName);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			return new ResponseMsgDto(200, "Your choice has been recorded. The exchange request has been closed and your original items are kept.");
+		} else {
+			throw new IllegalArgumentException("Invalid choice. Must be REFUND or KEEP_ORIGINAL.");
+		}
 	}
 
 	private int countWords(String text) {

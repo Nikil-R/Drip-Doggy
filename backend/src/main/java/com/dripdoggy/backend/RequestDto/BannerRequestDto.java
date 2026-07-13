@@ -1,57 +1,30 @@
-package com.dripdoggy.backend.entity;
+package com.dripdoggy.backend.RequestDto;
 
-import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.web.multipart.MultipartFile;
 
-@Entity
-@Table(name = "banners")
-public class Banner {
+public class BannerRequestDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String tagline;
+    @NotBlank(message = "Title is required")
     private String title;
+    private String tagline;
     private String description;
-
-    @Column(name = "redirect_to")
     private String redirectTo;
-
-    @Column(name = "display_order")
     private Integer displayOrder;
+    private Boolean isActive = true;
+    private MultipartFile image;
 
-    @Column(name = "is_active")
-    private Boolean isActive;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
-
-    @OneToOne(mappedBy = "banner", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Image image;
-
-    // Constructors
-    public Banner() {
+    public BannerRequestDto() {
     }
 
-    public Banner(Long id, String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, Boolean isDeleted, Image image) {
-        this.id = id;
+    public BannerRequestDto(String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, MultipartFile image) {
         this.tagline = tagline;
         this.title = title;
         this.description = description;
         this.redirectTo = redirectTo;
         this.displayOrder = displayOrder;
         this.isActive = isActive;
-        this.isDeleted = isDeleted;
         this.image = image;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getTagline() {
@@ -102,19 +75,11 @@ public class Banner {
         this.isActive = isActive;
     }
 
-    public Image getImage() {
+    public MultipartFile getImage() {
         return image;
     }
 
-    public void setImage(Image image) {
+    public void setImage(MultipartFile image) {
         this.image = image;
-    }
-
-    public Boolean getIsDeleted() {
-        return isDeleted;
-    }
-
-    public void setIsDeleted(Boolean isDeleted) {
-        this.isDeleted = isDeleted;
     }
 }

@@ -1,5 +1,6 @@
 package com.dripdoggy.backend.RequestDto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
@@ -11,7 +12,9 @@ public class ReturnSubmitRequestDto {
     @NotNull(message = "Reason is required")
     private String cancelReason;
 
-    private Integer quantity; // Optional: defaults to original quantity if not provided
+    @NotNull(message = "Quantity is required")
+    @Min(value = 1, message = "Quantity must be at least 1")
+    private Integer quantity;
 
     private List<MultipartFile> images;
 

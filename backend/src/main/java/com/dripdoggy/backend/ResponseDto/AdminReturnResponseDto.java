@@ -35,11 +35,12 @@ public class AdminReturnResponseDto {
     private String bankIfsc;
     private String bankAccountNumber;
     private Double priceDifference;
+    private Double refundAmount;
 
     public AdminReturnResponseDto() {
     }
 
-    public AdminReturnResponseDto(Long id, Long orderId, String orderNumber, Long orderItemId, String requestType, String cancelReason, String defectImageUrl1, String defectImageUrl2, String defectImageUrl3, String targetSize, Long targetVariantId, String status, LocalDateTime createdAt, LocalDateTime resolvedAt, String customerName, String customerEmail, String productName, String productSize, Double productPrice, Integer productQuantity, Integer requestedQuantity, String upiId, String upiPhone, String qrCodeImageUrl, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber, Double priceDifference) {
+    public AdminReturnResponseDto(Long id, Long orderId, String orderNumber, Long orderItemId, String requestType, String cancelReason, String defectImageUrl1, String defectImageUrl2, String defectImageUrl3, String targetSize, Long targetVariantId, String status, LocalDateTime createdAt, LocalDateTime resolvedAt, String customerName, String customerEmail, String productName, String productSize, Double productPrice, Integer productQuantity, Integer requestedQuantity, String upiId, String upiPhone, String qrCodeImageUrl, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber, Double priceDifference, Double refundAmount) {
         this.id = id;
         this.orderId = orderId;
         this.orderNumber = orderNumber;
@@ -69,6 +70,7 @@ public class AdminReturnResponseDto {
         this.bankIfsc = bankIfsc;
         this.bankAccountNumber = bankAccountNumber;
         this.priceDifference = priceDifference;
+        this.refundAmount = refundAmount;
     }
 
     public Long getId() { return id; }
@@ -130,4 +132,6 @@ public class AdminReturnResponseDto {
     public void setBankAccountNumber(String bankAccountNumber) { this.bankAccountNumber = bankAccountNumber; }
     public Double getPriceDifference() { return priceDifference; }
     public void setPriceDifference(Double priceDifference) { this.priceDifference = priceDifference; }
+    public Double getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(Double refundAmount) { this.refundAmount = refundAmount; }
 }
