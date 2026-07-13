@@ -79,7 +79,6 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/content/signature-pieces",  label: "Signature Pieces", icon: Award },
       { to: "/admin/content/featured-products", label: "New In",           icon: Sparkles },
       { to: "/admin/content/coming-soon",       label: "Coming Soon",      icon: Zap },
-      { to: "/admin/content/navigation",        label: "Navigation Menu",  icon: Menu },
     ],
   },
 ];

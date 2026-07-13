@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit2, X, Check, RotateCcw, AlertTriangle, Layers, Eye, EyeOff } from "lucide-react";
-import { getHomeCategories, setHomeCategories, HomeCategory, addHomeCategory, updateHomeCategory, deleteHomeCategory } from "../lib/admin-content-store";
+import { HomeCategory } from "../lib/admin-content-store";
+import { useAuthStore } from "../store/auth-store";
+import { adminHomeCategoryApi } from "../lib/home-category-api";
 
 const DEFAULT_CATEGORIES_DATA: HomeCategory[] = [
   { 
@@ -48,14 +50,14 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
   );
 }
 
-let idCounter = Date.now();
-
 export function HomeCategoriesEditorPage() {
+  const { token } = useAuthStore();
   const [categories, setCategories] = useState<HomeCategory[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editCat, setEditCat] = useState<HomeCategory | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [form, setForm] = useState({ 
     title: "", 
@@ -67,27 +69,43 @@ export function HomeCategoriesEditorPage() {
     active: true 
   });
 
-  // Seed default categories if none exist, matching the requested Men and Women examples
-  useEffect(() => {
-    const loaded = getHomeCategories();
-    if (loaded.length === 0) {
-      setHomeCategories(DEFAULT_CATEGORIES_DATA);
-      setCategories(DEFAULT_CATEGORIES_DATA);
-    } else {
-      setCategories(loaded);
+  const loadCategories = async () => {
+    if (!token) return;
+    try {
+      const data = await adminHomeCategoryApi.getAllCategories(token);
+      const mapped = data.map((c): HomeCategory => ({
+        id: String(c.id),
+        title: c.title || "",
+        description: c.description || "",
+        image: c.imageUrl || "",
+        route: c.route || "/shop",
+        comingSoon: !!c.comingSoon,
+        comingSeason: c.comingSeason || "",
+        order: c.displayOrder || 0,
+        active: c.isActive
+      }));
+      setCategories(mapped);
+    } catch (err) {
+      console.error("Failed to load home categories:", err);
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, [token]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
 
   const openAdd = () => { 
     setEditCat(null); 
+    setImageFile(null);
     setForm({ title: "Collections Special", image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800", description: "Archival drops & vintage releases", route: "/shop", comingSoon: false, comingSeason: "", active: true }); 
     setShowModal(true); 
   };
   
   const openEdit = (c: HomeCategory) => { 
     setEditCat(c); 
+    setImageFile(null);
     setForm({ title: c.title, image: c.image, description: c.description, route: c.route, comingSoon: c.comingSoon, comingSeason: c.comingSeason || "", active: c.active }); 
     setShowModal(true); 
   };
@@ -95,14 +113,17 @@ export function HomeCategoriesEditorPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === "string") {
         const base64Url = reader.result;
         const img = new Image();
         img.onload = () => {
-          if (img.width !== 800 || img.height !== 1000) {
-            alert(`Upload Rejected: Image dimensions are ${img.width}x${img.height}px. Category images must be exactly 800x1000px.`);
+          const ratio = img.width / img.height;
+          // 4:5 aspect ratio is exactly 0.8. We allow a tiny tolerance for minor pixel roundings.
+          if (Math.abs(ratio - 0.8) > 0.01) {
+            alert(`Upload Rejected: Aspect ratio is not 4:5. Current dimensions are ${img.width}x${img.height}px (Ratio: ${ratio.toFixed(2)}). Please upload an image with a 4:5 portrait aspect ratio (e.g. 800x1000, 1200x1500, etc.).`);
             if (e.target) e.target.value = "";
           } else {
             setForm(prev => ({ ...prev, image: base64Url }));
@@ -114,43 +135,64 @@ export function HomeCategoriesEditorPage() {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
-    if (editCat) { 
-      updateHomeCategory(editCat.id, form); 
-      setCategories(getHomeCategories()); 
-    } else { 
-      addHomeCategory({ ...form, id: "cat-" + idCounter++, order: categories.length }); 
-      setCategories(getHomeCategories()); 
+  const save = async () => {
+    if (!token) return;
+    try {
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("route", form.route);
+      formData.append("comingSoon", String(form.comingSoon));
+      formData.append("comingSeason", form.comingSeason);
+      formData.append("isActive", String(form.active));
+      
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      if (editCat) {
+        formData.append("displayOrder", String(editCat.order));
+        await adminHomeCategoryApi.updateCategory(Number(editCat.id), formData, token);
+      } else {
+        formData.append("displayOrder", String(categories.length));
+        await adminHomeCategoryApi.createCategory(formData, token);
+      }
+
+      await loadCategories();
+      setShowModal(false);
+      showToast(editCat ? "Category updated" : "Category added");
+    } catch (err) {
+      console.error("Failed to save category:", err);
+      showToast("Error saving category");
     }
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
-    setShowModal(false); 
-    showToast(editCat ? "Category updated" : "Category added");
   };
 
-  const remove = () => { 
-    if (deleteId) { 
-      deleteHomeCategory(deleteId); 
-      setCategories(getHomeCategories()); 
-      setDeleteId(null); 
-      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
-      showToast("Category deleted"); 
+  const remove = async () => { 
+    if (deleteId && token) { 
+      try {
+        await adminHomeCategoryApi.deleteCategory(Number(deleteId), token);
+        await loadCategories();
+        setDeleteId(null);
+        showToast("Category deleted"); 
+      } catch (err) {
+        console.error("Failed to delete category:", err);
+        showToast("Error deleting category");
+      }
     } 
   };
 
   const reset = () => {
-    setHomeCategories(DEFAULT_CATEGORIES_DATA);
-    setCategories(DEFAULT_CATEGORIES_DATA);
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
-    showToast("Reset to brand defaults");
+    showToast("Feature disabled. Managed via DB.");
   };
 
-  const toggleActive = (id: string) => {
-    const c = categories.find(x => x.id === id);
-    if (c) {
-      updateHomeCategory(id, { active: !c.active });
-      setCategories(getHomeCategories());
-      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_home_categories" } }));
+  const toggleActive = async (id: string) => {
+    if (!token) return;
+    try {
+      await adminHomeCategoryApi.toggleCategoryActive(Number(id), token);
+      await loadCategories();
       showToast("Visibility toggled");
+    } catch (err) {
+      console.error("Failed to toggle category status:", err);
     }
   };
 
@@ -250,7 +292,7 @@ export function HomeCategoriesEditorPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Category Banner Image</label>
-                  <span className="text-[7.5px] text-[#b2533e] font-black uppercase tracking-wider bg-red-50 px-2 py-0.5 border border-red-200">Required Ratio: 800 x 1000 px</span>
+                  <span className="text-[7.5px] text-[#b2533e] font-black uppercase tracking-wider bg-red-50 px-2 py-0.5 border border-red-200">Required Ratio: 4:5 Aspect Ratio</span>
                 </div>
                 <div className="bg-[#faf8f5] p-3.5 border border-neutral-300">
                   <div className="space-y-1">
@@ -263,7 +305,7 @@ export function HomeCategoriesEditorPage() {
                 </div>
                 {form.image && (
                   <div className="mt-2 flex flex-col items-center bg-neutral-50 p-3 border border-neutral-200">
-                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (800x1000 aspect)</span>
+                    <span className="text-[8px] font-black uppercase text-neutral-400 block mb-2">Category Card Aspect Preview (4:5 aspect)</span>
                     <div className="w-[160px] h-[200px] border border-neutral-300 overflow-hidden shrink-0 relative group shadow-sm">
                       <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
                     </div>

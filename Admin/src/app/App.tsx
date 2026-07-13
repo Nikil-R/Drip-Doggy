@@ -74,7 +74,6 @@ export default function App() {
           <Route path="content/home-categories" element={<HomeCategoriesEditorPage />} />
           <Route path="content/newsletter" element={<NewsletterConfigEditorPage />} />
           <Route path="content/footer" element={<FooterSettingsEditorPage />} />
-          <Route path="content/navigation" element={<NavigationMenuEditorPage />} />
           <Route path="content/site-pages" element={<SitePagesEditorPage />} />
           <Route path="content/collections" element={<CuratedCollectionsEditorPage />} />
           <Route path="content/coming-soon" element={<ComingSoonEditorPage />} />

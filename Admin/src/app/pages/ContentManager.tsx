@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { FileText, Image, ChevronRight, Clock, Layers, Globe, Star, ShoppingBag, Menu, Mail, Footprints, Shirt } from "lucide-react";
 
 const RS = "\u20B9";
@@ -11,7 +12,6 @@ const sections = [
   { name: "Curated Collections", icon: ShoppingBag, status: "4 Collections", lastEdited: "2 weeks ago", desc: "Curated collection blocks", route: "curated-collections", color: "from-[#36454f] to-[#1a2226]" },
   { name: "Newsletter Config", icon: Mail, status: "Active", lastEdited: "2 weeks ago", desc: "Email signup section", route: "newsletter-config", color: "from-[#c49a6c] to-[#a67c4e]" },
   { name: "Footer Settings", icon: Footprints, status: "Configured", lastEdited: "3 weeks ago", desc: "Footer links & social", route: "footer-settings", color: "from-[#030213] to-[#1a1a1a]" },
-  { name: "Navigation Menu", icon: Menu, status: "2 Menus", lastEdited: "1 month ago", desc: "Desktop & mobile nav", route: "navigation-menu", color: "from-[#030213] to-neutral-800" },
   { name: "Site Pages", icon: Globe, status: "6 Pages", lastEdited: "2 weeks ago", desc: "About, Contact, Legal", route: "site-pages", color: "from-[#717182] to-neutral-600" },
 ];
 
@@ -23,12 +23,14 @@ const stats = [
 ];
 
 export function ContentPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-8 font-sans">
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Navigation Menu</h1>
+        <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Content Management</h1>
         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
           Drip Doggy homepage &amp; site content editor
         </p>
@@ -65,6 +67,7 @@ export function ContentPage() {
         {sections.map((section) => (
           <div
             key={section.name}
+            onClick={() => navigate(`/admin/content/${section.route}`)}
             className="bg-card border border-neutral-200/80 hover:shadow-sm transition-all group cursor-pointer"
           >
             {/* Colored top bar */}

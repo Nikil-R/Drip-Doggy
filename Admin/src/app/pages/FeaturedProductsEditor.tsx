@@ -1,19 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, RotateCcw, Check, Sparkles, Eye, EyeOff, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { getFeaturedProducts, setFeaturedProducts, FeaturedProductsConfig } from "../lib/admin-content-store";
-
-// Product catalog reference (shared with frontend)
-const PRODUCT_CATALOG = [
-  { id: 1, name: "Structured Canvas Jacket", price: 12999 },
-  { id: 2, name: "Pinstripe Relaxed Shirt", price: 8499 },
-  { id: 3, name: "Cashmere Blend Knit", price: 15999 },
-  { id: 4, name: "Satin Asymmetric Top", price: 6499 },
-  { id: 5, name: "Moto Biker Jacket", price: 18999 },
-  { id: 6, name: "Pleated Wide-Leg Trousers", price: 7499 },
-  { id: 7, name: "Oversized Blazer Dress", price: 11499 },
-  { id: 8, name: "Parachute Cargo Skirt", price: 6499 },
-  { id: 9, name: "Oversized Knit Cardigan", price: 9999 },
-];
+import { RotateCcw, Check, Sparkles, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { FeaturedProductsConfig } from "../lib/admin-content-store";
+import { useAuthStore } from "../store/auth-store";
+import { adminCuratedCollectionApi } from "../lib/curated-collection-api";
+import { productApi } from "../lib/product-api";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
@@ -21,7 +11,7 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer p-0 shrink-0 border-none outline-none ${
-        enabled ? "bg-[#224870]" : "bg-neutral-300"
+        enabled ? "bg-[#224870]" : "bg-neutral-350"
       }`}
     >
       <span
@@ -34,33 +24,64 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
 }
 
 export function FeaturedProductsEditorPage() {
+  const { token } = useAuthStore();
   const [config, setConfigState] = useState<FeaturedProductsConfig>({
     sectionTitle: "New In", sectionSubtitle: "New This Season", productIds: [], maxProducts: 4, active: true,
   });
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; price: number }[]>([]);
   const [toast, setToast] = useState("");
 
+  const loadData = async () => {
+    if (!token) return;
+    try {
+      // 1. Fetch real products
+      const prods = await productApi.fetchAllProducts(token);
+      setProductCatalog(prods.map(p => ({
+        id: p.id,
+        name: p.productName,
+        price: p.variants?.[0]?.price || 0
+      })));
+
+      // 2. Fetch curated collection config (using sectionKey: NEW_IN)
+      const data = await adminCuratedCollectionApi.getCollection("NEW_IN", token);
+      setConfigState({
+        sectionTitle: data.title || "New In",
+        sectionSubtitle: data.subtitle || "New This Season",
+        productIds: data.products?.map(p => p.id) || [],
+        active: data.isActive,
+        maxProducts: 4
+      });
+      setSelectedIds(data.products?.map(p => p.id) || []);
+    } catch (err) {
+      console.error("Failed to load new in collection:", err);
+    }
+  };
+
   useEffect(() => {
-    const c = getFeaturedProducts();
-    setConfigState(c);
-    setSelectedIds(c.productIds);
-  }, []);
+    loadData();
+  }, [token]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
-  const save = () => {
-    setFeaturedProducts({ ...config, productIds: selectedIds });
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_featured_products" } }));
-    showToast("New In configuration saved");
+  const save = async () => {
+    if (!token) return;
+    try {
+      await adminCuratedCollectionApi.updateCollection("NEW_IN", {
+        title: config.sectionTitle,
+        subtitle: config.sectionSubtitle || "",
+        isActive: config.active,
+        productIds: selectedIds
+      }, token);
+      showToast("New In configuration saved");
+    } catch (err) {
+      console.error("Failed to save new in collection:", err);
+      showToast("Error saving new in collection");
+    }
   };
 
   const reset = () => {
-    const defaults: FeaturedProductsConfig = {
-      sectionTitle: "New In", sectionSubtitle: "New This Season", productIds: [3, 7, 8, 1], maxProducts: 4, active: true,
-    };
-    setConfigState(defaults);
-    setSelectedIds(defaults.productIds);
-    showToast("Reset defaults applied");
+    showToast("Feature disabled. Managed via DB.");
   };
 
   const toggleProduct = (id: number) => {
@@ -167,7 +188,7 @@ export function FeaturedProductsEditorPage() {
           <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
             <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">Select Products</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {PRODUCT_CATALOG.map(p => {
+              {productCatalog.map(p => {
                 const selected = selectedIds.includes(p.id);
                 return (
                   <button
@@ -207,7 +228,7 @@ export function FeaturedProductsEditorPage() {
             ) : (
               <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
                 {selectedIds.map((id, index) => {
-                  const p = PRODUCT_CATALOG.find(prod => prod.id === id);
+                  const p = productCatalog.find(prod => prod.id === id);
                   if (!p) return null;
                   return (
                     <div key={id} className="flex items-center justify-between border border-neutral-200/80 bg-neutral-50/50 px-2.5 py-1.5">
@@ -247,7 +268,7 @@ export function FeaturedProductsEditorPage() {
               
               <div className="grid grid-cols-2 gap-2">
                 {selectedIds.slice(0, config.maxProducts || 4).map(id => {
-                  const p = PRODUCT_CATALOG.find(prod => prod.id === id);
+                  const p = productCatalog.find(prod => prod.id === id);
                   if (!p) return null;
                   return (
                     <div key={id} className="border border-neutral-100 p-2 bg-neutral-50/20">
