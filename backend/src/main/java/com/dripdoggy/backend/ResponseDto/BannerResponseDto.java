@@ -6,6 +6,7 @@ public class BannerResponseDto {
     private String title;
     private String description;
     private String redirectTo;
+    private String buttonText;
     private Integer displayOrder;
     private Boolean isActive;
     private String imageUrl;
@@ -13,12 +14,13 @@ public class BannerResponseDto {
     public BannerResponseDto() {
     }
 
-    public BannerResponseDto(Long id, String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, String imageUrl) {
+    public BannerResponseDto(Long id, String tagline, String title, String description, String redirectTo, String buttonText, Integer displayOrder, Boolean isActive, String imageUrl) {
         this.id = id;
         this.tagline = tagline;
         this.title = title;
         this.description = description;
         this.redirectTo = redirectTo;
+        this.buttonText = buttonText;
         this.displayOrder = displayOrder;
         this.isActive = isActive;
         this.imageUrl = imageUrl;
@@ -62,6 +64,14 @@ public class BannerResponseDto {
 
     public void setRedirectTo(String redirectTo) {
         this.redirectTo = redirectTo;
+    }
+
+    public String getButtonText() {
+        return buttonText;
+    }
+
+    public void setButtonText(String buttonText) {
+        this.buttonText = buttonText;
     }
 
     public Integer getDisplayOrder() {

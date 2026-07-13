@@ -17,6 +17,9 @@ public class Banner {
     @Column(name = "redirect_to")
     private String redirectTo;
 
+    @Column(name = "button_text")
+    private String buttonText;
+
     @Column(name = "display_order")
     private Integer displayOrder;
 
@@ -33,12 +36,13 @@ public class Banner {
     public Banner() {
     }
 
-    public Banner(Long id, String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, Boolean isDeleted, Image image) {
+    public Banner(Long id, String tagline, String title, String description, String redirectTo, String buttonText, Integer displayOrder, Boolean isActive, Boolean isDeleted, Image image) {
         this.id = id;
         this.tagline = tagline;
         this.title = title;
         this.description = description;
         this.redirectTo = redirectTo;
+        this.buttonText = buttonText;
         this.displayOrder = displayOrder;
         this.isActive = isActive;
         this.isDeleted = isDeleted;
@@ -84,6 +88,14 @@ public class Banner {
 
     public void setRedirectTo(String redirectTo) {
         this.redirectTo = redirectTo;
+    }
+
+    public String getButtonText() {
+        return buttonText;
+    }
+
+    public void setButtonText(String buttonText) {
+        this.buttonText = buttonText;
     }
 
     public Integer getDisplayOrder() {

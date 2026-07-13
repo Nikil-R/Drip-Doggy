@@ -5,6 +5,7 @@ import java.util.List;
 public class ReviewResponseDto {
     private Long id;
     private String comment;
+    private Integer rating;
     private Boolean isActive;
     private Long userId;
     private String customerName;
@@ -17,9 +18,10 @@ public class ReviewResponseDto {
     public ReviewResponseDto() {
     }
 
-    public ReviewResponseDto(Long id, String comment, Boolean isActive, Long userId, String customerName, Long productVariantId, String productVariantName, String productName) {
+    public ReviewResponseDto(Long id, String comment, Integer rating, Boolean isActive, Long userId, String customerName, Long productVariantId, String productVariantName, String productName) {
         this.id = id;
         this.comment = comment;
+        this.rating = rating;
         this.isActive = isActive;
         this.userId = userId;
         this.customerName = customerName;
@@ -28,9 +30,10 @@ public class ReviewResponseDto {
         this.productName = productName;
     }
 
-    public ReviewResponseDto(Long id, String comment, Boolean isActive, Long userId, String customerName, Long productVariantId, String productVariantName, String productName, List<String> imageUrls, Boolean isVerifiedPurchase) {
+    public ReviewResponseDto(Long id, String comment, Integer rating, Boolean isActive, Long userId, String customerName, Long productVariantId, String productVariantName, String productName, List<String> imageUrls, Boolean isVerifiedPurchase) {
         this.id = id;
         this.comment = comment;
+        this.rating = rating;
         this.isActive = isActive;
         this.userId = userId;
         this.customerName = customerName;
@@ -55,6 +58,14 @@ public class ReviewResponseDto {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
     }
 
     public Boolean getIsActive() {

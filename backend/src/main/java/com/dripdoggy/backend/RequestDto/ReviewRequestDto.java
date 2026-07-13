@@ -3,6 +3,8 @@ package com.dripdoggy.backend.RequestDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
@@ -18,21 +20,28 @@ public class ReviewRequestDto {
     @Size(max = 250, message = "Comment cannot exceed 250 characters.")
     private String comment;
 
+    @NotNull(message = "Rating is required.")
+    @Min(value = 1, message = "Rating must be at least 1 star.")
+    @Max(value = 5, message = "Rating cannot exceed 5 stars.")
+    private Integer rating;
+
     private List<MultipartFile> images;
 
     public ReviewRequestDto() {
     }
 
-    public ReviewRequestDto(Long orderId, Long productVariantId, String comment) {
+    public ReviewRequestDto(Long orderId, Long productVariantId, String comment, Integer rating) {
         this.orderId = orderId;
         this.productVariantId = productVariantId;
         this.comment = comment;
+        this.rating = rating;
     }
 
-    public ReviewRequestDto(Long orderId, Long productVariantId, String comment, List<MultipartFile> images) {
+    public ReviewRequestDto(Long orderId, Long productVariantId, String comment, Integer rating, List<MultipartFile> images) {
         this.orderId = orderId;
         this.productVariantId = productVariantId;
         this.comment = comment;
+        this.rating = rating;
         this.images = images;
     }
 
@@ -58,6 +67,14 @@ public class ReviewRequestDto {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
     }
 
     public List<MultipartFile> getImages() {

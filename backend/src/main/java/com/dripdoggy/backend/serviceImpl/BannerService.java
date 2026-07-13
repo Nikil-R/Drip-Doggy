@@ -39,6 +39,7 @@ public class BannerService implements IBannerService {
         banner.setTitle(dto.getTitle());
         banner.setDescription(dto.getDescription());
         banner.setRedirectTo(dto.getRedirectTo());
+        banner.setButtonText(dto.getButtonText());
         banner.setDisplayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : 0);
         banner.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         banner.setIsDeleted(false);
@@ -63,7 +64,7 @@ public class BannerService implements IBannerService {
     @Override
     @Transactional(readOnly = true)
     public List<BannerResponseDto> getAllBannersAdmin() {
-        List<Banner> banners = bannerRepository.findByIsActiveTrueAndIsDeletedFalseOrderByDisplayOrderAsc();
+        List<Banner> banners = bannerRepository.findByIsDeletedFalseOrderByDisplayOrderAsc();
         return banners.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
@@ -87,6 +88,7 @@ public class BannerService implements IBannerService {
         banner.setTitle(dto.getTitle());
         banner.setDescription(dto.getDescription());
         banner.setRedirectTo(dto.getRedirectTo());
+        banner.setButtonText(dto.getButtonText());
         if (dto.getDisplayOrder() != null) {
             banner.setDisplayOrder(dto.getDisplayOrder());
         }
@@ -152,6 +154,7 @@ public class BannerService implements IBannerService {
                 banner.getTitle(),
                 banner.getDescription(),
                 banner.getRedirectTo(),
+                banner.getButtonText(),
                 banner.getDisplayOrder(),
                 banner.getIsActive(),
                 imageUrl

@@ -15,6 +15,9 @@ public class Review {
 
     private String comment;
 
+    @Column(name = "rating", nullable = false)
+    private Integer rating;
+
     @Column(name = "is_active")
     private Boolean isActive;
 
@@ -40,18 +43,20 @@ public class Review {
     public Review() {
     }
 
-    public Review(Long id, String comment, Boolean isActive, User user, Orders order, ProductVariant productVariant) {
+    public Review(Long id, String comment, Integer rating, Boolean isActive, User user, Orders order, ProductVariant productVariant) {
         this.id = id;
         this.comment = comment;
+        this.rating = rating;
         this.isActive = isActive;
         this.user = user;
         this.order = order;
         this.productVariant = productVariant;
     }
 
-    public Review(Long id, String comment, Boolean isActive, User user, Orders order, ProductVariant productVariant, List<Image> images) {
+    public Review(Long id, String comment, Integer rating, Boolean isActive, User user, Orders order, ProductVariant productVariant, List<Image> images) {
         this.id = id;
         this.comment = comment;
+        this.rating = rating;
         this.isActive = isActive;
         this.user = user;
         this.order = order;
@@ -74,6 +79,14 @@ public class Review {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
     }
 
     public Boolean getIsActive() {

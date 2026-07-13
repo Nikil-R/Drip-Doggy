@@ -10,6 +10,7 @@ public class BannerRequestDto {
     private String tagline;
     private String description;
     private String redirectTo;
+    private String buttonText;
     private Integer displayOrder;
     private Boolean isActive = true;
     private MultipartFile image;
@@ -17,11 +18,12 @@ public class BannerRequestDto {
     public BannerRequestDto() {
     }
 
-    public BannerRequestDto(String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, MultipartFile image) {
+    public BannerRequestDto(String tagline, String title, String description, String redirectTo, String buttonText, Integer displayOrder, Boolean isActive, MultipartFile image) {
         this.tagline = tagline;
         this.title = title;
         this.description = description;
         this.redirectTo = redirectTo;
+        this.buttonText = buttonText;
         this.displayOrder = displayOrder;
         this.isActive = isActive;
         this.image = image;
@@ -57,6 +59,14 @@ public class BannerRequestDto {
 
     public void setRedirectTo(String redirectTo) {
         this.redirectTo = redirectTo;
+    }
+
+    public String getButtonText() {
+        return buttonText;
+    }
+
+    public void setButtonText(String buttonText) {
+        this.buttonText = buttonText;
     }
 
     public Integer getDisplayOrder() {
