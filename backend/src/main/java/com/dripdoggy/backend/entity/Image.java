@@ -32,6 +32,11 @@ public class Image {
     @JsonIgnore
     private Banner banner;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "review_id", nullable = true)
+    @JsonIgnore
+    private Review review;
+
     // Constructors
     public Image() {
     }
@@ -43,6 +48,16 @@ public class Image {
         this.product = product;
         this.productVariant = productVariant;
         this.banner = banner;
+    }
+
+    public Image(Long id, String imageUrl, Boolean isActive, Product product, ProductVariant productVariant, Banner banner, Review review) {
+        this.id = id;
+        this.imageUrl = imageUrl;
+        this.isActive = isActive;
+        this.product = product;
+        this.productVariant = productVariant;
+        this.banner = banner;
+        this.review = review;
     }
 
     // Getters and Setters
@@ -92,5 +107,13 @@ public class Image {
 
     public void setBanner(Banner banner) {
         this.banner = banner;
+    }
+
+    public Review getReview() {
+        return review;
+    }
+
+    public void setReview(Review review) {
+        this.review = review;
     }
 }

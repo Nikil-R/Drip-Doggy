@@ -1,39 +1,19 @@
-package com.dripdoggy.backend.entity;
+package com.dripdoggy.backend.ResponseDto;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "banners")
-public class Banner {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class BannerResponseDto {
     private Long id;
-
     private String tagline;
     private String title;
     private String description;
-
-    @Column(name = "redirect_to")
     private String redirectTo;
-
-    @Column(name = "display_order")
     private Integer displayOrder;
-
-    @Column(name = "is_active")
     private Boolean isActive;
+    private String imageUrl;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
-
-    @OneToOne(mappedBy = "banner", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Image image;
-
-    // Constructors
-    public Banner() {
+    public BannerResponseDto() {
     }
 
-    public Banner(Long id, String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, Boolean isDeleted, Image image) {
+    public BannerResponseDto(Long id, String tagline, String title, String description, String redirectTo, Integer displayOrder, Boolean isActive, String imageUrl) {
         this.id = id;
         this.tagline = tagline;
         this.title = title;
@@ -41,11 +21,9 @@ public class Banner {
         this.redirectTo = redirectTo;
         this.displayOrder = displayOrder;
         this.isActive = isActive;
-        this.isDeleted = isDeleted;
-        this.image = image;
+        this.imageUrl = imageUrl;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -102,19 +80,11 @@ public class Banner {
         this.isActive = isActive;
     }
 
-    public Image getImage() {
-        return image;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImage(Image image) {
-        this.image = image;
-    }
-
-    public Boolean getIsDeleted() {
-        return isDeleted;
-    }
-
-    public void setIsDeleted(Boolean isDeleted) {
-        this.isDeleted = isDeleted;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

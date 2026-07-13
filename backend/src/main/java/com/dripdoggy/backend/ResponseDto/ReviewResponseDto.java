@@ -1,31 +1,44 @@
 package com.dripdoggy.backend.ResponseDto;
 
+import java.util.List;
+
 public class ReviewResponseDto {
     private Long id;
     private String comment;
     private Boolean isActive;
     private Long userId;
     private String customerName;
-    private Long orderId;
-    private String orderNumber;
     private Long productVariantId;
     private String productVariantName;
     private String productName;
+    private List<String> imageUrls;
+    private Boolean isVerifiedPurchase;
 
     public ReviewResponseDto() {
     }
 
-    public ReviewResponseDto(Long id, String comment, Boolean isActive, Long userId, String customerName, Long orderId, String orderNumber, Long productVariantId, String productVariantName, String productName) {
+    public ReviewResponseDto(Long id, String comment, Boolean isActive, Long userId, String customerName, Long productVariantId, String productVariantName, String productName) {
         this.id = id;
         this.comment = comment;
         this.isActive = isActive;
         this.userId = userId;
         this.customerName = customerName;
-        this.orderId = orderId;
-        this.orderNumber = orderNumber;
         this.productVariantId = productVariantId;
         this.productVariantName = productVariantName;
         this.productName = productName;
+    }
+
+    public ReviewResponseDto(Long id, String comment, Boolean isActive, Long userId, String customerName, Long productVariantId, String productVariantName, String productName, List<String> imageUrls, Boolean isVerifiedPurchase) {
+        this.id = id;
+        this.comment = comment;
+        this.isActive = isActive;
+        this.userId = userId;
+        this.customerName = customerName;
+        this.productVariantId = productVariantId;
+        this.productVariantName = productVariantName;
+        this.productName = productName;
+        this.imageUrls = imageUrls;
+        this.isVerifiedPurchase = isVerifiedPurchase;
     }
 
     public Long getId() {
@@ -68,22 +81,6 @@ public class ReviewResponseDto {
         this.customerName = customerName;
     }
 
-    public Long getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
-    }
-
-    public String getOrderNumber() {
-        return orderNumber;
-    }
-
-    public void setOrderNumber(String orderNumber) {
-        this.orderNumber = orderNumber;
-    }
-
     public Long getProductVariantId() {
         return productVariantId;
     }
@@ -106,5 +103,21 @@ public class ReviewResponseDto {
 
     public void setProductName(String productName) {
         this.productName = productName;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+
+    public Boolean getIsVerifiedPurchase() {
+        return isVerifiedPurchase;
+    }
+
+    public void setIsVerifiedPurchase(Boolean isVerifiedPurchase) {
+        this.isVerifiedPurchase = isVerifiedPurchase;
     }
 }

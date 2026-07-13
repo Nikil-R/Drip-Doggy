@@ -259,8 +259,26 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(ReviewImageLimitExceededException.class)
+    public ResponseEntity<ResponseMsgDto> handleReviewImageLimitExceeded(ReviewImageLimitExceededException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ProductNotPurchasedException.class)
+    public ResponseEntity<ResponseMsgDto> handleProductNotPurchased(ProductNotPurchasedException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ReviewNotFoundException.class)
     public ResponseEntity<ResponseMsgDto> handleReviewNotFound(ReviewNotFoundException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(BannerNotFoundException.class)
+    public ResponseEntity<ResponseMsgDto> handleBannerNotFound(BannerNotFoundException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
