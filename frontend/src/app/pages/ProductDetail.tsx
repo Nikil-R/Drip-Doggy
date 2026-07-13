@@ -10,6 +10,7 @@ import {
   Truck,
   RotateCcw,
   ArrowLeft,
+  AlertTriangle,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
@@ -82,7 +83,10 @@ export function ProductDetail() {
 }
 
 // ─── Live Product Detail ────────────────────────────────────────────────────
+import { useAuth } from "../context/AuthContext";
+
 function ProductDetailContent({ product }: { product: Product }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Color variants
@@ -102,6 +106,12 @@ function ProductDetailContent({ product }: { product: Product }) {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [pincode, setPincode] = useState("");
   const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
+  
+  // Custom Review Edit/Delete Modals State
+  const [editingReview, setEditingReview] = useState<any | null>(null);
+  const [editingComment, setEditingComment] = useState("");
+  const [editingRating, setEditingRating] = useState(5);
+  const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null);
 
   const productImages = getVariantImages(product, selectedColor);
   const colorOptions = getColorOptions(product);
@@ -1021,43 +1031,87 @@ function ProductDetailContent({ product }: { product: Product }) {
 
                         {/* Review List */}
                         <div className="divide-y divide-neutral-200/60">
-                          {product.reviews.map((review, idx) => (
-                            <div key={idx} className="py-4 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-extrabold text-neutral-900">
-                                    {review.author}
-                                  </span>
-                                  {review.verified && (
-                                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm uppercase tracking-wider">
-                                      Verified Buyer
+                          {product.reviews.map((review, idx) => {
+                            const isAuthor = user && (String(user.id) === String(review.userId));
+                            return (
+                              <div key={review.id || idx} className="py-4 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-extrabold text-neutral-900">
+                                      {review.author}
                                     </span>
-                                  )}
+                                    {review.verified && (
+                                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm uppercase tracking-wider">
+                                        Verified Buyer
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[9px] font-bold text-neutral-400">
+                                      {review.date}
+                                    </span>
+                                    {isAuthor && (
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setEditingReview(review);
+                                            setEditingComment(review.content);
+                                            setEditingRating(review.rating || 5);
+                                          }}
+                                          className="text-[9px] font-bold text-blue-600 hover:underline uppercase bg-transparent border-none cursor-pointer p-0"
+                                        >
+                                          Edit
+                                        </button>
+                                        <span className="text-neutral-300">|</span>
+                                        <button
+                                          onClick={() => {
+                                            setDeletingReviewId(review.id);
+                                          }}
+                                          className="text-[9px] font-bold text-red-500 hover:underline uppercase bg-transparent border-none cursor-pointer p-0"
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                <span className="text-[9px] font-bold text-neutral-400">
-                                  {review.date}
-                                </span>
+                                <div className="flex gap-0.5 text-amber-500">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3 h-3 ${
+                                        i < review.rating
+                                          ? "fill-current stroke-current"
+                                          : "text-neutral-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <p className="text-xs text-neutral-500 leading-relaxed">
+                                  {review.content}
+                                </p>
+                                {review.images && review.images.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {review.images.map((imgUrl: string, imgIdx: number) => (
+                                      <a
+                                        key={imgIdx}
+                                        href={imgUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-16 h-16 border border-neutral-200 bg-white p-0.5 overflow-hidden hover:shadow-xs transition-shadow"
+                                      >
+                                        <img
+                                          src={imgUrl}
+                                          alt={`Review upload ${imgIdx + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex gap-0.5 text-amber-500">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-3 h-3 ${
-                                      i < review.rating
-                                        ? "fill-current stroke-current"
-                                        : "text-neutral-300"
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <h4 className="text-xs font-extrabold text-neutral-900 uppercase">
-                                {review.title}
-                              </h4>
-                              <p className="text-xs text-neutral-500 leading-relaxed">
-                                {review.content}
-                              </p>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </>
                     ) : (
@@ -1065,12 +1119,131 @@ function ProductDetailContent({ product }: { product: Product }) {
                         No reviews yet. Be the first to review this product.
                       </p>
                     )}
+
+                    {/* Submit Review Section */}
+                    <ReviewFormSection product={product} />
                   </div>
                 )}
               </div>
             </div>
           </div>
         </section>
+      )}
+
+      {/* Edit Review Modal */}
+      {editingReview && (
+        <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs flex items-center justify-center z-[9999]">
+          <div className="bg-white border border-neutral-200 p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-xs font-black uppercase tracking-widest text-neutral-900 mb-3">Edit Review</h3>
+            
+            {/* Rating Star Selector */}
+            <div className="flex gap-1.5 mb-4 items-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mr-2">Rating:</span>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setEditingRating(star)}
+                  className="bg-transparent border-none cursor-pointer p-0 text-amber-500 hover:scale-110 transition-transform"
+                >
+                  <Star
+                    className={`w-5 h-5 ${
+                      star <= editingRating
+                        ? "fill-current stroke-current"
+                        : "text-neutral-200 stroke-neutral-300"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              value={editingComment}
+              onChange={(e) => setEditingComment(e.target.value)}
+              maxLength={250}
+              rows={4}
+              className="w-full bg-neutral-50 border border-neutral-200 p-3 text-xs font-semibold text-neutral-800 placeholder-neutral-450 focus:outline-none focus:border-neutral-900 resize-none mb-4"
+            />
+            <div className="flex justify-end gap-2.5">
+              <button
+                onClick={() => {
+                  setEditingReview(null);
+                  setEditingComment("");
+                }}
+                className="border border-neutral-200 hover:border-neutral-900 text-neutral-500 hover:text-neutral-900 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!editingComment.trim()) {
+                     alert("Comment cannot be empty.");
+                     return;
+                  }
+                  const token = localStorage.getItem("dripdoggy_auth_token");
+                  const formData = new FormData();
+                  formData.append("comment", editingComment);
+                  formData.append("rating", String(editingRating));
+                  axios.put(`${API_CONFIG.BASE_URL}/dripdoggy/api/customer/reviews/${editingReview.id}`, formData, {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "multipart/form-data"
+                    }
+                  }).then(() => {
+                    alert("Review updated successfully and is pending admin approval.");
+                    window.location.reload();
+                  }).catch((err) => {
+                    console.error("Failed to update review", err);
+                    alert("Failed to update review.");
+                  });
+                }}
+                className="bg-[#030213] text-white hover:bg-neutral-800 text-[9px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer border-none"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Review Confirmation Modal */}
+      {deletingReviewId && (
+        <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs flex items-center justify-center z-[9999]">
+          <div className="bg-white border border-neutral-250 p-6 max-w-sm w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-2.5 text-[#b2533e] mb-3">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <h3 className="text-xs font-black uppercase tracking-widest">Delete Review</h3>
+            </div>
+            <p className="text-[10px] text-neutral-500 font-semibold leading-relaxed mb-5 uppercase tracking-wide">
+              Are you sure you want to permanently delete your review? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2.5">
+              <button
+                onClick={() => setDeletingReviewId(null)}
+                className="border border-neutral-200 hover:border-neutral-900 text-neutral-500 hover:text-neutral-900 text-[9px] font-bold tracking-widest px-4 py-2 uppercase bg-transparent cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const token = localStorage.getItem("dripdoggy_auth_token");
+                  axios.delete(`${API_CONFIG.BASE_URL}/dripdoggy/api/customer/reviews/${deletingReviewId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  }).then(() => {
+                    alert("Review deleted successfully.");
+                    window.location.reload();
+                  }).catch((err) => {
+                    console.error("Failed to delete review", err);
+                    alert("Failed to delete review.");
+                  });
+                }}
+                className="bg-[#b2533e] hover:bg-red-800 text-white text-[9px] font-bold tracking-widest px-5 py-2.5 uppercase cursor-pointer border-none"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ─── Frequently Bought Together ─────────────────────────────────── */}
@@ -1715,3 +1888,240 @@ function RecommendationCard({ product }: { product: Product }) {
     </Link>
   );
 }
+
+import axios from "axios";
+import { API_CONFIG } from "../utils/api-config";
+import { orderApi } from "../lib/order-api";
+
+function ReviewFormSection({ product }: { product: Product }) {
+  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(5);
+  const [images, setImages] = useState<File[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [eligibleOrders, setEligibleOrders] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [checkedEligibility, setCheckedEligibility] = useState(false);
+  const [toast, setToast] = useState("");
+
+  const token = localStorage.getItem("dripdoggy_auth_token");
+
+  useEffect(() => {
+    if (!token) return;
+    async function checkEligibility() {
+      try {
+        const orders = await orderApi.getCustomerOrders();
+        // Look for orders containing a matching variant for this product
+        const matches: any[] = [];
+        
+        // Find variant names and size/variant IDs for the current product to help map them
+        const productVariantNames = (product.rawVariants || []).map((v: any) => ({
+          variantName: (v.variantName || "").toLowerCase(),
+          productVariantId: v.id
+        }));
+
+        orders.forEach((o: any) => {
+          // Backend OrderResponseDto returns list of items under `o.items`
+          const itemsList = o.items || [];
+          if (Array.isArray(itemsList)) {
+            itemsList.forEach((item: any) => {
+              // Extract order item details.
+              // Service maps OrderItemDetail(oi.getId(), name, sku [which is variantName], size, qty, price, image)
+              // If the sku (variantName) matches any of the variants for the current product, it is eligible
+              const itemSku = (item.sku || "").toLowerCase();
+              const matchedVariant = productVariantNames.find((pv: any) => pv.variantName === itemSku);
+
+              if (matchedVariant || (item.name && item.name.toLowerCase() === product.name.toLowerCase())) {
+                // Deduce variant ID from matching variant name, or default to first variant ID if name matching is default
+                const pVariantId = matchedVariant ? matchedVariant.productVariantId : (product.rawVariants?.[0]?.id || 1);
+                
+                // Get numeric ID from orderNumber like "#DD-12"
+                const orderIdStr = String(o.orderNumber || "").replace(/\D/g, "");
+                const numericOrderId = orderIdStr ? Number(orderIdStr) : Number(o.id || 1);
+
+                matches.push({
+                  orderId: numericOrderId,
+                  orderNumber: o.orderNumber || `#DD-${o.id}`,
+                  productVariantId: pVariantId,
+                  variantName: item.sku || "Default"
+                });
+              }
+            });
+          }
+        });
+        setEligibleOrders(matches);
+        if (matches.length > 0) {
+          setSelectedOrder(matches[0]);
+        }
+      } catch (err) {
+        console.error("Failed to check review eligibility", err);
+      } finally {
+        setCheckedEligibility(true);
+      }
+    }
+    checkEligibility();
+  }, [product, token]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+      alert("Please login to write a review.");
+      return;
+    }
+    if (!selectedOrder) {
+      alert("No verified purchase found for this product.");
+      return;
+    }
+    if (!comment.trim()) {
+      alert("Please write a comment.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("orderId", String(selectedOrder.orderId));
+      formData.append("productVariantId", String(selectedOrder.productVariantId));
+      formData.append("rating", String(rating));
+      formData.append("comment", comment);
+      
+      images.forEach((img) => {
+        formData.append("images", img);
+      });
+
+      const url = `${API_CONFIG.BASE_URL}/dripdoggy/api/customer/reviews`;
+      await axios.post(url, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      setToast("Review submitted successfully! It will go live after admin approval.");
+      setComment("");
+      setImages([]);
+      setTimeout(() => setToast(""), 5000);
+    } catch (err: any) {
+      console.error("Failed to submit review", err);
+      alert(err.response?.data?.message || "Failed to submit review.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setImages(Array.from(e.target.files));
+    }
+  };
+
+  if (!token) {
+    return (
+      <div className="bg-neutral-50 p-6 border border-neutral-200 mt-8 text-center">
+        <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-4">
+          Want to share your feedback?
+        </p>
+        <Link to="/login" className="inline-block bg-[#030213] text-white px-6 py-2.5 text-xs font-bold tracking-widest uppercase hover:bg-neutral-800 transition-colors">
+          Log In to Write a Review
+        </Link>
+      </div>
+    );
+  }
+
+  if (checkedEligibility && eligibleOrders.length === 0) {
+    return (
+      <div className="bg-neutral-50 p-6 border border-neutral-200 mt-8 text-center text-xs font-bold text-neutral-400 uppercase tracking-widest">
+        Review submission is locked. You can only review products you have purchased.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white p-6 border border-neutral-200/80 mt-8">
+      <h3 className="text-sm font-extrabold tracking-[0.15em] text-[#030213] uppercase mb-4">
+        WRITE A REVIEW
+      </h3>
+      
+      {toast && (
+        <div className="mb-4 bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 text-xs font-bold uppercase tracking-wider">
+          {toast}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+            Select Your Purchase Variant
+          </label>
+          <select 
+            value={selectedOrder ? `${selectedOrder.orderId}-${selectedOrder.productVariantId}` : ""}
+            onChange={(e) => {
+              const matched = eligibleOrders.find(item => `${item.orderId}-${item.productVariantId}` === e.target.value);
+              setSelectedOrder(matched);
+            }}
+            className="w-full bg-neutral-50 border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900"
+          >
+            {eligibleOrders.map((item, idx) => (
+              <option key={idx} value={`${item.orderId}-${item.productVariantId}`}>
+                Order {item.orderNumber} ({item.variantName})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+            Rating
+          </label>
+          <div className="flex gap-1 text-amber-500">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                className="p-0.5 bg-transparent border-none cursor-pointer focus:outline-none"
+              >
+                <Star className={`w-5 h-5 ${star <= rating ? "fill-current" : "text-neutral-200"}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+            Review Content (Max 250 characters)
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            maxLength={250}
+            rows={4}
+            placeholder="Describe your experience with this premium garment..."
+            className="w-full bg-neutral-50 border border-neutral-200 p-3 text-xs font-semibold text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+            Attach Photos
+          </label>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageChange}
+            className="w-full text-xs font-semibold text-neutral-500 file:mr-4 file:py-2 file:px-4 file:border-none file:text-xs file:font-bold file:bg-[#030213] file:text-white hover:file:bg-neutral-800 file:cursor-pointer"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#030213] text-white py-3 text-xs font-bold tracking-[0.2em] uppercase hover:bg-neutral-800 transition-colors cursor-pointer"
+        >
+          {loading ? "SUBMITTING REVIEW..." : "SUBMIT REVIEW"}
+        </button>
+      </form>
+    </div>
+  );
+}
+

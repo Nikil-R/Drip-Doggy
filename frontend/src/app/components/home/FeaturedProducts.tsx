@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
-import { getFeaturedProducts } from "../../lib/content-store";
+
 
 function ProductCard({ product }: { product: Product }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -88,33 +88,34 @@ function ProductCard({ product }: { product: Product }) {
   );
 }
 
+import { curatedCollectionApi } from "../../lib/curated-collection-api";
+
 export function FeaturedProducts() {
-  const [config, setConfig] = useState(() => getFeaturedProducts());
+  const [config, setConfig] = useState({
+    sectionTitle: "New In",
+    sectionSubtitle: "New This Season",
+    active: true
+  });
+  const [finalProducts, setFinalProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setConfig(getFeaturedProducts());
-    };
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener("dd-content-changed" as any, handleUpdate);
-    return () => {
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("dd-content-changed" as any, handleUpdate);
-    };
+    async function loadProducts() {
+      try {
+        const data = await curatedCollectionApi.getCollection("NEW_IN");
+        setConfig({
+          sectionTitle: data.title || "New In",
+          sectionSubtitle: data.subtitle || "New This Season",
+          active: data.isActive
+        });
+        setFinalProducts(data.products || []);
+      } catch (err) {
+        console.error("Failed to load featured products:", err);
+      }
+    }
+    loadProducts();
   }, []);
 
   if (!config.active) return null;
-
-  // Resolve dynamic product list
-  const displayedProducts = config.productIds
-    .map(id => products.find(p => p.id === id))
-    .filter((p): p is Product => !!p)
-    .slice(0, config.maxProducts);
-
-  const finalProducts = displayedProducts.length > 0 ? displayedProducts : products
-    .filter((p) => p.badge === "NEW")
-    .concat(products.filter((p) => p.rating && p.rating >= 4.8))
-    .slice(0, config.maxProducts || 4);
 
   return (
     <section id="new-in" className="pt-2 pb-16 lg:pt-6 lg:pb-20 bg-white">

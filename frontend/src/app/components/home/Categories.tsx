@@ -3,6 +3,9 @@ import { Link } from "react-router";
 import { motion } from "motion/react";
 import { getHomeCategories } from "../../lib/content-store";
 
+import axios from "axios";
+import { API_CONFIG } from "@/app/utils/api-config";
+
 const DEFAULT_CATEGORIES = [
   {
     title: "Women's Collection",
@@ -29,17 +32,27 @@ export function Categories() {
   const [categoriesList, setCategoriesList] = useState(DEFAULT_CATEGORIES);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setCategoriesList(DEFAULT_CATEGORIES);
-    };
-
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener("dd-content-changed" as any, handleUpdate);
-
-    return () => {
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("dd-content-changed" as any, handleUpdate);
-    };
+    async function loadPublicCategories() {
+      try {
+        const url = `${API_CONFIG.BASE_URL}/dripdoggy/api/public/home-categories`;
+        const res = await axios.get<any[]>(url);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = res.data.map((c: any) => ({
+            title: c.title,
+            image: c.imageUrl,
+            description: c.description || "",
+            route: c.route || "/shop",
+            comingSoon: !!c.comingSoon,
+            comingSeason: c.comingSeason || "",
+            active: c.isActive
+          }));
+          setCategoriesList(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load public home categories:", err);
+      }
+    }
+    loadPublicCategories();
   }, []);
 
   return (

@@ -3,6 +3,9 @@ import { Link } from "react-router";
 import { motion, useScroll, useTransform } from "motion/react";
 import { getHeroSlides } from "../../lib/content-store";
 
+import axios from "axios";
+import { API_CONFIG } from "@/app/utils/api-config";
+
 const DEFAULT_SLIDES = [
   {
     tagline: "TACTICAL SILHOUETTES",
@@ -31,10 +34,7 @@ const DEFAULT_SLIDES = [
 ];
 
 export function Hero() {
-  const [slides, setSlides] = useState(() => {
-    const loaded = getHeroSlides().filter((s: any) => s.active);
-    return loaded.length > 0 ? loaded : DEFAULT_SLIDES;
-  });
+  const [slides, setSlides] = useState<any[]>(DEFAULT_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fade, setFade] = useState(true);
 
@@ -44,21 +44,27 @@ export function Hero() {
   const contentParallaxY = useTransform(scrollY, [0, 600], [0, -60]);
   const contentOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
-  // Dynamic slides update handler
   useEffect(() => {
-    const handleUpdate = () => {
-      const loaded = getHeroSlides().filter((s: any) => s.active);
-      setSlides(loaded.length > 0 ? loaded : DEFAULT_SLIDES);
-      setCurrentSlide(0);
-    };
-
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener("dd-content-changed" as any, handleUpdate);
-
-    return () => {
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("dd-content-changed" as any, handleUpdate);
-    };
+    async function loadActiveBanners() {
+      try {
+        const url = `${API_CONFIG.BASE_URL}/dripdoggy/api/public/banners`;
+        const res = await axios.get<any[]>(url);
+        if (res.data && res.data.length > 0) {
+          const mapped = res.data.map((b: any) => ({
+            tagline: b.tagline || "NEW IN",
+            title: b.title,
+            description: b.description || "",
+            image: b.imageUrl || DEFAULT_SLIDES[0].image,
+            ctaText: "Explore Collection",
+            ctaLink: b.redirectTo || "/shop"
+          }));
+          setSlides(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load public banners:", err);
+      }
+    }
+    loadActiveBanners();
   }, []);
 
   useEffect(() => {

@@ -22,7 +22,7 @@ export interface Order {
   id: string;
   date: string;
   total: number;
-  status: "Delivered" | "Shipped" | "Processing" | "Pending" | "Cancelled" | "Return Requested";
+  status: "Placed" | "Processing" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled" | "Return Requested" | "Exchange Requested";
   items: {
     name: string;
     brand: string;

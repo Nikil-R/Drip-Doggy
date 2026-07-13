@@ -196,12 +196,13 @@ export function Checkout() {
     } catch { return []; }
   });
 
+  const [isOrdered, setIsOrdered] = useState(false);
+
   useEffect(() => {
-    if (cartItems.length === 0) {
-      const timer = setTimeout(() => navigate("/shop"), 1500);
-      return () => clearTimeout(timer);
+    if (cartItems.length === 0 && !isOrdered) {
+      navigate("/cart", { replace: true });
     }
-  }, [cartItems.length, navigate]);
+  }, [cartItems.length, isOrdered, navigate]);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
@@ -255,6 +256,13 @@ export function Checkout() {
             setAddresses(list);
             const d = list.find(a => a.isDefault);
             setSelectedAddressId(d ? d.id : list[0]?.id || null);
+
+            // Fetch phone from default shipping address if auth context phone is not loaded
+            const activePhone = d?.phone || list[0]?.phone;
+            if (activePhone) {
+              setPhone(activePhone);
+              setIsPhoneVerifiedLocally(true);
+            }
           }
         } catch (err) { console.error("Failed to load addresses from API", err); }
       }
@@ -306,7 +314,6 @@ export function Checkout() {
     city: "", state: "", postalCode: "", phone: "", isDefault: false,
   });
 
-  const [isOrdered, setIsOrdered] = useState(false);
   const [placedOrderInfo, setPlacedOrderInfo] = useState<any>(null);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -499,6 +506,7 @@ export function Checkout() {
 
       setPlacedOrderInfo(response);
       setIsOrdered(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
       // Save order items description in a shared cookie for the admin panel to read!
@@ -633,7 +641,7 @@ export function Checkout() {
               </div>
               <div className="flex flex-col border-b border-neutral-100 pb-2 gap-1 text-left">
                 <span>Deliver To:</span>
-                <span className="text-[#030213] font-extrabold normal-case font-medium text-[10px] leading-relaxed">
+                <span className="text-[#030213] font-extrabold normal-case text-[10px] leading-relaxed">
                   {placedOrderInfo.destinationAddress || placedOrderInfo.destination}
                 </span>
               </div>
@@ -1116,40 +1124,72 @@ export function Checkout() {
                 <span className="text-[7px] font-bold text-neutral-400 tracking-wider">{totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}</span>
               </h2>
               <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1 mt-3 divide-y divide-neutral-100">
-                {cartItems.map((item, idx) => (
-                  <div key={item.id + "-" + idx} className="flex gap-3 items-start pt-3 first:pt-0">
-                    <div className="w-11 aspect-[3/4] overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200/40">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                {cartItems.length === 0 ? (
+                  <p className="text-[10px] text-neutral-500 font-medium py-4 text-center">The cart is empty.</p>
+                ) : (
+                  cartItems.map((item, idx) => (
+                    <div key={item.id + "-" + idx} className="flex gap-3 items-start pt-3 first:pt-0">
+                      <div className="w-11 aspect-[3/4] overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200/40">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[6.5px] font-extrabold tracking-widest text-[#b2533e] uppercase block">{item.brand}</span>
+                        <h4 className="text-[9px] font-extrabold text-neutral-900 truncate uppercase mt-0.5 leading-tight">{item.name}</h4>
+                        <p className="text-[7.5px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">Qty: {item.quantity} | {item.size} | {item.color}</p>
+                        <span className="text-[9px] font-extrabold text-neutral-950 mt-0.5 block">₹{(item.price * item.quantity).toFixed(0)}</span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[6.5px] font-extrabold tracking-widest text-[#b2533e] uppercase block">{item.brand}</span>
-                      <h4 className="text-[9px] font-extrabold text-neutral-900 truncate uppercase mt-0.5 leading-tight">{item.name}</h4>
-                      <p className="text-[7.5px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">Qty: {item.quantity} | {item.size} | {item.color}</p>
-                      <span className="text-[9px] font-extrabold text-neutral-950 mt-0.5 block">₹{(item.price * item.quantity).toFixed(0)}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </SummaryCard>
 
-            {/* Available Coupon Banners */}
+            {/* Promo Code */}
+            <SummaryCard>
+              <span className="block text-[8px] font-black tracking-[0.25em] text-neutral-400 uppercase mb-2.5">Promo Code</span>
+              <div className="flex gap-2">
+                <input type="text" placeholder="ENTER COUPON CODE" value={promoInput}
+                  onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
+                  className="flex-1 border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213] uppercase tracking-widest bg-white" />
+                <button type="button" onClick={applyPromoCode} disabled={isApplyingPromo}
+                  className="bg-[#030213] hover:bg-neutral-800 disabled:bg-neutral-400 text-white text-[10px] font-extrabold tracking-widest px-4 py-2 uppercase transition-colors cursor-pointer disabled:cursor-not-allowed border-none flex items-center gap-1.5">
+                  {isApplyingPromo ? (
+                    <><span className="inline-block h-3 w-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Applying</>
+                  ) : "Apply"}
+                </button>
+              </div>
+              {promoError && <p className="text-[9px] font-extrabold text-red-600 uppercase mt-2 tracking-wider">{promoError}</p>}
+              {appliedPromo && (
+                <div className="mt-3 flex items-center justify-between bg-green-50 border border-green-200/60 p-2.5">
+                  <span className="text-[9px] font-extrabold tracking-wider text-green-700 uppercase">
+                    <Check className="h-3 w-3 inline stroke-[2.5] mr-1" /> {appliedPromo} Applied
+                  </span>
+                  <button type="button" onClick={() => { setAppliedPromo(null); setPromoDiscount(0); localStorage.removeItem("appliedPromo"); localStorage.removeItem("promoDiscount"); }}
+                    className="text-red-600 hover:text-red-700 bg-transparent border-none cursor-pointer text-[9px] font-black uppercase underline underline-offset-2">
+                    Remove
+                  </button>
+                </div>
+              )}
+            </SummaryCard>
+
+            {/* Available Coupon Banners (Placed BELOW promo code section) */}
             {!appliedPromo && availableCheckoutCoupons.length > 0 && (
               <div className="space-y-2">
-                <span className="block text-[6.5px] font-black tracking-[0.25em] text-neutral-400 uppercase px-0.5">Offers</span>
+                <span className="block text-[8px] font-black tracking-[0.25em] text-neutral-400 uppercase px-0.5">Available Offers & Coupons</span>
                 {availableCheckoutCoupons.slice(0, 3).map((cpn: any) => (
                   <button key={cpn.id || cpn.code}
                     onClick={() => { setPromoInput(cpn.code); setPromoError(null); }}
-                    className="w-full text-left bg-gradient-to-r from-[#224870] to-[#1a3650] p-3 border-none cursor-pointer hover:brightness-110 transition-all duration-200 group"
+                    className="w-full text-left bg-gradient-to-r from-[#224870] to-[#1a3650] p-4.5 border-none cursor-pointer hover:brightness-110 transition-all duration-200 group"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="bg-white text-[#224870] font-black text-[7.5px] px-2 py-0.5 uppercase tracking-widest">{cpn.code}</span>
-                          <span className="text-white/50 text-[6px] font-bold uppercase tracking-widest">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="bg-white text-[#224870] font-black text-[9.5px] px-2.5 py-0.5 uppercase tracking-widest">{cpn.code}</span>
+                          <span className="text-white/60 text-[8px] font-bold uppercase tracking-widest">
                             {cpn.discountType === "percentage" ? `${cpn.discountValue}% OFF` : cpn.discountType === "freeship" ? "FREE SHIPPING" : `FLAT ₹${cpn.discountValue}`}
                           </span>
                         </div>
-                        <p className="text-white/70 text-[7px] font-medium tracking-wide leading-tight">
+                        <p className="text-white/80 text-[8.5px] font-medium tracking-wide leading-tight">
                           {cpn.description || (cpn.discountType === "percentage"
                             ? `Save ${cpn.discountValue}% on your order`
                             : cpn.discountType === "freeship"
@@ -1158,67 +1198,39 @@ export function Checkout() {
                           )}
                         </p>
                       </div>
-                      <span className="flex-shrink-0 text-[6px] font-extrabold tracking-widest text-white/50 uppercase underline underline-offset-2 group-hover:text-white/80 transition-colors">APPLY</span>
+                      <span className="flex-shrink-0 text-[8px] font-extrabold tracking-widest text-white/60 uppercase underline underline-offset-2 group-hover:text-white/95 transition-colors">APPLY</span>
                     </div>
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Promo Code */}
-            <SummaryCard>
-              <span className="block text-[6.5px] font-black tracking-[0.25em] text-neutral-400 uppercase mb-2.5">Promo Code</span>
-              <div className="flex gap-2">
-                <input type="text" placeholder="ENTER COUPON CODE" value={promoInput}
-                  onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
-                  className="flex-1 border border-neutral-200 px-3 py-2 text-[8px] font-bold focus:outline-none focus:border-[#030213] uppercase tracking-widest bg-white" />
-                <button type="button" onClick={applyPromoCode} disabled={isApplyingPromo}
-                  className="bg-[#030213] hover:bg-neutral-800 disabled:bg-neutral-400 text-white text-[8px] font-extrabold tracking-widest px-4 py-2 uppercase transition-colors cursor-pointer disabled:cursor-not-allowed border-none flex items-center gap-1.5">
-                  {isApplyingPromo ? (
-                    <><span className="inline-block h-3 w-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Applying</>
-                  ) : "Apply"}
-                </button>
-              </div>
-              {promoError && <p className="text-[7.5px] font-extrabold text-red-600 uppercase mt-2 tracking-wider">{promoError}</p>}
-              {appliedPromo && (
-                <div className="mt-3 flex items-center justify-between bg-green-50 border border-green-200/60 p-2.5">
-                  <span className="text-[7.5px] font-extrabold tracking-wider text-green-700 uppercase">
-                    <Check className="h-3 w-3 inline stroke-[2.5] mr-1" /> {appliedPromo} Applied
-                  </span>
-                  <button type="button" onClick={() => { setAppliedPromo(null); setPromoDiscount(0); localStorage.removeItem("appliedPromo"); localStorage.removeItem("promoDiscount"); }}
-                    className="text-red-600 hover:text-red-700 bg-transparent border-none cursor-pointer text-[7.5px] font-black uppercase underline underline-offset-2">
-                    Remove
-                  </button>
-                </div>
-              )}
-            </SummaryCard>
-
             {/* Price Breakdown */}
             <SummaryCard>
-              <div className="space-y-2.5 text-[8.5px] font-bold tracking-wider text-neutral-600 uppercase">
+              <div className="space-y-3.5 text-[10.5px] font-bold tracking-wider text-neutral-600 uppercase">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="font-extrabold text-neutral-950">₹{subtotal.toFixed(0)}</span>
+                  <span className="font-extrabold text-neutral-950 text-[11px]">₹{subtotal.toFixed(0)}</span>
                 </div>
                 {promoDiscount > 0 && (
-                  <div className="flex justify-between text-green-600 font-extrabold">
+                  <div className="flex justify-between text-green-600 font-extrabold text-[11px]">
                     <span>Promo ({appliedPromo})</span>
                     <span>-₹{promoDiscount.toFixed(0)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>GST (18%)</span>
-                  <span className="font-extrabold text-neutral-950">₹{tax.toFixed(0)}</span>
+                  <span className="font-extrabold text-neutral-950 text-[11px]">₹{tax.toFixed(0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
-                  <span className={`font-extrabold ${shippingCost === 0 ? "text-green-600" : "text-neutral-950"}`}>
+                  <span className={`font-extrabold text-[11px] ${shippingCost === 0 ? "text-green-600" : "text-neutral-950"}`}>
                     {shippingCost > 0 ? `₹${shippingCost.toFixed(0)}` : "FREE"}
                   </span>
                 </div>
-                <div className="border-t border-neutral-200 pt-2.5 flex justify-between text-[10px] font-extrabold text-neutral-950">
+                <div className="border-t border-neutral-200 pt-3.5 flex justify-between text-[12px] font-extrabold text-neutral-950">
                   <span>Total</span>
-                  <span className="text-sm font-extrabold">₹{Math.max(0, total).toFixed(0)}</span>
+                  <span className="text-base font-extrabold">₹{Math.max(0, total).toFixed(0)}</span>
                 </div>
               </div>
             </SummaryCard>
