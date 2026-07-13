@@ -45,8 +45,10 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<ProductListResponseDto> fetchAllProducts() {
-        ProductListResponseDto response = productService.fetchAllActiveProducts();
+    public ResponseEntity<ProductListResponseDto> fetchAllProducts(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long subCategoryId) {
+        ProductListResponseDto response = productService.fetchProductsFiltered(categoryId, subCategoryId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

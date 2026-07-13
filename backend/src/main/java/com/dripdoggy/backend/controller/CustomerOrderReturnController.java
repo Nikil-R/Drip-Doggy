@@ -44,4 +44,12 @@ public class CustomerOrderReturnController {
         ResponseMsgDto response = orderReturnService.cancelOrder(orderId, dto, "USER");
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/returns/{returnId}/unavailability-choice")
+    public ResponseEntity<ResponseMsgDto> handleUnavailabilityChoice(
+            @PathVariable Long returnId,
+            @RequestParam String choice) {
+        ResponseMsgDto response = orderReturnService.handleUnavailabilityChoice(returnId, choice);
+        return ResponseEntity.ok(response);
+    }
 }

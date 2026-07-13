@@ -283,6 +283,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InvalidReturnQuantityException.class)
+    public ResponseEntity<ResponseMsgDto> handleInvalidReturnQuantity(InvalidReturnQuantityException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ReviewNotAllowedException.class)
     public ResponseEntity<ResponseMsgDto> handleReviewNotAllowed(ReviewNotAllowedException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());

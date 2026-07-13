@@ -35,7 +35,7 @@ public class AdminBannerController {
         return ResponseEntity.ok(responses);
     }
 
-    @PostMapping("/{id}") // Mapped to POST to support Tomcat multipart form-data updates out-of-the-box
+    @PutMapping("/{id}")
     public ResponseEntity<ResponseMsgDto> updateBanner(
             @PathVariable Long id,
             @Valid @ModelAttribute BannerRequestDto dto) {

@@ -12,4 +12,5 @@ public interface OrderReturnRepository extends JpaRepository<OrderReturn, Long> 
     boolean existsByOrderIdAndOrderItemId(Long orderId, Long orderItemId);
     List<OrderReturn> findByStatus(ReturnStatus status);
     List<OrderReturn> findByOrderItemId(Long orderItemId);
+    List<OrderReturn> findByOrderId(Long orderId);
 }

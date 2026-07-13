@@ -294,6 +294,30 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    public ProductListResponseDto fetchProductsFiltered(Long categoryId, Long subCategoryId) {
+        List<Product> products = productRepository.findProductsByFilters(categoryId, subCategoryId);
+        boolean isAdmin = isCurrentUserAdmin();
+        List<ProductResponseDto> responseDtos = products.stream()
+                .filter(p -> isAdmin || (p.getIsActive() != null && p.getIsActive()))
+                .filter(p -> {
+                    if (isAdmin) return true;
+                    Category cat = p.getCategory();
+                    if (cat != null && (cat.getIsActive() == null || !cat.getIsActive() || Boolean.TRUE.equals(cat.getIsDeleted()))) {
+                        return false;
+                    }
+                    SubCategory sub = p.getSubCategory();
+                    if (sub != null && (sub.getIsActive() == null || !sub.getIsActive() || Boolean.TRUE.equals(sub.getIsDeleted()))) {
+                        return false;
+                    }
+                    return true;
+                })
+                .map(this::mapToProductResponseDto)
+                .collect(Collectors.toList());
+
+        return new ProductListResponseDto(200, "Products fetched successfully", responseDtos);
+    }
+
+    @Override
     public ProductDetailsResponseDto fetchProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
@@ -815,6 +839,11 @@ public class ProductService implements IProductService {
         }
 
         return dto;
+    }
+
+    @Override
+    public ProductResponseDto mapProductToDto(Product product) {
+        return mapToProductResponseDto(product);
     }
 
     private boolean isCurrentUserAdmin() {
