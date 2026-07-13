@@ -1,19 +1,9 @@
 import { useState, useEffect } from "react";
 import { RotateCcw, Check, Star, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { getSignaturePieces, setSignaturePieces, SignaturePiecesConfig } from "../lib/admin-content-store";
-
-// Product catalog reference (shared with frontend)
-const PRODUCT_CATALOG = [
-  { id: 1, name: "Structured Canvas Jacket", price: 12999 },
-  { id: 2, name: "Pinstripe Relaxed Shirt", price: 8499 },
-  { id: 3, name: "Cashmere Blend Knit", price: 15999 },
-  { id: 4, name: "Satin Asymmetric Top", price: 6499 },
-  { id: 5, name: "Moto Biker Jacket", price: 18999 },
-  { id: 6, name: "Pleated Wide-Leg Trousers", price: 7499 },
-  { id: 7, name: "Oversized Blazer Dress", price: 11499 },
-  { id: 8, name: "Parachute Cargo Skirt", price: 6499 },
-  { id: 9, name: "Oversized Knit Cardigan", price: 9999 },
-];
+import { SignaturePiecesConfig } from "../lib/admin-content-store";
+import { useAuthStore } from "../store/auth-store";
+import { adminCuratedCollectionApi } from "../lib/curated-collection-api";
+import { productApi } from "../lib/product-api";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
@@ -34,33 +24,64 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
 }
 
 export function SignaturePiecesEditorPage() {
+  const { token } = useAuthStore();
   const [config, setConfigState] = useState<SignaturePiecesConfig>({
     sectionTitle: "Signature Pieces", sectionSubtitle: "Brand Uniform", productIds: [], active: true,
   });
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; price: number }[]>([]);
   const [toast, setToast] = useState("");
 
+  const loadData = async () => {
+    if (!token) return;
+    try {
+      // 1. Fetch real products list
+      const prods = await productApi.fetchAllProducts(token);
+      setProductCatalog(prods.map(p => ({
+        id: p.id,
+        name: p.productName,
+        price: p.variants?.[0]?.price || 0
+      })));
+
+      // 2. Fetch config from API (using sectionKey: SIGNATURE_PIECES)
+      const data = await adminCuratedCollectionApi.getCollection("SIGNATURE_PIECES", token);
+      setConfigState({
+        sectionTitle: data.title || "Signature Pieces",
+        sectionSubtitle: data.subtitle || "Brand Uniform",
+        productIds: data.products?.map(p => p.id) || [],
+        active: data.isActive,
+        maxProducts: 4
+      });
+      setSelectedIds(data.products?.map(p => p.id) || []);
+    } catch (err) {
+      console.error("Failed to load signature pieces:", err);
+    }
+  };
+
   useEffect(() => {
-    const c = getSignaturePieces();
-    setConfigState(c);
-    setSelectedIds(c.productIds);
-  }, []);
+    loadData();
+  }, [token]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
-  const save = () => {
-    setSignaturePieces({ ...config, productIds: selectedIds });
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_signature_pieces" } }));
-    showToast("Signature Pieces saved");
+  const save = async () => {
+    if (!token) return;
+    try {
+      await adminCuratedCollectionApi.updateCollection("SIGNATURE_PIECES", {
+        title: config.sectionTitle,
+        subtitle: config.sectionSubtitle || "",
+        isActive: config.active,
+        productIds: selectedIds
+      }, token);
+      showToast("Signature Pieces saved");
+    } catch (err) {
+      console.error("Failed to save signature pieces:", err);
+      showToast("Error saving signature pieces");
+    }
   };
 
   const reset = () => {
-    const defaults: SignaturePiecesConfig = {
-      sectionTitle: "Signature Pieces", sectionSubtitle: "Brand Uniform", productIds: [4, 9, 1, 6], active: true,
-    };
-    setConfigState(defaults);
-    setSelectedIds(defaults.productIds);
-    showToast("Reset defaults applied");
+    showToast("Feature disabled. Managed via DB.");
   };
 
   const toggleProduct = (id: number) => {
@@ -167,7 +188,7 @@ export function SignaturePiecesEditorPage() {
           <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
             <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">Select Products</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {PRODUCT_CATALOG.map(p => {
+              {productCatalog.map(p => {
                 const selected = selectedIds.includes(p.id);
                 return (
                   <button
@@ -207,7 +228,7 @@ export function SignaturePiecesEditorPage() {
             ) : (
               <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
                 {selectedIds.map((id, index) => {
-                  const p = PRODUCT_CATALOG.find(prod => prod.id === id);
+                  const p = productCatalog.find(prod => prod.id === id);
                   if (!p) return null;
                   return (
                     <div key={id} className="flex items-center justify-between border border-neutral-200/80 bg-neutral-50/50 px-2.5 py-1.5">
@@ -247,7 +268,7 @@ export function SignaturePiecesEditorPage() {
               
               <div className="grid grid-cols-2 gap-2">
                 {selectedIds.slice(0, config.maxProducts || 4).map(id => {
-                  const p = PRODUCT_CATALOG.find(prod => prod.id === id);
+                  const p = productCatalog.find(prod => prod.id === id);
                   if (!p) return null;
                   return (
                     <div key={id} className="border border-neutral-100 p-2 bg-neutral-50/20">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, Edit2, ArrowUp, ArrowDown, Eye, EyeOff, X, AlertTriangle, Image as ImageIcon } from "lucide-react";
-import { getHeroSlides, setHeroSlides, HeroSlide, addHeroSlide, updateHeroSlide, deleteHeroSlide } from "../lib/admin-content-store";
+import { adminBannerApi, BackendBanner } from "../lib/banner-api";
+import { useAuthStore } from "../store/auth-store";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
@@ -23,27 +24,55 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
   );
 }
 
-let idCounter = Date.now();
+export interface HeroSlide {
+  id: string;
+  tagline: string;
+  title: string;
+  description: string;
+  image: string;
+  ctaText?: string;
+  ctaLink?: string;
+  order: number;
+  active: boolean;
+}
 
 export function HeroSlidesEditorPage() {
+  const { token } = useAuthStore();
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editSlide, setEditSlide] = useState<HeroSlide | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [form, setForm] = useState<Omit<HeroSlide, "id" | "order">>({
     tagline: "", title: "", description: "", image: "", ctaText: "", ctaLink: "", active: true,
   });
 
-  useEffect(() => { setSlides(getHeroSlides()); }, []);
-
-  const saveAll = (newSlides: HeroSlide[]) => {
-    setHeroSlides(newSlides);
-    setSlides(newSlides);
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
-    showToast("Hero slides saved");
+  const loadSlides = async () => {
+    if (!token) return;
+    try {
+      const data = await adminBannerApi.getAllBanners(token!);
+      const mapped = data.map((b): HeroSlide => ({
+        id: String(b.id),
+        tagline: b.tagline || "",
+        title: b.title || "",
+        description: b.description || "",
+        image: b.imageUrl || "",
+        ctaText: "Shop Now",
+        ctaLink: b.redirectTo || "/shop",
+        order: b.displayOrder || 0,
+        active: b.isActive
+      }));
+      setSlides(mapped);
+    } catch (err) {
+      console.error("Failed to load banners:", err);
+    }
   };
+
+  useEffect(() => {
+    loadSlides();
+  }, [token]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
 
@@ -51,12 +80,14 @@ export function HeroSlidesEditorPage() {
 
   const openAdd = () => {
     setEditSlide(null);
-    setForm({ tagline: "New Arrivals", title: "SS26 Capsule Is Here", description: "Architectural precision meets luxury streetwear. The new season explores structured silhouettes, differential textures, and reinforced seams.", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1200&auto=format&fit=crop", ctaText: "Shop Now", ctaLink: "/shop", active: true });
+    setImageFile(null);
+    setForm({ tagline: "New Arrivals", title: "SS26 Capsule Is Here", description: "Architectural precision meets luxury streetwear.", image: "", ctaText: "Shop Now", ctaLink: "/shop", active: true });
     setShowModal(true);
   };
 
   const openEdit = (s: HeroSlide) => {
     setEditSlide(s);
+    setImageFile(null);
     setForm({ tagline: s.tagline, title: s.title, description: s.description, image: s.image, ctaText: s.ctaText || "", ctaLink: s.ctaLink || "", active: s.active });
     setShowModal(true);
   };
@@ -64,6 +95,7 @@ export function HeroSlidesEditorPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === "string") {
@@ -73,50 +105,95 @@ export function HeroSlidesEditorPage() {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
-    if (editSlide) {
-      updateHeroSlide(editSlide.id, { ...form, order: editSlide.order });
-      setSlides(getHeroSlides());
-    } else {
-      addHeroSlide({ ...form, id: `slide-${idCounter++}`, order: slides.length });
-      setSlides(getHeroSlides());
+  const save = async () => {
+    if (!token) return;
+    try {
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("tagline", form.tagline);
+      formData.append("description", form.description);
+      formData.append("redirectTo", form.ctaLink || "/shop");
+      formData.append("isActive", String(form.active));
+      
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      if (editSlide) {
+        formData.append("displayOrder", String(editSlide.order));
+        await adminBannerApi.updateBanner(Number(editSlide.id), formData, token!);
+      } else {
+        formData.append("displayOrder", String(slides.length));
+        await adminBannerApi.createBanner(formData, token!);
+      }
+
+      await loadSlides();
+      setShowModal(false);
+      showToast(editSlide ? "Slide updated" : "Slide added");
+    } catch (err) {
+      console.error("Failed to save banner:", err);
+      showToast("Error saving banner");
     }
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
-    setShowModal(false);
-    showToast(editSlide ? "Slide updated" : "Slide added");
   };
 
-  const remove = () => {
-    if (deleteId) {
-      deleteHeroSlide(deleteId);
-      setSlides(getHeroSlides());
-      setDeleteId(null);
-      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
-      showToast("Slide deleted");
+  const remove = async () => {
+    if (deleteId && token) {
+      try {
+        await adminBannerApi.deleteBanner(Number(deleteId), token!);
+        await loadSlides();
+        setDeleteId(null);
+        showToast("Slide deleted");
+      } catch (err) {
+        console.error("Failed to delete banner:", err);
+        showToast("Error deleting banner");
+      }
     }
   };
 
-  const moveUp = (idx: number) => {
-    if (idx === 0) return;
+  const moveUp = async (idx: number) => {
+    if (idx === 0 || !token) return;
     const arr = [...sorted];
     [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
-    saveAll(arr.map((s, i) => ({ ...s, order: i })));
+    try {
+      await Promise.all(arr.map((s, i) => {
+        const formData = new FormData();
+        formData.append("title", s.title);
+        formData.append("displayOrder", String(i));
+        return adminBannerApi.updateBanner(Number(s.id), formData, token!);
+      }));
+      await loadSlides();
+      showToast("Order updated");
+    } catch (err) {
+      console.error("Failed to reorder:", err);
+    }
   };
 
-  const moveDown = (idx: number) => {
-    if (idx >= sorted.length - 1) return;
+  const moveDown = async (idx: number) => {
+    if (idx >= sorted.length - 1 || !token) return;
     const arr = [...sorted];
     [arr[idx], arr[idx+1]] = [arr[idx+1], arr[idx]];
-    saveAll(arr.map((s, i) => ({ ...s, order: i })));
+    try {
+      await Promise.all(arr.map((s, i) => {
+        const formData = new FormData();
+        formData.append("title", s.title);
+        formData.append("displayOrder", String(i));
+        return adminBannerApi.updateBanner(Number(s.id), formData, token!);
+      }));
+      await loadSlides();
+      showToast("Order updated");
+    } catch (err) {
+      console.error("Failed to reorder:", err);
+    }
   };
 
-  const toggleActive = (id: string) => {
-    const s = slides.find(x => x.id === id);
-    if (s) {
-      updateHeroSlide(id, { active: !s.active });
-      setSlides(getHeroSlides());
-      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_hero_slides" } }));
+  const toggleActive = async (id: string) => {
+    if (!token) return;
+    try {
+      await adminBannerApi.toggleBannerActive(Number(id), token!);
+      await loadSlides();
       showToast("Toggled visibility");
+    } catch (err) {
+      console.error("Failed to toggle banner status:", err);
     }
   };
 
@@ -240,12 +317,12 @@ export function HeroSlidesEditorPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">CTA Text</label>
+                  <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Button Text</label>
                   <input value={form.ctaText || ""} onChange={e => setForm({ ...form, ctaText: e.target.value })}
                     className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2.5 text-xs font-bold uppercase focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">CTA Link</label>
+                  <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Redirect Link (URL)</label>
                   <input value={form.ctaLink || ""} onChange={e => setForm({ ...form, ctaLink: e.target.value })}
                     className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
                 </div>

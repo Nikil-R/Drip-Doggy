@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
-import { getSignaturePieces } from "../../lib/content-store";
+
 
 function SignatureCard({ product }: { product: Product }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -92,34 +92,34 @@ function SignatureCard({ product }: { product: Product }) {
   );
 }
 
+import { curatedCollectionApi } from "../../lib/curated-collection-api";
+
 export function SignaturePieces() {
-  const [config, setConfig] = useState(() => getSignaturePieces());
+  const [config, setConfig] = useState({
+    sectionTitle: "Signature Pieces",
+    sectionSubtitle: "Brand Uniform",
+    active: true
+  });
+  const [finalProducts, setFinalProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setConfig(getSignaturePieces());
-    };
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener("dd-content-changed" as any, handleUpdate);
-    return () => {
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("dd-content-changed" as any, handleUpdate);
-    };
+    async function loadProducts() {
+      try {
+        const data = await curatedCollectionApi.getCollection("SIGNATURE_PIECES");
+        setConfig({
+          sectionTitle: data.title || "Signature Pieces",
+          sectionSubtitle: data.subtitle || "Brand Uniform",
+          active: data.isActive
+        });
+        setFinalProducts(data.products || []);
+      } catch (err) {
+        console.error("Failed to load signature products:", err);
+      }
+    }
+    loadProducts();
   }, []);
 
   if (!config.active) return null;
-
-  // Resolve dynamic product list
-  const displayedProducts = config.productIds
-    .map(id => products.find(p => p.id === id))
-    .filter((p): p is Product => !!p)
-    .slice(0, config.maxProducts || 4);
-
-  const fallbackIds = [4, 9, 1, 6];
-  const finalProducts = (displayedProducts.length > 0 ? displayedProducts : fallbackIds
-    .map(id => products.find(p => p.id === id))
-    .filter((p): p is Product => !!p))
-    .slice(0, config.maxProducts || 4);
 
   return (
     <section id="signature-pieces" className="pt-2 pb-8 lg:pt-6 lg:pb-10 bg-white border-t border-neutral-100">
