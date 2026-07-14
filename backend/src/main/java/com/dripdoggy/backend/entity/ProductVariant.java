@@ -22,7 +22,7 @@ public class ProductVariant {
 
     private BigDecimal price;
 
-    @Column(name = "sku_code", unique = true)
+    @Column(name = "sku_code")
     private String skuCode;
 
     @Column(name = "is_active")

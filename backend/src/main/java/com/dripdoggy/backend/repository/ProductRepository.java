@@ -18,7 +18,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "AND (:subCategoryId IS NULL OR p.subCategory.id = :subCategoryId)")
     List<Product> findProductsByFilters(@Param("categoryId") Long categoryId, @Param("subCategoryId") Long subCategoryId);
 
-    boolean existsBySkuCodeIgnoreCase(String skuCode);
+    @Query("SELECT COUNT(p) > 0 FROM Product p WHERE LOWER(p.skuCode) = LOWER(:skuCode) AND (p.isDeleted = false OR p.isDeleted IS NULL)")
+    boolean existsActiveBySkuCode(@Param("skuCode") String skuCode);
 
-    boolean existsBySkuCodeIgnoreCaseAndIdNot(String skuCode, Long id);
+    @Query("SELECT COUNT(p) > 0 FROM Product p WHERE LOWER(p.skuCode) = LOWER(:skuCode) AND p.id <> :id AND (p.isDeleted = false OR p.isDeleted IS NULL)")
+    boolean existsActiveBySkuCodeAndIdNot(@Param("skuCode") String skuCode, @Param("id") Long id);
+
+    List<Product> findBySkuCodeIgnoreCase(String skuCode);
 }

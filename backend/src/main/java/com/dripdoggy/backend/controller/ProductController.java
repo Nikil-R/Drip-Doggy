@@ -58,7 +58,7 @@ public class ProductController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping("/{id}") // changing from put to post --- 
+    @PutMapping("/{id}")
     public ResponseEntity<ResponseMsgDto> updateProduct(
             @PathVariable Long id,
             @Valid @ModelAttribute ProductRequestDto productDto,
