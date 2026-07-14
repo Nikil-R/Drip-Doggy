@@ -98,6 +98,7 @@ export const orderApi = {
   submitReturn: async (
     orderId: string,
     orderItemId: number,
+    quantity: number,
     cancelReason: string,
     defectImages: File[],
     refundMethod: string,
@@ -108,6 +109,7 @@ export const orderApi = {
     
     const formData = new FormData();
     formData.append("orderItemId", String(orderItemId));
+    formData.append("quantity", String(quantity));
     formData.append("cancelReason", cancelReason);
     
     // Add exact 3 defect files
@@ -139,6 +141,7 @@ export const orderApi = {
   submitExchange: async (
     orderId: string,
     orderItemId: number,
+    quantity: number,
     cancelReason: string,
     targetSize: string,
     targetVariantId: number,
@@ -151,7 +154,8 @@ export const orderApi = {
 
     const formData = new FormData();
     formData.append("orderItemId", String(orderItemId));
-    formData.append("cancelReason", cancelReason);
+    formData.append("quantity", String(quantity));
+    formData.append("exchangeReason", cancelReason);
     formData.append("targetSize", targetSize);
     formData.append("targetVariantId", String(targetVariantId));
 
