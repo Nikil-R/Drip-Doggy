@@ -1,0 +1,28 @@
+info:
+  name: Update_review
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8081/dripdoggy/api/customer/reviews/1
+  body:
+    type: multipart-form
+    data:
+      - name: comment
+        type: text
+        value: super annnna mastuu
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\image_7da0ed2e.png
+        contentType: image/png
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

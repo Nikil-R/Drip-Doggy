@@ -1,0 +1,34 @@
+info:
+  name: AddUser_review
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/customer/reviews
+  body:
+    type: multipart-form
+    data:
+      - name: comment
+        type: text
+        value: '"super nicee"'
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\935ebd38b24a4a89d2c84364a32c4dbe.jpg
+        contentType: image/jpeg
+      - name: orderId
+        type: text
+        value: "12"
+      - name: productVariantId
+        type: text
+        value: "2"
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

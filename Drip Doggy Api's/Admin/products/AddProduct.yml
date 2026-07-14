@@ -1,0 +1,141 @@
+info:
+  name: AddProduct
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/admin/products
+  body:
+    type: multipart-form
+    data:
+      - name: productName
+        type: text
+        value: legginesTOPS
+      - name: skuCode
+        type: text
+        value: gymgsp-03
+      - name: categoryId
+        type: text
+        value: "1"
+      - name: subCategoryId
+        type: text
+        value: "1"
+      - name: baseTitle
+        type: text
+        value: BEST SELLER
+      - name: productDescription
+        type: text
+        value: "i dono abt girls "
+      - name: isActive
+        type: text
+        value: "true"
+        disabled: true
+      - name: variants[0].variantName
+        type: text
+        value: Blue Leggins
+      - name: variants[0].skuCode
+        type: text
+        value: bL-002
+      - name: variants[0].mrp
+        type: text
+        value: "150"
+      - name: variants[0].discountType
+        type: text
+        value: FLAT
+      - name: variants[0].discountValue
+        type: text
+        value: "40"
+      - name: variants.isActive
+        type: text
+        value: ""
+        disabled: true
+      - name: variants[0].images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\Gemini_Generated_Image_mx2pq9mx2pq9mx2p.png
+        contentType: image/png
+      - name: variants[0].images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\download (2).jpg
+        contentType: image/jpeg
+      - name: variants[0].images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\ChatGPT Image Jun 15, 2026, 03_41_00 PM.png
+        contentType: image/png
+      - name: variants[0].sizes[0].sizeName
+        type: text
+        value: SMALL
+      - name: variants[0].sizes[0].stockQuantity
+        type: text
+        value: "55"
+      - name: specification.fabric
+        type: text
+        value: COTTON
+      - name: specification.pocketDesign
+        type: text
+        value: box pocket
+      - name: specification.customSpecs[hotWare]
+        type: text
+        value: yes
+      - name: features[0]
+        type: text
+        value: Features 1 apply to the entire product
+      - name: features[1]
+        type: text
+        value: Features 1 apply to the entire product
+      - name: variants[0].variantName
+        type: text
+        value: ""
+        disabled: true
+      - name: variants[0].variantName
+        type: text
+        value: ""
+        disabled: true
+      - name: variants[1].variantName
+        type: text
+        value: green Leggines
+      - name: variants[1].skuCode
+        type: text
+        value: Gl-02
+      - name: variants[1].mrp
+        type: text
+        value: "500.0"
+      - name: variants[1].discountType
+        type: text
+        value: FLAT
+      - name: variants[1].discountValue
+        type: text
+        value: "100"
+      - name: variants[1].images
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\Camera Roll\WIN_20251002_10_07_11_Pro.jpg
+        contentType: image/jpeg
+      - name: variants[1].images
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\Camera Roll\WIN_20251110_14_00_59_Pro.jpg
+        contentType: image/jpeg
+      - name: variants[1].images
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\Camera Roll\WIN_20251110_14_00_57_Pro.jpg
+        contentType: image/jpeg
+      - name: variants[1].sizes[0].sizeName
+        type: text
+        value: DOUBLE XL
+      - name: variants[1].sizes[0].stockQuantity
+        type: text
+        value: "45"
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

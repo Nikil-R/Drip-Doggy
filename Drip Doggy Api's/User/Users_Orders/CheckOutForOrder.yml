@@ -1,0 +1,26 @@
+info:
+  name: CheckOutForOrder
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/customer/orders
+  body:
+    type: json
+    data: |-
+      {
+        "addressId":3,
+        "phoneNo":"8884094554",
+        "deliveryMethod":"STD"
+      //   "couponCode":"DD-001"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

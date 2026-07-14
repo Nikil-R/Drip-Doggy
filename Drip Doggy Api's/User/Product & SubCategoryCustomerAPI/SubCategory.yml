@@ -1,0 +1,15 @@
+info:
+  name: SubCategory
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://localhost:8081/dripdoggy/api/public/subcategories
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

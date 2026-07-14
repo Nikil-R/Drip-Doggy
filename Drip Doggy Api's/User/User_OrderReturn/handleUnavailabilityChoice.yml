@@ -1,0 +1,25 @@
+info:
+  name: handleUnavailabilityChoice
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: http://localhost:8081/dripdoggy/api/customer/orders/returns/10/unavailability-choice?choice=KEEP_ORIGINAL
+  params:
+    - name: choice
+      value: "REFUND "
+      type: query
+      disabled: true
+    - name: choice
+      value: KEEP_ORIGINAL
+      type: query
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

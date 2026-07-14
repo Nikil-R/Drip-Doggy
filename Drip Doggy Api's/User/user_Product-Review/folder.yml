@@ -1,0 +1,7 @@
+info:
+  name: user_Product-Review
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit

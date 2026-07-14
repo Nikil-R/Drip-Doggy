@@ -1,0 +1,125 @@
+info:
+  name: UpdProduct
+  type: http
+  seq: 7
+
+http:
+  method: PUT
+  url: http://localhost:8081/dripdoggy/api/admin/products/1
+  body:
+    type: multipart-form
+    data:
+      - name: productName
+        type: text
+        value: legginesTOPS
+      - name: skuCode
+        type: text
+        value: gymgsp-01
+      - name: categoryId
+        type: text
+        value: "1"
+      - name: subCategoryId
+        type: text
+        value: "1"
+      - name: baseTitle
+        type: text
+        value: BEST SELLER
+      - name: productDescription
+        type: text
+        value: girl pant is nice
+      - name: isActive
+        type: text
+        value: "false"
+        disabled: true
+      - name: variants[0].variantName
+        type: text
+        value: "blue leggines "
+      - name: variants[0].skuCode
+        type: text
+        value: bl-001
+      - name: variants[0].mrp
+        type: text
+        value: "150"
+      - name: variants[0].discountType
+        type: text
+        value: FLAT
+      - name: variants[0].discountValue
+        type: text
+        value: "40"
+      - name: variants[0].images
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\Gemini_Generated_Image_60yqt360yqt360yq.png
+        contentType: image/png
+      - name: variants[0].sizes[0].sizeName
+        type: text
+        value: SMALL
+      - name: variants[0].sizes[0].stockQuantity
+        type: text
+        value: "55"
+      - name: specification.fabric
+        type: text
+        value: COTTON
+      - name: specification.pocketDesign
+        type: text
+        value: box pocket
+      - name: specification.customSpecs[hotWare]
+        type: text
+        value: yes
+      - name: features[0]
+        type: text
+        value: Features 1 apply to the entire product
+      - name: features[1]
+        type: text
+        value: Features 12 apply to the entire product
+      - name: variants[1].skuCode
+        type: text
+        value: GL-002
+      - name: variants[1].mrp
+        type: text
+        value: "2500"
+      - name: variants[1].discountType
+        type: text
+        value: PERCENTAGE
+      - name: variants[1].discountValue
+        type: text
+        value: "20"
+      - name: variants[1].images
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\3a7af7d4913f70dc93f9e79dcdc98ad8.jpg
+        contentType: image/jpeg
+      - name: variants[1].images
+        type: file
+        value:
+          - C:\Users\vinay\OneDrive\Pictures\bc8775e0d865b16ed58d26a5bf08c23e.jpg
+        contentType: image/jpeg
+      - name: variants[1].variantName
+        type: text
+        value: pink-leggines
+      - name: variants[1].sizes[0].sizeName
+        type: text
+        value: Medium
+      - name: variants[1].sizes[0].stockQuantity
+        type: text
+        value: "10"
+      - name: variants[0].existingImageUrls[0]
+        type: text
+        value: https://dripdoggy.s3.ap-south-1.amazonaws.com/b9b08eeb-86ad-4bc0-9d62-004ab1ebe1b5.jpg
+        disabled: true
+      - name: variants[0].primaryImageUrl
+        type: text
+        value: https://dripdoggy.s3.ap-south-1.amazonaws.com/eda6fefd-357a-4a33-9459-9572c3c4deb0.jpeg
+        disabled: true
+      - name: variants[0].images
+        type: text
+        value: ""
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

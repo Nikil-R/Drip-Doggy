@@ -1,0 +1,44 @@
+info:
+  name: AddPostCat
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/admin/home-categories
+  body:
+    type: multipart-form
+    data:
+      - name: title
+        type: text
+        value: WATCH Syndicate
+      - name: description
+        type: text
+        value: High-end tactical wear for he
+      - name: route
+        type: text
+        value: /shop?gender=women
+      - name: comingSoon
+        type: text
+        value: "false"
+      - name: displayOrder
+        type: text
+        value: "0"
+      - name: isActive
+        type: text
+        value: ""
+        disabled: true
+      - name: image
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\ChatGPT Image Jun 7, 2026, 12_54_51 PM.png
+        contentType: image/png
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
