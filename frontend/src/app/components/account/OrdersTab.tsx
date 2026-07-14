@@ -179,32 +179,6 @@ export function OrdersTab() {
           else if (oh.paymentStatus === "REFUNDED") mappedPayment = "Refunded";
 
           let mappedStatus = oh.deliveryStatus || "Placed";
-          
-          // Map items returned from backend
-          const itemsList = (oh.items || []).map((item: any) => ({
-            id: item.id,
-            name: item.name || "Unknown Product",
-            brand: "CONCRETE CULTURE",
-            size: item.size || "M",
-            color: item.color || "Default",
-            price: Number(item.price || 0),
-            quantity: Number(item.qty || item.quantity || 1),
-            image: item.image || item.imageUrl || ""
-          }));
-
-          // Fallback if item list is empty
-          if (itemsList.length === 0) {
-            itemsList.push({
-              name: "Structured Canvas Jacket",
-              brand: "CONCRETE CULTURE",
-              size: "M",
-              color: "Navy Blue",
-              price: oh.totalAmount,
-              quantity: 1,
-              image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
-            });
-          }
-
           const rawStatus = (oh.deliveryStatus || "Placed").toUpperCase();
 
           // Helper: is this order in a return logistics flow?
@@ -287,6 +261,33 @@ export function OrdersTab() {
             };
           }
 
+          // Map items returned from backend (after returnReq/exchangeReq are populated)
+          const itemsList = (oh.items || []).map((item: any) => ({
+            id: item.id,
+            name: item.name || "Unknown Product",
+            brand: "CONCRETE CULTURE",
+            size: item.size || "M",
+            color: item.color || "Default",
+            price: Number(item.price || 0),
+            quantity: Number(item.qty || item.quantity || 1),
+            image: item.image || item.imageUrl || "",
+            returnRequest: returnReq as any,
+            exchangeRequest: exchangeReq as any
+          }));
+
+          // Fallback if item list is empty
+          if (itemsList.length === 0) {
+            itemsList.push({
+              name: "Structured Canvas Jacket",
+              brand: "CONCRETE CULTURE",
+              size: "M",
+              color: "Navy Blue",
+              price: oh.totalAmount,
+              quantity: 1,
+              image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+            });
+          }
+
           return {
             id: oh.orderNumber,
             date: oh.orderTimestamp?.split("T")?.[0] || oh.orderTimestamp?.split(" ")?.[0] || "2026-07-08",
@@ -315,6 +316,12 @@ export function OrdersTab() {
   const [flowStep, setFlowStep] = useState(1);
   const [reason, setReason] = useState("Defective / Damaged");
   const [otherReasonText, setOtherReasonText] = useState("");
+  
+  // Track selective items
+  const [selectedItemIds, setSelectedItemIds] = useState<Record<number, boolean>>({});
+  const [returnQuantities, setReturnQuantities] = useState<Record<number, number>>({});
+  const [exchangeSizes, setExchangeSizes] = useState<Record<number, string>>({});
+  const [exchangeColors, setExchangeColors] = useState<Record<number, string>>({});
   
   // Max 3 optional defect/payout details images
   const [defectImages, setDefectImages] = useState<string[]>([]);
@@ -364,14 +371,30 @@ export function OrdersTab() {
     setDefectFiles([]);
     setQrFile(null);
 
-    const item = order.items[0];
-    if (item && type === "exchange") {
+    // Initialize selective item selections: check all items by default
+    const itemsSelection: Record<number, boolean> = {};
+    const itemsQty: Record<number, number> = {};
+    const excSizes: Record<number, string> = {};
+    const excColors: Record<number, string> = {};
+
+    order.items.forEach(item => {
+      itemsSelection[item.id] = true;
+      itemsQty[item.id] = item.quantity;
+
       const config = VARIANT_CATALOG[item.name];
       if (config) {
-        setSelectedExchangeSize(item.size);
-        setSelectedExchangeColor(item.color);
+        excSizes[item.id] = item.size;
+        excColors[item.id] = item.color;
+      } else {
+        excSizes[item.id] = item.size;
+        excColors[item.id] = item.color;
       }
-    }
+    });
+
+    setSelectedItemIds(itemsSelection);
+    setReturnQuantities(itemsQty);
+    setExchangeSizes(excSizes);
+    setExchangeColors(excColors);
   };
 
   // Prevent background scrolling when Return/Exchange modal is active
@@ -457,26 +480,37 @@ export function OrdersTab() {
 
   const calculateAdjustment = () => {
     if (!selectedOrder || requestType !== "exchange") return 0;
-    const item = selectedOrder.items[0];
-    if (!item) return 0;
-
-    const config = VARIANT_CATALOG[item.name];
-    if (!config) return 0;
-
-    const selectedColorConfig = config.colors.find(c => c.name === selectedExchangeColor);
-    const replacementPrice = selectedColorConfig ? selectedColorConfig.price : item.price;
-    return (replacementPrice - item.price) * item.quantity;
+    let totalAdj = 0;
+    selectedOrder.items.forEach(item => {
+      if (!selectedItemIds[item.id]) return;
+      const config = VARIANT_CATALOG[item.name];
+      if (!config) return;
+      const targetColor = exchangeColors[item.id] || item.color;
+      const selectedColorConfig = config.colors.find(c => c.name === targetColor);
+      const replacementPrice = selectedColorConfig ? selectedColorConfig.price : item.price;
+      const qty = returnQuantities[item.id] || 1;
+      totalAdj += (replacementPrice - item.price) * qty;
+    });
+    return totalAdj;
   };
 
   const handleSubmitRequest = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!selectedOrder) return;
 
+    const selectedItemsToProcess = selectedOrder.items.filter(item => selectedItemIds[item.id]);
+    if (selectedItemsToProcess.length === 0) {
+      alert("Please select at least one item to return/exchange.");
+      return;
+    }
+
+    if (defectImages.length === 0) {
+      alert("Uploading defect image is mandatory.");
+      return;
+    }
+
     const finalReason = reason === "Other" ? `Other: ${otherReasonText}` : reason;
     const adjustment = calculateAdjustment();
-
-    // Read the correct order item ID dynamically from the mapped order
-    const orderItemId = selectedOrder.items[0]?.id || 1;
 
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -502,18 +536,22 @@ export function OrdersTab() {
           }
         }
 
-        // Call backend API return submission
-        await orderApi.submitReturn(
-          selectedOrder.id,
-          orderItemId,
-          finalReason,
-          defectFiles,
-          refundMethod,
-          {
-            ...refundDetails,
-            qrCodeFile: qrFile
-          }
-        );
+        // Call backend API return submission for each selected item
+        for (const item of selectedItemsToProcess) {
+          const qty = returnQuantities[item.id] || 1;
+          await orderApi.submitReturn(
+            selectedOrder.id,
+            item.id,
+            qty,
+            finalReason,
+            defectFiles,
+            refundMethod,
+            {
+              ...refundDetails,
+              qrCodeFile: qrFile
+            }
+          );
+        }
 
         const returnReq = {
           reason: finalReason,
@@ -548,25 +586,31 @@ export function OrdersTab() {
           }
         }
 
-        // Call backend API exchange submission
-        // Map targetVariantId (using orderItemId placeholder)
-        await orderApi.submitExchange(
-          selectedOrder.id,
-          orderItemId,
-          finalReason,
-          selectedExchangeSize,
-          orderItemId,
-          defectFiles,
-          isCheaper ? refundMethod : undefined,
-          isCheaper ? { ...refundDetails, qrCodeFile: qrFile } : undefined
-        );
+        // Call backend API exchange submission for each selected item
+        for (const item of selectedItemsToProcess) {
+          const qty = returnQuantities[item.id] || 1;
+          const targetSize = exchangeSizes[item.id] || item.size;
+          const targetVariantId = item.id;
+          
+          await orderApi.submitExchange(
+            selectedOrder.id,
+            item.id,
+            qty,
+            finalReason,
+            targetSize,
+            targetVariantId,
+            defectFiles,
+            isCheaper ? refundMethod : undefined,
+            isCheaper ? { ...refundDetails, qrCodeFile: qrFile } : undefined
+          );
+        }
 
         const exchangeReq = {
           reason: finalReason,
-          originalSize: selectedOrder.items[0]?.size,
-          requestedSize: selectedExchangeSize,
-          originalColor: selectedOrder.items[0]?.color,
-          requestedColor: selectedExchangeColor,
+          originalSize: selectedItemsToProcess[0]?.size,
+          requestedSize: exchangeSizes[selectedItemsToProcess[0]?.id] || selectedItemsToProcess[0]?.size,
+          originalColor: selectedItemsToProcess[0]?.color,
+          requestedColor: exchangeColors[selectedItemsToProcess[0]?.id] || selectedItemsToProcess[0]?.color,
           adjustmentAmount: adjustment,
           refundDetails: isCheaper ? { method: refundMethod, ...refundDetails } : null,
           defectImages,
@@ -579,11 +623,12 @@ export function OrdersTab() {
           adjustment > 0
             ? `Exchange request submitted. Doorstep COD of ${RS}${adjustment} will be collected during delivery.`
             : "Exchange request submitted successfully. Our logistics partner will coordinate pickup."
-        );
+          );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to submit request to backend:", err);
-      alert("Error submitting request to database. Please verify your connection or uploads.");
+      const serverMessage = err.response?.data?.message || err.response?.data || err.message;
+      alert(`Error submitting request: ${serverMessage}`);
       setIsSubmitting(false);
       return;
     } finally {
@@ -653,33 +698,7 @@ export function OrdersTab() {
                   
                   {/* Status Indicator */}
                   <div className="flex items-center self-start sm:self-center">
-                    {order.returnRequest ? (
-                      <span className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-200">
-                        {(() => {
-                          // Use the unified rawDeliveryStatus from returnReq (set during mapping)
-                          const effectiveRaw = ((order.returnRequest as any).rawDeliveryStatus || "").toUpperCase();
-                          if (effectiveRaw === "REFUND_COMPLETED" || effectiveRaw === "RETURN_DELIVERED") return "Refund Completed";
-                          if (effectiveRaw === "RECEIVED_AT_WAREHOUSE" || effectiveRaw === "RETURN_SHIPPED" || effectiveRaw === "RETURN_OUT_OF_DELIVERY") return "Received at Warehouse";
-                          if (effectiveRaw === "OUT_FOR_PICKUP" || effectiveRaw === "RETURN_PICKUPED") return "Out for Pickup";
-                          if (effectiveRaw === "RETURN_APPROVED" || effectiveRaw === "RETURN_ACCEPTED") return "Return Approved";
-                          return "Return Initiated";
-                        })()}
-                      </span>
-                    ) : (order as any).exchangeRequest ? (
-                      <span className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-200">
-                        Exchange: {(() => {
-                          const reqStatus = ((order as any).exchangeRequest).status?.toUpperCase() || "";
-                          const rawDel = ((order as any).rawDeliveryStatus || "").toUpperCase();
-                          if (reqStatus === "APPROVED" || rawDel === "EXCHANGE_PICKUPED" || rawDel === "EXCHANGE_SHIPPED" || rawDel === "EXCHANGE_OUT_OF_DELIVERY") {
-                            return "Approved";
-                          }
-                          if (reqStatus === "COMPLETED" || rawDel === "EXCHANGE_DELIVERED") {
-                            return "Completed";
-                          }
-                          return formatStatusLabel((order as any).rawDeliveryStatus || ((order as any).exchangeRequest).status || "Pending", "EXCHANGE_");
-                        })()}
-                      </span>
-                    ) : order.status === "Delivered" ? (
+                    {order.status === "Delivered" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-700 border border-green-200/60">
                         <CheckCircle className="h-3 w-3" /> Delivered
                       </span>
@@ -713,7 +732,32 @@ export function OrdersTab() {
                           <span>Qty: <strong className="text-[#030213]">{item.quantity}</strong></span>
                         </p>
                       </div>
-                      <span className="text-[13px] font-black text-[#030213] shrink-0 pt-0.5 font-mono">₹{(item.price * item.quantity).toFixed(0)}</span>
+                      <div className="flex flex-col items-end shrink-0 gap-1">
+                        <span className="text-[13px] font-black text-[#030213] pt-0.5 font-mono">₹{(item.price * item.quantity).toFixed(0)}</span>
+                        {item.returnRequest ? (
+                          <span className="px-2 py-0.5 text-[7px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
+                            {(() => {
+                              const raw = ((item.returnRequest as any).rawDeliveryStatus || "").toUpperCase();
+                              if (raw === "REFUND_COMPLETED" || raw === "RETURN_DELIVERED") return "Refund Completed";
+                              if (raw === "RECEIVED_AT_WAREHOUSE" || raw === "RETURN_SHIPPED" || raw === "RETURN_OUT_OF_DELIVERY") return "At Warehouse";
+                              if (raw === "OUT_FOR_PICKUP" || raw === "RETURN_PICKUPED") return "Out for Pickup";
+                              if (raw === "RETURN_APPROVED" || raw === "RETURN_ACCEPTED") return "Return Approved";
+                              return "Return Initiated";
+                            })()}
+                          </span>
+                        ) : (item as any).exchangeRequest ? (
+                          <span className="px-2 py-0.5 text-[7px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
+                            Exchange: {(() => {
+                              const ex = (item as any).exchangeRequest;
+                              const rawDel = ((ex?.rawDeliveryStatus || "") as string).toUpperCase();
+                              const st = (ex?.status || "") as string;
+                              if (st === "completed" || rawDel === "EXCHANGE_DELIVERED") return "Completed";
+                              if (st === "approved" || rawDel.startsWith("EXCHANGE_")) return "Approved";
+                              return "Pending";
+                            })()}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -803,54 +847,128 @@ export function OrdersTab() {
             <form onSubmit={handleSubmitRequest} className="space-y-4">
               {flowStep === 1 ? (
                 <div className="space-y-4">
-                  {requestType === "exchange" && selectedOrder.items[0] && (
-                    <div className="border border-neutral-100 p-4 bg-neutral-50/50 space-y-4">
-                      <p className="text-[9px] font-extrabold tracking-widest text-[#030213] uppercase">Select Replacement Variant</p>
-                      
-                      {VARIANT_CATALOG[selectedOrder.items[0].name]?.sizes && (
-                        <div>
-                          <label className="flex items-center gap-1 text-[8px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1.5">
-                            <Tag className="w-3.5 h-3.5" /> Size
-                          </label>
-                          <select
-                            value={selectedExchangeSize}
-                            onChange={(e) => setSelectedExchangeSize(e.target.value)}
-                            className="w-full bg-white border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213]"
-                          >
-                            {VARIANT_CATALOG[selectedOrder.items[0].name].sizes.map(s => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                  {/* Product Selection Questions */}
+                  <div className="space-y-3">
+                    <label className="block text-[9.5px] font-extrabold tracking-[0.1em] uppercase text-neutral-800">
+                      Which product do you want to {requestType === "return" ? "return" : "exchange"}?
+                    </label>
+                    <div className="space-y-3 divide-y divide-neutral-100 max-h-[220px] overflow-y-auto pr-1">
+                      {selectedOrder.items.map((item) => {
+                        const isChecked = !!selectedItemIds[item.id];
+                        const quantityOptions = Array.from({ length: item.quantity }, (_, i) => i + 1);
+                        
+                        return (
+                          <div key={item.id} className="pt-3 first:pt-0 space-y-2.5">
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                id={`select-item-${item.id}`}
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  setSelectedItemIds(prev => ({
+                                    ...prev,
+                                    [item.id]: e.target.checked
+                                  }));
+                                }}
+                                className="mt-1 cursor-pointer accent-[#030213]"
+                              />
+                              <label htmlFor={`select-item-${item.id}`} className="flex flex-1 gap-3 cursor-pointer select-none">
+                                <div className="w-12 h-16 bg-neutral-50 border border-neutral-200/50 overflow-hidden flex-shrink-0">
+                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-[11px] font-black text-[#030213] uppercase truncate">{item.name}</h4>
+                                  <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">
+                                    Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
+                                  </p>
+                                  <p className="text-[10px] font-extrabold text-[#030213] mt-0.5 font-mono">₹{item.price}</p>
+                                </div>
+                              </label>
+                            </div>
 
-                      {VARIANT_CATALOG[selectedOrder.items[0].name]?.colors && (
-                        <div>
-                          <label className="flex items-center gap-1 text-[8px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1.5">
-                            <Palette className="w-3.5 h-3.5" /> Color / Style
-                          </label>
-                          <select
-                            value={selectedExchangeColor}
-                            onChange={(e) => setSelectedExchangeColor(e.target.value)}
-                            className="w-full bg-white border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213]"
-                          >
-                            {VARIANT_CATALOG[selectedOrder.items[0].name].colors.map(c => (
-                              <option key={c.name} value={c.name}>{c.name} {c.price !== selectedOrder.items[0].price && `(₹${c.price})`}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                            {isChecked && (
+                              <div className="pl-6 space-y-3">
+                                {/* Quantity Selector */}
+                                <div className="flex items-center justify-between gap-4">
+                                  <label className="text-[8px] font-black tracking-widest uppercase text-neutral-400">Qty to {requestType === "return" ? "Return" : "Exchange"}</label>
+                                  <select
+                                    value={returnQuantities[item.id] || 1}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value, 10);
+                                      setReturnQuantities(prev => ({ ...prev, [item.id]: val }));
+                                    }}
+                                    className="bg-white border border-neutral-200 px-2 py-1 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
+                                  >
+                                    {quantityOptions.map(q => (
+                                      <option key={q} value={q}>{q}</option>
+                                    ))}
+                                  </select>
+                                </div>
 
-                      <div className="pt-2 border-t border-neutral-200/50 flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-neutral-500 uppercase">Adjustment Due:</span>
-                        {calculateAdjustment() === 0 ? (
-                          <span className="font-extrabold text-[#030213]">Even Swap (₹0)</span>
-                        ) : calculateAdjustment() > 0 ? (
-                          <span className="font-extrabold text-red-600">Pay Balance: +₹{calculateAdjustment()}</span>
-                        ) : (
-                          <span className="font-extrabold text-green-700">Refund Due: -₹{Math.abs(calculateAdjustment())}</span>
-                        )}
-                      </div>
+                                {/* Exchange Variant Selectors */}
+                                {requestType === "exchange" && (
+                                  <div className="border border-neutral-100 p-3 bg-neutral-50/50 space-y-3">
+                                    <p className="text-[8px] font-black tracking-widest text-[#030213] uppercase">Select Replacement Variant</p>
+                                    
+                                    {VARIANT_CATALOG[item.name]?.sizes && (
+                                      <div>
+                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                          New Size
+                                        </label>
+                                        <select
+                                          value={exchangeSizes[item.id] || item.size}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
+                                          }}
+                                          className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
+                                        >
+                                          {VARIANT_CATALOG[item.name].sizes.map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
+
+                                    {VARIANT_CATALOG[item.name]?.colors && (
+                                      <div>
+                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                          New Color / Style
+                                        </label>
+                                        <select
+                                          value={exchangeColors[item.id] || item.color}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setExchangeColors(prev => ({ ...prev, [item.id]: val }));
+                                          }}
+                                          className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
+                                        >
+                                          {VARIANT_CATALOG[item.name].colors.map(c => (
+                                            <option key={c.name} value={c.name}>{c.name} {c.price !== item.price && `(₹${c.price})`}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {requestType === "exchange" && (
+                    <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-[10px]">
+                      <span className="font-bold text-neutral-500 uppercase">Adjustment Due:</span>
+                      {calculateAdjustment() === 0 ? (
+                        <span className="font-extrabold text-[#030213]">Even Swap (₹0)</span>
+                      ) : calculateAdjustment() > 0 ? (
+                        <span className="font-extrabold text-red-600">Pay Balance: +₹{calculateAdjustment()}</span>
+                      ) : (
+                        <span className="font-extrabold text-green-700">Refund Due: -₹{Math.abs(calculateAdjustment())}</span>
+                      )}
                     </div>
                   )}
 
@@ -928,6 +1046,10 @@ export function OrdersTab() {
                   <button
                     type="button"
                     onClick={() => {
+                      if (defectImages.length === 0) {
+                        alert("Uploading defect image is mandatory.");
+                        return;
+                      }
                       if (requestType === "return" || calculateAdjustment() < 0) {
                         setFlowStep(2);
                       } else {

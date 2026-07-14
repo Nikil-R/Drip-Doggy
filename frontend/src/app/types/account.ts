@@ -24,6 +24,7 @@ export interface Order {
   total: number;
   status: "Placed" | "Processing" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled" | "Return Requested" | "Exchange Requested";
   items: {
+    id?: number;
     name: string;
     brand: string;
     size: string;
@@ -31,6 +32,8 @@ export interface Order {
     price: number;
     quantity: number;
     image: string;
+    returnRequest?: ReturnRequest;
+    exchangeRequest?: any;
   }[];
   returnRequest?: ReturnRequest;
 }
