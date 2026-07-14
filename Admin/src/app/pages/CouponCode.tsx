@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuthStore } from "@/app/store/auth-store";
 import { couponApi, CouponRequest, CouponResponse } from "@/app/lib/coupon-api";
+import { REGEX_PATTERNS } from "../utils/validation";
 import {
   Search, Plus, Edit2, Trash2, X, Check, Copy, Calendar, Sparkles, TrendingUp, TrendingDown,
   Percent, ShoppingBag, ArrowRight, Tag, HelpCircle, Info
@@ -228,6 +229,11 @@ export function CouponCodePage() {
 
   const save = async () => {
     if (!form.code.trim() || !token) return;
+
+    if (!REGEX_PATTERNS.NAME.test(form.code.trim())) {
+      alert("Invalid coupon code format. Codes must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
 
     const req: CouponRequest = {
       code: form.code,

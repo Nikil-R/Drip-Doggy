@@ -3,6 +3,7 @@ import {
   Shield, Plus, Trash2, X, Check, AlertTriangle, UserCog, Users, 
   Lock, UserCheck, Search, Columns, FileText
 } from "lucide-react";
+import { REGEX_PATTERNS } from "../utils/validation";
 
 interface Permission {
   section: string;
@@ -192,6 +193,11 @@ export function ControlAuthorityPage() {
   const handleAddCustomSection = () => {
     const formatted = newSectionName.trim();
     if (!formatted || sections.includes(formatted)) return;
+
+    if (!REGEX_PATTERNS.NAME.test(formatted)) {
+      alert("Invalid section name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
     
     const updatedSections = [...sections, formatted];
     setSections(updatedSections);
@@ -241,6 +247,11 @@ export function ControlAuthorityPage() {
 
   const save = () => {
     if (!form.name.trim() || isDuplicateName) return;
+
+    if (!REGEX_PATTERNS.NAME.test(form.name.trim())) {
+      alert("Invalid role name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
     if (editRole) {
       setRoles(roles.map(r => r.id === editRole.id ? { ...r, name: form.name, description: form.description, permissions: formPerms } : r));
     } else {
