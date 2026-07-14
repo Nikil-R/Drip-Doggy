@@ -106,7 +106,7 @@ public class ProductService implements IProductService {
     @Override
     public ResponseMsgDto createProduct(ProductRequestDto productReqDto) {
         // Validate Product SKU
-        if (productReqDto.getSkuCode() != null && productRepository.existsActiveBySkuCode(productReqDto.getSkuCode())) {
+        if (productReqDto.getSkuCode() != null && productRepository.existsBySkuCodeIgnoreCase(productReqDto.getSkuCode())) {
             throw new DuplicateProductSkuException("Product with SKU '" + productReqDto.getSkuCode() + "' already exists");
         }
 
@@ -172,7 +172,7 @@ public class ProductService implements IProductService {
             List<ProductVariant> variants = new ArrayList<>();
             for (ProductVariantRequestDto variantDto : productReqDto.getVariants()) {
                 // Validate Variant SKU
-                if (variantDto.getSkuCode() != null && productVariantRepository.existsActiveBySkuCode(variantDto.getSkuCode())) {
+                if (variantDto.getSkuCode() != null && productVariantRepository.existsBySkuCodeIgnoreCase(variantDto.getSkuCode())) {
                     throw new DuplicateProductSkuException("Variant SKU '" + variantDto.getSkuCode() + "' already exists");
                 }
 
@@ -352,6 +352,11 @@ public class ProductService implements IProductService {
             throw new ProductNotFoundException("Product not found");
         }
 
+        // Validate Product SKU uniqueness (except current product)
+        if (productReqDto.getSkuCode() != null && productRepository.existsBySkuCodeIgnoreCaseAndIdNot(productReqDto.getSkuCode(), id)) {
+            throw new DuplicateProductSkuException("Product SKU '" + productReqDto.getSkuCode() + "' already exists");
+        }
+
         // Validate Category & SubCategory
         Category category = categoryRepository.findById(productReqDto.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
@@ -431,9 +436,6 @@ public class ProductService implements IProductService {
             Set<String> processedSkus = new HashSet<>();
 
             for (ProductVariantRequestDto varDto : productReqDto.getVariants()) {
-                if (varDto.getSkuCode() == null || varDto.getSkuCode().trim().isEmpty()) {
-                    throw new IllegalArgumentException("Variant SKU code is required and cannot be null or empty");
-                }
                 String lowerSku = varDto.getSkuCode().toLowerCase();
                 processedSkus.add(lowerSku);
 
@@ -441,6 +443,10 @@ public class ProductService implements IProductService {
                 boolean isNew = false;
 
                 if (variant == null) {
+                    // Check if SKU is used by another product variant
+                    if (productVariantRepository.existsBySkuCodeIgnoreCase(varDto.getSkuCode())) {
+                        throw new DuplicateProductSkuException("Variant SKU '" + varDto.getSkuCode() + "' already exists");
+                    }
                     variant = new ProductVariant();
                     variant.setSkuCode(varDto.getSkuCode());
                     variant.setProduct(product);
