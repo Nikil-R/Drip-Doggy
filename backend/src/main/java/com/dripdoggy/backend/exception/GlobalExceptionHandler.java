@@ -142,20 +142,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseMsgDto> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
         String message = "Database error: constraint violation.";
         if (ex.getRootCause() != null && ex.getRootCause().getMessage() != null) {
-            String rootMsg = ex.getRootCause().getMessage().toLowerCase();
-            if (rootMsg.contains("duplicate entry") || rootMsg.contains("constraintviolation") || rootMsg.contains("uk") || rootMsg.contains("duplicate key")) {
-                if (rootMsg.contains("email") || rootMsg.contains("phone")) {
-                    message = "A user with this email or phone number is already registered.";
-                } else {
-                    // Extract the duplicate value if present in the message, usually in format: Duplicate entry 'value' for key
-                    int start = rootMsg.indexOf('\'');
-                    int end = rootMsg.indexOf('\'', start + 1);
-                    if (start >= 0 && end > start) {
-                        message = "The value " + rootMsg.substring(start, end + 1) + " is already in use by another record.";
-                    } else {
-                        message = "A record with this value already exists.";
-                    }
-                }
+            String rootMsg = ex.getRootCause().getMessage();
+            if (rootMsg.contains("Duplicate entry") || rootMsg.contains("ConstraintViolation") || rootMsg.contains("UK") || rootMsg.contains("duplicate key")) {
+                message = "A user with this email or phone number is already registered.";
             }
         }
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.CONFLICT.value(), message);
