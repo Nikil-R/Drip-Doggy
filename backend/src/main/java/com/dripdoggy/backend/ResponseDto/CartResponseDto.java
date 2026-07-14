@@ -12,6 +12,7 @@ public class CartResponseDto {
     private String variantName;
     private BigDecimal price;
     private String primaryImageUrl;
+    private BigDecimal subTotal;
 
     public CartResponseDto() {
     }
@@ -26,6 +27,7 @@ public class CartResponseDto {
         this.variantName = variantName;
         this.price = price;
         this.primaryImageUrl = primaryImageUrl;
+        this.subTotal = (price != null && quantity != null) ? price.multiply(BigDecimal.valueOf(quantity)) : null;
     }
 
     public Long getId() {
@@ -98,5 +100,16 @@ public class CartResponseDto {
 
     public void setPrimaryImageUrl(String primaryImageUrl) {
         this.primaryImageUrl = primaryImageUrl;
+    }
+
+    public BigDecimal getSubTotal() {
+        if (subTotal == null && price != null && quantity != null) {
+            return price.multiply(BigDecimal.valueOf(quantity));
+        }
+        return subTotal;
+    }
+
+    public void setSubTotal(BigDecimal subTotal) {
+        this.subTotal = subTotal;
     }
 }

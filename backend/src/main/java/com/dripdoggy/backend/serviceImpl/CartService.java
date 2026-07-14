@@ -117,6 +117,9 @@ public class CartService implements ICartService {
             dto.setVariantName(variant.getVariantName());
             dto.setPrice(variant.getPrice());
             dto.setPrimaryImageUrl(variant.getPrimaryImageUrl());
+            if (variant.getPrice() != null && item.getQuantity() != null) {
+                dto.setSubTotal(variant.getPrice().multiply(java.math.BigDecimal.valueOf(item.getQuantity())));
+            }
 
             activeResponseItems.add(dto);
         }
