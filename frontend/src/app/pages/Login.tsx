@@ -74,16 +74,24 @@ export function Login() {
     setError(null);
     setIsSubmitting(true);
 
-    const isNumeric = /^\d+$/.test(identifier);
-    let finalId = identifier.trim();
+    const emailPhoneRegex = /^([a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})|(\+?[0-9]{10,15})$/;
+    const trimmedId = identifier.trim();
+    if (!emailPhoneRegex.test(trimmedId)) {
+      setError("Provide a valid email or phone number.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const isNumeric = /^\d+$/.test(trimmedId);
+    let finalId = trimmedId;
 
     if (isNumeric) {
-      if (identifier.length !== 10) {
+      if (trimmedId.length !== 10) {
         setError("Please enter a valid 10-digit phone number.");
         setIsSubmitting(false);
         return;
       }
-      finalId = `+91${identifier}`;
+      finalId = `+91${trimmedId}`;
     }
 
     try {

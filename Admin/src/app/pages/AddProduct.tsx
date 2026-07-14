@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useAuthStore } from "@/app/store/auth-store";
 import { categoryApi, subCategoryApi, BackendCategory, BackendSubCategory } from "@/app/lib/category-api";
 import { productApi } from "@/app/lib/product-api";
+import { REGEX_PATTERNS } from "../utils/validation";
 import {
   Search,
   Plus,
@@ -309,8 +310,18 @@ export function AddProductPage() {
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: string[] = [];
-    if (!productName.trim()) errors.push("Product Name is required.");
-    if (!sku.trim()) errors.push("SKU code is required.");
+    if (!productName.trim()) {
+      errors.push("Product Name is required.");
+    } else if (!REGEX_PATTERNS.NAME.test(productName.trim())) {
+      errors.push("Invalid Product Name format. Must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+    }
+
+    if (!sku.trim()) {
+      errors.push("SKU code is required.");
+    } else if (!REGEX_PATTERNS.NAME.test(sku.trim())) {
+      errors.push("Invalid SKU format. Must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+    }
+
     if (variants.length === 0) errors.push("At least one product variant is required.");
 
     if (errors.length > 0) {

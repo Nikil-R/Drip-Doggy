@@ -22,10 +22,17 @@ export function LoginPage() {
   const handleSendEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
+
+    const emailRegex = /^([a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Provide a valid email address.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
-      await authApi.sendOtp(email);
+      await authApi.sendOtp(email.trim());
       setLoginStep("otp");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to send OTP. Please try again.");

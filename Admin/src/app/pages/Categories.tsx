@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { categoryApi, subCategoryApi, BackendCategory, BackendSubCategory } from "../lib/category-api";
 import { useAuthStore } from "../store/auth-store";
+import { REGEX_PATTERNS } from "../utils/validation";
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }) {
   return (
@@ -193,6 +194,12 @@ export function CategoriesPage() {
   const handleAddCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!catLabel.trim() || !token) return;
+
+    if (!REGEX_PATTERNS.NAME.test(catLabel.trim())) {
+      alert("Invalid category name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
+
     if (!catBannerImage) {
       alert("Please upload a category banner image matching a 4:5 aspect ratio.");
       return;
@@ -231,6 +238,11 @@ export function CategoriesPage() {
   const handleSaveCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editCategoryTarget || !token) return;
+
+    if (!REGEX_PATTERNS.NAME.test(catLabel.trim())) {
+      alert("Invalid category name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
 
     try {
       const subIds = JSON.stringify(editCategoryTarget.subCategories || []);
@@ -288,6 +300,11 @@ export function CategoriesPage() {
   const handleAddSubCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subName.trim() || !selectedCategoryId || !token) return;
+
+    if (!REGEX_PATTERNS.NAME.test(subName.trim())) {
+      alert("Invalid subcategory name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
 
     if (subDescription.trim().length < 5 || subDescription.trim().length > 255) {
       alert("Subcategory description must be between 5 and 255 characters.");
@@ -347,6 +364,11 @@ export function CategoriesPage() {
   const handleSaveSubCategoryEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editSubTarget || !token) return;
+
+    if (!REGEX_PATTERNS.NAME.test(subName.trim())) {
+      alert("Invalid subcategory name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
 
     if (subDescription.trim().length < 5 || subDescription.trim().length > 255) {
       alert("Subcategory description must be between 5 and 255 characters.");

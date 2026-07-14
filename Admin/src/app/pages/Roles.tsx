@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/app/store/auth-store";
 import { authApi } from "@/app/lib/auth-api";
+import { REGEX_PATTERNS } from "../utils/validation";
 import {
   Shield,
   Users,
@@ -95,13 +96,30 @@ export function RolesPage() {
     e.preventDefault();
     setInviteError(null);
     const formData = new FormData(e.currentTarget);
-    const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const email = formData.get("email") as string;
+    const firstName = (formData.get("firstName") as string || "").trim();
+    const lastName = (formData.get("lastName") as string || "").trim();
+    const email = (formData.get("email") as string || "").trim();
     const gender = formData.get("gender") as string;
     const dob = formData.get("dob") as string;
-    const phoneNo = formData.get("phone") as string;
+    const phoneNo = (formData.get("phone") as string || "").trim();
     
+    if (!REGEX_PATTERNS.NAME.test(firstName)) {
+      setInviteError("Invalid first name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
+    if (!REGEX_PATTERNS.NAME.test(lastName)) {
+      setInviteError("Invalid last name format. Names must be 2 to 100 characters long and can contain letters, numbers, spaces, hyphens, and ampersands.");
+      return;
+    }
+    if (!REGEX_PATTERNS.EMAIL.test(email)) {
+      setInviteError("Invalid email format.");
+      return;
+    }
+    if (!REGEX_PATTERNS.PHONE.test(phoneNo)) {
+      setInviteError("Invalid phone number. Must be a valid 10-digit number.");
+      return;
+    }
+
     const name = `${firstName} ${lastName}`;
 
     if (!token) {
