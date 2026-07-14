@@ -476,9 +476,8 @@ public class ProductService implements IProductService {
                 if (!isNew && savedVariant.getImages() != null) {
                     List<String> keepUrls;
                     if (varDto.getExistingImageUrls() == null) {
-                        keepUrls = savedVariant.getImages().stream()
-                                .map(Image::getImageUrl)
-                                .collect(Collectors.toList());
+                        // If the frontend doesn't send any existingImageUrls, it means all existing images were removed!
+                        keepUrls = new ArrayList<>();
                     } else {
                         keepUrls = varDto.getExistingImageUrls();
                     }
