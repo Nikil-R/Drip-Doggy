@@ -468,14 +468,8 @@ public class ProductService implements IProductService {
                 // Handle Variant Images: Keep existing ones, upload new ones
                 List<Image> variantImages = new ArrayList<>();
                 if (!isNew && savedVariant.getImages() != null) {
-                    List<String> keepUrls;
-                    if (varDto.getExistingImageUrls() == null) {
-                        keepUrls = savedVariant.getImages().stream()
-                                .map(Image::getImageUrl)
-                                .collect(Collectors.toList());
-                    } else {
-                        keepUrls = varDto.getExistingImageUrls();
-                    }
+                    List<String> keepUrls = varDto.getExistingImageUrls() != null ? varDto.getExistingImageUrls() : new ArrayList<>();
+
                     for (Image existingImg : savedVariant.getImages()) {
                         if (keepUrls.contains(existingImg.getImageUrl())) {
                             variantImages.add(existingImg);
