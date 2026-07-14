@@ -1,0 +1,7 @@
+info:
+  name: User-SIde_Banner
+  type: folder
+  seq: 8
+
+request:
+  auth: inherit

@@ -4,13 +4,13 @@ info:
   seq: 3
 
 http:
-  method: PUT
-  url: http://localhost:8081/dripdoggy/api/admin/orders/5/tracking
+  method: PATCH
+  url: http://localhost:8081/dripdoggy/api/admin/orders/17/tracking
   body:
     type: json
     data: |-
       {
-        "trackingNumber":"11234rd"
+        "trackingNumber":"1x1s17364rdd"
       }
   auth:
     type: bearer

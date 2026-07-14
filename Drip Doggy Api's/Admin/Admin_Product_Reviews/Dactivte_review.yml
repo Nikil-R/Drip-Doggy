@@ -1,11 +1,11 @@
 info:
-  name: GetAllCategory
+  name: Dactivte_review
   type: http
   seq: 2
 
 http:
-  method: GET
-  url: http://localhost:8081/dripdoggy/api/admin/categories
+  method: PATCH
+  url: http://localhost:8081/dripdoggy/api/admin/reviews/1/toggle-active
   auth:
     type: bearer
     token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg

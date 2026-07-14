@@ -1,11 +1,11 @@
 info:
-  name: GetCategoryById
+  name: Displ_Banner
   type: http
-  seq: 3
+  seq: 1
 
 http:
   method: GET
-  url: http://localhost:8081/dripdoggy/api/admin/categories/7
+  url: http://localhost:8081/dripdoggy/api/public/banners
   auth: inherit
 
 settings:

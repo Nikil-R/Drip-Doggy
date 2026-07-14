@@ -1,0 +1,56 @@
+info:
+  name: ExchangeRequest
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/customer/orders/17/exchanges
+  body:
+    type: multipart-form
+    data:
+      - name: orderItemId
+        type: text
+        value: "17"
+      - name: exchangeReason
+        type: text
+        value: gf did liked she wants diff colour
+      - name: targetSize
+        type: text
+        value: DOUBLE XL
+      - name: targetVariantId
+        type: text
+        value: "5"
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\Gemini_Generated_Image_mx2pq9mx2pq9mx2p.png
+        contentType: image/png
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\cloud services type.png
+        contentType: image/png
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\image_7da0ed2e.png
+        contentType: image/png
+      - name: upiId
+        type: text
+        value: UPId_1233
+      - name: upiPhone
+        type: text
+        value: "7896541320"
+      - name: quantity
+        type: text
+        value: "2"
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

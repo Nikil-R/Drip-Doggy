@@ -1,18 +1,11 @@
 info:
-  name: AddCart
+  name: Del_review_hard_byId
   type: http
-  seq: 1
+  seq: 5
 
 http:
-  method: POST
-  url: http://localhost:8081/dripdoggy/api/cart
-  body:
-    type: json
-    data: |-
-      {
-        "productVariantSizeId":4,
-        "quantity":10
-      }
+  method: DELETE
+  url: http://localhost:8081/dripdoggy/api/customer/reviews/1
   auth:
     type: bearer
     token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw

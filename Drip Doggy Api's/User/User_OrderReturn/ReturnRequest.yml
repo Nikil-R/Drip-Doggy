@@ -1,0 +1,52 @@
+info:
+  name: ReturnRequest
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/customer/orders/16/returns
+  body:
+    type: multipart-form
+    data:
+      - name: orderItemId
+        type: text
+        value: "15"
+      - name: requestType
+        type: text
+        value: RETURN
+      - name: cancelReason
+        type: text
+        value: "test to return "
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\Gemini_Generated_Image_mx2pq9mx2pq9mx2p.png
+        contentType: image/png
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\Gemini_Generated_Image_mx2pq9mx2pq9mx2p.png
+        contentType: image/png
+      - name: images
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\Gemini_Generated_Image_mx2pq9mx2pq9mx2p.png
+        contentType: image/png
+      - name: qrCodeImage
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\image_7da0ed2e.png
+        contentType: image/png
+      - name: quantity
+        type: text
+        value: "2"
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXVub2ZmaWNpYWwyMDAzQGdtYWlsLmNvbSIsImlhdCI6MTc4MzM0MDczMSwiZXhwIjoxNzg1MDY4NzMxfQ.0WgEINkMmlKF4HsxfUfpSsycSlgOUjxLBEnILZZFyB4SPrlQo7rpLWxhC2H5oS36fp1JfkkmaIqRL8hQue88Uw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

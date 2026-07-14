@@ -1,0 +1,49 @@
+info:
+  name: Add_Banner
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/dripdoggy/api/admin/banners
+  body:
+    type: multipart-form
+    data:
+      - name: title
+        type: text
+        value: Ganesha Festival Special Sale - Updated
+      - name: tagline
+        type: text
+        value: FESTIVAL BONANZA - 50% OFF
+      - name: description
+        type: text
+        value: New updated collections are live now.
+      - name: redirectTo
+        type: text
+        value: "\t/shop/ethnic-collection"
+      - name: displayOrder
+        type: text
+        value: "1"
+      - name: isActive
+        type: text
+        value: ""
+        disabled: true
+      - name: image
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\ChatGPT Image Jun 15, 2026, 03_41_00 PM.png
+        contentType: image/png
+      - name: image
+        type: file
+        value:
+          - C:\Users\vinay\Downloads\935ebd38b24a4a89d2c84364a32c4dbe.jpg
+        contentType: image/jpeg
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2aW5heXZpbnU5NDIxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODMwOTMwNzEsImV4cCI6MTc4NDgyMTA3MX0.dbRLza7KbQbO-xqar-LlEUsNMNBAoOVqrM3lCkyE3Q2nvlke8JarMoM9sISYrm0UDn8Yf3-l_q4B2Qle4oh7jg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
