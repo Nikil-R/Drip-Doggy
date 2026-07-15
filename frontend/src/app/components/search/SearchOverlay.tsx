@@ -1,18 +1,169 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { Search, X, ArrowRight, Heart, Trash2, Clock, TrendingUp } from "lucide-react";
+import { Search, X, ArrowRight, Heart, Trash2, Clock, TrendingUp, Star } from "lucide-react";
+import { productApi } from "@/app/lib/product-api";
+import { categoryApi, SubCategory } from "@/app/lib/category-api";
+import type { Product } from "@/app/data/products";
 
 interface SearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface PopularProduct {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
+function getDiscountPercent(product: Product): number {
+  if (!product.originalPrice) return 0;
+  return Math.round(
+    ((product.originalPrice - product.price) / product.originalPrice) * 100
+  );
+}
+
+function ProductCard({
+  product,
+  isFav,
+  onToggleFav,
+}: {
+  product: Product;
+  isFav: boolean;
+  onToggleFav: (e: React.MouseEvent) => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const discount = getDiscountPercent(product);
+
+  useEffect(() => {
+    if (!isHovered) {
+      setActiveIdx(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % product.images.length);
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [isHovered, product.images.length]);
+
+  return (
+    <Link
+      to={`/product/${product.id}`}
+      className="group flex flex-col justify-between relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden mb-4">
+        {/* Image crossfade */}
+        {product.images.map((imgSrc, idx) => (
+          <img
+            key={idx}
+            src={imgSrc}
+            alt={`${product.name} - View ${idx + 1}`}
+            style={{ transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)" }}
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-[750ms] ${
+              idx === activeIdx ? "opacity-100 scale-105" : "opacity-0 scale-100"
+            }`}
+          />
+        ))}
+
+        {/* Progress indicators */}
+        {isHovered && product.images.length > 1 && (
+          <div className="absolute top-3 inset-x-4 flex gap-1.5 z-10 transition-all duration-300">
+            {product.images.map((_, idx) => (
+              <div
+                key={idx}
+                className="h-[2px] flex-1 bg-white/20 overflow-hidden relative"
+              >
+                {idx === activeIdx ? (
+                  <div
+                    key={`progress-${idx}`}
+                    style={{ animation: "progressGrowShop 1.5s linear forwards" }}
+                    className="absolute left-0 top-0 h-full bg-white"
+                  />
+                ) : (
+                  <div
+                    className={`absolute left-0 top-0 h-full bg-white/40 ${
+                      idx < activeIdx ? "w-full" : "w-0"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes progressGrowShop {
+              from { width: 0%; }
+              to { width: 100%; }
+            }
+          `,
+          }}
+        />
+
+        {/* Badge */}
+        {product.badge && (
+          <span
+            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-2 py-0.5 sm:px-3 sm:py-1 z-10 bg-white/75 backdrop-blur-xs border border-white/40 rounded-xs shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${
+              product.badge === "SOLD OUT"
+                ? "text-neutral-500"
+                : "text-[#030213]"
+            }`}
+          >
+            {product.badge}
+          </span>
+        )}
+
+        {/* Wishlist Heart */}
+        <button
+          onClick={onToggleFav}
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/75 backdrop-blur-xs text-neutral-800 p-1.5 sm:p-2 border border-white/40 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:text-[#fd6585] transition-all z-10 cursor-pointer"
+          aria-label={isFav ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart
+            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[1.5] transition-colors ${
+              isFav ? "fill-[#fd6585] stroke-[#fd6585]" : "stroke-neutral-800"
+            }`}
+          />
+        </button>
+
+      </div>
+
+      {/* Info */}
+      <div className="flex flex-col gap-1 mt-1">
+        <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1">
+          {product.name}
+        </h3>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+              ₹{Math.floor(product.price)}
+            </span>
+            {product.originalPrice && (
+              <>
+                <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through">
+                  ₹{Math.floor(product.originalPrice)}
+                </span>
+                {discount > 0 && (
+                  <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
+                    {discount}% OFF
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center text-neutral-800 flex-shrink-0">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className="h-2.5 w-2.5 fill-current stroke-current"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
@@ -20,14 +171,85 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("recent_searches");
-      return stored ? JSON.parse(stored) : ["Oversized Tee", "Black Hoodie", "Summer Dress", "Cargo Pants"];
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return ["Oversized Tee", "Black Hoodie", "Summer Dress", "Cargo Pants"];
+      return [];
     }
   });
 
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      productApi.fetchProducts()
+        .then(list => setDbProducts(list || []))
+        .catch(err => console.error("Error loading products for overlay search:", err));
+
+      categoryApi.fetchSubCategories()
+        .then(list => setSubCategories(list.filter(s => s.isActive !== false) || []))
+        .catch(err => console.error("Error loading subcategories for overlay search:", err));
+    }
+  }, [isOpen]);
+
+  // Wishlist sync
+  const [wishlistedIds, setWishlistedIds] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("wishlist");
+      const list: { id: number }[] = stored ? JSON.parse(stored) : [];
+      return new Set(list.map((item) => item.id));
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const stored = localStorage.getItem("wishlist");
+        const list: { id: number }[] = stored ? JSON.parse(stored) : [];
+        setWishlistedIds(new Set(list.map((item) => item.id)));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    window.addEventListener("wishlist-updated", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("wishlist-updated", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const stored = localStorage.getItem("wishlist");
+      let list: { id: number; brand: string; name: string; price: number; image: string }[] =
+        stored ? JSON.parse(stored) : [];
+      const exists = list.some((item) => item.id === product.id);
+
+      if (exists) {
+        list = list.filter((item) => item.id !== product.id);
+      } else {
+        list.push({
+          id: product.id,
+          brand: product.brand,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+        });
+      }
+
+      localStorage.setItem("wishlist", JSON.stringify(list));
+      window.dispatchEvent(new Event("wishlist-updated"));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Focus input on mount/open
   useEffect(() => {
@@ -119,79 +341,69 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     }
   ];
 
-  const popularProducts: PopularProduct[] = [
-    {
-      id: 3,
-      name: "STRUCTURE TACTICAL LAYER",
-      price: 485.00,
-      image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=300",
-      category: "Architectural Precision Series"
-    },
-    {
-      id: 104,
-      name: "APEX SHELL JACKET",
-      price: 320.00,
-      image: "https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=300",
-      category: "Outerwear Collection"
-    },
-    {
-      id: 105,
-      name: "URBAN COMBAT BOOT",
-      price: 350.00,
-      image: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&q=80&w=300",
-      category: "Accessories Series"
-    },
-    {
-      id: 106,
-      name: "CORE HEAVYWEIGHT HOODIE",
-      price: 180.00,
-      image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=300",
-      category: "Oversized Collection"
-    }
-  ];
+  const bestSellersList = dbProducts.filter(p => 
+    (p.badge || "").toLowerCase().includes("best") ||
+    (p.badge || "").toLowerCase().includes("seller")
+  );
+  const popularProducts = bestSellersList.length > 0 ? bestSellersList.slice(0, 4) : dbProducts.slice(0, 4);
 
   // Dynamic live search suggestions matching (e.g. searching "over" / "hoodie" / "dress")
   const lowercaseQuery = query.toLowerCase();
   const showResults = query.trim().length > 0;
 
-  // Filter dummy data for results
-  const matchingProducts = [
-    {
-      id: 3,
-      name: "Structure Tactical Layer",
-      price: 485.00,
-      category: "Architectural Series",
-      image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=300"
-    },
-    {
-      id: 107,
-      name: "Oversized Graphic Streetwear Tee",
-      price: 45.00,
-      category: "Oversized Collection",
-      image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=300"
-    },
-    {
-      id: 108,
-      name: "Oversized Linen Resort Shirt",
-      price: 65.00,
-      category: "Summer Essentials",
-      image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=300"
-    },
-    {
-      id: 106,
-      name: "Core Heavyweight Hoodie",
-      price: 180.00,
-      category: "Oversized Collection",
-      image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=300"
-    },
-    {
-      id: 109,
-      name: "Floral Summer Day Dress",
-      price: 110.00,
-      category: "Dresses Collection",
-      image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=300"
-    }
-  ].filter(p => p.name.toLowerCase().includes(lowercaseQuery) || p.category.toLowerCase().includes(lowercaseQuery));
+  // Filter catalog for results
+  const matchingProducts = dbProducts.length > 0
+    ? dbProducts
+        .filter(p => 
+          p.name.toLowerCase().includes(lowercaseQuery) || 
+          p.brand.toLowerCase().includes(lowercaseQuery) ||
+          (p.description || "").toLowerCase().includes(lowercaseQuery)
+        )
+        .slice(0, 5)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          category: p.brand,
+          image: p.image
+        }))
+    : [
+        {
+          id: 3,
+          name: "Structure Tactical Layer",
+          price: 485.00,
+          category: "Architectural Series",
+          image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=300"
+        },
+        {
+          id: 107,
+          name: "Oversized Graphic Streetwear Tee",
+          price: 45.00,
+          category: "Oversized Collection",
+          image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=300"
+        },
+        {
+          id: 108,
+          name: "Oversized Linen Resort Shirt",
+          price: 65.00,
+          category: "Summer Essentials",
+          image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=300"
+        },
+        {
+          id: 106,
+          name: "Core Heavyweight Hoodie",
+          price: 180.00,
+          category: "Oversized Collection",
+          image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=300"
+        },
+        {
+          id: 109,
+          name: "Floral Summer Day Dress",
+          price: 110.00,
+          category: "Dresses Collection",
+          image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=300"
+        }
+      ].filter(p => p.name.toLowerCase().includes(lowercaseQuery) || p.category.toLowerCase().includes(lowercaseQuery));
 
   const matchingCollections = [
     "Oversized Collection",
@@ -228,6 +440,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                   handleSearchSubmit(query);
                 }
               }}
+              autoComplete="off"
               className="w-full bg-neutral-100/60 text-neutral-900 placeholder-neutral-400 text-sm font-medium pl-12 pr-12 py-3.5 rounded-full border border-transparent focus:outline-none focus:border-neutral-800 focus:bg-white transition-all uppercase tracking-wide"
             />
             {query && (
@@ -311,64 +524,71 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               </div>
 
               {/* Row 2: Popular Categories */}
-              <div>
-                <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-5">
-                  Popular Categories
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {popularCategories.map((cat, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        onClose();
-                        navigate(cat.link);
-                      }}
-                      className="group text-left border-none bg-transparent cursor-pointer w-full focus:outline-none"
-                    >
-                      <div className="aspect-[4/3] rounded-xl overflow-hidden bg-neutral-100 mb-3 relative shadow-[0_4px_12px_rgba(0,0,0,0.01)] group-hover:shadow-md transition-all duration-300">
-                        <img
-                          src={cat.image}
-                          alt={cat.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">{cat.name}</h4>
-                      <p className="text-[9px] font-semibold text-neutral-400 uppercase tracking-widest mt-0.5">{cat.count}</p>
-                    </button>
-                  ))}
+              {subCategories.length > 0 && (
+                <div>
+                  <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-5">
+                    Popular Categories
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {subCategories.slice(0, 4).map((sub, idx) => {
+                      const count = dbProducts.filter(p => 
+                        p.name.toLowerCase().includes(sub.subcategoryName.toLowerCase()) ||
+                        (p.description || "").toLowerCase().includes(sub.subcategoryName.toLowerCase())
+                      ).length;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            onClose();
+                            navigate(`/shop?category=${encodeURIComponent(sub.subcategoryName.toLowerCase())}`);
+                          }}
+                          className="group text-left border-none bg-transparent cursor-pointer w-full focus:outline-none"
+                        >
+                          <div className="aspect-[4/3] rounded-xl overflow-hidden bg-neutral-100 mb-3 relative shadow-[0_4px_12px_rgba(0,0,0,0.01)] group-hover:shadow-md transition-all duration-300 flex items-center justify-center">
+                            {sub.imageUrl ? (
+                              <img
+                                src={sub.imageUrl}
+                                alt={sub.subcategoryName}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100/80 text-neutral-400">
+                                <span className="text-[9px] font-extrabold tracking-widest uppercase">No Image</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">{sub.subcategoryName}</h4>
+                          <p className="text-[9px] font-semibold text-neutral-400 uppercase tracking-widest mt-0.5">{count} Products</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Row 3: Popular Right Now */}
-              <div>
-                <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-5">
-                  Popular Right Now
-                </h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                  {popularProducts.map(product => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        onClose();
-                        navigate(`/product/${product.id === 3 ? 1 : product.id}`);
-                      }}
-                      className="group cursor-pointer bg-white rounded-xl border border-neutral-100 p-3 hover:border-neutral-900 transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.01)]"
-                    >
-                      <div className="aspect-[3/4] rounded-lg overflow-hidden bg-neutral-100 mb-3 relative">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <span className="text-[8px] font-bold tracking-widest text-[#b2533e] uppercase">{product.category}</span>
-                      <h4 className="text-xs font-bold text-neutral-900 tracking-tight leading-tight mt-0.5 line-clamp-1">{product.name}</h4>
-                      <span className="text-xs font-extrabold text-neutral-900 mt-1 block">₹{product.price.toFixed(0)}</span>
-                    </div>
-                  ))}
+              {popularProducts.length > 0 && (
+                <div>
+                  <h3 className="text-[10px] font-extrabold tracking-widest text-neutral-400 uppercase mb-5">
+                    Popular Right Now
+                  </h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {popularProducts.map(product => {
+                      const isFav = wishlistedIds.has(product.id);
+                      return (
+                        <div key={product.id} onClick={onClose}>
+                          <ProductCard
+                            product={product}
+                            isFav={isFav}
+                            onToggleFav={(e) => toggleWishlist(product, e)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
             </div>
           ) : (

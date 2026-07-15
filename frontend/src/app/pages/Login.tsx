@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { OtpVerificationStep } from "../components/auth/OtpVerificationStep";
 import { Mail, Smartphone, ArrowRight, ShoppingBag } from "lucide-react";
 import logoIcon from "../../assets/new_logo_icon.png";
+import { validateEmail, validatePhone, validateOtp } from "../utils/validation";
 
 type PortalStep = "identifier" | "otp";
 
@@ -74,25 +75,24 @@ export function Login() {
     setError(null);
     setIsSubmitting(true);
 
-    const emailPhoneRegex = /^([a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})|(\+?[0-9]{10,15})$/;
     const trimmedId = identifier.trim();
-    if (!emailPhoneRegex.test(trimmedId)) {
-      setError("Provide a valid email or phone number.");
-      setIsSubmitting(false);
-      return;
-    }
-
     const isNumeric = /^\d+$/.test(trimmedId);
-    let finalId = trimmedId;
-
     if (isNumeric) {
-      if (trimmedId.length !== 10) {
-        setError("Please enter a valid 10-digit phone number.");
+      const phoneErr = validatePhone(trimmedId);
+      if (phoneErr) {
+        setError(phoneErr);
         setIsSubmitting(false);
         return;
       }
-      finalId = `+91${trimmedId}`;
+    } else {
+      const emailErr = validateEmail(trimmedId);
+      if (emailErr) {
+        setError(emailErr);
+        setIsSubmitting(false);
+        return;
+      }
     }
+    const finalId = isNumeric ? `+91${trimmedId}` : trimmedId;
 
     try {
       const result = await requestOtp(finalId);
@@ -131,6 +131,13 @@ export function Login() {
   const handleVerifyOtp = async () => {
     setError(null);
     setIsSubmitting(true);
+
+    const otpErr = validateOtp(otp);
+    if (otpErr) {
+      setError(otpErr);
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const result = await verifyOtp(identifier, otp);

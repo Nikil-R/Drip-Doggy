@@ -38,14 +38,14 @@ export const useAuthStore = create<AuthState>()(
       name: "dripdoggy_admin_auth",
       storage: {
         getItem: (name) => {
-          const val = sessionStorage.getItem(name);
+          const val = localStorage.getItem(name);
           return val ? JSON.parse(val) : null;
         },
         setItem: (name, value) => {
-          sessionStorage.setItem(name, JSON.stringify(value));
+          localStorage.setItem(name, JSON.stringify(value));
         },
         removeItem: (name) => {
-          sessionStorage.removeItem(name);
+          localStorage.removeItem(name);
         }
       }
     }

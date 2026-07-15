@@ -14,6 +14,7 @@ import logo from "../../../assets/logo.png";
 import logoIcon from "../../../assets/new_logo_icon.png";
 import { motion } from "motion/react";
 import { getFooterConfig } from "../../lib/content-store";
+import { validateEmail } from "../../utils/validation";
 
 // Icon mapping for social platforms
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -82,12 +83,19 @@ export function Footer() {
 
   if (!config || !config.active) return null;
 
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
+
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    setSubscribeError(null);
+    const err = validateEmail(email);
+    if (err) {
+      setSubscribeError(err);
+      return;
+    }
     setSubscribeStatus("success");
     setEmail("");
-    setTimeout(() => setSubscribeStatus("idle"), 3000);
+    setTimeout(() => setSubscribeStatus("idle"), 5000);
   };
 
   // Helper to split text by <br /> or \n for styling heading line breaks
@@ -145,6 +153,9 @@ export function Footer() {
                       <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" />
                     </button>
                   </form>
+                  {subscribeError && (
+                    <p className="text-[11px] text-red-400 font-bold tracking-wider uppercase">✕ {subscribeError}</p>
+                  )}
                   {subscribeStatus === "success" && (
                     <p className="text-[11px] text-green-400/80 font-bold tracking-wider uppercase">✓ You&apos;re on the list. Welcome to the Syndicate.</p>
                   )}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MapPin, Plus, Edit2, Trash2, BadgeCheck } from "lucide-react";
 import type { AddressItem } from "../../types/account";
 import { addressApi } from "../../lib/address-api";
+import { validateName, validatePhone, validatePostalCode } from "../../utils/validation";
 
 interface AddressesTabProps {
   addresses: AddressItem[];
@@ -10,6 +11,7 @@ interface AddressesTabProps {
 }
 
 export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabProps) {
+  const [addressFormError, setAddressFormError] = useState<string | null>(null);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [addressToDelete, setAddressToDelete] = useState<number | null>(null);
@@ -72,6 +74,16 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
 
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAddressFormError(null);
+    const firstErr = validateName("First Name", addressForm.firstName);
+    if (firstErr) { setAddressFormError(firstErr); return; }
+    const lastErr = validateName("Last Name", addressForm.lastName);
+    if (lastErr) { setAddressFormError(lastErr); return; }
+    const phoneErr = validatePhone(addressForm.phone);
+    if (phoneErr) { setAddressFormError(phoneErr); return; }
+    const zipErr = validatePostalCode(addressForm.postalCode);
+    if (zipErr) { setAddressFormError(zipErr); return; }
+
     const finalType = addressForm.type === "OTHER"
       ? (addressForm.otherName.trim() || "OTHER").toUpperCase()
       : addressForm.type;
@@ -234,6 +246,10 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
               Make this my default shipping address
             </label>
           </div>
+
+          {addressFormError && (
+            <p className="text-[10px] font-extrabold text-red-600 tracking-wider uppercase mb-2">✕ {addressFormError}</p>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button type="submit"

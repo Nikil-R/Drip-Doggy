@@ -11,6 +11,7 @@ import { cartApi } from "../lib/cart-api";
 import { couponApi } from "../lib/coupon-api";
 import { orderApi } from "../lib/order-api";
 import { getSessionToken } from "../lib/auth-storage";
+import { validateEmail, validatePhone, validatePostalCode, validateName } from "../utils/validation";
 
 interface CartItem {
   id: number; brand: string; name: string; size: string; color: string;
@@ -227,6 +228,7 @@ export function Checkout() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [addressFormError, setAddressFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -376,6 +378,16 @@ export function Checkout() {
 
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAddressFormError(null);
+    const firstErr = validateName("First Name", addressForm.firstName);
+    if (firstErr) { setAddressFormError(firstErr); return; }
+    const lastErr = validateName("Last Name", addressForm.lastName);
+    if (lastErr) { setAddressFormError(lastErr); return; }
+    const phoneErr = validatePhone(addressForm.phone);
+    if (phoneErr) { setAddressFormError(phoneErr); return; }
+    const zipErr = validatePostalCode(addressForm.postalCode);
+    if (zipErr) { setAddressFormError(zipErr); return; }
+
     const finalType = addressForm.type === "OTHER"
       ? (addressForm.otherName.trim() || "OTHER").toUpperCase()
       : addressForm.type;
@@ -470,12 +482,12 @@ export function Checkout() {
     let valid = true;
     setEmailError(null); setPhoneError(null); setAddressError(null);
 
-    if (!email.trim()) { setEmailError("Email address is required."); valid = false; }
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setEmailError("Please enter a valid email address."); valid = false; }
+    const emailErr = validateEmail(email);
+    if (emailErr) { setEmailError(emailErr); valid = false; }
     else if (!isEmailVerifiedLocally) { setEmailError("Please verify your email using OTP first."); valid = false; }
 
-    if (!phone.trim()) { setPhoneError("Phone number is required."); valid = false; }
-    else if (phone.replace(/\D/g, "").length < 10) { setPhoneError("Please enter a valid 10-digit phone number."); valid = false; }
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) { setPhoneError(phoneErr); valid = false; }
     else if (!isPhoneVerifiedLocally) { setPhoneError("Please verify your phone number using OTP first."); valid = false; }
 
     if (!activeAddress) { setAddressError("Please add and select a delivery address."); valid = false; }
@@ -855,6 +867,9 @@ export function Checkout() {
                           onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })} className="accent-[#030213]" />
                         <label htmlFor="makeDefault" className="text-[7.5px] font-extrabold text-neutral-500 uppercase cursor-pointer tracking-wider">Set as default shipping address</label>
                       </div>
+                      {addressFormError && (
+                        <p className="text-[8px] font-extrabold text-red-600 tracking-wider uppercase mb-3">✕ {addressFormError}</p>
+                      )}
                       <div className="flex gap-3 pt-1">
                         <button type="submit"
                           className="bg-[#030213] hover:bg-neutral-800 text-white text-[8px] font-extrabold tracking-widest px-6 py-2.5 uppercase transition-colors cursor-pointer">

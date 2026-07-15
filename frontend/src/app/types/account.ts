@@ -36,6 +36,8 @@ export interface Order {
     exchangeRequest?: any;
   }[];
   returnRequest?: ReturnRequest;
+  orderTimestamp?: string;
+  deliveredTimestamp?: string;
 }
 
 export interface AddressItem {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { User, Mail, Phone, BadgeCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { PhoneVerification } from "./PhoneVerification";
+import { validateName, validatePhone } from "../../utils/validation";
 
 interface ProfileTabProps {
   profile: {
@@ -25,9 +26,31 @@ interface ProfileTabProps {
 }
 
 export function ProfileTab({ profile, setProfile, phoneVerified, setPhoneVerified }: ProfileTabProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Profile updated successfully!");
+    setError(null);
+    setSuccessMsg(null);
+
+    const firstErr = validateName("First Name", profile.firstName);
+    if (firstErr) {
+      setError(firstErr);
+      return;
+    }
+    const lastErr = validateName("Last Name", profile.lastName);
+    if (lastErr) {
+      setError(lastErr);
+      return;
+    }
+    const phoneErr = validatePhone(profile.phone);
+    if (phoneErr) {
+      setError(phoneErr);
+      return;
+    }
+
+    setSuccessMsg("Profile updated successfully!");
   };
 
   return (
@@ -121,6 +144,13 @@ export function ProfileTab({ profile, setProfile, phoneVerified, setPhoneVerifie
               placeholder="NOT PROVIDED" />
           </div>
         </div>
+
+        {error && (
+          <p className="text-[10px] font-extrabold text-red-600 tracking-wider uppercase">✕ {error}</p>
+        )}
+        {successMsg && (
+          <p className="text-[10px] font-extrabold text-green-600 tracking-wider uppercase">✓ {successMsg}</p>
+        )}
 
         <div className="pt-4 border-t border-neutral-100">
           <button type="submit"

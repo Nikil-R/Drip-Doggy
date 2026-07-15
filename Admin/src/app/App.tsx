@@ -1,36 +1,38 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
-import { AdminLayout } from "./components/layout/AdminLayout";
-import { LoginPage } from "./pages/Login";
-import { DashboardPage } from "./pages/Dashboard";
-import { ProductsPage } from "./pages/Products";
-import { OrdersPage } from "./pages/Orders";
-import { ReturnsPage } from "./pages/Returns";
-import { ExchangesPage } from "./pages/Exchanges";
-import { CustomersPage } from "./pages/Customers";
-import { CategoriesPage } from "./pages/Categories";
-import { TransactionsPage } from "./pages/Transactions";
-import { ContentPage } from "./pages/ContentManager";
-import { AnalyticsPage } from "./pages/Analytics";
-import { SettingsPage } from "./pages/Settings";
-import { AddProductPage } from "./pages/AddProduct";
-import { RolesPage } from "./pages/Roles";
-import { CouponCodePage } from "./pages/CouponCode";
-import { BrandPage } from "./pages/Brand";
-import { ProductMediaPage } from "./pages/ProductMedia";
-import { ProductReviewsPage } from "./pages/ProductReviews";
-import { ControlAuthorityPage } from "./pages/ControlAuthority";
-import { HeroSlidesEditorPage } from "./pages/HeroSlidesEditor";
-import { FeaturedProductsEditorPage } from "./pages/FeaturedProductsEditor";
-import { SignaturePiecesEditorPage } from "./pages/SignaturePiecesEditor";
-import { HomeCategoriesEditorPage } from "./pages/HomeCategoriesEditor";
-import { NewsletterConfigEditorPage } from "./pages/NewsletterConfigEditor";
-import { FooterSettingsEditorPage } from "./pages/FooterSettingsEditor";
-import { NavigationMenuEditorPage } from "./pages/NavigationMenuEditor";
-import { SitePagesEditorPage } from "./pages/SitePagesEditor";
-import { CuratedCollectionsEditorPage } from "./pages/CuratedCollectionsEditor";
-import { ComingSoonEditorPage } from "./pages/ComingSoonEditor";
-import { ProfilePage } from "./pages/Profile";
-import { ChangePasswordPage } from "./pages/ChangePassword";
+import { AdminLayout, AdminPageSkeleton } from "./components/layout/AdminLayout";
+
+const LoginPage = lazy(() => import("./pages/Login").then(m => ({ default: m.LoginPage })));
+const DashboardPage = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.DashboardPage })));
+const ProductsPage = lazy(() => import("./pages/Products").then(m => ({ default: m.ProductsPage })));
+const OrdersPage = lazy(() => import("./pages/Orders").then(m => ({ default: m.OrdersPage })));
+const ReturnsPage = lazy(() => import("./pages/Returns").then(m => ({ default: m.ReturnsPage })));
+const ExchangesPage = lazy(() => import("./pages/Exchanges").then(m => ({ default: m.ExchangesPage })));
+const CustomersPage = lazy(() => import("./pages/Customers").then(m => ({ default: m.CustomersPage })));
+const CategoriesPage = lazy(() => import("./pages/Categories").then(m => ({ default: m.CategoriesPage })));
+const TransactionsPage = lazy(() => import("./pages/Transactions").then(m => ({ default: m.TransactionsPage })));
+const ContentPage = lazy(() => import("./pages/ContentManager").then(m => ({ default: m.ContentPage })));
+const AnalyticsPage = lazy(() => import("./pages/Analytics").then(m => ({ default: m.AnalyticsPage })));
+const SettingsPage = lazy(() => import("./pages/Settings").then(m => ({ default: m.SettingsPage })));
+const AddProductPage = lazy(() => import("./pages/AddProduct").then(m => ({ default: m.AddProductPage })));
+const RolesPage = lazy(() => import("./pages/Roles").then(m => ({ default: m.RolesPage })));
+const CouponCodePage = lazy(() => import("./pages/CouponCode").then(m => ({ default: m.CouponCodePage })));
+const BrandPage = lazy(() => import("./pages/Brand").then(m => ({ default: m.BrandPage })));
+const ProductMediaPage = lazy(() => import("./pages/ProductMedia").then(m => ({ default: m.ProductMediaPage })));
+const ProductReviewsPage = lazy(() => import("./pages/ProductReviews").then(m => ({ default: m.ProductReviewsPage })));
+const ControlAuthorityPage = lazy(() => import("./pages/ControlAuthority").then(m => ({ default: m.ControlAuthorityPage })));
+const HeroSlidesEditorPage = lazy(() => import("./pages/HeroSlidesEditor").then(m => ({ default: m.HeroSlidesEditorPage })));
+const FeaturedProductsEditorPage = lazy(() => import("./pages/FeaturedProductsEditor").then(m => ({ default: m.FeaturedProductsEditorPage })));
+const SignaturePiecesEditorPage = lazy(() => import("./pages/SignaturePiecesEditor").then(m => ({ default: m.SignaturePiecesEditorPage })));
+const HomeCategoriesEditorPage = lazy(() => import("./pages/HomeCategoriesEditor").then(m => ({ default: m.HomeCategoriesEditorPage })));
+const NewsletterConfigEditorPage = lazy(() => import("./pages/NewsletterConfigEditor").then(m => ({ default: m.NewsletterConfigEditorPage })));
+const FooterSettingsEditorPage = lazy(() => import("./pages/FooterSettingsEditor").then(m => ({ default: m.FooterSettingsEditorPage })));
+const NavigationMenuEditorPage = lazy(() => import("./pages/NavigationMenuEditor").then(m => ({ default: m.NavigationMenuEditorPage })));
+const SitePagesEditorPage = lazy(() => import("./pages/SitePagesEditor").then(m => ({ default: m.SitePagesEditorPage })));
+const CuratedCollectionsEditorPage = lazy(() => import("./pages/CuratedCollectionsEditor").then(m => ({ default: m.CuratedCollectionsEditorPage })));
+const ComingSoonEditorPage = lazy(() => import("./pages/ComingSoonEditor").then(m => ({ default: m.ComingSoonEditorPage })));
+const ProfilePage = lazy(() => import("./pages/Profile").then(m => ({ default: m.ProfilePage })));
+const ChangePasswordPage = lazy(() => import("./pages/ChangePassword").then(m => ({ default: m.ChangePasswordPage })));
 
 export default function App() {
   return (
@@ -40,7 +42,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/admin" replace />} />
 
         {/* Public route - login */}
-        <Route path="/admin/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<Suspense fallback={<AdminPageSkeleton />}><LoginPage /></Suspense>} />
 
         {/* Protected routes wrapped in AdminLayout */}
         <Route path="/admin" element={<AdminLayout />}>

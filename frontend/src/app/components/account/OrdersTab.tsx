@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { printInvoice, printBill } from "../../lib/invoice";
 import type { Order, RefundDetails, RefundMethod } from "../../types/account";
 import { orderApi } from "../../lib/order-api";
+import { productApi } from "../../lib/product-api";
 
 // Mock Product catalog to fetch sizes & colors for exchanges
 const VARIANT_CATALOG: Record<string, { sizes: string[]; colors: { name: string; price: number }[] }> = {
@@ -34,6 +35,57 @@ const VARIANT_CATALOG: Record<string, { sizes: string[]; colors: { name: string;
 };
 
 
+
+function getProductDetails(itemName: string, availableProducts: any[]) {
+  const dynamicProd = availableProducts.find(p => p.name.toLowerCase() === itemName.toLowerCase());
+  if (dynamicProd && dynamicProd.rawVariants) {
+    const colors = dynamicProd.rawVariants.map((v: any) => ({
+      name: v.variantName || v.colorName || "Default",
+      price: Number(v.price || v.mrp),
+      sizes: (v.sizes || []).map((s: any) => s.sizeName)
+    }));
+    const allSizes = Array.from(new Set(
+      dynamicProd.rawVariants.flatMap((v: any) => (v.sizes || []).map((s: any) => s.sizeName))
+    )) as string[];
+    return {
+      sizes: allSizes,
+      colors: colors
+    };
+  }
+
+  const fallback = VARIANT_CATALOG[itemName];
+  if (fallback) {
+    return {
+      sizes: fallback.sizes,
+      colors: fallback.colors.map(c => ({
+        name: c.name,
+        price: c.price,
+        sizes: fallback.sizes
+      }))
+    };
+  }
+
+  return {
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+    colors: [
+      { name: "Default", price: 0, sizes: ["XS", "S", "M", "L", "XL", "XXL"] }
+    ]
+  };
+}
+
+function getTargetVariantId(itemName: string, selectedColor: string, originalColor: string, availableProducts: any[]): number | undefined {
+  const dynamicProd = availableProducts.find(p => p.name.toLowerCase() === itemName.toLowerCase());
+  if (dynamicProd && dynamicProd.rawVariants) {
+    const targetColor = selectedColor || originalColor;
+    const matchingVariant = dynamicProd.rawVariants.find(
+      (v: any) => (v.variantName || v.colorName || "").toLowerCase() === targetColor.toLowerCase()
+    );
+    if (matchingVariant) {
+      return matchingVariant.id;
+    }
+  }
+  return undefined;
+}
 
 // Converts backend snake_case/UPPER_SNAKE status strings into human-readable "Title Case" display labels.
 // Optionally strips a known prefix (e.g. "RETURN_" or "EXCHANGE_") before formatting.
@@ -157,9 +209,14 @@ function getTimelineSteps(order: Order, datePlaced: string) {
   ];
 }
 
-function isWithinReturnWindow(orderDateStr: string): boolean {
-  // If the order has been delivered, always allow returns/exchanges
-  return true;
+function isWithinReturnWindow(deliveredTimestampStr?: string): boolean {
+  if (!deliveredTimestampStr) return false;
+  const deliveredTime = new Date(deliveredTimestampStr).getTime();
+  if (isNaN(deliveredTime)) return false;
+  const currentTime = new Date().getTime();
+  const timeDifference = currentTime - deliveredTime;
+  const twentyFourHours = 24 * 60 * 60 * 1000;
+  return timeDifference < twentyFourHours;
 }
 
 export function OrdersTab() {
@@ -167,6 +224,20 @@ export function OrdersTab() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [defectFiles, setDefectFiles] = useState<File[]>([]);
   const [qrFile, setQrFile] = useState<File | null>(null);
+
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const prodList = await productApi.fetchProducts();
+        setAvailableProducts(prodList || []);
+      } catch (err) {
+        console.error("Failed to load products for exchanges:", err);
+      }
+    }
+    loadProducts();
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -261,19 +332,48 @@ export function OrdersTab() {
             };
           }
 
+          const hasAnyItemRequest = (oh.items || []).some((item: any) => item.returnRequestType);
+
           // Map items returned from backend (after returnReq/exchangeReq are populated)
-          const itemsList = (oh.items || []).map((item: any) => ({
-            id: item.id,
-            name: item.name || "Unknown Product",
-            brand: "CONCRETE CULTURE",
-            size: item.size || "M",
-            color: item.color || "Default",
-            price: Number(item.price || 0),
-            quantity: Number(item.qty || item.quantity || 1),
-            image: item.image || item.imageUrl || "",
-            returnRequest: returnReq as any,
-            exchangeRequest: exchangeReq as any
-          }));
+          const itemsList = (oh.items || []).map((item: any) => {
+            let itemReturnReq = null;
+            let itemExchangeReq = null;
+
+            const rawItemType = item.returnRequestType || ""; // "RETURN" or "EXCHANGE"
+            const rawItemStatus = item.returnRequestStatus || ""; // "PENDING", "APPROVED", etc.
+
+            if (rawItemType === "RETURN") {
+              itemReturnReq = {
+                reason: "",
+                status: rawItemStatus.toLowerCase(),
+                submittedAt: "",
+                rawDeliveryStatus: "RETURN_" + rawItemStatus
+              };
+            } else if (rawItemType === "EXCHANGE") {
+              itemExchangeReq = {
+                reason: "",
+                status: rawItemStatus.toLowerCase(),
+                submittedAt: "",
+                rawDeliveryStatus: "EXCHANGE_" + rawItemStatus
+              };
+            } else if (!hasAnyItemRequest) {
+              itemReturnReq = returnReq;
+              itemExchangeReq = exchangeReq;
+            }
+
+            return {
+              id: item.id,
+              name: item.name || "Unknown Product",
+              brand: "CONCRETE CULTURE",
+              size: item.size || "M",
+              color: item.sku || item.color || "Default",
+              price: Number(item.price || 0),
+              quantity: Number(item.qty || item.quantity || 1),
+              image: item.image || item.imageUrl || "",
+              returnRequest: itemReturnReq,
+              exchangeRequest: itemExchangeReq
+            };
+          });
 
           // Fallback if item list is empty
           if (itemsList.length === 0) {
@@ -296,7 +396,9 @@ export function OrdersTab() {
             items: itemsList,
             returnRequest: returnReq as any,
             exchangeRequest: exchangeReq as any,
-            rawDeliveryStatus: rawStatus as any
+            rawDeliveryStatus: rawStatus as any,
+            orderTimestamp: oh.orderTimestamp,
+            deliveredTimestamp: oh.deliveredTimestamp
           };
         });
 
@@ -322,6 +424,7 @@ export function OrdersTab() {
   const [returnQuantities, setReturnQuantities] = useState<Record<number, number>>({});
   const [exchangeSizes, setExchangeSizes] = useState<Record<number, string>>({});
   const [exchangeColors, setExchangeColors] = useState<Record<number, string>>({});
+  const [exchangeTypes, setExchangeTypes] = useState<Record<number, "size_only" | "color_only" | "color_and_size">>({});
   
   // Max 3 optional defect/payout details images
   const [defectImages, setDefectImages] = useState<string[]>([]);
@@ -337,6 +440,7 @@ export function OrdersTab() {
   
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [validationErrors, setValidationErrors] = useState<{ items?: string; images?: string }>({});
 
   const profile = {
     firstName: user?.firstName || "Customer",
@@ -371,30 +475,33 @@ export function OrdersTab() {
     setDefectFiles([]);
     setQrFile(null);
 
-    // Initialize selective item selections: check all items by default
+    setValidationErrors({});
+
     const itemsSelection: Record<number, boolean> = {};
     const itemsQty: Record<number, number> = {};
     const excSizes: Record<number, string> = {};
     const excColors: Record<number, string> = {};
+    const excTypes: Record<number, "size_only" | "color_only" | "color_and_size"> = {};
 
     order.items.forEach(item => {
-      itemsSelection[item.id] = true;
+      itemsSelection[item.id] = false;
       itemsQty[item.id] = item.quantity;
+      excTypes[item.id] = "size_only";
 
-      const config = VARIANT_CATALOG[item.name];
-      if (config) {
-        excSizes[item.id] = item.size;
-        excColors[item.id] = item.color;
-      } else {
-        excSizes[item.id] = item.size;
-        excColors[item.id] = item.color;
-      }
+      const details = getProductDetails(item.name, availableProducts);
+      // Default color should be current item color
+      excColors[item.id] = item.color;
+      // Default size should be another size if available in the same color, otherwise same size
+      const currentVariant = details.colors.find(c => c.name.toLowerCase() === item.color.toLowerCase());
+      const otherSizes = currentVariant ? currentVariant.sizes.filter((s: string) => s !== item.size) : [];
+      excSizes[item.id] = otherSizes.length > 0 ? otherSizes[0] : item.size;
     });
 
     setSelectedItemIds(itemsSelection);
     setReturnQuantities(itemsQty);
     setExchangeSizes(excSizes);
     setExchangeColors(excColors);
+    setExchangeTypes(excTypes);
   };
 
   // Prevent background scrolling when Return/Exchange modal is active
@@ -483,11 +590,18 @@ export function OrdersTab() {
     let totalAdj = 0;
     selectedOrder.items.forEach(item => {
       if (!selectedItemIds[item.id]) return;
-      const config = VARIANT_CATALOG[item.name];
-      if (!config) return;
-      const targetColor = exchangeColors[item.id] || item.color;
-      const selectedColorConfig = config.colors.find(c => c.name === targetColor);
-      const replacementPrice = selectedColorConfig ? selectedColorConfig.price : item.price;
+      const details = getProductDetails(item.name, availableProducts);
+      const exType = exchangeTypes[item.id] || "size_only";
+      
+      let replacementPrice = item.price;
+      if (exType !== "size_only") {
+        const targetColor = exchangeColors[item.id] || item.color;
+        const colorConfig = details.colors.find(c => c.name.toLowerCase() === targetColor.toLowerCase());
+        if (colorConfig) {
+          replacementPrice = colorConfig.price;
+        }
+      }
+      
       const qty = returnQuantities[item.id] || 1;
       totalAdj += (replacementPrice - item.price) * qty;
     });
@@ -499,15 +613,22 @@ export function OrdersTab() {
     if (!selectedOrder) return;
 
     const selectedItemsToProcess = selectedOrder.items.filter(item => selectedItemIds[item.id]);
-    if (selectedItemsToProcess.length === 0) {
-      alert("Please select at least one item to return/exchange.");
-      return;
+    const hasSelectedItems = selectedItemsToProcess.length > 0;
+    const hasImages = defectImages.length > 0;
+
+    const errors: { items?: string; images?: string } = {};
+    if (!hasSelectedItems) {
+      errors.items = `Please select at least one product to ${requestType === "return" ? "return" : "exchange"}.`;
+    }
+    if (!hasImages) {
+      errors.images = "Uploading at least 1 defect/verification photo is mandatory.";
     }
 
-    if (defectImages.length === 0) {
-      alert("Uploading defect image is mandatory.");
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
+    setValidationErrors({});
 
     const finalReason = reason === "Other" ? `Other: ${otherReasonText}` : reason;
     const adjustment = calculateAdjustment();
@@ -590,7 +711,7 @@ export function OrdersTab() {
         for (const item of selectedItemsToProcess) {
           const qty = returnQuantities[item.id] || 1;
           const targetSize = exchangeSizes[item.id] || item.size;
-          const targetVariantId = item.id;
+          const targetVariantId = getTargetVariantId(item.name, exchangeColors[item.id], item.color, availableProducts) || item.id;
           
           await orderApi.submitExchange(
             selectedOrder.id,
@@ -672,7 +793,7 @@ export function OrdersTab() {
       ) : (
         <div className="space-y-6">
           {orders.map((order) => {
-            const withinWindow = isWithinReturnWindow(order.date);
+            const withinWindow = isWithinReturnWindow(order.deliveredTimestamp);
             const hasReturn = !!order.returnRequest;
             const hasExchange = !!(order as any).exchangeRequest;
             
@@ -772,8 +893,8 @@ export function OrdersTab() {
                   </button>
                   
                   <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-                    {/* Cancellation Action (Allowed strictly before Shipped stage) */}
-                    {(order.status === "Placed" || order.status === "Processing" || order.status === "Packed") && (
+                    {/* Cancellation Action (Allowed strictly before Packed stage) */}
+                    {(order.status === "Placed" || order.status === "Processing") && (
                       <button 
                         onClick={() => handleCancelOrder(order.id)}
                         className="bg-white border border-red-200 hover:bg-red-50 text-red-500 px-4 py-2.5 text-[8.5px] font-black tracking-widest uppercase transition-all cursor-pointer"
@@ -906,57 +1027,148 @@ export function OrdersTab() {
                                 </div>
 
                                 {/* Exchange Variant Selectors */}
-                                {requestType === "exchange" && (
-                                  <div className="border border-neutral-100 p-3 bg-neutral-50/50 space-y-3">
-                                    <p className="text-[8px] font-black tracking-widest text-[#030213] uppercase">Select Replacement Variant</p>
-                                    
-                                    {VARIANT_CATALOG[item.name]?.sizes && (
-                                      <div>
-                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
-                                          New Size
-                                        </label>
-                                        <select
-                                          value={exchangeSizes[item.id] || item.size}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
-                                          }}
-                                          className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
-                                        >
-                                          {VARIANT_CATALOG[item.name].sizes.map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                          ))}
-                                        </select>
-                                      </div>
-                                    )}
+                                {requestType === "exchange" && (() => {
+                                  const details = getProductDetails(item.name, availableProducts);
+                                  const currentType = exchangeTypes[item.id] || "size_only";
+                                  const selectedColor = exchangeColors[item.id] || item.color;
+                                  
+                                  // Color choices for different color exchange (excluding current color)
+                                  const otherColors = details.colors.filter(c => c.name.toLowerCase() !== item.color.toLowerCase());
+                                  
+                                  // Sizes available for the selected variant
+                                  const variantConfig = details.colors.find(c => c.name.toLowerCase() === selectedColor.toLowerCase());
+                                  const availableSizesForColor = variantConfig ? variantConfig.sizes : details.sizes;
+                                  
+                                  // Sizes for same-color exchange (excluding current size)
+                                  const currentVariantConfig = details.colors.find(c => c.name.toLowerCase() === item.color.toLowerCase());
+                                  const otherSizesSameColor = currentVariantConfig 
+                                    ? currentVariantConfig.sizes.filter((s: string) => s !== item.size)
+                                    : details.sizes.filter((s: string) => s !== item.size);
 
-                                    {VARIANT_CATALOG[item.name]?.colors && (
+                                  return (
+                                    <div className="border border-neutral-100 p-3 bg-neutral-50/50 space-y-3">
+                                      <p className="text-[8px] font-black tracking-widest text-[#030213] uppercase">Select Replacement Variant</p>
+                                      
+                                      {/* Exchange Option Selector */}
                                       <div>
                                         <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
-                                          New Color / Style
+                                          Exchange Option
                                         </label>
                                         <select
-                                          value={exchangeColors[item.id] || item.color}
+                                          value={currentType}
                                           onChange={(e) => {
-                                            const val = e.target.value;
-                                            setExchangeColors(prev => ({ ...prev, [item.id]: val }));
+                                            const val = e.target.value as "size_only" | "color_only" | "color_and_size";
+                                            setExchangeTypes(prev => ({ ...prev, [item.id]: val }));
+                                            
+                                            // Reset selections depending on option
+                                            if (val === "size_only") {
+                                              setExchangeColors(prev => ({ ...prev, [item.id]: item.color }));
+                                              setExchangeSizes(prev => ({ ...prev, [item.id]: otherSizesSameColor[0] || item.size }));
+                                            } else if (val === "color_only") {
+                                              const newColor = otherColors[0]?.name || item.color;
+                                              setExchangeColors(prev => ({ ...prev, [item.id]: newColor }));
+                                              setExchangeSizes(prev => ({ ...prev, [item.id]: item.size }));
+                                            } else {
+                                              const newColor = otherColors[0]?.name || item.color;
+                                              setExchangeColors(prev => ({ ...prev, [item.id]: newColor }));
+                                              const newColorConfig = details.colors.find(c => c.name.toLowerCase() === newColor.toLowerCase());
+                                              const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
+                                              setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes[0] || item.size }));
+                                            }
                                           }}
                                           className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
                                         >
-                                          {VARIANT_CATALOG[item.name].colors.map(c => (
-                                            <option key={c.name} value={c.name}>{c.name} {c.price !== item.price && `(₹${c.price})`}</option>
-                                          ))}
+                                          <option value="size_only">Size Exchange (Same color, different size)</option>
+                                          <option value="color_only">Color Exchange (Different color, same size)</option>
+                                          <option value="color_and_size">Color & Size Exchange (Different color & size)</option>
                                         </select>
                                       </div>
-                                    )}
-                                  </div>
-                                )}
+
+                                      {/* Color selection dropdown (shown if color_only or color_and_size) */}
+                                      {currentType !== "size_only" && (
+                                        <div>
+                                          <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                            New Color / Style
+                                          </label>
+                                          <select
+                                            value={selectedColor}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setExchangeColors(prev => ({ ...prev, [item.id]: val }));
+                                              
+                                              if (currentType === "color_and_size") {
+                                                const newColorConfig = details.colors.find(c => c.name.toLowerCase() === val.toLowerCase());
+                                                const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
+                                                setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes[0] || item.size }));
+                                              }
+                                            }}
+                                            className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
+                                          >
+                                            {otherColors.map(c => (
+                                              <option key={c.name} value={c.name}>
+                                                {c.name} {c.price !== item.price && `(₹${c.price})`}
+                                              </option>
+                                            ))}
+                                            {otherColors.length === 0 && (
+                                              <option value={item.color}>{item.color} (No other colors available)</option>
+                                            )}
+                                          </select>
+                                        </div>
+                                      )}
+
+                                      {/* Size selection dropdown (shown if size_only or color_and_size) */}
+                                      {currentType !== "color_only" && (
+                                        <div>
+                                          <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                            New Size
+                                          </label>
+                                          <select
+                                            value={exchangeSizes[item.id] || item.size}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
+                                            }}
+                                            className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
+                                          >
+                                            {currentType === "size_only" ? (
+                                              otherSizesSameColor.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                              ))
+                                            ) : (
+                                              availableSizesForColor.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                              ))
+                                            )}
+                                            {currentType === "size_only" && otherSizesSameColor.length === 0 && (
+                                              <option value={item.size}>{item.size} (No other sizes available)</option>
+                                            )}
+                                          </select>
+                                        </div>
+                                      )}
+
+                                      {/* Display fixed options as text if not editable */}
+                                      {currentType === "size_only" && (
+                                        <div className="text-[9px] text-neutral-500 font-medium">
+                                          Color locked to original: <span className="font-extrabold text-[#030213]">{item.color}</span>
+                                        </div>
+                                      )}
+                                      {currentType === "color_only" && (
+                                        <div className="text-[9px] text-neutral-500 font-medium">
+                                          Size locked to original: <span className="font-extrabold text-[#030213]">{item.size}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             )}
                           </div>
                         );
                       })}
                     </div>
+                    {validationErrors.items && (
+                      <p className="text-[10px] font-bold text-red-600 mt-1">{validationErrors.items}</p>
+                    )}
                   </div>
 
                   {requestType === "exchange" && (
@@ -983,7 +1195,9 @@ export function OrdersTab() {
                       className="w-full bg-white border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213]"
                     >
                       <option value="Defective / Damaged">Defective / Damaged</option>
-                      <option value="Wrong Size Ordered">Wrong Size Ordered</option>
+                      {requestType === "exchange" && (
+                        <option value="Wrong Size Ordered">Wrong Size Ordered</option>
+                      )}
                       <option value="Color Discrepancy">Color Discrepancy</option>
                       <option value="Not as Described">Not as Described</option>
                       <option value="Other">Other</option>
@@ -1041,15 +1255,32 @@ export function OrdersTab() {
                         </label>
                       )}
                     </div>
+                    {validationErrors.images && (
+                      <p className="text-[10px] font-bold text-red-600 mt-1">{validationErrors.images}</p>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => {
-                      if (defectImages.length === 0) {
-                        alert("Uploading defect image is mandatory.");
+                      const selectedItemsToProcess = selectedOrder.items.filter(item => selectedItemIds[item.id]);
+                      const hasSelectedItems = selectedItemsToProcess.length > 0;
+                      const hasImages = defectImages.length > 0;
+
+                      const errors: { items?: string; images?: string } = {};
+                      if (!hasSelectedItems) {
+                        errors.items = `Please select at least one product to ${requestType === "return" ? "return" : "exchange"}.`;
+                      }
+                      if (!hasImages) {
+                        errors.images = "Uploading at least 1 defect/verification photo is mandatory.";
+                      }
+
+                      if (Object.keys(errors).length > 0) {
+                        setValidationErrors(errors);
                         return;
                       }
+                      setValidationErrors({});
+
                       if (requestType === "return" || calculateAdjustment() < 0) {
                         setFlowStep(2);
                       } else {

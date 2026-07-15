@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight, User } from "lucide-react";
 import logoIcon from "../../assets/new_logo_icon.png";
+import { validateName } from "../utils/validation";
 
 const BRAND_IMAGES = [
   "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?q=80&w=1600&auto=format&fit=crop",
@@ -48,8 +49,14 @@ export function Onboarding() {
     e.preventDefault();
     setError(null);
 
-    if (!firstName.trim() || !lastName.trim()) {
-      setError("Please enter your full name.");
+    const firstErr = validateName("First name", firstName);
+    if (firstErr) {
+      setError(firstErr);
+      return;
+    }
+    const lastErr = validateName("Last name", lastName);
+    if (lastErr) {
+      setError(lastErr);
       return;
     }
     if (!gender) {
