@@ -470,6 +470,12 @@ export function OrdersPage() {
         }
 
         console.log("Setting backendOrders mapped values:", backendOrders);
+        // Sort dynamic backend orders newest first (descending)
+        backendOrders.sort((a, b) => {
+          const timeA = new Date(a.stageTimestamps?.placedAt || a.date || 0).getTime();
+          const timeB = new Date(b.stageTimestamps?.placedAt || b.date || 0).getTime();
+          return timeB - timeA;
+        });
         setOrders(backendOrders);
       } catch (err) {
         console.error("Failed to load dynamic backend orders:", err);
