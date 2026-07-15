@@ -177,7 +177,7 @@ export const productApi = {
       id: r.id,
       userId: r.userId,
       author: r.customerName || "Verified Buyer",
-      rating: 5, // Default rating fallback
+      rating: Number(r.rating ?? 5),
       title: "",
       content: r.comment || "",
       date: "Recent",
@@ -185,7 +185,9 @@ export const productApi = {
       images: r.imageUrls || []
     }));
 
-    const avgRating = 5.0;
+    const avgRating = mappedReviews.length > 0
+      ? Number((mappedReviews.reduce((sum, rev) => sum + rev.rating, 0) / mappedReviews.length).toFixed(1))
+      : 5.0;
 
     return {
       id: p.id,
