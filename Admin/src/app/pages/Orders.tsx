@@ -1288,6 +1288,11 @@ export function OrdersPage() {
           {/* Status Tabs */}
           <div className="flex bg-background border border-neutral-200 p-1 rounded-full gap-0.5">
             {["All", "Completed", "Processing", "Pending", "Canceled"].map((tab) => {
+              const label = tab === "Pending"
+                ? `Pending (${stats.pending})`
+                : tab === "Processing"
+                ? `Processing (${stats.processing})`
+                : tab;
               return (
                 <button
                   key={tab}
@@ -1296,7 +1301,7 @@ export function OrdersPage() {
                     activeTab === tab ? "bg-[#224870] text-white shadow-sm" : "bg-transparent text-neutral-500 hover:text-[#224870]"
                   }`}
                 >
-                  {tab}
+                  {label}
                 </button>
               );
             })}

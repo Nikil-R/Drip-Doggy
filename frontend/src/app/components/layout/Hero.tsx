@@ -6,35 +6,8 @@ import { getHeroSlides } from "../../lib/content-store";
 import axios from "axios";
 import { API_CONFIG } from "@/app/utils/api-config";
 
-const DEFAULT_SLIDES = [
-  {
-    tagline: "TACTICAL SILHOUETTES",
-    title: "SS26 WOMEN'S COLLECTION",
-    description: "Engineered for the urban frontier. Utility meets attitude.",
-    image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1600&auto=format&fit=crop",
-    ctaText: "Explore Collection",
-    ctaLink: "/shop",
-  },
-  {
-    tagline: "DRIP DOGGY APPAREL",
-    title: "HIGH-END DRIP FOR THE BOLD",
-    description: "Precision-crafted streetwear for those who demand more. Every stitch, a statement.",
-    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop",
-    ctaText: "Explore Collection",
-    ctaLink: "/shop",
-  },
-  {
-    tagline: "THE ARCHIVE SERIES",
-    title: "UNCOMPROMISED LUXURY",
-    description: "Rebels make the rules. Redefining luxury, one drop at a time.",
-    image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1600&auto=format&fit=crop",
-    ctaText: "Explore Collection",
-    ctaLink: "/shop",
-  },
-];
-
 export function Hero() {
-  const [slides, setSlides] = useState<any[]>(DEFAULT_SLIDES);
+  const [slides, setSlides] = useState<any[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fade, setFade] = useState(true);
 
@@ -43,6 +16,7 @@ export function Hero() {
   const overlayParallax = useTransform(scrollY, [0, 600], [0.45, 0.6]);
   const contentParallaxY = useTransform(scrollY, [0, 600], [0, -60]);
   const contentOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const bgOverlay = useTransform(overlayParallax, (v) => `rgba(0,0,0,${v})`);
 
   useEffect(() => {
     async function loadActiveBanners() {
@@ -54,7 +28,7 @@ export function Hero() {
             tagline: b.tagline || "NEW IN",
             title: b.title,
             description: b.description || "",
-            image: b.imageUrl || DEFAULT_SLIDES[0].image,
+            image: b.imageUrl,
             ctaText: "Explore Collection",
             ctaLink: b.redirectTo || "/shop"
           }));
@@ -80,7 +54,9 @@ export function Hero() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  const activeSlide = slides[currentSlide] || DEFAULT_SLIDES[0];
+  if (slides.length === 0) return null;
+
+  const activeSlide = slides[currentSlide];
 
   return (
     <section
@@ -107,7 +83,7 @@ export function Hero() {
       {/* Overlay with parallax darken */}
       <motion.div
         className="absolute inset-0 z-0"
-        style={{ background: useTransform(overlayParallax, (v) => `rgba(0,0,0,${v})`) }}
+        style={{ background: bgOverlay }}
       />
 
       {/* Content with parallax fade-out */}

@@ -98,12 +98,39 @@ export function Contact() {
             {/* Contact Info & Details */}
             <div className="space-y-4 bg-white border border-neutral-200/60 p-6">
               <h3 className="text-xs font-black tracking-widest text-[#b2533e] uppercase">Contact Us</h3>
-              <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-neutral-500" />
-                <a href="mailto:support.dripdoggy@gmail.com" className="text-xs font-bold text-[#030213] hover:underline tracking-wide">
-                  support.dripdoggy@gmail.com
-                </a>
+              
+              <div className="space-y-3">
+                <div>
+                  <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Customer Support</span>
+                  <div className="flex items-center gap-2.5">
+                    <Mail className="w-3.5 h-3.5 text-neutral-500" />
+                    <a href="mailto:support.dripdoggy@gmail.com" className="text-xs font-bold text-[#030213] hover:underline tracking-wide">
+                      support.dripdoggy@gmail.com
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Help Desk</span>
+                  <div className="flex items-center gap-2.5">
+                    <Mail className="w-3.5 h-3.5 text-neutral-500" />
+                    <a href="mailto:help.dripdoggy@gmail.com" className="text-xs font-bold text-[#030213] hover:underline tracking-wide">
+                      help.dripdoggy@gmail.com
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase block mb-0.5">Business & Collaborations</span>
+                  <div className="flex items-center gap-2.5">
+                    <Mail className="w-3.5 h-3.5 text-neutral-500" />
+                    <a href="mailto:dripdoggyofficial@gmail.com" className="text-xs font-bold text-[#030213] hover:underline tracking-wide">
+                      dripdoggyofficial@gmail.com
+                    </a>
+                  </div>
+                </div>
               </div>
+
               <div className="pt-4 border-t border-neutral-100 space-y-2">
                 <p className="text-[10px] font-black tracking-widest text-neutral-400 uppercase">For faster assistance, please include:</p>
                 <ul className="list-disc pl-5 space-y-1">
