@@ -201,7 +201,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<ResponseMsgDto> handleMaxUploadSizeExceededException(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
-        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Maximum upload size exceeded. The total request size must not exceed 200MB, and each individual file must not exceed 100MB.");
+        // Include the actual exception message to help debug how big the payload really is
+        String detailMsg = ex.getMessage() != null ? ex.getMessage() : "Unknown size limits.";
+        if (ex.getCause() != null && ex.getCause().getMessage() != null) {
+            detailMsg += " - Cause: " + ex.getCause().getMessage();
+        }
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Maximum upload size exceeded. Actual error: " + detailMsg);
         return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
@@ -318,6 +323,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(OrderAlreadyPackedException.class)
     public ResponseEntity<ResponseMsgDto> handleOrderAlreadyPacked(OrderAlreadyPackedException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(PhoneMismatchException.class)
+    public ResponseEntity<ResponseMsgDto> handlePhoneMismatch(PhoneMismatchException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EmailMismatchException.class)
+    public ResponseEntity<ResponseMsgDto> handleEmailMismatch(EmailMismatchException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }

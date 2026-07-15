@@ -226,17 +226,32 @@ public class OrderReturnService implements IOrderReturnService {
 			String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
 					+ (user.getLastName() != null ? user.getLastName() : "")).trim();
 			String productName = "";
-			if (orderItem.getProductVariantSize() != null
-					&& orderItem.getProductVariantSize().getProductVariant() != null
-					&& orderItem.getProductVariantSize().getProductVariant().getProduct() != null) {
-				productName = orderItem.getProductVariantSize().getProductVariant().getProduct().getProductName();
+			String variantName = "Default";
+			String sizeName = "N/A";
+			if (orderItem.getProductVariantSize() != null) {
+				sizeName = orderItem.getProductVariantSize().getSizeName();
+				if (orderItem.getProductVariantSize().getProductVariant() != null) {
+					variantName = orderItem.getProductVariantSize().getProductVariant().getVariantName();
+					if (orderItem.getProductVariantSize().getProductVariant().getProduct() != null) {
+						productName = orderItem.getProductVariantSize().getProductVariant().getProduct().getProductName();
+					}
+				}
 			}
 			emailService.sendAdminReturnRequestNotification(adminEmail, orderNumber, "RETURN", customerName,
 					user.getEmail(), productName, dto.getCancelReason());
 
 			// Notify customer via email
-			emailService.sendCustomerReturnInitiatedEmail(user.getEmail(), orderNumber, "RETURN", customerName,
-					productName);
+			emailService.sendCustomerReturnInitiatedEmail(
+					user.getEmail(), 
+					orderNumber, 
+					"RETURN", 
+					customerName,
+					productName,
+					variantName,
+					sizeName,
+					orderItem.getPrice().doubleValue(),
+					requestedQuantity
+			);
 		} catch (Exception e) {
 			// Log or ignore email failure to prevent rolling back successful DB transaction
 			e.printStackTrace();
@@ -426,22 +441,61 @@ public class OrderReturnService implements IOrderReturnService {
 					user.getEmail(), productName, dto.getExchangeReason());
 
 			// Customer notification depending on price difference
+			String origVariantName = "Default";
+			String origSizeName = "N/A";
+			if (orderItem.getProductVariantSize() != null) {
+				origSizeName = orderItem.getProductVariantSize().getSizeName();
+				if (orderItem.getProductVariantSize().getProductVariant() != null) {
+					origVariantName = orderItem.getProductVariantSize().getProductVariant().getVariantName();
+				}
+			}
+			String exchangeVariantText = origVariantName;
+			if (dto.getTargetVariantId() != null) {
+				exchangeVariantText = origVariantName + " (Exchange requested to: " + variantName + ")";
+			}
+			String sizeText = origSizeName;
+			if (dto.getTargetSize() != null && !dto.getTargetSize().equalsIgnoreCase(origSizeName)) {
+				sizeText = origSizeName + " (Exchange requested to: " + dto.getTargetSize() + ")";
+			}
+
+			// Customer notification depending on price difference
 			if (difference.compareTo(java.math.BigDecimal.ZERO) > 0) {
 				// Send standard exchange initiation email. Payment request email will be triggered manually by the admin.
-				emailService.sendCustomerReturnInitiatedEmail(user.getEmail(), orderNumber, "EXCHANGE", customerName,
-						productName);
+				emailService.sendCustomerReturnInitiatedEmail(
+						user.getEmail(), 
+						orderNumber, 
+						"EXCHANGE", 
+						customerName,
+						productName,
+						exchangeVariantText,
+						sizeText,
+						orderItem.getPrice().doubleValue(),
+						requestedQuantity
+				);
 			} else if (difference.compareTo(java.math.BigDecimal.ZERO) < 0) {
 				emailService.sendCustomerExchangeRefundInitiatedEmail(
 						user.getEmail(),
 						orderNumber,
 						customerName,
 						productName,
-						variantName,
-						difference.abs().doubleValue()
+						exchangeVariantText,
+						difference.abs().doubleValue(),
+						sizeText,
+						orderItem.getPrice().doubleValue(),
+						requestedQuantity
 				);
 			} else {
-				emailService.sendCustomerReturnInitiatedEmail(user.getEmail(), orderNumber, "EXCHANGE", customerName,
-						productName);
+				emailService.sendCustomerReturnInitiatedEmail(
+						user.getEmail(), 
+						orderNumber, 
+						"EXCHANGE", 
+						customerName,
+						productName,
+						exchangeVariantText,
+						sizeText,
+						orderItem.getPrice().doubleValue(),
+						requestedQuantity
+				);
 			}
 		} catch (Exception e) {
 			// Log or ignore email failure to prevent rolling back successful DB transaction
@@ -497,6 +551,21 @@ public class OrderReturnService implements IOrderReturnService {
 		order.setCancelledTimestamp(LocalDateTime.now());
 
 		ordersRepository.save(order);
+
+		// Notify customer via email
+		try {
+			User user = order.getUser();
+			if (user != null) {
+				String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+				List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+				order.setOrderItems(orderItems);
+				emailService.sendCustomerOrderCancelledEmail(user.getEmail(), "#DD-" + order.getId(), customerName, order);
+			}
+		} catch (Exception e) {
+			System.err.println("Could not send cancel email: " + e.getMessage());
+		}
+
 		return new ResponseMsgDto(200, "Order cancelled successfully.");
 	}
 

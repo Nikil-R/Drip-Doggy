@@ -192,6 +192,9 @@ public class CustomerService implements ICustomerService {
                             if (variant.getProduct() != null) {
                                 dto.setProductName(variant.getProduct().getProductName());
                             }
+                            if (variant.getPrice() != null && cart.getQuantity() != null) {
+                                dto.setSubTotal(variant.getPrice().multiply(java.math.BigDecimal.valueOf(cart.getQuantity())));
+                            }
                         }
                     }
                     cartItems.add(dto);

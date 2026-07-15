@@ -60,6 +60,9 @@ public class User {
     @Column(name = "is_blocked", nullable = false)
     private Boolean isBlocked = false;
 
+    @Column(name = "registration_method")
+    private String registrationMethod;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -216,5 +219,21 @@ public class User {
 
     public void setIsBlocked(Boolean isBlocked) {
         this.isBlocked = isBlocked;
+    }
+
+    public String getRegistrationMethod() {
+        if (registrationMethod == null) {
+            if (email != null && phoneNo == null) {
+                return "EMAIL";
+            } else if (phoneNo != null && email == null) {
+                return "PHONE";
+            }
+            return "EMAIL";
+        }
+        return registrationMethod;
+    }
+
+    public void setRegistrationMethod(String registrationMethod) {
+        this.registrationMethod = registrationMethod;
     }
 }

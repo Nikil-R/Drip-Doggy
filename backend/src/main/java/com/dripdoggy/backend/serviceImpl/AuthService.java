@@ -108,8 +108,10 @@ public class AuthService implements IAuthService {
                 user = new User();
                 if (identifier.contains("@")) {
                     user.setEmail(identifier);
+                    user.setRegistrationMethod("EMAIL");
                 } else {
                     user.setPhoneNo(identifier);
+                    user.setRegistrationMethod("PHONE");
                 }
                 user.setRole(UserRole.CUSTOMER);
                 user = userRepository.save(user);

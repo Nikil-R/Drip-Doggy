@@ -34,7 +34,7 @@ public class OtpService {
         otp.setTargetValue(targetValue);
         otp.setOtpCode(otpCode);
         otp.setCreatedAt(LocalDateTime.now());
-        otp.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+        otp.setExpiresAt(LocalDateTime.now().plusMinutes(10));
         otp.setIsVerified(false);
         otp.setAttempt(0);
         

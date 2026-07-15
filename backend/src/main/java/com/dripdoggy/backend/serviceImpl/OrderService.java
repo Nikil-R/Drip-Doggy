@@ -90,38 +90,151 @@ public class OrderService implements IOrderService {
 
     @Override
     public ResponseMsgDto sendCheckoutOtp(CheckoutOtpRequest request) {
-        // Enforce only registered customers can request checkout OTP
-        getCurrentCustomer();
-        
-        otpService.generateAndSendOtp(request.getPhoneNo(), OtpType.PHONE);
-        return new ResponseMsgDto(200, "Verification OTP code sent to " + request.getPhoneNo());
+        User user = getCurrentCustomer();
+        String regMethod = user.getRegistrationMethod();
+
+        if ("PHONE".equalsIgnoreCase(regMethod)) {
+            // Verify request phone matches registered phone
+            String requestPhone = request.getPhoneNo();
+            if (requestPhone == null || requestPhone.trim().isEmpty()) {
+                throw new IllegalArgumentException("Phone number is required.");
+            }
+            String cleanReq = requestPhone.trim().startsWith("+") ? requestPhone.trim().substring(1) : requestPhone.trim();
+            String dbPhone = user.getPhoneNo();
+            if (dbPhone == null) {
+                throw new PhoneNotFoundException("No registered phone number found for this user.");
+            }
+            String cleanDb = dbPhone.trim().startsWith("+") ? dbPhone.trim().substring(1) : dbPhone.trim();
+            if (!cleanReq.equals(cleanDb)) {
+                throw new PhoneMismatchException("The provided phone number does not match your registered phone number.");
+            }
+
+            String email = request.getEmail();
+            if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+                throw new IllegalArgumentException("Email verification is required for checkout. Please provide a valid email.");
+            }
+            java.util.Optional<User> existingUserOpt = userRepository.findByEmail(email.trim());
+            if (existingUserOpt.isPresent() && !existingUserOpt.get().getId().equals(user.getId())) {
+                throw new IllegalArgumentException("This email address is already registered by another user.");
+            }
+            otpService.generateAndSendOtp(email.trim(), OtpType.EMAIL);
+            return new ResponseMsgDto(200, "Verification OTP code sent to email: " + email.trim());
+        } else {
+            // Verify request email matches registered email
+            String requestEmail = request.getEmail();
+            if (requestEmail == null || requestEmail.trim().isEmpty()) {
+                throw new IllegalArgumentException("Email address is required.");
+            }
+            String dbEmail = user.getEmail();
+            if (dbEmail == null) {
+                throw new EmailNotFoundException("No registered email address found for this user.");
+            }
+            if (!requestEmail.trim().equalsIgnoreCase(dbEmail.trim())) {
+                throw new EmailMismatchException("The provided email address does not match your registered email address.");
+            }
+
+            String phoneNo = request.getPhoneNo();
+            if (phoneNo == null || phoneNo.trim().isEmpty() || !phoneNo.matches("^[0-9]{10}$")) {
+                throw new IllegalArgumentException("Phone number verification is required for checkout. Please provide a valid 10-digit phone number.");
+            }
+            String formattedPhone = phoneNo.trim();
+            String alternative = formattedPhone.startsWith("+") ? formattedPhone.substring(1) : "+" + formattedPhone;
+            java.util.Optional<User> existingUserOpt = userRepository.findByPhoneNo(formattedPhone)
+                    .or(() -> userRepository.findByPhoneNo(alternative));
+            if (existingUserOpt.isPresent() && !existingUserOpt.get().getId().equals(user.getId())) {
+                throw new IllegalArgumentException("This phone number is already registered by another user.");
+            }
+            otpService.generateAndSendOtp(formattedPhone, OtpType.PHONE);
+            return new ResponseMsgDto(200, "Verification OTP code sent to phone: " + formattedPhone);
+        }
     }
 
     @Override
     public ResponseMsgDto verifyCheckoutOtp(CheckoutOtpVerifyRequest request) {
         User user = getCurrentCustomer();
-        
-        boolean verified = otpService.verifyOtp(request.getPhoneNo(), OtpType.PHONE, request.getOtpCode());
-        if (!verified) {
-            throw new InvalidCredentialsException("Invalid or expired OTP.");
+        String regMethod = user.getRegistrationMethod();
+
+        if ("PHONE".equalsIgnoreCase(regMethod)) {
+            // Verify request phone matches registered phone
+            String requestPhone = request.getPhoneNo();
+            if (requestPhone == null || requestPhone.trim().isEmpty()) {
+                throw new IllegalArgumentException("Phone number is required.");
+            }
+            String cleanReq = requestPhone.trim().startsWith("+") ? requestPhone.trim().substring(1) : requestPhone.trim();
+            String dbPhone = user.getPhoneNo();
+            if (dbPhone == null) {
+                throw new PhoneNotFoundException("No registered phone number found for this user.");
+            }
+            String cleanDb = dbPhone.trim().startsWith("+") ? dbPhone.trim().substring(1) : dbPhone.trim();
+            if (!cleanReq.equals(cleanDb)) {
+                throw new PhoneMismatchException("The provided phone number does not match your registered phone number.");
+            }
+
+            String email = request.getEmail();
+            if (email == null || email.trim().isEmpty()) {
+                throw new IllegalArgumentException("Email is required for verification.");
+            }
+            boolean verified = otpService.verifyOtp(email.trim(), OtpType.EMAIL, request.getOtpCode());
+            if (!verified) {
+                throw new InvalidCredentialsException("Invalid or expired OTP.");
+            }
+            user.setEmail(email.trim());
+            userRepository.save(user);
+            return new ResponseMsgDto(200, "Email address verified and saved successfully.");
+        } else {
+            // Verify request email matches registered email
+            String requestEmail = request.getEmail();
+            if (requestEmail == null || requestEmail.trim().isEmpty()) {
+                throw new IllegalArgumentException("Email address is required.");
+            }
+            String dbEmail = user.getEmail();
+            if (dbEmail == null) {
+                throw new EmailNotFoundException("No registered email address found for this user.");
+            }
+            if (!requestEmail.trim().equalsIgnoreCase(dbEmail.trim())) {
+                throw new EmailMismatchException("The provided email address does not match your registered email address.");
+            }
+
+            String phoneNo = request.getPhoneNo();
+            if (phoneNo == null || phoneNo.trim().isEmpty()) {
+                throw new IllegalArgumentException("Phone number is required for verification.");
+            }
+            boolean verified = otpService.verifyOtp(phoneNo.trim(), OtpType.PHONE, request.getOtpCode());
+            if (!verified) {
+                throw new InvalidCredentialsException("Invalid or expired OTP.");
+            }
+            user.setPhoneNo(phoneNo.trim());
+            userRepository.save(user);
+            return new ResponseMsgDto(200, "Phone number verified and saved successfully.");
         }
-        
-        // Save verified phone number to customer profile
-        user.setPhoneNo(request.getPhoneNo());
-        userRepository.save(user);
-        
-        return new ResponseMsgDto(200, "Phone number verified successfully.");
     }
 
     @Override
     public OrderResponseDto placeOrder(OrderRequestDto request) {
         User user = getCurrentCustomer();
 
-        // 1. Verify that the customer has verified their phone number via OTP on checkout
-        Otp otp = otpRepository.findTopByTargetValueAndOtpTypeOrderByCreatedAtDesc(request.getPhoneNo(), OtpType.PHONE)
-                .orElseThrow(() -> new InvalidCredentialsException("Phone number verification is compulsory before checkout."));
-        if (!Boolean.TRUE.equals(otp.getIsVerified())) {
-            throw new InvalidCredentialsException("Phone number must be verified before placing an order.");
+        // 1. Verify checkout OTP based on registration method
+        String regMethod = user.getRegistrationMethod();
+        if ("PHONE".equalsIgnoreCase(regMethod)) {
+            String email = user.getEmail();
+            if (email == null || email.trim().isEmpty()) {
+                throw new InvalidCredentialsException("Email address must be added and verified before checkout.");
+            }
+            Otp otp = otpRepository.findTopByTargetValueAndOtpTypeOrderByCreatedAtDesc(email, OtpType.EMAIL)
+                    .orElseThrow(() -> new InvalidCredentialsException("Email verification is compulsory before checkout."));
+            if (!Boolean.TRUE.equals(otp.getIsVerified())) {
+                throw new InvalidCredentialsException("Email address must be verified before placing an order.");
+            }
+        } else {
+            String phoneNo = request.getPhoneNo();
+            if (phoneNo == null || phoneNo.trim().isEmpty()) {
+                throw new InvalidCredentialsException("Phone number must be added and verified before checkout.");
+            }
+            Otp otp = otpRepository.findTopByTargetValueAndOtpTypeOrderByCreatedAtDesc(phoneNo, OtpType.PHONE)
+                    .orElseThrow(() -> new InvalidCredentialsException("Phone number verification is compulsory before checkout."));
+            if (!Boolean.TRUE.equals(otp.getIsVerified())) {
+                throw new InvalidCredentialsException("Phone number must be verified before placing an order.");
+            }
         }
 
         // 2. Fetch active cart items. Enforce cart is not empty.
@@ -214,11 +327,13 @@ public class OrderService implements IOrderService {
         // 11. Send Confirmation Email to Customer
         String customerName = (user.getFirstName() != null ? user.getFirstName() : "") + " " +
                              (user.getLastName() != null ? user.getLastName() : "");
+        List<OrderItem> orderItems = orderItemRepository.findByOrder(savedOrder);
+        savedOrder.setOrderItems(orderItems);
         emailService.sendOrderPlacementEmail(
                 user.getEmail(),
                 "#DD-" + savedOrder.getId(),
                 customerName.trim(),
-                totalAmount.doubleValue()
+                savedOrder
         );
 
         // 12. Map and Return Response

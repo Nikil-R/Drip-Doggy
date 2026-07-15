@@ -5,9 +5,8 @@ import jakarta.validation.constraints.Pattern;
 
 public class CheckoutOtpRequest {
 
-    @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
     private String phoneNo;
+    private String email;
 
     // Getters and Setters
     public String getPhoneNo() {
@@ -16,5 +15,13 @@ public class CheckoutOtpRequest {
 
     public void setPhoneNo(String phoneNo) {
         this.phoneNo = phoneNo;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
