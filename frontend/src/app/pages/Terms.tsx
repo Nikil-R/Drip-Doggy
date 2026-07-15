@@ -89,7 +89,7 @@ export function Terms() {
   return (
     <main className="min-h-screen bg-[#FAF8F5] text-[#030213] pb-20 font-sans antialiased selection:bg-neutral-200">
       {/* ─── Page Header ─── */}
-      <section className="relative py-20 text-center border-b border-neutral-200/80 max-w-7xl mx-auto px-6">
+      <section className="relative py-10 text-center border-b border-neutral-200/80 max-w-7xl mx-auto px-6">
         <span className="text-[9px] font-extrabold tracking-[0.3em] text-[#b2533e] uppercase block mb-3">
           THE HOUSE
         </span>

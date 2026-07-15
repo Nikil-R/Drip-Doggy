@@ -69,7 +69,7 @@ const SECTIONS = [
     icon: Mail,
     title: "8. Contact & Complaints",
     paragraphs: [
-      "If you have any questions, concerns, or complaints regarding this Privacy Policy or our data handling practices, please contact our Data Protection Officer at privacy@dripdoggy.com.",
+      "If you have any questions, concerns, or complaints regarding this Privacy Policy or our data handling practices, please contact our Data Protection Officer at help.dripdoggy@gmail.com.",
       "We are committed to resolving any concerns you may have. If you are dissatisfied with our response, you have the right to lodge a complaint with the relevant data protection authority.",
       "This policy was last updated in June 2026. We reserve the right to modify this policy at any time. Changes will be posted on this page with an updated effective date.",
     ],
@@ -80,7 +80,7 @@ export function Privacy() {
   return (
     <main className="min-h-screen bg-[#FAF8F5] text-[#030213] pb-20 font-sans antialiased selection:bg-neutral-200">
       {/* ─── Page Header ─── */}
-      <section className="relative py-20 text-center border-b border-neutral-200/80 max-w-7xl mx-auto px-6">
+      <section className="relative py-10 text-center border-b border-neutral-200/80 max-w-7xl mx-auto px-6">
         <span className="text-[9px] font-extrabold tracking-[0.3em] text-[#b2533e] uppercase block mb-3">
           THE HOUSE
         </span>
@@ -155,7 +155,7 @@ export function Privacy() {
               Contact DPO
             </Link>
             <a
-              href="mailto:privacy@dripdoggy.com"
+              href="mailto:help.dripdoggy@gmail.com"
               className="border border-neutral-200 hover:border-[#030213] text-neutral-600 hover:text-[#030213] px-6 py-3 text-[9px] font-extrabold tracking-widest uppercase transition-colors no-underline"
             >
               Email DPO

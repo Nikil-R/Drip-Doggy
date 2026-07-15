@@ -1340,10 +1340,10 @@ function ProductDetailContent({ product }: { product: Product }) {
               ×
             </button>
             <h2 className="text-2xl font-extrabold tracking-[0.1em] mb-2 uppercase">
-              SIZE GUIDE
+              DripDoggy Size Guide (Measurements in Inches)
             </h2>
-            <p className="text-neutral-500 text-xs tracking-wider uppercase mb-8">
-              Find the perfect fit with our measurements breakdown.
+            <p className="text-neutral-500 text-xs tracking-wider uppercase mb-6">
+              Find your perfect fit below.
             </p>
 
             <div className="overflow-x-auto border border-neutral-200/60 rounded-lg bg-white">
@@ -1351,42 +1351,52 @@ function ProductDetailContent({ product }: { product: Product }) {
                 <thead>
                   <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-bold tracking-widest text-neutral-400 uppercase whitespace-nowrap">
                     <th className="py-4 px-6">SIZE</th>
-                    <th className="py-4 px-6">CHEST (CM)</th>
-                    <th className="py-4 px-6">ACROSS SHOULDER (CM)</th>
-                    <th className="py-4 px-6">FRONT LENGTH (CM)</th>
-                    <th className="py-4 px-6">TO FIT WAIST (CM)</th>
-                    <th className="py-4 px-6">INSEAM LENGTH (CM)</th>
-                    <th className="py-4 px-6">OUTSEAM LENGTH (CM)</th>
+                    <th className="py-4 px-6">WAIST</th>
+                    <th className="py-4 px-6">HIP</th>
+                    <th className="py-4 px-6">FULL LENGTH</th>
+                    <th className="py-4 px-6">INSEAM</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {[
-                    { size: "XS", chest: 99.1, shoulder: 40.6, length: 64.8, waist: 68.6, inseam: 76.2, outseam: 106.7 },
-                    { size: "S", chest: 104.1, shoulder: 43.2, length: 67.3, waist: 73.7, inseam: 76.2, outseam: 107.3 },
-                    { size: "M", chest: 109.2, shoulder: 45.7, length: 69.8, waist: 78.7, inseam: 76.2, outseam: 108 },
-                    { size: "L", chest: 114.3, shoulder: 48.3, length: 72.4, waist: 83.8, inseam: 76.2, outseam: 106 },
-                    { size: "XL", chest: 119.4, shoulder: 50.8, length: 74.9, waist: 88.9, inseam: 76.2, outseam: 106.7 },
-                    { size: "XXL", chest: 127, shoulder: 53.3, length: 77.5, waist: 94, inseam: 76.2, outseam: 107.3 },
-                    { size: "XXXL", chest: 134.6, shoulder: 55.9, length: 80, waist: 99.1, inseam: 76.2, outseam: 108 },
+                    { size: "XS", waist: "25–26", hip: "34–35", length: "38–39", inseam: "27–28" },
+                    { size: "S", waist: "27–28", hip: "36–37", length: "39–40", inseam: "28–29" },
+                    { size: "M", waist: "29–30", hip: "38–39", length: "40–41", inseam: "29–30" },
+                    { size: "L", waist: "31–32", hip: "40–41", length: "41–42", inseam: "30–31" },
+                    { size: "XL", waist: "33–34", hip: "42–43", length: "42–43", inseam: "31–32" },
+                    { size: "2XL", waist: "35–36", hip: "44–45", length: "43–44", inseam: "32–33" },
+                    { size: "3XL", waist: "37–38", hip: "46–47", length: "44–45", inseam: "33–34" },
+                    { size: "4XL", waist: "39–40", hip: "48–49", length: "45–46", inseam: "34–35" },
                   ].map((row) => (
                     <tr key={row.size} className="hover:bg-neutral-50/50">
                       <td className="py-4 px-6 font-bold">{row.size}</td>
-                      <td className="py-4 px-6">{row.chest}</td>
-                      <td className="py-4 px-6">{row.shoulder}</td>
-                      <td className="py-4 px-6">{row.length}</td>
                       <td className="py-4 px-6">{row.waist}</td>
-                      <td className="py-4 px-6">{row.inseam}</td>
-                      <td className="py-4 px-6 text-[#b2533e]">{row.outseam}</td>
+                      <td className="py-4 px-6">{row.hip}</td>
+                      <td className="py-4 px-6">{row.length}</td>
+                      <td className="py-4 px-6 text-[#b2533e]">{row.inseam}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="mt-8 bg-neutral-50 rounded-lg p-4 text-[10px] font-bold tracking-wide text-neutral-500 uppercase leading-relaxed">
-              * Note: For the most accurate fit, we recommend measuring at the
-              chest, shoulders, and waist. If between sizes, choose the larger
-              option.
+            <div className="mt-6 space-y-4">
+              <div>
+                <h4 className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider mb-1.5">Measurement Guide</h4>
+                <ul className="space-y-1 pl-4 list-disc text-[10px] font-semibold text-neutral-500 uppercase leading-relaxed">
+                  <li>Waist: Measure around your natural waistline.</li>
+                  <li>Hip: Measure around the fullest part of your hips.</li>
+                  <li>Full Length: Measure from the top of the waistband to the bottom hem.</li>
+                  <li>Inseam: Measure from the crotch seam to the bottom hem.</li>
+                </ul>
+              </div>
+
+              <div className="bg-neutral-50 p-4 rounded-lg space-y-1.5 text-[9px] font-extrabold tracking-wide text-neutral-500 uppercase leading-relaxed border border-neutral-100">
+                <p>• All measurements are in inches.</p>
+                <p>• A tolerance of ±0.5 inch is normal due to manufacturing.</p>
+                <p>• If you're between two sizes, choose the larger size for a more comfortable fit.</p>
+                <p className="text-neutral-800 tracking-widest mt-1.5 border-t border-neutral-200/60 pt-1.5 text-[9px] text-[#b2533e]">DripDoggy – Drip Your Way, Every Day.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1577,7 +1587,7 @@ function ProductDetailContent({ product }: { product: Product }) {
 
               {/* Instagram */}
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/dripdoggyofficial"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsShareModalOpen(false)}

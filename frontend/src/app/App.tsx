@@ -22,6 +22,7 @@ import { Help } from "./pages/Help";
 import { Contact } from "./pages/Contact";
 import { FAQ } from "./pages/FAQ";
 import { Returns } from "./pages/Returns";
+import { ClientServices } from "./pages/ClientServices";
 import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
 
@@ -112,6 +113,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/returns" element={<Returns />} />
+            <Route path="/client-services" element={<ClientServices />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
           </Routes>

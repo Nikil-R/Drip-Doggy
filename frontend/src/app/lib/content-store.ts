@@ -200,9 +200,10 @@ function defaultFooter(): FooterConfig {
       {
         title: "Client Services",
         links: [
+          { label: "Client Services", to: "/client-services" },
           { label: "Contact Us", to: "/contact" },
           { label: "FAQ & Shipping", to: "/faq" },
-          { label: "Returns & Size Guide", to: "/returns" },
+          { label: "Return Policy", to: "/returns" },
           { label: "Track Order", to: "/account#orders" },
         ],
       },
@@ -216,10 +217,10 @@ function defaultFooter(): FooterConfig {
       },
     ],
     socialLinks: [
-      { platform: "instagram", label: "Instagram", url: "#", active: true },
-      { platform: "youtube", label: "YouTube", url: "#", active: true },
-      { platform: "twitter", label: "X / Twitter", url: "#", active: true },
-      { platform: "facebook", label: "Facebook", url: "#", active: true },
+      { platform: "instagram", label: "Instagram", url: "https://www.instagram.com/dripdoggyofficial", active: true },
+      { platform: "youtube", label: "YouTube", url: "https://www.youtube.com/@dripdoggyofficial", active: true },
+      { platform: "twitter", label: "X / Twitter", url: "https://x.com/dripdoggyofc", active: true },
+      { platform: "facebook", label: "Facebook", url: "https://facebook.com/dripdoggyofficial", active: true },
     ],
     active: true,
   };

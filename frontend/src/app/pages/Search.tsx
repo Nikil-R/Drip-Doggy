@@ -533,7 +533,7 @@ export function Search() {
                   <div className="space-y-3">
                     <button
                       onClick={clearFilters}
-                      className="w-full bg-[#030213] text-white py-3 text-[10px] font-extrabold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase bg-transparent border-none cursor-pointer"
+                      className="w-full bg-[#030213] text-white py-3 text-[10px] font-extrabold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase border-none cursor-pointer"
                     >
                       Clear All Filters
                     </button>
@@ -567,7 +567,7 @@ export function Search() {
                               setSearchQuery(suggestion);
                               setSearchParams({ q: suggestion });
                             }}
-                            className="text-[9px] font-extrabold tracking-wider text-[#b2533e] border border-[#b2533e]/20 bg-[#b2533e]/5 px-3 py-1.5 hover:bg-[#b2533e]/10 transition-colors bg-transparent border-none cursor-pointer"
+                            className="text-[9px] font-extrabold tracking-wider text-[#b2533e] border border-[#b2533e]/20 bg-[#b2533e]/5 px-3 py-1.5 hover:bg-[#b2533e]/10 transition-colors cursor-pointer"
                           >
                             {suggestion}
                           </button>

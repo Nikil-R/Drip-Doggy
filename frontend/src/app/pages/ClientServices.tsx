@@ -1,42 +1,38 @@
 import { Link } from "react-router";
 
-export function Returns() {
-  const POLICY_SECTIONS = [
+export function ClientServices() {
+  const SERVICES_SECTIONS = [
     {
-      title: "Eligibility for Returns",
+      title: "Order Support",
+      tagline: "Need help with your order? Contact us for:",
       bullets: [
-        "Return requests must be raised within 24 hours of receiving the order.",
-        "The product must be unused, unwashed, and in its original condition with all original tags, packaging, and accessories intact.",
-        "An unboxing video is required for claims related to damaged, defective, missing, or incorrect items.",
-        "Products showing signs of use, washing, alteration, or damage caused after delivery are not eligible for return."
+        "Order status and tracking",
+        "Order modifications (before dispatch)",
+        "Cancellation requests (if eligible)",
+        "Product-related queries"
       ]
     },
     {
-      title: "Non-Returnable Items",
-      tagline: "Returns will not be accepted for:",
+      title: "Shipping Support",
+      desc: "We currently process all orders with care and provide tracking details once your order has been dispatched."
+    },
+    {
+      title: "Returns & Exchanges",
+      desc: "We offer a 24-hour return request window from the time your order is delivered.",
+      subtitle: "To be eligible:",
       bullets: [
-        "Products requested after the 24-hour return window.",
-        "Items without original tags or packaging.",
-        "Products that have been used, washed, or altered.",
-        "Sale, clearance, or promotional items (unless received damaged or incorrect)."
+        "The item must be unused and in its original condition.",
+        "Original tags and packaging must be intact.",
+        "Return requests made after 24 hours may not be accepted."
       ]
     },
     {
-      title: "Return Process",
-      numbered: [
-        "Contact our Support Team within 24 hours of delivery.",
-        "Share your Order ID, clear photos, and the unboxing video.",
-        "Our team will review your request within 1–2 business days.",
-        "If approved, we will arrange a return or replacement based on availability."
-      ]
+      title: "Payments",
+      desc: "Online payment options such as UPI, Cards, Net Banking, and Wallets are currently under development and will be available soon.\n\nFor now, payment methods are being processed as we prepare for launch."
     },
     {
-      title: "Refunds",
-      desc: "Approved refunds will be processed after the returned product passes our quality inspection.\n\nRefunds will be issued to the original payment method (or store credit, if applicable) within 5–7 business days after approval."
-    },
-    {
-      title: "Exchanges",
-      desc: "Exchanges are available only for eligible products, subject to stock availability."
+      title: "Product Assistance",
+      desc: "Need help choosing the right size or product?\nPlease refer to our Size Guide or contact our support team before placing your order."
     }
   ];
 
@@ -48,20 +44,18 @@ export function Returns() {
           SUPPORT HUB
         </span>
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-[0.05em] uppercase mb-4">
-          Return Policy
+          Client Services
         </h1>
         <p className="text-neutral-500 max-w-xl mx-auto text-xs tracking-wide leading-relaxed font-medium">
-          At DripDoggy, customer satisfaction is important to us. If you receive a damaged, defective, 
-          or incorrect product, you may request a return within 24 hours of delivery.
+          Welcome to DripDoggy Client Services. We're committed to providing a smooth shopping experience 
+          from the moment you place your order until it reaches your doorstep. If you need any assistance, 
+          our team is here to help.
         </p>
-        <span className="text-[8px] font-bold text-neutral-400 tracking-widest uppercase mt-4 block">
-          Last Updated: July 2026
-        </span>
       </section>
 
-      {/* Policy Content Sections */}
+      {/* Services Content Sections */}
       <section className="max-w-4xl mx-auto px-6 py-16 space-y-16">
-        {POLICY_SECTIONS.map((section, idx) => (
+        {SERVICES_SECTIONS.map((section, idx) => (
           <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             <div className="md:col-span-4">
               <span className="text-[9px] font-black tracking-[0.25em] text-[#030213]/40 uppercase block pt-1">
@@ -80,6 +74,9 @@ export function Returns() {
                   {section.desc}
                 </p>
               )}
+              {section.subtitle && (
+                <p className="text-[11px] text-neutral-800 font-bold uppercase tracking-widest pt-2">{section.subtitle}</p>
+              )}
               {section.bullets && (
                 <ul className="list-disc pl-5 space-y-2">
                   {section.bullets.map((bullet, bulletIdx) => (
@@ -88,15 +85,6 @@ export function Returns() {
                     </li>
                   ))}
                 </ul>
-              )}
-              {section.numbered && (
-                <ol className="list-decimal pl-5 space-y-2">
-                  {section.numbered.map((numItem, numIdx) => (
-                    <li key={numIdx} className="text-[11px] text-neutral-500 font-medium tracking-wide">
-                      {numItem}
-                    </li>
-                  ))}
-                </ol>
               )}
             </div>
           </div>
@@ -109,7 +97,8 @@ export function Returns() {
           <div className="space-y-2">
             <span className="text-[8px] font-black tracking-[0.3em] text-white/40 uppercase block">NEED HELP?</span>
             <p className="text-sm text-white/70 max-w-md mx-auto font-medium">
-              If you have any questions regarding returns, please contact our Customer Support team. We're always happy to help.
+              If you have any questions or need assistance, we're always happy to help. Our support team aims 
+              to respond as quickly as possible and ensure you have the best experience with DripDoggy.
             </p>
           </div>
           <Link to="/contact" className="inline-flex bg-white text-[#030213] text-[9px] font-black tracking-widest px-8 py-3 uppercase no-underline hover:bg-white/95 transition-all">
