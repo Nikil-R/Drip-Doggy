@@ -35,6 +35,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/admin/register", "/api/auth/admin/list", "/api/auth/admin/me").hasRole("ADMIN")
                         .requestMatchers("/api/auth/register").hasRole("CUSTOMER")
+                        .requestMatchers("/api/public/categories", "/api/public/categories/**",
+                                         "/api/public/subcategories", "/api/public/subcategories/**").authenticated()
                         .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
@@ -58,7 +60,8 @@ public class SecurityConfig {
                 "http://localhost:5174",
                 "http://localhost:3000",
                 "https://dripdoggy.com",
-                "https://www.dripdoggy.com"
+                "https://www.dripdoggy.com",
+                "http://192.168.1.5:5173"
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

@@ -40,6 +40,7 @@ public class OrderService implements IOrderService {
     private final OtpService otpService;
     private final ICouponService couponService;
     private final EmailService emailService;
+    private final OrderReturnRepository orderReturnRepository;
 
     @Autowired
     public OrderService(OrdersRepository ordersRepository, 
@@ -50,7 +51,8 @@ public class OrderService implements IOrderService {
                         OtpRepository otpRepository, 
                         OtpService otpService, 
                         ICouponService couponService, 
-                        EmailService emailService) {
+                        EmailService emailService,
+                        OrderReturnRepository orderReturnRepository) {
         this.ordersRepository = ordersRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
@@ -60,6 +62,7 @@ public class OrderService implements IOrderService {
         this.otpService = otpService;
         this.couponService = couponService;
         this.emailService = emailService;
+        this.orderReturnRepository = orderReturnRepository;
     }
 
     private User getCurrentCustomer() {
@@ -325,8 +328,14 @@ public class OrderService implements IOrderService {
         }
 
         // 11. Send Confirmation Email to Customer
-        String customerName = (user.getFirstName() != null ? user.getFirstName() : "") + " " +
-                             (user.getLastName() != null ? user.getLastName() : "");
+        String customerName = "";
+        if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+            customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " " +
+                           (address.getLastName() != null ? address.getLastName() : "")).trim();
+        } else {
+            customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                           (user.getLastName() != null ? user.getLastName() : "")).trim();
+        }
         List<OrderItem> orderItems = orderItemRepository.findByOrder(savedOrder);
         savedOrder.setOrderItems(orderItems);
         emailService.sendOrderPlacementEmail(
@@ -436,15 +445,19 @@ public class OrderService implements IOrderService {
     private OrderResponseDto mapToDto(Orders order) {
         String orderNumber = "#DD-" + order.getId();
         User user = order.getUser();
+        Address address = order.getAddress();
         String customerName = "";
         String customerEmail = "";
-        if (user != null) {
+        if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+            customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " " +
+                           (address.getLastName() != null ? address.getLastName() : "")).trim();
+        } else if (user != null) {
             customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
                            (user.getLastName() != null ? user.getLastName() : "")).trim();
+        }
+        if (user != null) {
             customerEmail = user.getEmail();
         }
-
-        Address address = order.getAddress();
         String destinationAddress = "";
         if (address != null) {
             destinationAddress = (address.getBuildingNo() != null ? address.getBuildingNo() + ", " : "") +
@@ -478,6 +491,18 @@ public class OrderService implements IOrderService {
                         }
                     }
                 }
+                String returnRequestType = null;
+                String returnRequestStatus = null;
+                List<OrderReturn> returns = orderReturnRepository.findByOrderItemId(oi.getId());
+                if (returns != null && !returns.isEmpty()) {
+                    OrderReturn activeReturn = returns.stream()
+                            .filter(r -> r.getStatus() != ReturnStatus.REJECTED)
+                            .findFirst()
+                            .orElse(returns.get(returns.size() - 1));
+                    returnRequestType = activeReturn.getRequestType() != null ? activeReturn.getRequestType().name() : null;
+                    returnRequestStatus = activeReturn.getStatus() != null ? activeReturn.getStatus().name() : null;
+                }
+
                 items.add(new AdminOrderResponseDto.OrderItemDetail(
                         oi.getId(),
                         name,
@@ -485,7 +510,9 @@ public class OrderService implements IOrderService {
                         size,
                         oi.getQuantity(),
                         oi.getPrice() != null ? oi.getPrice().doubleValue() : 0.0,
-                        image
+                        image,
+                        returnRequestType,
+                        returnRequestStatus
                 ));
             }
         }

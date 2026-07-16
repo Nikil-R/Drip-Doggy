@@ -7,6 +7,7 @@ import com.dripdoggy.backend.entity.*;
 import com.dripdoggy.backend.enums.*;
 import com.dripdoggy.backend.exception.*;
 import com.dripdoggy.backend.repository.OrdersRepository;
+import com.dripdoggy.backend.repository.OrderReturnRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +24,14 @@ public class AdminOrderService implements IAdminOrderService {
 
     private final OrdersRepository ordersRepository;
     private final EmailService emailService;
+    private final OrderReturnRepository orderReturnRepository;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
-    public AdminOrderService(OrdersRepository ordersRepository, EmailService emailService) {
+    public AdminOrderService(OrdersRepository ordersRepository, EmailService emailService, OrderReturnRepository orderReturnRepository) {
         this.ordersRepository = ordersRepository;
         this.emailService = emailService;
+        this.orderReturnRepository = orderReturnRepository;
     }
 
     @Override
@@ -105,10 +108,17 @@ public class AdminOrderService implements IAdminOrderService {
             // Send delivery confirmation email
             try {
                 User user = order.getUser();
+                Address address = order.getAddress();
                 if (user != null) {
                     String orderNumber = "#DD-" + order.getId();
-                    String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
-                                           (user.getLastName() != null ? user.getLastName() : "")).trim();
+                    String customerName = "";
+                    if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+                        customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " " +
+                                       (address.getLastName() != null ? address.getLastName() : "")).trim();
+                    } else {
+                        customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                                       (user.getLastName() != null ? user.getLastName() : "")).trim();
+                    }
                     if (order.getDeliveryMethod() != null && "EXCHANGE".equalsIgnoreCase(order.getDeliveryMethod())) {
                         emailService.sendCustomerExchangeDeliveredEmail(
                                 user.getEmail(),
@@ -198,9 +208,16 @@ public class AdminOrderService implements IAdminOrderService {
             targetStatus == DeliveryStatus.RETURN_DELIVERED) {
             try {
                 User user = order.getUser();
+                Address address = order.getAddress();
                 String orderNumber = "#DD-" + order.getId();
-                String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
-                                       (user.getLastName() != null ? user.getLastName() : "")).trim();
+                String customerName = "";
+                if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+                    customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " " +
+                                   (address.getLastName() != null ? address.getLastName() : "")).trim();
+                } else if (user != null) {
+                    customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                                   (user.getLastName() != null ? user.getLastName() : "")).trim();
+                }
                 emailService.sendCustomerReturnLogisticsEmail(
                         user.getEmail(),
                         orderNumber,
@@ -254,15 +271,19 @@ public class AdminOrderService implements IAdminOrderService {
         String cancelledAt = order.getCancelledTimestamp() != null ? order.getCancelledTimestamp().format(DATE_TIME_FORMATTER) : null;
 
         User user = order.getUser();
+        Address address = order.getAddress();
         String customerName = "";
         String customerEmail = "";
-        if (user != null) {
+        if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+            customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " " +
+                           (address.getLastName() != null ? address.getLastName() : "")).trim();
+        } else if (user != null) {
             customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
                            (user.getLastName() != null ? user.getLastName() : "")).trim();
+        }
+        if (user != null) {
             customerEmail = user.getEmail();
         }
-
-        Address address = order.getAddress();
         String destinationAddress = "";
         if (address != null) {
             destinationAddress = (address.getBuildingNo() != null ? address.getBuildingNo() + ", " : "") +
@@ -296,6 +317,18 @@ public class AdminOrderService implements IAdminOrderService {
                         }
                     }
                 }
+                String returnRequestType = null;
+                String returnRequestStatus = null;
+                List<OrderReturn> returns = orderReturnRepository.findByOrderItemId(oi.getId());
+                if (returns != null && !returns.isEmpty()) {
+                    OrderReturn activeReturn = returns.stream()
+                            .filter(r -> r.getStatus() != ReturnStatus.REJECTED)
+                            .findFirst()
+                            .orElse(returns.get(returns.size() - 1));
+                    returnRequestType = activeReturn.getRequestType() != null ? activeReturn.getRequestType().name() : null;
+                    returnRequestStatus = activeReturn.getStatus() != null ? activeReturn.getStatus().name() : null;
+                }
+
                 items.add(new AdminOrderResponseDto.OrderItemDetail(
                         oi.getId(),
                         name,
@@ -303,7 +336,9 @@ public class AdminOrderService implements IAdminOrderService {
                         size,
                         oi.getQuantity(),
                         oi.getPrice() != null ? oi.getPrice().doubleValue() : 0.0,
-                        image
+                        image,
+                        returnRequestType,
+                        returnRequestStatus
                 ));
             }
         }

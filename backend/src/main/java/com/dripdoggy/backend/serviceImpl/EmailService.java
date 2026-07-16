@@ -71,6 +71,24 @@ public class EmailService {
                     "                            </table>\n";
         }
 
+        String blueValueBox = "";
+        if ((boxTitle != null && !boxTitle.isEmpty()) || (boxValue != null && !boxValue.isEmpty())) {
+            blueValueBox = "                                        <!-- Blue Value Box -->\n" +
+                    "                                        <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #ebf3ff; border-radius: 12px; border-left: 4px solid #ff0055; border-right: 4px solid #fbc02d; margin-bottom: 15px;\">\n" +
+                    "                                            <tr>\n" +
+                    "                                                <td align=\"center\" style=\"padding: 15px 20px;\">\n" +
+                    "                                                    <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 800; color: #0056cc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;\">\n" +
+                    "                                                        " + (boxTitle != null ? boxTitle : "") + "\n" +
+                    "                                                    </div>\n" +
+                    "                                                    <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 32px; font-weight: 800; color: #0056cc;\">\n" +
+                    "                                                        " + (boxValue != null ? boxValue : "") + "\n" +
+                    "                                                    </div>\n" +
+                    "                                                </td>\n" +
+                    "                                            </tr>\n" +
+                    "                                        </table>\n" +
+                    "                                        \n";
+        }
+
         String customDetailsSection = "";
         if (customDetailsHtml != null && !customDetailsHtml.isEmpty()) {
             customDetailsSection = "                            <!-- Custom Details Section -->\n" +
@@ -149,19 +167,7 @@ public class EmailService {
                 "                                    <td>\n" +
                 "                                        " + badgeRow + "\n" +
                 "                                        \n" +
-                "                                        <!-- Blue Value Box -->\n" +
-                "                                        <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #ebf3ff; border-radius: 12px; border-left: 4px solid #ff0055; border-right: 4px solid #fbc02d; margin-bottom: 15px;\">\n" +
-                "                                            <tr>\n" +
-                "                                                <td align=\"center\" style=\"padding: 15px 20px;\">\n" +
-                "                                                    <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 800; color: #0056cc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;\">\n" +
-                "                                                        " + boxTitle + "\n" +
-                "                                                    </div>\n" +
-                "                                                    <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 32px; font-weight: 800; color: #0056cc;\">\n" +
-                "                                                        " + boxValue + "\n" +
-                "                                                    </div>\n" +
-                "                                                </td>\n" +
-                "                                            </tr>\n" +
-                "                                        </table>\n" +
+                "                                        " + blueValueBox + "\n" +
                 "                                        \n" +
                 "                                        " + extraBlock + "\n" +
                 "                                        \n" +
@@ -1269,6 +1275,68 @@ public class EmailService {
                     "Total Amount Paid: ₹" + order.getTotalAmount() + "\n\n" +
                     "Best regards,\n" +
                     "The DripDoggy Team");
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCampaignEmail(String toEmail, String subject, String body, MultipartFile image1, MultipartFile image2) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            
+            String image1Html = "";
+            String image2Html = "";
+            
+            if (image1 != null && !image1.isEmpty()) {
+                image1Html = "<div style=\"margin-top: 20px; text-align: center;\">\n" +
+                             "    <img src=\"cid:campaignImage1\" style=\"max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;\" />\n" +
+                             "</div>\n";
+            }
+
+            if (image2 != null && !image2.isEmpty()) {
+                image2Html = "<div style=\"margin-top: 20px; text-align: center;\">\n" +
+                             "    <img src=\"cid:campaignImage2\" style=\"max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;\" />\n" +
+                             "</div>\n";
+            }
+
+            String htmlContent = buildCustomerEmail(
+                    subject,
+                    "Exclusive newsletter drop from DripDoggy!",
+                    "Campaign Notice",
+                    "Newsletter",
+                    null, null,
+                    null, null,
+                    body + image1Html + image2Html,
+                    "You are receiving this email because you subscribed to DripDoggy's private customer database."
+            );
+            
+            helper.setText(htmlContent, true);
+            
+            try {
+                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
+            } catch (Exception imgEx) {
+                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
+            }
+
+            if (image1 != null && !image1.isEmpty()) {
+                helper.addInline("campaignImage1", image1, image1.getContentType());
+            }
+
+            if (image2 != null && !image2.isEmpty()) {
+                helper.addInline("campaignImage2", image2, image2.getContentType());
+            }
+            
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject(subject);
+            message.setText(body);
             mailSender.send(message);
         }
     }

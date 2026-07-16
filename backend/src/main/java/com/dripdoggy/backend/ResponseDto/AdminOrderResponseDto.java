@@ -246,6 +246,8 @@ public class AdminOrderResponseDto {
         private int qty;
         private double price;
         private String image;
+        private String returnRequestType;
+        private String returnRequestStatus;
 
         public OrderItemDetail() {
         }
@@ -258,6 +260,18 @@ public class AdminOrderResponseDto {
             this.qty = qty;
             this.price = price;
             this.image = image;
+        }
+
+        public OrderItemDetail(Long id, String name, String sku, String size, int qty, double price, String image, String returnRequestType, String returnRequestStatus) {
+            this.id = id;
+            this.name = name;
+            this.sku = sku;
+            this.size = size;
+            this.qty = qty;
+            this.price = price;
+            this.image = image;
+            this.returnRequestType = returnRequestType;
+            this.returnRequestStatus = returnRequestStatus;
         }
 
         // Getters and Setters
@@ -315,6 +329,22 @@ public class AdminOrderResponseDto {
 
         public void setImage(String image) {
             this.image = image;
+        }
+
+        public String getReturnRequestType() {
+            return returnRequestType;
+        }
+
+        public void setReturnRequestType(String returnRequestType) {
+            this.returnRequestType = returnRequestType;
+        }
+
+        public String getReturnRequestStatus() {
+            return returnRequestStatus;
+        }
+
+        public void setReturnRequestStatus(String returnRequestStatus) {
+            this.returnRequestStatus = returnRequestStatus;
         }
     }
 }

@@ -223,8 +223,15 @@ public class OrderReturnService implements IOrderReturnService {
 		try {
 			String adminEmail = "dripdoggyofficial@gmail.com";
 			String orderNumber = "#DD-" + order.getId();
-			String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-					+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+			Address address = order.getAddress();
+			String customerName = "";
+			if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+				customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+						+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+			} else {
+				customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+			}
 			String productName = "";
 			String variantName = "Default";
 			String sizeName = "N/A";
@@ -316,6 +323,14 @@ public class OrderReturnService implements IOrderReturnService {
 		if (dto.getTargetVariantId() != null) {
 			ProductVariant targetVariant = productVariantRepository.findById(dto.getTargetVariantId())
 					.orElseThrow(() -> new ResourceNotFoundException("Target product variant not found with id: " + dto.getTargetVariantId()));
+			
+			// Validate that the target variant belongs to the same product as the original order item
+			Long originalProductId = orderItem.getProductVariantSize().getProductVariant().getProduct().getId();
+			Long targetProductId = targetVariant.getProduct().getId();
+			if (!originalProductId.equals(targetProductId)) {
+				throw new InvalidOrderStateException("You can only exchange this item for a variant of the same product.");
+			}
+			
 			targetPrice = targetVariant.getPrice();
 			variantName = targetVariant.getVariantName();
 		}
@@ -433,8 +448,15 @@ public class OrderReturnService implements IOrderReturnService {
 		try {
 			String adminEmail = "dripdoggyofficial@gmail.com";
 			String orderNumber = "#DD-" + order.getId();
-			String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-					+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+			Address address = order.getAddress();
+			String customerName = "";
+			if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+				customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+						+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+			} else {
+				customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+			}
 
 			// Admin notification
 			emailService.sendAdminReturnRequestNotification(adminEmail, orderNumber, "EXCHANGE", customerName,
@@ -556,8 +578,15 @@ public class OrderReturnService implements IOrderReturnService {
 		try {
 			User user = order.getUser();
 			if (user != null) {
-				String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+				Address address = order.getAddress();
+				String customerName = "";
+				if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+					customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+							+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+				} else {
+					customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+							+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+				}
 				List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
 				order.setOrderItems(orderItems);
 				emailService.sendCustomerOrderCancelledEmail(user.getEmail(), "#DD-" + order.getId(), customerName, order);
@@ -607,8 +636,15 @@ public class OrderReturnService implements IOrderReturnService {
 			Orders order = returnRequest.getOrder();
 			User user = order.getUser();
 			String orderNumber = "#DD-" + order.getId();
-			String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-					+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+			Address address = order.getAddress();
+			String customerName = "";
+			if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+				customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+						+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+			} else {
+				customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+			}
 			emailService.sendCustomerReturnStatusUpdateEmail(user.getEmail(), orderNumber,
 					returnRequest.getRequestType().name(), customerName, targetStatus.name());
 		} catch (Exception e) {
@@ -632,8 +668,15 @@ public class OrderReturnService implements IOrderReturnService {
 
 		Orders order = returnRequest.getOrder();
 		User user = order.getUser();
-		String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-				+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+		Address address = order.getAddress();
+		String customerName = "";
+		if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+			customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+					+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+		} else {
+			customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+					+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+		}
 		String orderNumber = "#DD-" + order.getId();
 
 		// Find product name
@@ -827,9 +870,15 @@ public class OrderReturnService implements IOrderReturnService {
 
 		String customerName = "";
 		String customerEmail = "";
-		if (order.getUser() != null) {
+		Address address = order.getAddress();
+		if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+			customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+					+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+		} else if (order.getUser() != null) {
 			customerName = ((order.getUser().getFirstName() != null ? order.getUser().getFirstName() : "") + " "
 					+ (order.getUser().getLastName() != null ? order.getUser().getLastName() : "")).trim();
+		}
+		if (order.getUser() != null) {
 			customerEmail = order.getUser().getEmail();
 		}
 
@@ -931,8 +980,15 @@ public class OrderReturnService implements IOrderReturnService {
 		orderReturnRepository.save(returnRequest);
 
 		String orderNumber = "#DD-" + order.getId();
-		String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-				+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+		Address address = order.getAddress();
+		String customerName = "";
+		if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+			customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+					+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+		} else {
+			customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+					+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+		}
 
 		String productName = "";
 		if (orderItem.getProductVariantSize() != null
@@ -1048,8 +1104,15 @@ public class OrderReturnService implements IOrderReturnService {
 			// Notify customer via email
 			try {
 				String orderNumber = "#DD-" + order.getId();
-				String customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-						+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+				Address address = order.getAddress();
+				String customerName = "";
+				if (address != null && address.getFirstName() != null && !address.getFirstName().trim().isEmpty()) {
+					customerName = ((address.getFirstName() != null ? address.getFirstName() : "") + " "
+							+ (address.getLastName() != null ? address.getLastName() : "")).trim();
+				} else {
+					customerName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+							+ (user.getLastName() != null ? user.getLastName() : "")).trim();
+				}
 				emailService.sendCustomerExchangeUnavailableClosedEmail(user.getEmail(), orderNumber, customerName);
 			} catch (Exception e) {
 				e.printStackTrace();
