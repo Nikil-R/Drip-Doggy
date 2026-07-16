@@ -34,6 +34,7 @@ const ComingSoonEditorPage = lazy(() => import("./pages/ComingSoonEditor").then(
 const ProfilePage = lazy(() => import("./pages/Profile").then(m => ({ default: m.ProfilePage })));
 const ChangePasswordPage = lazy(() => import("./pages/ChangePassword").then(m => ({ default: m.ChangePasswordPage })));
 const NewsletterCampaignPage = lazy(() => import("./pages/NewsletterCampaign").then(m => ({ default: m.NewsletterCampaignPage })));
+const ProductBundlesPage = lazy(() => import("./pages/ProductBundles").then(m => ({ default: m.ProductBundlesPage })));
 
 export default function App() {
   return (
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="change-password" element={<ChangePasswordPage />} />
           <Route path="newsletter-campaign" element={<NewsletterCampaignPage />} />
+          <Route path="product-bundles" element={<Suspense fallback={<AdminPageSkeleton />}><ProductBundlesPage /></Suspense>} />
 
           {/* Content Editor Routes */}
           <Route path="content/hero-slides" element={<HeroSlidesEditorPage />} />

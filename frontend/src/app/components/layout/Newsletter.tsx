@@ -3,6 +3,7 @@ import { getNewsletterConfig } from "../../lib/content-store";
 import axios from "axios";
 import { Check } from "lucide-react";
 import { API_CONFIG } from "@/app/utils/api-config";
+import { useAuth } from "../../context/AuthContext";
 
 export function Newsletter() {
   const [config, setConfig] = useState(() => getNewsletterConfig());
@@ -10,6 +11,7 @@ export function Newsletter() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -17,11 +19,50 @@ export function Newsletter() {
     };
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("dd-content-changed" as any, handleUpdate);
+    
+    // 1. Read persisted subscription state (instant)
+    const saved = localStorage.getItem("dripdoggy_subscribed_email");
+    if (saved) {
+      setEmail(saved);
+      setSubmitted(true);
+    }
+    
     return () => {
       window.removeEventListener("storage", handleUpdate);
       window.removeEventListener("dd-content-changed" as any, handleUpdate);
     };
   }, []);
+
+  // 2. Proactive check if the logged in user is already in the subscribers table
+  useEffect(() => {
+    const checkPersistentSubscription = async () => {
+      if (isAuthenticated && user?.email) {
+        // If already loaded from localStorage, skip
+        const saved = localStorage.getItem("dripdoggy_subscribed_email");
+        if (saved && saved.toLowerCase() === user.email.toLowerCase()) {
+          return;
+        }
+        
+        try {
+          // Attempt silent subscription to verify if they are already in the DB
+          await axios.post(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/newsletter/subscribe`, {
+            email: user.email.trim()
+          });
+          localStorage.setItem("dripdoggy_subscribed_email", user.email.trim());
+          setEmail(user.email.trim());
+          setSubmitted(true);
+        } catch (err: any) {
+          const msg = err.response?.data?.message || "";
+          if (msg.includes("already subscribed") || err.response?.status === 400) {
+            localStorage.setItem("dripdoggy_subscribed_email", user.email.trim());
+            setEmail(user.email.trim());
+            setSubmitted(true);
+          }
+        }
+      }
+    };
+    checkPersistentSubscription();
+  }, [isAuthenticated, user]);
 
   if (!config.active) return null;
 
@@ -34,6 +75,7 @@ export function Newsletter() {
       await axios.post(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/newsletter/subscribe`, {
         email: email.trim()
       });
+      localStorage.setItem("dripdoggy_subscribed_email", email.trim());
       setSubmitted(true);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || "Failed to subscribe. Please try again.");

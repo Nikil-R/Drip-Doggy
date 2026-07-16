@@ -139,35 +139,10 @@ export function NewsletterCampaignPage() {
 
     setIsLoading(true);
     try {
-      if (targetGroup === "all") {
-        showToast("Synchronizing registered users list...");
-        const custRes = await axios.get<any>(
-          `${API_CONFIG.BASE_URL}/dripdoggy/api/admin/customers`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const customers = custRes.data?.data || [];
-        
-        const subscriberEmails = new Set(subscribers.map((s) => s.email.toLowerCase()));
-        const missingEmails = customers
-          .map((c: any) => c.email ? c.email.trim().toLowerCase() : "")
-          .filter((email: string) => email && !subscriberEmails.has(email));
-
-        if (missingEmails.length > 0) {
-          showToast(`Subscribing ${missingEmails.length} new customer(s) to newsletter...`);
-          await Promise.all(
-            missingEmails.map((email: string) =>
-              axios.post(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/newsletter/subscribe`, {
-                email
-              }).catch((e) => console.error(`Failed to subscribe email: ${email}`, e))
-            )
-          );
-          await loadSubscribers();
-        }
-      }
-
       const formData = new FormData();
       formData.append("subject", subject.trim());
       formData.append("content", content.trim());
+      formData.append("targetGroup", targetGroup); // Passes "subscribers" or "all" to the backend
       if (image1) {
         formData.append("image1", image1);
       }

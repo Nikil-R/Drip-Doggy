@@ -27,6 +27,7 @@ import {
   RotateCcw,
   RefreshCw,
   Mail,
+  Boxes,
 } from "lucide-react";
 
 
@@ -69,6 +70,7 @@ const menuSections: SidebarSection[] = [
     items: [
       { to: "/admin/products",         label: "Products",        icon: ListCollapse },
       { to: "/admin/products/reviews", label: "Product Reviews", icon: Star },
+      { to: "/admin/product-bundles",  label: "Product Bundles", icon: Boxes },
     ],
   },
   {
