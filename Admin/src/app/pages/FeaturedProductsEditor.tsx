@@ -45,14 +45,15 @@ export function FeaturedProductsEditorPage() {
 
       // 2. Fetch curated collection config (using sectionKey: NEW_IN)
       const data = await adminCuratedCollectionApi.getCollection("NEW_IN", token);
+      const validProductIds = (data.products?.map(p => p.id) || []).filter(id => prods.some(prod => prod.id === id));
       setConfigState({
         sectionTitle: data.title || "New In",
         sectionSubtitle: data.subtitle || "New This Season",
-        productIds: data.products?.map(p => p.id) || [],
+        productIds: validProductIds,
         active: data.isActive,
         maxProducts: 4
       });
-      setSelectedIds(data.products?.map(p => p.id) || []);
+      setSelectedIds(validProductIds);
     } catch (err) {
       console.error("Failed to load new in collection:", err);
     }
@@ -149,7 +150,7 @@ export function FeaturedProductsEditorPage() {
               <div>
                 <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Section Title</label>
                 <input 
-                  value={config.sectionTitle} 
+                  value={config.sectionTitle || ""} 
                   onChange={e => setConfigState({ ...config, sectionTitle: e.target.value })}
                   placeholder="e.g. New In"
                   className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
@@ -158,7 +159,7 @@ export function FeaturedProductsEditorPage() {
               <div>
                 <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Section Subtitle</label>
                 <input 
-                  value={config.sectionSubtitle} 
+                  value={config.sectionSubtitle || ""} 
                   onChange={e => setConfigState({ ...config, sectionSubtitle: e.target.value })}
                   placeholder="e.g. New This Season"
                   className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
@@ -168,7 +169,7 @@ export function FeaturedProductsEditorPage() {
                 <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Max Display Limit</label>
                 <input 
                   type="number" 
-                  value={config.maxProducts} 
+                  value={config.maxProducts || 4} 
                   onChange={e => setConfigState({ ...config, maxProducts: Number(e.target.value) })}
                   className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
                 />

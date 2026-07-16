@@ -24,7 +24,7 @@ const SECTIONS = [
     icon: Shield,
     title: "3. Data Protection & Security",
     paragraphs: [
-      "Drip Doggy implements industry-standard security measures to protect your personal information. All data transmitted through our website is encrypted using TLS (Transport Layer Security) protocol, ensuring that your information is secure during transmission.",
+      "DripDoggy implements industry-standard security measures to protect your personal information. All data transmitted through our website is encrypted using TLS (Transport Layer Security) protocol, ensuring that your information is secure during transmission.",
       "Payment processing is handled by our trusted third-party payment partners who maintain PCI DSS compliance. Your full payment details are never stored on our servers.",
       "We conduct regular security audits and vulnerability assessments to ensure our systems remain secure. Access to personal data is restricted to authorized personnel only.",
     ],
@@ -35,7 +35,7 @@ const SECTIONS = [
     paragraphs: [
       "We do not sell, trade, or rent your personal information to third parties. We may share your information with trusted service providers who assist us in operating our website, processing payments, fulfilling orders, and delivering packages.",
       "These service providers are contractually bound to protect your information and may only use it for the specific services they provide to us. We require all third-party partners to maintain confidentiality and comply with applicable data protection laws.",
-      "We may disclose your information if required by law, to enforce our terms and conditions, or to protect the rights, property, or safety of Drip Doggy, our customers, or others.",
+      "We may disclose your information if required by law, to enforce our terms and conditions, or to protect the rights, property, or safety of DripDoggy, our customers, or others.",
     ],
   },
   {
@@ -88,7 +88,7 @@ export function Privacy() {
           Privacy Policy
         </h1>
         <p className="text-neutral-500 max-w-xl mx-auto text-xs tracking-wide leading-relaxed font-medium">
-          Last updated: June 2026. This policy describes how Drip Doggy Apparel collects, uses, and
+          Last updated: June 2026. This policy describes how DripDoggy Apparel collects, uses, and
           protects your personal information.
         </p>
       </section>
@@ -98,7 +98,7 @@ export function Privacy() {
         <div className="bg-white border border-neutral-200/80 p-8 lg:p-10">
           <FileText className="h-5 w-5 text-neutral-300 stroke-[1.5] mb-4" />
           <p className="text-[12px] text-neutral-600 font-medium leading-relaxed mb-4">
-            Drip Doggy Apparel (&ldquo;Drip Doggy,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting your privacy. 
+            DripDoggy Apparel (&ldquo;DripDoggy,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting your privacy. 
             This Privacy Policy explains how we collect, use, disclose, and safeguard your information 
             when you visit our website, make a purchase, or interact with our services.
           </p>

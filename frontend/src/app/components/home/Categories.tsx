@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { getHomeCategories } from "../../lib/content-store";
+import { useAuth } from "../../context/AuthContext";
 
 import axios from "axios";
 import { API_CONFIG } from "@/app/utils/api-config";
@@ -29,6 +30,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export function Categories() {
+  const { isAuthenticated } = useAuth();
   const [categoriesList, setCategoriesList] = useState(DEFAULT_CATEGORIES);
 
   useEffect(() => {
@@ -37,15 +39,21 @@ export function Categories() {
         const url = `${API_CONFIG.BASE_URL}/dripdoggy/api/public/home-categories`;
         const res = await axios.get<any[]>(url);
         if (Array.isArray(res.data) && res.data.length > 0) {
-          const mapped = res.data.map((c: any) => ({
-            title: c.title,
-            image: c.imageUrl,
-            description: c.description || "",
-            route: c.route || "/shop",
-            comingSoon: !!c.comingSoon,
-            comingSeason: c.comingSeason || "",
-            active: c.isActive
-          }));
+          const mapped = res.data.map((c: any) => {
+            let sanitizedRoute = (c.route || "/shop").trim();
+            if (!sanitizedRoute.startsWith("/") && !sanitizedRoute.startsWith("http")) {
+              sanitizedRoute = `/${sanitizedRoute}`;
+            }
+            return {
+              title: c.title,
+              image: c.imageUrl,
+              description: c.description || "",
+              route: sanitizedRoute,
+              comingSoon: !!c.comingSoon,
+              comingSeason: c.comingSeason || "",
+              active: c.isActive
+            };
+          });
           setCategoriesList(mapped);
         }
       } catch (err) {
@@ -53,7 +61,7 @@ export function Categories() {
       }
     }
     loadPublicCategories();
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <section id="categories" className="pt-16 pb-8 lg:pt-20 lg:pb-10 bg-white">

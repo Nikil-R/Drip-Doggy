@@ -77,7 +77,7 @@ const PREBUILT_TEMPLATES = [
 
 const initialRoles: AdminRole[] = [
   {
-    id: 1, name: "Super Admin", description: "Full system access to all Drip Doggy operations",
+    id: 1, name: "Super Admin", description: "Full system access to all DripDoggy operations",
     permissions: INITIAL_SECTIONS.map(s => ({ section: s, read: true, write: true, delete: true })),
     adminCount: 2
   },
@@ -270,7 +270,7 @@ export function ControlAuthorityPage() {
             <UserCog className="w-5 h-5 text-[#224870]" /> Control Authority
           </h1>
           <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Drip Doggy admin roles &amp; permission management
+            DripDoggy admin roles &amp; permission management
           </p>
         </div>
         <div className="flex gap-2.5">

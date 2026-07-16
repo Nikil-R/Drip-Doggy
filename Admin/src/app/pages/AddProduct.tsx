@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 
 const availableSizes = ["XS", "S", "M", "L", "XL", "XXL"];
-const brands = ["Drip Doggy", "Syndicate", "Archive", "SS26", "FW25 Heritage", "Studio"];
+const brands = ["DripDoggy", "Syndicate", "Archive", "SS26", "FW25 Heritage", "Studio"];
 const tags = ["New Arrival", "Limited Drop", "Best Seller", "Archive", "Signature Piece", "Seasonal", "Premium"];
 
 function dataURLtoFile(dataurl: string, filename: string): File {
@@ -60,7 +60,7 @@ const sampleProductsForEdit = [
   { id: "#DD-P008", name: "Pleated Wool Trousers", category: "Bottoms", price: 9999, cost: 4000, stock: 31, status: "Active", sales: 145, revenue: 1449855, image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=120&auto=format&fit=crop", sku: "DD-PLE-001", season: "FW25", dateAdded: "2026-05-25", description: "Tailored wide-leg trousers built in fine Italian tropical wool fabric." },
   { id: "#DD-P009", name: "Tailored Linen Trousers", category: "Bottoms", price: 7999, cost: 2400, stock: 0, status: "Draft", sales: 0, revenue: 0, image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=120&auto=format&fit=crop", sku: "DD-TLT-002", season: "SS26", dateAdded: "2026-06-01", description: "Minimal cream trousers in durable organic linen yarn." },
   { id: "#DD-P010", name: "Handwoven Silk Scarf", category: "Accessories", price: 3999, cost: 1200, stock: 120, status: "Active", sales: 534, revenue: 2135466, image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=120&auto=format&fit=crop", sku: "DD-SCF-001", season: "All", dateAdded: "2026-06-05", description: "Custom jacquard patterned silk scarf with frayed edge details." },
-  { id: "#DD-P011", name: "Drip Doggy Varsity Jacket", category: "Signature", price: 19999, cost: 8000, stock: 7, status: "Active", sales: 89, revenue: 1779911, image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=120&auto=format&fit=crop", sku: "DD-VAR-001", season: "FW25", dateAdded: "2026-06-10", description: "High contrast leather-sleeve varsity jacket with chenille embroidery." },
+  { id: "#DD-P011", name: "DripDoggy Varsity Jacket", category: "Signature", price: 19999, cost: 8000, stock: 7, status: "Active", sales: 89, revenue: 1779911, image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=120&auto=format&fit=crop", sku: "DD-VAR-001", season: "FW25", dateAdded: "2026-06-10", description: "High contrast leather-sleeve varsity jacket with chenille embroidery." },
   { id: "#DD-P012", name: "SS26 Linen Blend Jacket", category: "New Arrivals", price: 14499, cost: 5800, stock: 15, status: "Draft", sales: 0, revenue: 0, image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=120&auto=format&fit=crop", sku: "DD-SS26-002", season: "SS26", dateAdded: "2026-06-18", description: "Single-button soft tailored jacket ideal for warm climates." }
 ];
 
@@ -275,7 +275,7 @@ export function AddProductPage() {
       selectedCategory,
       productImages
     };
-    localStorage.setItem("drip-doggy-product-draft", JSON.stringify(draft));
+    localStorage.setItem("dripdoggy-product-draft", JSON.stringify(draft));
     setFeedbackMsg("Draft saved successfully to browser local storage.");
     setTimeout(() => setFeedbackMsg(""), 3000);
   };
@@ -439,7 +439,7 @@ export function AddProductPage() {
         await productApi.createProduct(formData, token);
       }
 
-      localStorage.removeItem("drip-doggy-product-draft");
+      localStorage.removeItem("dripdoggy-product-draft");
       alert(`"${productName}" (${sku}) has been successfully ${isEdit ? "updated" : "published"}!`);
       navigate("/admin/products");
     } catch (err: any) {
@@ -461,7 +461,7 @@ export function AddProductPage() {
             {isEdit ? "Edit Product Details" : "Add New Product"}
           </h1>
           <p className="text-xs text-[#615e56] font-[800] uppercase tracking-wider mt-1.5">
-            {isEdit ? `Modifying Catalog Node: ${id}` : "Drip Doggy product creation interface"}
+            {isEdit ? `Modifying Catalog Node: ${id}` : "DripDoggy product creation interface"}
           </p>
         </div>
 

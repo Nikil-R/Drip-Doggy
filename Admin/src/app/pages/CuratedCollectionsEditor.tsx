@@ -39,7 +39,7 @@ const DEFAULT_COLLECTIONS: CuratedCollection[] = [
   },
   {
     id: "col-2",
-    title: "Drip Doggy Best Sellers",
+    title: "DripDoggy Best Sellers",
     description: "Most-loved pieces by our community — season after season.",
     image: "https://images.unsplash.com/photo-1551232864-3f0890e580d9?w=600&h=400&fit=crop",
     link: "/shop?collection=bestsellers",
@@ -49,7 +49,7 @@ const DEFAULT_COLLECTIONS: CuratedCollection[] = [
   {
     id: "col-3",
     title: "Signature Outerwear",
-    description: "Canvas jackets & moto coats — the cornerstone of the Drip Doggy archive.",
+    description: "Canvas jackets & moto coats — the cornerstone of the DripDoggy archive.",
     image: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=600&h=400&fit=crop",
     link: "/shop?category=outerwear",
     order: 2,

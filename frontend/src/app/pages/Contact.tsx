@@ -255,7 +255,7 @@ export function Contact() {
       <section className="max-w-4xl mx-auto px-6">
         <div className="bg-[#030213] text-white py-10 text-center relative overflow-hidden">
           <div className="relative z-10 space-y-3">
-            <p className="text-xl font-extrabold leading-tight tracking-wide uppercase italic">
+            <p className="text-base sm:text-xl font-extrabold leading-tight tracking-wide uppercase italic px-4">
               "Drip Your Way, Every Day."
             </p>
             <div className="h-px w-16 bg-white/20 mx-auto mt-2" />

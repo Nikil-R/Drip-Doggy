@@ -1,10 +1,10 @@
-// ─── Drip Doggy Invoice Configuration ───────────────────────────────────
+// ─── DripDoggy Invoice Configuration ───────────────────────────────────
 // Shared company info used across invoice/print templates.
 // Source: Admin Settings page, brand guidelines.
 
 export const INVOICE_CONFIG = {
   company: {
-    name: "DRIP DOGGY",
+    name: "DRIPDOGGY",
     tagline: "Luxury Streetwear, Redefined.",
     description: "Architectural silhouettes, premium fabrication, uncompromised street luxury.",
     address: "42, Bandra West, Mumbai, Maharashtra 400050",

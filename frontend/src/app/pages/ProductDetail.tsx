@@ -13,7 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
-import { getProductById, getRecommendations, DEFAULT_SIZES } from "../data/products";
+import { getProductById, DEFAULT_SIZES } from "../data/products";
 import type { Product, ProductColorVariant } from "../data/products";
 import { productApi } from "../lib/product-api";
 import { cartApi } from "../lib/cart-api";
@@ -106,6 +106,22 @@ function ProductDetailContent({ product }: { product: Product }) {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [pincode, setPincode] = useState("");
   const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
+
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function loadRecommendations() {
+      try {
+        const list = await productApi.fetchProducts();
+        const others = list.filter((p) => p.id !== product.id);
+        const shuffled = [...others].sort(() => Math.random() - 0.5);
+        setRecommendations(shuffled.slice(0, 4));
+      } catch (err) {
+        console.error("Failed to load recommendations", err);
+      }
+    }
+    loadRecommendations();
+  }, [product.id]);
   
   // Custom Review Edit/Delete Modals State
   const [editingReview, setEditingReview] = useState<any | null>(null);
@@ -354,8 +370,7 @@ function ProductDetailContent({ product }: { product: Product }) {
     navigate("/checkout");
   };
 
-  // Recommendations (exclude current product)
-  const recommendations = getRecommendations(product.id, 4);
+
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#030213] font-sans antialiased selection:bg-neutral-200">
@@ -570,6 +585,13 @@ function ProductDetailContent({ product }: { product: Product }) {
                       onClick={() => {
                         setSelectedColor(color.name);
                         setCurrentImageIndex(0);
+                        const newVar = (product.rawVariants || []).find(
+                          (v: any) => (v.variantName || "Default").toLowerCase() === color.name.toLowerCase()
+                        );
+                        const firstAvail = newVar?.sizes?.find((s: any) => s.isActive && s.stockQuantity > 0);
+                        if (firstAvail) {
+                          setSelectedSize(firstAvail.sizeName);
+                        }
                       }}
                       className={`relative p-0.5 rounded-md border-2 transition-all duration-200 cursor-pointer flex-shrink-0 focus:outline-none ${
                         selectedColor === color.name
@@ -606,23 +628,54 @@ function ProductDetailContent({ product }: { product: Product }) {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2.5">
-                {displaySizes.map((size) => {
-                  const isSelected = selectedSize === size;
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSelectedSize(size)}
-                      className={`w-12 h-12 flex items-center justify-center border text-[10.5px] font-black transition-all cursor-pointer ${
-                        isSelected
-                          ? "bg-[#030213] text-white border-neutral-900 font-black scale-105"
-                          : "bg-white text-neutral-850 border-neutral-300 hover:border-neutral-950"
-                      }`}
-                    >
-                      {size}
-                    </button>
+                {(() => {
+                  const ALL_STANDARD_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+                  const activeVariant = (product.rawVariants || []).find(
+                    (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
                   );
-                })}
+                  const activeVariantSizes = activeVariant?.sizes || [];
+
+                  return ALL_STANDARD_SIZES.map((size) => {
+                    const sizeObj = activeVariantSizes.find(
+                      (s: any) => s.sizeName.toUpperCase() === size.toUpperCase() && s.isActive && s.stockQuantity > 0
+                    );
+                    const isAvailable = !!sizeObj;
+                    const isSelected = selectedSize === size;
+
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        disabled={!isAvailable}
+                        onClick={() => isAvailable && setSelectedSize(size)}
+                        className={`relative w-[54px] h-[50px] flex flex-col items-center justify-center border transition-all overflow-hidden ${
+                          isAvailable
+                            ? isSelected
+                              ? "bg-[#030213] text-white border-neutral-900 font-black scale-105 cursor-pointer text-[11px]"
+                              : "bg-white text-neutral-850 border-neutral-300 hover:border-neutral-950 cursor-pointer text-[11px] font-black"
+                            : "bg-red-50/15 border-dashed border-red-200/60 cursor-not-allowed select-none opacity-85"
+                        }`}
+                      >
+                        {isAvailable ? (
+                          <span>{size}</span>
+                        ) : (
+                          <>
+                            {/* Subtle Diagonal Red Line Scratch */}
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                              <div className="w-[140%] h-[1.5px] bg-red-500/15 rotate-[-45deg]"></div>
+                            </div>
+                            <div className="flex flex-col items-center justify-center leading-none z-10">
+                              <span className="text-[10px] font-black text-neutral-400">{size}</span>
+                              <span className="text-[6.5px] font-[900] text-red-500 mt-1 uppercase tracking-tighter whitespace-nowrap">
+                                SOLD OUT
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
@@ -724,56 +777,15 @@ function ProductDetailContent({ product }: { product: Product }) {
             </div>
           </div>
 
-          {/* Check Delivery */}
+          {/* Delivery Highlights */}
           <div className="border border-neutral-200/80 rounded-none p-6 bg-[#FAF8F5]/30 space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="text-[11px] font-extrabold text-neutral-900 tracking-[0.2em] uppercase border-b border-neutral-200/60 pb-2">
-                CHECK DELIVERY STATUS
+                DELIVERY INFORMATION
               </h3>
               <p className="text-[9.5px] font-semibold tracking-wider text-neutral-500 uppercase leading-relaxed">
-                ENTER YOUR DESTINATION PINCODE TO VERIFY SHIPPING AVAILABILITY
-                AND ESTIMATED TRANSIT TIMELINES. DELIVERY TYPICALLY TAKES 2-6
-                WORKING DAYS.
+                ESTIMATED TRANSIT TIMELINES: DELIVERY TYPICALLY TAKES 2-6 WORKING DAYS.
               </p>
-              <div className="space-y-2 pt-1">
-                <div className="flex border border-neutral-300 bg-white rounded-none overflow-hidden w-full">
-                  <input
-                    type="text"
-                    placeholder="ENTER PINCODE"
-                    value={pincode}
-                    onChange={(e) => {
-                      setPincode(e.target.value);
-                      setPincodeStatus(null);
-                    }}
-                    className="flex-1 px-4 py-3 text-xs font-bold focus:outline-none placeholder-neutral-450 text-neutral-800 uppercase tracking-wider bg-white border-none"
-                  />
-                  <button
-                    onClick={() => {
-                      if (pincode.trim().length >= 5) {
-                        setPincodeStatus(
-                          `Available! Expected delivery in 2-4 working days.`
-                        );
-                      } else {
-                        setPincodeStatus("Enter a valid pincode.");
-                      }
-                    }}
-                    className="bg-black hover:bg-neutral-800 text-white text-[10px] font-extrabold tracking-widest px-8 uppercase border-none cursor-pointer transition-colors"
-                  >
-                    CHECK
-                  </button>
-                </div>
-                {pincodeStatus && (
-                  <p
-                    className={`text-[9px] font-extrabold uppercase tracking-widest mt-2 ${
-                      pincodeStatus.includes("Available")
-                        ? "text-green-600"
-                        : "text-red-500"
-                    }`}
-                  >
-                    {pincodeStatus}
-                  </p>
-                )}
-              </div>
             </div>
 
             {/* Delivery highlights */}
@@ -815,7 +827,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                01 / DESCRIPTION
+                DESCRIPTION
               </button>
               <button
                 onClick={() => setActiveTab("specifications")}
@@ -825,7 +837,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                02 / SPECIFICATIONS
+                SPECIFICATIONS
               </button>
               <button
                 onClick={() => setActiveTab("shipping")}
@@ -835,7 +847,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                03 / SHIPPING & RETURNS
+                SHIPPING & RETURNS
               </button>
               <button
                 onClick={() => setActiveTab("reviews")}
@@ -845,8 +857,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                04 / REVIEWS (
-                {product.reviewCount ?? product.reviews?.length ?? 0})
+                REVIEWS ({product.reviewCount ?? product.reviews?.length ?? 0})
               </button>
             </div>
 
@@ -863,27 +874,6 @@ function ProductDetailContent({ product }: { product: Product }) {
                       {product.description ??
                         "Experience unparalleled comfort with our signature loungewear garments. Crafted from a soft cotton-polyester blend, this collection promises a cozy and breathable feel, perfect for active lifestyle layers or a restful night's sleep. Classic styling cues offer a timeless look that suits any casual setting."}
                     </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                      {[
-                        { title: "Comfortable Fabric", content: "The premium blend of 80% cotton and 20% polyester ensures a soft touch against your skin, keeping you comfortable all day long." },
-                        { title: "Versatile Design", content: "With its solid pattern and clean fits, this range is perfect for both lounging at home and casual premium streetwear outings." },
-                        { title: "Practical Features", content: "Functional waist rise parameters paired with deep cross pockets allow you to carry everyday essentials with ease." },
-                        { title: "Effortless Style", content: "Constructed with half sleeves and a neat crew neck profile to offer a relaxed yet structured styling silhouette." }
-                      ].map((f) => (
-                        <div
-                          key={f.title}
-                          className="bg-neutral-50 p-4 rounded-none border border-neutral-200/50"
-                        >
-                          <h4 className="text-[10px] font-bold tracking-widest text-[#b2533e] mb-2 uppercase">
-                            {f.title}
-                          </h4>
-                          <p className="text-xs text-neutral-500 leading-relaxed">
-                            {f.content}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
 
@@ -942,14 +932,14 @@ function ProductDetailContent({ product }: { product: Product }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                       {[
                         {
-                          title: "DOMESTIC DISPATCH TIMELINES",
+                          title: "SHIPPING & DISPATCH TIMELINES",
                           content:
-                            "• Metro Cities (Delhi, Mumbai, Bengaluru, etc.): 2-3 working days\n• Other Regions: 4-6 working days\n• Free shipping on all prepaid orders across India.",
+                            "• Domestic Delivery: Orders are typically delivered within 3–7 business days across India depending on your location.\n• Logistics: Shipped securely from our warehouse via premium logistics partners.\n• Payment Option: Cash on Delivery (COD) is available for eligible serviceable locations.",
                         },
                         {
-                          title: "7-DAY COMPLIMENTARY RETURN & EXCHANGE",
+                          title: "24-HOUR RETURN & EXCHANGE POLICY",
                           content:
-                            "Enjoy a 7-day hassle-free return window. Size exchanges are processed with complimentary doorstep home pickup across India.",
+                            "• Standard Window: Returns are accepted within 24 hours of delivery. Products must be unused, unwashed, and in original packaging with tags intact.\n• Exchange Eligibility: Exchanges are available for eligible products, subject to stock availability.",
                         },
                       ].map((info) => (
                         <div
@@ -1332,29 +1322,33 @@ function ProductDetailContent({ product }: { product: Product }) {
       {/* ─── Size Guide Modal ────────────────────────────────────────────── */}
       {isSizeGuideOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[#FAF8F5] border border-neutral-200/80 rounded-xl max-w-2xl w-full p-8 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setIsSizeGuideOpen(false)}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-950 text-xl font-bold p-1"
-            >
-              ×
-            </button>
-            <h2 className="text-2xl font-extrabold tracking-[0.1em] mb-2 uppercase">
-              DripDoggy Size Guide (Measurements in Inches)
-            </h2>
-            <p className="text-neutral-500 text-xs tracking-wider uppercase mb-6">
-              Find your perfect fit below.
-            </p>
+          <div className="bg-[#FAF8F5] border border-neutral-200/80 rounded-xl max-w-md md:max-w-lg w-full max-h-[85vh] overflow-y-auto p-5 md:p-7 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200 scrollbar-thin">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h2 className="text-[13px] md:text-sm font-black tracking-[0.1em] mb-1.5 uppercase text-neutral-900">
+                  DripDoggy Size Guide (Measurements in Inches)
+                </h2>
+                <p className="text-neutral-500 text-[10px] tracking-wider uppercase">
+                  Find your perfect fit below.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsSizeGuideOpen(false)}
+                className="text-neutral-400 hover:text-neutral-950 text-xl font-bold p-1 leading-none shrink-0"
+              >
+                ×
+              </button>
+            </div>
 
-            <div className="overflow-x-auto border border-neutral-200/60 rounded-lg bg-white">
-              <table className="w-full text-left border-collapse text-xs font-semibold text-neutral-800">
+            <div className="overflow-x-auto md:overflow-x-hidden border border-neutral-200/60 rounded-lg bg-white">
+              <table className="w-full text-left border-collapse text-[11px] font-semibold text-neutral-800">
                 <thead>
-                  <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-bold tracking-widest text-neutral-400 uppercase whitespace-nowrap">
-                    <th className="py-4 px-6">SIZE</th>
-                    <th className="py-4 px-6">WAIST</th>
-                    <th className="py-4 px-6">HIP</th>
-                    <th className="py-4 px-6">FULL LENGTH</th>
-                    <th className="py-4 px-6">INSEAM</th>
+                  <tr className="bg-neutral-50 border-b border-neutral-200 text-[9px] font-bold tracking-widest text-neutral-450 uppercase whitespace-nowrap">
+                    <th className="py-2.5 px-4">SIZE</th>
+                    <th className="py-2.5 px-4">WAIST</th>
+                    <th className="py-2.5 px-4">HIP</th>
+                    <th className="py-2.5 px-4">FULL LENGTH</th>
+                    <th className="py-2.5 px-4">INSEAM</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -1369,11 +1363,11 @@ function ProductDetailContent({ product }: { product: Product }) {
                     { size: "4XL", waist: "39–40", hip: "48–49", length: "45–46", inseam: "34–35" },
                   ].map((row) => (
                     <tr key={row.size} className="hover:bg-neutral-50/50">
-                      <td className="py-4 px-6 font-bold">{row.size}</td>
-                      <td className="py-4 px-6">{row.waist}</td>
-                      <td className="py-4 px-6">{row.hip}</td>
-                      <td className="py-4 px-6">{row.length}</td>
-                      <td className="py-4 px-6 text-[#b2533e]">{row.inseam}</td>
+                      <td className="py-2.5 px-4 font-bold">{row.size}</td>
+                      <td className="py-2.5 px-4">{row.waist}</td>
+                      <td className="py-2.5 px-4">{row.hip}</td>
+                      <td className="py-2.5 px-4">{row.length}</td>
+                      <td className="py-2.5 px-4 text-[#b2533e]">{row.inseam}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1633,7 +1627,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                 href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
                   window.location.href
                 )}&text=${encodeURIComponent(
-                  `Check out this amazing piece from Drip Doggy!`
+                  `Check out this amazing piece from DripDoggy!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1656,7 +1650,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                 href={`https://t.me/share/url?url=${encodeURIComponent(
                   window.location.href
                 )}&text=${encodeURIComponent(
-                  `Check out this amazing piece from Drip Doggy!`
+                  `Check out this amazing piece from DripDoggy!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1878,21 +1872,42 @@ function RecommendationCard({ product }: { product: Product }) {
           {product.name}
         </h3>
       </div>
-      <div className="flex items-baseline gap-2 mt-2">
-        <span className="text-xs font-bold text-neutral-800">
-          ₹{product.price.toFixed(0)}
-        </span>
-        {product.originalPrice && (
-          <>
-            <span className="text-[10px] font-semibold text-[#858383] line-through">
-              ₹{product.originalPrice.toFixed(0)}
-            </span>
-            {discountPercent > 0 && (
-              <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
-                {discountPercent}% OFF
+      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs font-bold text-neutral-800">
+            ₹{product.price.toFixed(0)}
+          </span>
+          {product.originalPrice && (
+            <>
+              <span className="text-[10px] font-semibold text-[#858383] line-through">
+                ₹{product.originalPrice.toFixed(0)}
               </span>
-            )}
-          </>
+              {discountPercent > 0 && (
+                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
+                  {discountPercent}% OFF
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        {product.rating !== undefined && product.rating > 0 && (
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <div className="flex items-center text-[#ffc107]">
+              {[...Array(5)].map((_, i) => {
+                const isFilled = i < Math.round(product.rating || 0);
+                return (
+                  <Star
+                    key={i}
+                    className={`h-2.5 w-2.5 ${isFilled ? "fill-current" : "text-neutral-200"}`}
+                  />
+                );
+              })}
+            </div>
+            <span className="text-[8px] font-extrabold text-neutral-500 ml-0.5">
+              {product.rating.toFixed(1)}
+            </span>
+          </div>
         )}
       </div>
     </Link>

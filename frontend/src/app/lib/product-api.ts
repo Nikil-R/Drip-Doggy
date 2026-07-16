@@ -61,12 +61,12 @@ export const productApi = {
 
     return {
       id: p.id,
-      brand: p.baseTitle || "Drip Doggy Collection",
+      brand: p.baseTitle || "DripDoggy Collection",
       name: p.productName || "",
       price: finalPrice,
       originalPrice: originalPrice,
-      rating: 5,
-      reviewCount: 1,
+      rating: 0,
+      reviewCount: 0,
       image: mainImage,
       images: allImages,
       badge: p.isActive === false ? "SOLD OUT" : (p.baseTitle || undefined),
@@ -187,11 +187,11 @@ export const productApi = {
 
     const avgRating = mappedReviews.length > 0
       ? Number((mappedReviews.reduce((sum, rev) => sum + rev.rating, 0) / mappedReviews.length).toFixed(1))
-      : 5.0;
+      : 0.0;
 
     return {
       id: p.id,
-      brand: p.baseTitle || "Drip Doggy Collection",
+      brand: p.baseTitle || "DripDoggy Collection",
       name: p.productName || "",
       price: finalPrice,
       originalPrice: originalPrice,

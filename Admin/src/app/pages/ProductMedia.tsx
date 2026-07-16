@@ -11,16 +11,16 @@ interface ProductMediaItem {
   sku?: string;
 }
 
-// ─── Drip Doggy Products List ─────────────────────────────────────────────
+// ─── DripDoggy Products List ─────────────────────────────────────────────
 const allProducts = [
   "Structured Canvas Jacket", "Sartorial Trench Coat", "Cashmere Blend Crew",
   "Merino Wool Cardigan", "Signature Silk Blouse", "Relaxed Linen Shirt",
   "French Terry Hoodie", "Pleated Wool Trousers", "Tailored Linen Trousers",
-  "Handwoven Silk Scarf", "Drip Doggy Varsity Jacket", "Linen Midi Dress",
-  "Signature Cap", "Leather Belt", "Drip Doggy Bomber Jacket"
+  "Handwoven Silk Scarf", "DripDoggy Varsity Jacket", "Linen Midi Dress",
+  "Signature Cap", "Leather Belt", "DripDoggy Bomber Jacket"
 ];
 
-// ─── Drip Doggy Media ─────────────────────────────────────────────────────
+// ─── DripDoggy Media ─────────────────────────────────────────────────────
 const initialMedia: ProductMediaItem[] = [
   { id: 1, productName: "Structured Canvas Jacket", productId: 4, url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=300&h=300&fit=crop", alt: "Front view", isPrimary: true, sku: "DD-STR-001" },
   { id: 2, productName: "Structured Canvas Jacket", productId: 4, url: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=300&h=300&fit=crop", alt: "Detail - stitching", isPrimary: false, sku: "DD-STR-001" },
@@ -31,7 +31,7 @@ const initialMedia: ProductMediaItem[] = [
   { id: 7, productName: "Signature Silk Blouse", productId: 9, url: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=300&h=300&fit=crop", alt: "Front view", isPrimary: true, sku: "DD-SIL-001" },
   { id: 8, productName: "Merino Wool Cardigan", productId: 9, url: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=300&h=300&fit=crop", alt: "Flat lay", isPrimary: true, sku: "DD-MER-001" },
   { id: 9, productName: "Handwoven Silk Scarf", productId: 9, url: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=300&h=300&fit=crop", alt: "Pattern detail", isPrimary: true, sku: "DD-SCF-001" },
-  { id: 10, productName: "Drip Doggy Varsity Jacket", productId: 9, url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=300&h=300&fit=crop", alt: "Front view", isPrimary: true, sku: "DD-VAR-001" },
+  { id: 10, productName: "DripDoggy Varsity Jacket", productId: 9, url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=300&h=300&fit=crop", alt: "Front view", isPrimary: true, sku: "DD-VAR-001" },
   { id: 11, productName: "Relaxed Linen Shirt", productId: 9, url: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=300&h=300&fit=crop", alt: "Front view", isPrimary: true, sku: "DD-LIN-001" },
   { id: 12, productName: "Pleated Wool Trousers", productId: 9, url: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=300&h=300&fit=crop", alt: "Front view", isPrimary: true, sku: "DD-PLE-001" },
 ];
@@ -157,7 +157,7 @@ export function ProductMediaPage() {
             <Camera className="w-5 h-5 text-[#224870]" /> Product Media
           </h1>
           <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Drip Doggy product images &amp; assets catalog
+            DripDoggy product images &amp; assets catalog
           </p>
         </div>
         <button 

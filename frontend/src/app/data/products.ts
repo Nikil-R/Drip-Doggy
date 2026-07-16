@@ -79,7 +79,7 @@ export const products: Product[] = [
   // ═══════════════════════════════════════════════════════════════════════════
   {
     id: 1,
-    brand: "DRIP DOGGY COLLECTION",
+    brand: "DRIPDOGGY COLLECTION",
     name: "Sartorial Pleated Trench Dress",
     price: 245.0,
     originalPrice: 499.0,

@@ -96,7 +96,7 @@ function App() {
         <div>
           {/* Logo */}
           <div className="px-6 mb-8 flex items-center justify-between">
-            <span className="text-sm font-black tracking-[0.25em] text-[#030213] uppercase">DRIP DOGGY</span>
+            <span className="text-sm font-black tracking-[0.25em] text-[#030213] uppercase">DRIPDOGGY</span>
             <span className="text-[9px] font-black tracking-widest text-[#b2533e] bg-amber-50 border border-amber-200 px-2 py-0.5 uppercase">ADMIN</span>
           </div>
 
@@ -187,7 +187,7 @@ function App() {
               DD
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-wider truncate text-[#030213]">Drip Doggy</p>
+              <p className="text-[10px] font-black uppercase tracking-wider truncate text-[#030213]">DripDoggy</p>
               <p className="text-[8px] font-bold text-neutral-400 truncate">admin@dripdoggy.com</p>
             </div>
             <button className="text-neutral-400 hover:text-[#b2533e] transition-colors p-1">

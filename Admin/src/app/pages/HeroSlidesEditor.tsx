@@ -206,7 +206,7 @@ export function HeroSlidesEditorPage() {
           <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
             <ImageIcon className="w-5 h-5 text-[#224870]" /> Hero Slides
           </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Manage Drip Doggy homepage hero banner slides</p>
+          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Manage DripDoggy homepage hero banner slides</p>
         </div>
         <button onClick={openAdd} className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-colors">
           <Plus className="w-3.5 h-3.5" /> Add Slide

@@ -54,7 +54,7 @@ export async function syncWishlist() {
         
         return {
           id: productId,
-          brand: details ? details.brand : "Drip Doggy",
+          brand: details ? details.brand : "DripDoggy",
           name: item.productName || (details ? details.name : "Product"),
           price: price,
           originalPrice: mrp,

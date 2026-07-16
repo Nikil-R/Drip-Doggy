@@ -81,7 +81,7 @@ export function Onboarding() {
         setIsSubmitting(false);
         return;
       }
-      navigate("/shop", { replace: true });
+      navigate("/", { replace: true });
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -139,7 +139,7 @@ export function Onboarding() {
           <div className="lg:hidden flex justify-center mb-8">
             <img
               src={logoIcon}
-              alt="DRIP DOGGY"
+              alt="DRIPDOGGY"
               className="h-12 w-auto object-contain mix-blend-multiply"
             />
           </div>

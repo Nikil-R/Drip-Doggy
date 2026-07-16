@@ -32,7 +32,7 @@ export function Header() {
       }
     }
     loadCategories();
-  }, []);
+  }, [isAuthenticated]);
 
   const [navConfig, setNavConfig] = useState<any>(null);
 
@@ -66,14 +66,13 @@ export function Header() {
   const dropdownItems = categoriesChildren.length > 0
     ? categoriesChildren
     : categories.map((cat) => {
-        const isWomen = cat.categoryName.toLowerCase().includes("women");
         return {
           label: cat.categoryName,
-          to: isWomen ? `/shop?category=${cat.categoryName.toLowerCase()}` : "/coming-soon",
-          children: isWomen ? cat.subCategories?.map((sub) => ({
+          to: `/shop?category=${encodeURIComponent(cat.categoryName.toLowerCase())}`,
+          children: cat.subCategories?.map((sub) => ({
             label: sub.subcategoryName,
-            to: `/shop?category=${cat.categoryName.toLowerCase()}&subcategory=${sub.subcategoryName.toLowerCase()}`
-          })) : []
+            to: `/shop?category=${encodeURIComponent(cat.categoryName.toLowerCase())}&subcategory=${encodeURIComponent(sub.subcategoryName.toLowerCase())}`
+          })) || []
         };
       });
 
@@ -98,7 +97,7 @@ export function Header() {
         {
           id: 1,
           cartItemId: "1-Default-S",
-          brand: "DRIP DOGGY COLLECTION",
+          brand: "DRIPDOGGY COLLECTION",
           name: "SARTORIAL PLEATED TRENCH DRESS",
           size: "S",
           color: "Default",
@@ -450,14 +449,14 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-        <div className="max-w-7xl mx-auto px-6">
-        <div className="flex h-20 items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4">
+        <div className="flex h-[76px] items-center justify-between">
           
           {/* Logo (Left) */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-3">
-              <img src={logoIcon} alt="" className="h-18 w-auto object-contain mix-blend-multiply" />
-              <img src={logo} alt="DRIP DOGGY" className="h-30 w-auto object-contain mix-blend-multiply" />
+            <Link to="/" className="flex items-center gap-4">
+              <img src={logoIcon} alt="" className="h-[60px] w-auto object-contain mix-blend-multiply" />
+              <img src={logo} alt="DRIPDOGGY" className="h-[100px] w-auto object-contain mix-blend-multiply ml-[-10px]" />
             </Link>
           </div>
 
@@ -522,13 +521,13 @@ export function Header() {
               className="hover:opacity-75 transition-opacity bg-transparent border-none p-0 cursor-pointer outline-none flex items-center"
               aria-label="Open Search"
             >
-              <Search className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+              <Search className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
             </button>
 
             {isAuthenticated && (
               <>
                 <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
-              <Heart className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+              <Heart className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
               {wishlistCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                   {wishlistCount}
@@ -540,7 +539,7 @@ export function Header() {
             <Sheet>
               <SheetTrigger asChild>
                 <button className="relative hover:opacity-75 transition-opacity flex items-center bg-transparent border-none p-0 cursor-pointer outline-none">
-                  <ShoppingCart className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+                  <ShoppingCart className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
                   {totalItemCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                       {totalItemCount}
@@ -756,7 +755,7 @@ export function Header() {
                   className="hover:opacity-75 transition-opacity flex items-center h-full" 
                   aria-label="Profile"
                 >
-                  <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+                  <CircleUser className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
                 </div>
                 <div className={`absolute right-0 top-full pt-[10px] w-60 transition-all duration-300 ease-in-out z-50 ${
                   isProfileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -815,7 +814,7 @@ export function Header() {
                 className="hidden sm:flex hover:opacity-75 transition-opacity items-center px-3 bg-transparent border-none cursor-pointer h-full"
                 aria-label="Login"
               >
-                <CircleUser className="h-4.5 w-4.5 stroke-[1.8] text-neutral-800" />
+                <CircleUser className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
               </button>
             )}
 
@@ -825,7 +824,7 @@ export function Header() {
               className="lg:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <svg className="h-5 w-5 text-neutral-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <svg className="h-[25px] w-[25px] text-neutral-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <line x1="4" y1="8" x2="20" y2="8" />
                 <line x1="4" y1="16" x2="20" y2="16" />
               </svg>

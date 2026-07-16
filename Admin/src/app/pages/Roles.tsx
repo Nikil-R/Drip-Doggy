@@ -38,7 +38,7 @@ export function RolesPage() {
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null);
   const [sessionRevokeUser, setSessionRevokeUser] = useState<AdminUser | null>(null);
 
-  // ─── Drip Doggy Admin Users ────────────────────────────────────────────
+  // ─── DripDoggy Admin Users ────────────────────────────────────────────
   const [admins, setAdmins] = useState<AdminUser[]>([
     { id: "DD-ADM-001", name: "Nikil", email: "nikil@dripdoggy.com", role: "Admin", status: "Active", lastActive: "Just now", lastLoginIP: "103.24.12.87", permissionsCount: 27, twoFactorEnabled: true, department: "Executive" },
     { id: "DD-ADM-002", name: "Vinay", email: "vinay@dripdoggy.com", role: "Admin", status: "Active", lastActive: "2 hours ago", lastLoginIP: "192.168.1.15", permissionsCount: 18, twoFactorEnabled: true, department: "Tech" },

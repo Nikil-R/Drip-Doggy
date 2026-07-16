@@ -8,7 +8,7 @@ const settingSections = [
     title: "Store Details",
     icon: Store,
     fields: [
-      { label: "Store Name", value: "Drip Doggy", type: "text", desc: "Your public store name" },
+      { label: "Store Name", value: "DripDoggy", type: "text", desc: "Your public store name" },
       { label: "Store Email", value: "hello@dripdoggy.com", type: "email", desc: "Customer support email" },
       { label: "Phone", value: "+91 98765 43210", type: "tel", desc: "Customer service number" },
       { label: "Address", value: "42, Bandra West, Mumbai, Maharashtra 400050", type: "text", desc: "Registered business address" },
@@ -61,7 +61,7 @@ const settingSections = [
     icon: Palette,
     fields: [
       { label: "Tagline", value: "Luxury Streetwear, Redefined.", type: "text", desc: "Store tagline" },
-      { label: "Meta Title", value: "Drip Doggy — Luxury Streetwear | Mumbai", type: "text", desc: "SEO page title" },
+      { label: "Meta Title", value: "DripDoggy — Luxury Streetwear | Mumbai", type: "text", desc: "SEO page title" },
       { label: "Meta Description", value: "Premium fashion label based in Mumbai. Crafting luxury streetwear since 2024.", type: "text", desc: "SEO meta description" },
       { label: "Store Logo URL", value: "/images/logo.png", type: "text", desc: "Path to logo asset" },
       { label: "Favicon URL", value: "/favicon.ico", type: "text", desc: "Browser tab icon" },
@@ -78,7 +78,7 @@ export function SettingsPage() {
         <div>
           <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Settings</h1>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
-            Drip Doggy store configuration &amp; preferences
+            DripDoggy store configuration &amp; preferences
           </p>
         </div>
         <button className="bg-[#030213] hover:bg-neutral-800 text-white text-[9px] font-semibold tracking-widest px-4 py-2 uppercase flex items-center gap-1.5 transition-colors cursor-pointer rounded-none border-none">

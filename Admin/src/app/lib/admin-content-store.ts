@@ -81,7 +81,7 @@ function defaultHeroSlides(): HeroSlide[] {
     },
     {
       id: "slide-2",
-      tagline: "DRIP DOGGY APPAREL",
+      tagline: "DRIPDOGGY APPAREL",
       title: "HIGH-END DRIP FOR THE BOLD",
       description: "Precision-crafted streetwear for those who demand more. Every stitch, a statement.",
       image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop",

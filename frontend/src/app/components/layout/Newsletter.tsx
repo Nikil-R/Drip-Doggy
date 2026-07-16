@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { getNewsletterConfig } from "../../lib/content-store";
+import axios from "axios";
+import { Check } from "lucide-react";
+import { API_CONFIG } from "@/app/utils/api-config";
 
 export function Newsletter() {
   const [config, setConfig] = useState(() => getNewsletterConfig());
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -20,12 +25,21 @@ export function Newsletter() {
 
   if (!config.active) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    setSubmitted(true);
-    setEmail("");
-    setTimeout(() => setSubmitted(false), 5000);
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      await axios.post(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/newsletter/subscribe`, {
+        email: email.trim()
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.message || "Failed to subscribe. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -39,25 +53,50 @@ export function Newsletter() {
             {config.subtitle || "Subscribe for early drop alerts, limited edition capsules, and culture updates."}
           </p>
           
-          {submitted ? (
-            <div className="p-4 bg-white/10 border border-white/20 text-xs font-bold tracking-widest uppercase max-w-md mx-auto">
-              {config.successMessage || "Thanks for subscribing! Welcome to the Syndicate."}
-            </div>
-          ) : (
+          <div className="space-y-4">
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto items-center border-b border-white/20 pb-2 pt-4">
               <input
                 type="email"
                 required
+                disabled={submitted}
+                readOnly={submitted}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={config.placeholder || "ENTER YOUR EMAIL"}
-                className="bg-transparent border-none text-xs tracking-wider focus:outline-none flex-1 placeholder-neutral-500 uppercase text-white w-full text-center sm:text-left"
+                className={`bg-transparent border-none text-xs tracking-wider focus:outline-none flex-1 placeholder-neutral-500 uppercase text-white w-full text-center sm:text-left ${
+                  submitted ? "pointer-events-none select-none opacity-60 cursor-default" : ""
+                }`}
               />
-              <button type="submit" className="text-xs font-bold tracking-[0.2em] text-white hover:opacity-75 transition-opacity uppercase bg-transparent border-none cursor-pointer p-0 shrink-0">
-                {config.buttonText || "SUBSCRIBE"}
+              <button 
+                type="submit" 
+                disabled={isSubmitting || submitted}
+                className={`text-xs font-bold tracking-[0.2em] uppercase bg-transparent border-none p-0 shrink-0 flex items-center gap-1.5 ${
+                  submitted
+                    ? "text-green-500 opacity-80 cursor-default pointer-events-none"
+                    : "text-white hover:opacity-75 transition-opacity cursor-pointer disabled:opacity-50"
+                }`}
+              >
+                {submitted ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-500 stroke-[2.5]" />
+                    <span>SUBSCRIBED</span>
+                  </>
+                ) : isSubmitting ? (
+                  "SUBSCRIBING..."
+                ) : (
+                  config.buttonText || "SUBSCRIBE"
+                )}
               </button>
             </form>
-          )}
+            {submitted && (
+              <p className="text-[10px] font-bold text-green-500 tracking-wider uppercase">
+                {config.successMessage || "Thanks for subscribing! Welcome to the Syndicate."}
+              </p>
+            )}
+            {errorMsg && (
+              <p className="text-[10px] font-bold text-red-500 tracking-wider uppercase">{errorMsg}</p>
+            )}
+          </div>
           
           <p className="text-white/40 text-[10px] tracking-wide uppercase pt-2">
             {config.consentText || "By subscribing, you agree to our Privacy Policy and consent to receive updates."}

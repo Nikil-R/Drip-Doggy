@@ -49,8 +49,8 @@ interface Brand {
 const initialBrands: Brand[] = [
   { 
     id: 1, 
-    name: "Drip Doggy", 
-    slug: "drip-doggy",
+    name: "DripDoggy", 
+    slug: "dripdoggy",
     logo: "https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?w=120&h=120&fit=crop", 
     coverPhoto: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&fit=crop",
     description: "Luxury **streetwear** label. Est 2024. `Premium Heavyweight` collections only.", 
@@ -345,7 +345,7 @@ export function BrandPage() {
         <div>
           <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest">Brands</h1>
           <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Drip Doggy collections, labels &amp; designers
+            DripDoggy collections, labels &amp; designers
           </p>
         </div>
         <button onClick={openAdd} className="bg-[#224870] hover:bg-[#224870]/85 text-white text-[9.5px] font-bold tracking-widest px-5 py-2.5 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-all">
@@ -532,12 +532,12 @@ export function BrandPage() {
                 <div>
                   <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1.5 block">Brand Name</label>
                   <input value={form.name} onChange={e => handleNameChange(e.target.value)}
-                    className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase focus:outline-none focus:border-[#224870] rounded-none bg-card text-[#382d24] transition-all" placeholder="e.g. Drip Doggy" />
+                    className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase focus:outline-none focus:border-[#224870] rounded-none bg-card text-[#382d24] transition-all" placeholder="e.g. DripDoggy" />
                 </div>
                 <div>
                   <label className="text-[8px] font-bold tracking-wider text-neutral-500 uppercase mb-1.5 block">URL Slug</label>
                   <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })}
-                    className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#224870] rounded-none bg-card text-[#382d24] transition-all" placeholder="drip-doggy" />
+                    className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#224870] rounded-none bg-card text-[#382d24] transition-all" placeholder="dripdoggy" />
                 </div>
               </div>
 

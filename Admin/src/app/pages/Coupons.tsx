@@ -338,7 +338,7 @@ export function CouponsPage() {
                 <div className="flex-1 flex flex-col justify-between pr-6">
                   <div>
                     <span className="text-[7.5px] font-bold tracking-widest uppercase bg-white/15 px-2 py-0.5">
-                      Drip Doggy Ticket
+                      DripDoggy Ticket
                     </span>
                     <h4 className="text-[32px] font-[950] uppercase mt-1.5 tracking-tight leading-none">
                       {newType === "Percentage" ? `${newValue}%` : `${RS}${newValue}`} <span className="text-[20px] font-bold opacity-80">OFF</span>

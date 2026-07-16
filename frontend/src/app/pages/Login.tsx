@@ -30,13 +30,7 @@ export function Login() {
   const [verifiedMethod, setVerifiedMethod] = useState<"email" | "phone" | null>(null);
 
   const handleIdentifierChange = (val: string) => {
-    const isNumericStart = /^[0-9]/.test(val);
-    if (isNumericStart) {
-      const cleaned = val.replace(/\D/g, "").slice(0, 10);
-      setIdentifier(cleaned);
-    } else {
-      setIdentifier(val);
-    }
+    setIdentifier(val);
   };
 
   const fromPath = (location.state as { from?: { pathname: string } })?.from?.pathname;
@@ -76,36 +70,25 @@ export function Login() {
     setIsSubmitting(true);
 
     const trimmedId = identifier.trim();
-    const isNumeric = /^\d+$/.test(trimmedId);
-    if (isNumeric) {
-      const phoneErr = validatePhone(trimmedId);
-      if (phoneErr) {
-        setError(phoneErr);
-        setIsSubmitting(false);
-        return;
-      }
-    } else {
-      const emailErr = validateEmail(trimmedId);
-      if (emailErr) {
-        setError(emailErr);
-        setIsSubmitting(false);
-        return;
-      }
+    const emailErr = validateEmail(trimmedId);
+    if (emailErr) {
+      setError(emailErr);
+      setIsSubmitting(false);
+      return;
     }
-    const finalId = isNumeric ? `+91${trimmedId}` : trimmedId;
 
     try {
-      const result = await requestOtp(finalId);
+      const result = await requestOtp(trimmedId);
       if (!result.success) {
         setError(result.message ?? "Something went wrong.");
         setIsSubmitting(false);
         return;
       }
-      setIdentifier(finalId);
+      setIdentifier(trimmedId);
       setStep("otp");
       setOtp("");
       setResendTimer(30);
-      setVerifiedMethod(finalId.includes("@") ? "email" : "phone");
+      setVerifiedMethod("email");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -221,7 +204,7 @@ export function Login() {
           <div className="lg:hidden flex justify-center mb-8">
             <img
               src={logoIcon}
-              alt="DRIP DOGGY"
+              alt="DRIPDOGGY"
               className="h-12 w-auto object-contain mix-blend-multiply"
             />
           </div>
@@ -252,8 +235,8 @@ export function Login() {
                 </h1>
                 <p className="text-neutral-500 text-xs tracking-wide text-center mt-3 font-medium">
                   {isCheckoutFlow
-                    ? "Enter your email or phone to verify and proceed"
-                    : "Enter your email or phone number to get started"}
+                    ? "Enter your email address to verify and proceed"
+                    : "Enter your email address to get started"}
                 </p>
               </>
             ) : (
@@ -269,7 +252,7 @@ export function Login() {
                   <div className="flex items-center justify-center gap-1 mt-2">
                     <span className="text-[8px] font-extrabold tracking-widest text-green-600 uppercase flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-green-600 rounded-full" />
-                      Code sent via {verifiedMethod === "email" ? "email" : "SMS"}
+                      Code sent via {verifiedMethod}
                     </span>
                   </div>
                 )}
@@ -282,11 +265,7 @@ export function Login() {
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
-                  {/^[0-9]/.test(identifier) ? (
-                    <Smartphone className="h-4 w-4 stroke-[1.5]" />
-                  ) : (
-                    <Mail className="h-4 w-4 stroke-[1.5]" />
-                  )}
+                  <Mail className="h-4 w-4 stroke-[1.5]" />
                 </div>
                 <input
                   type="text"
@@ -294,17 +273,10 @@ export function Login() {
                   required
                   value={identifier}
                   onChange={(e) => handleIdentifierChange(e.target.value)}
-                  placeholder="ENTER EMAIL OR 10-DIGIT PHONE"
+                  placeholder="ENTER YOUR EMAIL ADDRESS"
                   className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400 uppercase"
                   autoComplete="username"
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  {identifier.length > 0 && (
-                    <span className="text-[7px] font-extrabold tracking-widest text-neutral-400 uppercase">
-                      {/^\d+$/.test(identifier) ? "PHONE" : "EMAIL"}
-                    </span>
-                  )}
-                </div>
               </div>
 
               {error && (

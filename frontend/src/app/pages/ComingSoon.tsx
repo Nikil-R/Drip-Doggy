@@ -33,7 +33,7 @@ export function ComingSoon() {
   const hero = pageData?.hero || {
     tag: "UPCOMING RELEASE",
     heading: "Men's Syndicate",
-    description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.",
+    description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from DripDoggy — engineered for the modern wardrobe.",
     active: true
   };
 
@@ -108,7 +108,7 @@ export function ComingSoon() {
       <section className="max-w-3xl mx-auto px-6 pb-24 text-center">
         <div className="border border-neutral-200/80 bg-white p-10 md:p-14">
           <span className="text-[8px] font-black tracking-[0.3em] text-neutral-400 uppercase block mb-4">MEMBER PRIVILEGES</span>
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-[0.05em] uppercase mb-4">DRIP DOGGY SYNDICATE</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-[0.05em] uppercase mb-4">DRIPDOGGY SYNDICATE</h2>
           <p className="text-neutral-500 text-xs tracking-wide leading-relaxed max-w-lg mx-auto mb-8 font-medium">
             Members receive priority allocations on all upcoming capsules, complimentary domestic shipping,
             and exclusive access to private archive sales. Join the syndicate today.

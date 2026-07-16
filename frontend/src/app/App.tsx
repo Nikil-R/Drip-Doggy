@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AuthModal } from "./components/auth/AuthModal";
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
 import { Home } from "./pages/Home";
@@ -68,6 +69,7 @@ export default function App() {
         <ScrollToTop />
         <div className="min-h-screen bg-white">
           <Header />
+          <AuthModal />
           <Routes>
             {/* Public Routes — no auth required for browsing */}
             <Route path="/" element={<Home />} />

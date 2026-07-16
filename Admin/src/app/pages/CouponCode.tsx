@@ -572,7 +572,7 @@ export function CouponCodePage() {
                 <div className="flex justify-between items-stretch h-28">
                   <div className="flex-1 flex flex-col justify-between pr-6">
                     <div>
-                      <span className="text-[7.5px] font-bold tracking-widest uppercase bg-white/15 px-2 py-0.5">Drip Doggy Premium Offer</span>
+                      <span className="text-[7.5px] font-bold tracking-widest uppercase bg-white/15 px-2 py-0.5">DripDoggy Premium Offer</span>
                       <h4 className="text-[32px] font-[950] uppercase mt-1.5 tracking-tight leading-none">
                         {selectedCoupon.type === "percentage" ? `${selectedCoupon.value}%` : selectedCoupon.type === "freeship" ? "FREE" : `${RS}${selectedCoupon.value}`} <span className="text-[20px] font-bold opacity-80">OFF</span>
                       </h4>
@@ -820,7 +820,7 @@ export function CouponCodePage() {
                   <div className="flex justify-between items-stretch h-24">
                     <div className="flex-1 flex flex-col justify-between pr-4">
                       <div>
-                        <span className="text-[6.5px] font-bold tracking-widest uppercase bg-white/15 px-1.5 py-0.5">Drip Doggy Ticket</span>
+                        <span className="text-[6.5px] font-bold tracking-widest uppercase bg-white/15 px-1.5 py-0.5">DripDoggy Ticket</span>
                         <h4 className="text-[24px] font-[950] uppercase mt-1 tracking-tight leading-none">
                           {form.type === "percentage" ? `${form.value}%` : form.type === "freeship" ? "FREE" : `${RS}${form.value}`} <span className="text-[16px] font-bold opacity-80">OFF</span>
                         </h4>

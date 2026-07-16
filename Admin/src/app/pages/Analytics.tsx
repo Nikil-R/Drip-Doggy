@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const RS = "\u20B9";
 
-// ─── Drip Doggy Metrics ──────────────────────────────────────────────────
+// ─── DripDoggy Metrics ──────────────────────────────────────────────────
 
 const metrics = [
   { label: "Total Revenue", value: RS + "6,39,76,747", change: "+18.7%", trend: "up", icon: DollarSign, subtitle: "Lifetime sales" },
@@ -82,7 +82,7 @@ export function AnalyticsPage() {
       <div>
         <h1 className="text-xl font-bold text-[#030213] uppercase tracking-widest">Analytics</h1>
         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
-          Drip Doggy performance dashboard &amp; insights
+          DripDoggy performance dashboard &amp; insights
         </p>
       </div>
 

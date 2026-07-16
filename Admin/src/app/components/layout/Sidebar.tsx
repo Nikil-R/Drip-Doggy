@@ -26,6 +26,7 @@ import {
   Menu,
   RotateCcw,
   RefreshCw,
+  Mail,
 } from "lucide-react";
 
 
@@ -56,6 +57,7 @@ const menuSections: SidebarSection[] = [
       { to: "/admin/exchanges",    icon: RefreshCw,          label: "Exchanges" },
       { to: "/admin/coupons",      label: "Coupon Code",     icon: Ticket },
       { to: "/admin/customers",    label: "Customers",       icon: Users },
+      { to: "/admin/newsletter-campaign", label: "Marketing Campaigns", icon: Mail },
       { to: "/admin/roles",        label: "Members & Roles", icon: Shield },
       { to: "/admin/transactions", label: "Payment Ledger",  icon: ArrowRightLeft },
     ],
@@ -127,8 +129,8 @@ export function Sidebar() {
           <img src={logoIcon} alt="DD" className="w-9 h-9 object-contain mix-blend-multiply" />
         ) : (
           <div className="flex flex-col items-center justify-center w-full">
-            <img src={logoIcon} alt="Drip Doggy" className="w-22 h-22 object-contain mix-blend-multiply block" />
-            <img src={logo} alt="Drip Doggy" className="h-29 w-auto max-w-[180px] object-contain mix-blend-multiply block -mt-10 -mb-6" />
+            <img src={logoIcon} alt="DripDoggy" className="w-22 h-22 object-contain mix-blend-multiply block" />
+            <img src={logo} alt="DripDoggy" className="h-29 w-auto max-w-[180px] object-contain mix-blend-multiply block -mt-10 -mb-6" />
           </div>
         )}
       </div>

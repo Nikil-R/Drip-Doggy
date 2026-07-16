@@ -324,7 +324,7 @@ export function DashboardPage() {
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
         <div>
           <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2">
-            Drip Doggy Dashboard
+            DripDoggy Dashboard
             {isRefreshing && <RefreshCw className="h-4 w-4 animate-spin text-[#224870]" />}
           </h1>
           <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Luxury Streetwear — Real-Time Analytics &amp; Operations</p>

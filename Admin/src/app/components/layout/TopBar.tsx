@@ -52,7 +52,7 @@ export function TopBar() {
     if (path.includes("/admin/settings")) return "Settings";
     if (path.includes("/admin/profile")) return "Admin Profile";
     if (path.includes("/admin/change-password")) return "Change Password";
-    return "Drip Doggy";
+    return "DripDoggy";
   };
 
   // Extract initials for profile avatar

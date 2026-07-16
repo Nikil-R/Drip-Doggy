@@ -97,8 +97,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Global Axios Request Interceptor to attach Bearer Token to all outgoing requests
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem("dripdoggy_auth_token");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
     return () => {
       axios.interceptors.response.eject(interceptor);
+      axios.interceptors.request.eject(requestInterceptor);
     };
   }, [logout]);
 

@@ -62,12 +62,12 @@ export function FooterSettingsEditorPage() {
 
   const reset = () => {
     const defaults: FooterConfig = {
-      brandName: "DRIP DOGGY",
+      brandName: "DRIPDOGGY",
       tagline: "Luxury Streetwear / Est. 2026",
       description: "Architectural silhouettes, premium fabrication, and uncompromised street luxury for the modern wardrobe.",
-      copyrightText: "© 2026 Drip Doggy. All rights reserved.",
+      copyrightText: "© 2026 DripDoggy. All rights reserved.",
       ctaSection: {
-        tag: "Private Access / Drip Doggy Syndicate",
+        tag: "Private Access / DripDoggy Syndicate",
         heading: "Join the Next Drop",
         description: "Receive early access to limited capsules, archival restocks, and editorial releases before the public drop.",
         buttonText: "SUBSCRIBE",
@@ -97,7 +97,7 @@ export function FooterSettingsEditorPage() {
         {
           title: "The House",
           links: [
-            { label: "About Drip Doggy", to: "/about" },
+            { label: "About DripDoggy", to: "/about" },
             { label: "Privacy Policy", to: "/privacy" },
             { label: "Terms of Service", to: "/terms" }
           ]
@@ -168,7 +168,7 @@ export function FooterSettingsEditorPage() {
       <div className="bg-[#faf8f5] border border-neutral-200/80 p-4.5 flex items-center justify-between">
         <div className="space-y-0.5">
           <span className="text-xs font-black uppercase tracking-wider block">Global Footer Status</span>
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Enable or disable footer widget visibility across Drip Doggy storefront</p>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Enable or disable footer widget visibility across DripDoggy storefront</p>
         </div>
         <div className="flex items-center gap-4 bg-white border border-neutral-200/80 px-4 py-2">
           <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
@@ -253,7 +253,7 @@ export function FooterSettingsEditorPage() {
                     className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]"
                     placeholder="Use {year} for dynamic current year"
                   />
-                  <p className="text-[8.5px] text-neutral-400 font-bold uppercase tracking-wider">Example: © &#123;year&#125; Drip Doggy. All rights reserved.</p>
+                  <p className="text-[8.5px] text-neutral-400 font-bold uppercase tracking-wider">Example: © &#123;year&#125; DripDoggy. All rights reserved.</p>
                 </div>
 
                 <div className="space-y-1">
@@ -623,7 +623,7 @@ export function FooterSettingsEditorPage() {
                   <div className="bg-[#030213] text-white p-8 text-left space-y-6">
                     <div className="space-y-2.5">
                       <span className="text-[8px] font-[900] tracking-[0.25em] text-[#b2533e] uppercase block">
-                        {config.ctaSection.tag || "Private Access / Drip Doggy Syndicate"}
+                        {config.ctaSection.tag || "Private Access / DripDoggy Syndicate"}
                       </span>
                       <h2 className="text-xl font-extrabold tracking-wide uppercase leading-tight">
                         {(config.ctaSection.heading || "Join the Next Drop").split(/<br\s*\/?>|\n/).map((line, idx) => (
@@ -671,14 +671,14 @@ export function FooterSettingsEditorPage() {
                 {/* Main section */}
                 <div className="bg-[#faf8f5] p-8 border-t border-neutral-200/60 relative overflow-hidden text-[#382d24]">
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.03] uppercase">
-                    <span className="text-[4rem] font-black tracking-widest">{config.brandName || "DRIP DOGGY"}</span>
+                    <span className="text-[4rem] font-black tracking-widest">{config.brandName || "DRIPDOGGY"}</span>
                   </div>
 
                   {previewDevice === "desktop" ? (
                     /* Desktop Preview layout */
                     <div className="grid grid-cols-12 gap-6 relative z-10 text-left">
                       <div className="col-span-6 space-y-4">
-                        <span className="text-[14px] font-[950] tracking-wider text-[#382d24] block uppercase">{config.brandName || "DRIP DOGGY"}</span>
+                        <span className="text-[14px] font-[950] tracking-wider text-[#382d24] block uppercase">{config.brandName || "DRIPDOGGY"}</span>
                         <span className="block text-[8px] font-black tracking-[0.2em] text-[#b2533e] uppercase">
                           {config.tagline || "Luxury Streetwear / Est. 2026"}
                         </span>
@@ -717,7 +717,7 @@ export function FooterSettingsEditorPage() {
                     /* Mobile Preview layout */
                     <div className="space-y-5 relative z-10 text-left">
                       <div className="space-y-3.5">
-                        <span className="text-[13px] font-[950] tracking-wider text-[#382d24] block uppercase">{config.brandName || "DRIP DOGGY"}</span>
+                        <span className="text-[13px] font-[950] tracking-wider text-[#382d24] block uppercase">{config.brandName || "DRIPDOGGY"}</span>
                         <span className="block text-[7.5px] font-black tracking-[0.18em] text-[#b2533e] uppercase">
                           {config.tagline || "Luxury Streetwear / Est. 2026"}
                         </span>
@@ -751,7 +751,7 @@ export function FooterSettingsEditorPage() {
                 {/* Bottom legal bar */}
                 <div className="bg-[#030213] text-white/40 p-4.5 text-center text-[8px] font-black tracking-wider uppercase border-t border-white/5">
                   <div>
-                    {config.copyrightText ? config.copyrightText.replace("{year}", new Date().getFullYear().toString()) : `© ${new Date().getFullYear()} Drip Doggy. All rights reserved.`}
+                    {config.copyrightText ? config.copyrightText.replace("{year}", new Date().getFullYear().toString()) : `© ${new Date().getFullYear()} DripDoggy. All rights reserved.`}
                   </div>
                 </div>
               </div>

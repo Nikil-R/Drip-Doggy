@@ -25,9 +25,9 @@ const DEFAULT_PAGES: SitePageData[] = [
     slug: "about",
     title: "About",
     hero: {
-      tag: "DRIP DOGGY APPAREL",
+      tag: "DRIPDOGGY APPAREL",
       heading: "The Story",
-      description: "Founded in 2026, Drip Doggy is a luxury streetwear label born at the intersection of architectural precision and functional urban utility.",
+      description: "Founded in 2026, DripDoggy is a luxury streetwear label born at the intersection of architectural precision and functional urban utility.",
       active: true,
     },
     active: true,
@@ -82,7 +82,7 @@ const DEFAULT_PAGES: SitePageData[] = [
     hero: {
       tag: "THE HOUSE",
       heading: "Privacy Policy",
-      description: "Last updated: June 2026. This policy describes how Drip Doggy Apparel collects, uses, and protects your personal information.",
+      description: "Last updated: June 2026. This policy describes how DripDoggy Apparel collects, uses, and protects your personal information.",
       active: true,
     },
     active: true,
@@ -104,7 +104,7 @@ const DEFAULT_PAGES: SitePageData[] = [
     hero: {
       tag: "UPCOMING RELEASE",
       heading: "Men's Syndicate",
-      description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.",
+      description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from DripDoggy — engineered for the modern wardrobe.",
       active: true,
     },
     active: true,
@@ -337,7 +337,7 @@ export function SitePagesEditorPage() {
                   <input
                     value={editForm.tag}
                     onChange={e => setEditForm({ ...editForm, tag: e.target.value })}
-                    placeholder="e.g. DRIP DOGGY APPAREL"
+                    placeholder="e.g. DRIPDOGGY APPAREL"
                     className="w-full border border-neutral-200 px-3 py-2 text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-white"
                   />
                 </div>

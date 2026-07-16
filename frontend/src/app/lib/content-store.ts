@@ -76,7 +76,7 @@ function defaultHeroSlides(): HeroSlide[] {
     },
     {
       id: "slide-2",
-      tagline: "DRIP DOGGY APPAREL",
+      tagline: "DRIPDOGGY APPAREL",
       title: "HIGH-END DRIP FOR THE BOLD",
       description: "Precision-crafted streetwear for those who demand more. Every stitch, a statement.",
       image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1600&auto=format&fit=crop",
@@ -172,13 +172,13 @@ function defaultNewsletter(): NewsletterConfig {
 
 function defaultFooter(): FooterConfig {
   return {
-    brandName: "DRIP DOGGY",
+    brandName: "DRIPDOGGY",
     tagline: "Luxury Streetwear / Est. 2026",
     description:
       "Architectural silhouettes, premium fabrication, and uncompromised street luxury for the modern wardrobe.",
-    copyrightText: "\u00a9 2026 Drip Doggy. All rights reserved.",
+    copyrightText: "\u00a9 2026 DripDoggy. All rights reserved.",
     ctaSection: {
-      tag: "Private Access / Drip Doggy Syndicate",
+      tag: "Private Access / DripDoggy Syndicate",
       heading: "Join the Next Drop",
       description:
         "Receive early access to limited capsules, archival restocks, and editorial releases before the public drop.",
@@ -210,7 +210,7 @@ function defaultFooter(): FooterConfig {
       {
         title: "The House",
         links: [
-          { label: "About Drip Doggy", to: "/about" },
+          { label: "About DripDoggy", to: "/about" },
           { label: "Privacy Policy", to: "/privacy" },
           { label: "Terms of Service", to: "/terms" },
         ],
@@ -266,14 +266,14 @@ function defaultNavigation(): NavConfig {
 
 function defaultSitePages(): SitePageData[] {
   return [
-    { slug: "about", title: "About", hero: { tag: "DRIP DOGGY APPAREL", heading: "The Story", description: "Founded in 2026, Drip Doggy is a luxury streetwear label born at the intersection of architectural precision and functional urban utility.", active: true }, active: true },
+    { slug: "about", title: "About", hero: { tag: "DRIPDOGGY APPAREL", heading: "The Story", description: "Founded in 2026, DripDoggy is a luxury streetwear label born at the intersection of architectural precision and functional urban utility.", active: true }, active: true },
     { slug: "contact", title: "Contact", hero: { tag: "CLIENT SERVICES", heading: "Contact Us", description: "We're here to help. Whether you have a question about your order, need sizing advice, or want to discuss wholesale opportunities \u2014 reach out and our team will get back to you.", active: true }, active: true },
     { slug: "faq", title: "FAQ & Shipping", hero: { tag: "CLIENT SERVICES", heading: "FAQ & Shipping", description: "Everything you need to know about ordering, shipping, delivery, and more.", active: true }, active: true },
     { slug: "returns", title: "Returns & Size Guide", hero: { tag: "CLIENT SERVICES", heading: "Returns & Size Guide", description: "Hassle-free returns, complimentary exchanges, and detailed sizing guidance.", active: true }, active: true },
     { slug: "terms", title: "Terms of Service", hero: { tag: "THE HOUSE", heading: "Terms of Service", description: "Last updated: June 2026. Please read these terms carefully before using our website or making a purchase.", active: true }, active: true },
-    { slug: "privacy", title: "Privacy Policy", hero: { tag: "THE HOUSE", heading: "Privacy Policy", description: "Last updated: June 2026. This policy describes how Drip Doggy Apparel collects, uses, and protects your personal information.", active: true }, active: true },
+    { slug: "privacy", title: "Privacy Policy", hero: { tag: "THE HOUSE", heading: "Privacy Policy", description: "Last updated: June 2026. This policy describes how DripDoggy Apparel collects, uses, and protects your personal information.", active: true }, active: true },
     { slug: "help", title: "Help Center", hero: { tag: "SUPPORT HUB", heading: "Help & FAQs", description: "Shipping timelines, returns, size guides, and everything you need to know about your order.", active: true }, active: true },
-    { slug: "coming-soon", title: "Coming Soon", hero: { tag: "UPCOMING RELEASE", heading: "Men's Syndicate", description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from Drip Doggy — engineered for the modern wardrobe.", active: true }, active: true },
+    { slug: "coming-soon", title: "Coming Soon", hero: { tag: "UPCOMING RELEASE", heading: "Men's Syndicate", description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from DripDoggy — engineered for the modern wardrobe.", active: true }, active: true },
   ];
 }
 

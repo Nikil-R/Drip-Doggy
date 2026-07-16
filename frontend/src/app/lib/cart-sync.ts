@@ -56,7 +56,7 @@ export async function syncCart() {
         id: productId,
         cartItemId: `${productId}-${rawColor.toLowerCase()}-${rawSize.toLowerCase()}`,
         productVariantSizeId: item.productVariantSizeId,
-        brand: details ? details.brand : "Drip Doggy",
+        brand: details ? details.brand : "DripDoggy",
         name: item.productName || (details ? details.name : "Product"),
         size: rawSize,
         color: rawColor,

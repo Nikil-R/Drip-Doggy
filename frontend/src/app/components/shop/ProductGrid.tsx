@@ -8,6 +8,7 @@ import { cartApi } from "../../lib/cart-api";
 import { syncCart } from "../../lib/cart-sync";
 import { wishlistApi } from "../../lib/wishlist-api";
 import { syncWishlist } from "../../lib/wishlist-sync";
+import axios from "axios";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -184,14 +185,24 @@ function ProductCard({
             )}
           </div>
 
-          <div className="flex items-center text-neutral-800 flex-shrink-0">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className="h-2.5 w-2.5 fill-current stroke-current"
-              />
-            ))}
-          </div>
+          {product.rating !== undefined && product.rating > 0 && (
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <div className="flex items-center text-[#ffc107]">
+                {[...Array(5)].map((_, i) => {
+                  const isFilled = i < Math.round(product.rating || 0);
+                  return (
+                    <Star
+                      key={i}
+                      className={`h-2.5 w-2.5 ${isFilled ? "fill-current" : "text-neutral-200"}`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-[8px] font-extrabold text-neutral-500 ml-0.5">
+                {product.rating.toFixed(1)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </Link>
@@ -223,7 +234,27 @@ export function ProductGrid() {
     async function loadProducts() {
       try {
         const list = await productApi.fetchProducts();
-        setProducts(list);
+        const productsWithRealRatings = await Promise.all(
+          list.map(async (prod) => {
+            try {
+              const reviewsUrl = `/dripdoggy/api/public/reviews/product/${prod.id}`;
+              const reviewsRes = await axios.get<any[]>(reviewsUrl);
+              const reviews = Array.isArray(reviewsRes.data) ? reviewsRes.data : [];
+              const avgRating = reviews.length > 0
+                ? Number((reviews.reduce((sum, rev) => sum + Number(rev.rating ?? 5), 0) / reviews.length).toFixed(1))
+                : 0.0;
+              return {
+                ...prod,
+                rating: avgRating,
+                reviewCount: reviews.length
+              };
+            } catch (err) {
+              console.error("Failed to load reviews for prod:", prod.id, err);
+              return { ...prod, rating: 0.0, reviewCount: 0 };
+            }
+          })
+        );
+        setProducts(productsWithRealRatings);
       } catch (err) {
         console.error("Error loading products in shop page", err);
       }

@@ -152,8 +152,8 @@ export function LoginPage() {
           
           {/* Centered Brand Logos Block */}
           <div className="flex flex-col items-center justify-center space-y-0.5">
-            <img src={logoIcon} alt="Drip Doggy Icon" className="w-20 h-20 object-contain mix-blend-multiply" />
-            <img src={logo} alt="Drip Doggy Logo" className="h-29 w-auto max-w-[130px] object-contain mix-blend-multiply -mt-10 -mb-6" />
+            <img src={logoIcon} alt="DripDoggy Icon" className="w-20 h-20 object-contain mix-blend-multiply" />
+            <img src={logo} alt="DripDoggy Logo" className="h-29 w-auto max-w-[130px] object-contain mix-blend-multiply -mt-10 -mb-6" />
           </div>
 
           <div className="space-y-1">
@@ -231,7 +231,7 @@ export function LoginPage() {
           </div>
 
           <p className="text-center text-[8.5px] text-muted-foreground/60 font-bold uppercase tracking-widest mt-4">
-            Drip Doggy Admin Panel &copy; 2026
+            DripDoggy Admin Panel &copy; 2026
           </p>
 
         </div>

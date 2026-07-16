@@ -33,6 +33,7 @@ const CuratedCollectionsEditorPage = lazy(() => import("./pages/CuratedCollectio
 const ComingSoonEditorPage = lazy(() => import("./pages/ComingSoonEditor").then(m => ({ default: m.ComingSoonEditorPage })));
 const ProfilePage = lazy(() => import("./pages/Profile").then(m => ({ default: m.ProfilePage })));
 const ChangePasswordPage = lazy(() => import("./pages/ChangePassword").then(m => ({ default: m.ChangePasswordPage })));
+const NewsletterCampaignPage = lazy(() => import("./pages/NewsletterCampaign").then(m => ({ default: m.NewsletterCampaignPage })));
 
 export default function App() {
   return (
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="change-password" element={<ChangePasswordPage />} />
+          <Route path="newsletter-campaign" element={<NewsletterCampaignPage />} />
 
           {/* Content Editor Routes */}
           <Route path="content/hero-slides" element={<HeroSlidesEditorPage />} />

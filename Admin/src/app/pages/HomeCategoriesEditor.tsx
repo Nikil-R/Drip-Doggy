@@ -205,7 +205,7 @@ export function HomeCategoriesEditorPage() {
           <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
             <Layers className="w-5 h-5 text-[#224870]" /> Home Categories
           </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Manage Drip Doggy homepage category cards</p>
+          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">Manage DripDoggy homepage category cards</p>
         </div>
         <div className="flex gap-2.5">
           <button onClick={reset} className="border border-neutral-300 hover:border-[#224870] text-[#382d24] hover:text-[#224870] text-[9.5px] font-bold tracking-widest px-4 py-2.5 uppercase cursor-pointer bg-transparent rounded-none transition-colors"><RotateCcw className="w-3.5 h-3.5" /> Reset Defaults</button>

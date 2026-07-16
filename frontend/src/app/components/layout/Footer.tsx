@@ -6,7 +6,6 @@ import {
   Mail,
   Instagram,
   Youtube,
-  Twitter,
   Facebook,
   Link2,
 } from "lucide-react";
@@ -15,13 +14,21 @@ import logoIcon from "@/assets/new_logo_icon.png";
 import { motion } from "motion/react";
 import { getFooterConfig } from "../../lib/content-store";
 import { validateEmail } from "../../utils/validation";
+import axios from "axios";
+import { API_CONFIG } from "@/app/utils/api-config";
+
+const XLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 // Icon mapping for social platforms
 const ICON_MAP: Record<string, React.ElementType> = {
   instagram: Instagram,
   youtube: Youtube,
-  twitter: Twitter,
-  x: Twitter,
+  twitter: XLogo,
+  x: XLogo,
   facebook: Facebook,
 };
 
@@ -111,7 +118,9 @@ export function Footer() {
 
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubscribeError(null);
     const err = validateEmail(email);
@@ -119,9 +128,18 @@ export function Footer() {
       setSubscribeError(err);
       return;
     }
-    setSubscribeStatus("success");
-    setEmail("");
-    setTimeout(() => setSubscribeStatus("idle"), 5000);
+    setIsSubmitting(true);
+    try {
+      await axios.post(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/newsletter/subscribe`, {
+        email: email.trim()
+      });
+      setSubscribeStatus("success");
+    } catch (err: any) {
+      setSubscribeError(err.response?.data?.message || "Failed to subscribe. Please try again.");
+      setSubscribeStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Helper to split text by <br /> or \n for styling heading line breaks
@@ -154,7 +172,7 @@ export function Footer() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                 <div className="space-y-4">
                   <span className="text-[9px] font-extrabold tracking-[0.3em] text-[#b2533e] uppercase block">
-                    {config.ctaSection.tag || "Private Access / Drip Doggy Syndicate"}
+                    {config.ctaSection.tag || "Private Access / DripDoggy Syndicate"}
                   </span>
                   <h2 className="text-3xl lg:text-5xl font-extrabold tracking-[0.03em] uppercase leading-tight">
                     {renderHeading(config.ctaSection.heading || "Join the\nNext Drop")}
@@ -169,21 +187,33 @@ export function Footer() {
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
                         <Mail className="h-4 w-4 stroke-[1.5]" />
                       </div>
-                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                      <input type="email" required 
+                        disabled={subscribeStatus === "success"}
+                        readOnly={subscribeStatus === "success"}
+                        value={email} onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email"
-                        className="w-full bg-white/5 border border-white/15 pl-10 pr-4 py-3.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40 transition-colors rounded-none" />
+                        className={`w-full bg-white/5 border border-white/15 pl-10 pr-4 py-3.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40 transition-colors rounded-none ${
+                          subscribeStatus === "success" ? "pointer-events-none select-none opacity-60 cursor-default" : ""
+                        }`} />
                     </div>
                     <button type="submit"
-                      className="group inline-flex items-center gap-2 bg-white text-[#030213] px-7 py-3.5 text-xs font-extrabold tracking-[0.2em] hover:bg-white/90 transition-all duration-300 border-none cursor-pointer uppercase">
-                      {subscribeStatus === "success" ? "SUBSCRIBED" : (config.ctaSection.buttonText || "SUBSCRIBE")}
-                      <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" />
+                      disabled={isSubmitting || subscribeStatus === "success"}
+                      className={`group inline-flex items-center gap-2 px-7 py-3.5 text-xs font-extrabold tracking-[0.2em] transition-all duration-300 border-none uppercase ${
+                        subscribeStatus === "success" 
+                          ? "bg-green-600 text-white opacity-85 cursor-default pointer-events-none" 
+                          : "bg-white text-[#030213] hover:bg-white/90 cursor-pointer disabled:opacity-50"
+                      }`}>
+                      {subscribeStatus === "success" ? "SUBSCRIBED" : (isSubmitting ? "SUBSCRIBING..." : (config.ctaSection.buttonText || "SUBSCRIBE"))}
+                      {subscribeStatus !== "success" && (
+                        <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" />
+                      )}
                     </button>
                   </form>
                   {subscribeError && (
                     <p className="text-[11px] text-red-400 font-bold tracking-wider uppercase">✕ {subscribeError}</p>
                   )}
                   {subscribeStatus === "success" && (
-                    <p className="text-[11px] text-green-400/80 font-bold tracking-wider uppercase">✓ You&apos;re on the list. Welcome to the Syndicate.</p>
+                    <p className="text-[11px] text-green-450 font-bold tracking-wider uppercase">✓ You are into the syndicate.</p>
                   )}
                   {config.ctaSection.chips && config.ctaSection.chips.length > 0 && (
                     <div className="flex flex-wrap gap-2">
@@ -205,17 +235,17 @@ export function Footer() {
       <div className="bg-[#F7F5F2] border-t border-[#E5E5E5] relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden="true">
           <span className="text-[12vw] lg:text-[10vw] font-extrabold tracking-[0.05em] text-[#030213]/[0.025] whitespace-nowrap uppercase leading-none">
-            {config.brandName || "DRIP DOGGY"}
+            {config.brandName || "DRIPDOGGY"}
           </span>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto pt-6 pb-14 lg:pt-8 lg:pb-16">
           {/* Desktop Layout */}
-          <div className="hidden lg:block max-w-[1440px] mx-auto px-20">
-            <div className="max-w-2xl space-y-6">
+          <div className="hidden lg:block max-w-[1440px] mx-auto px-10 mt-[-25px]">
+            <div className="max-w-2xl space-y-2">
               <div className="flex items-center gap-6">
                 <img src={logoIcon} alt="" className="h-20 w-auto object-contain mix-blend-multiply" />
-                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-11 w-auto object-contain mix-blend-multiply" />
+                <img src={logo} alt={config.brandName || "DRIPDOGGY"} className="h-30 w-auto object-contain mix-blend-multiply ml-[-15px]" />
               </div>
               <span className="block text-[18px] font-black tracking-[2px] text-[#B35A3C] uppercase">
                 {config.tagline || "Luxury Streetwear / Est. 2026"}
@@ -246,10 +276,10 @@ export function Footer() {
           <div className="lg:hidden px-6 space-y-2 text-center flex flex-col items-center">
             <div className="space-y-4 pb-6 border-b border-[#E5E5E5] w-full flex flex-col items-center">
               <div className="flex flex-col items-center gap-0">
-                <img src={logoIcon} alt="" className="h-16 w-auto object-contain mix-blend-multiply" />
-                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-10 w-auto object-contain mix-blend-multiply mt-[-10px]" />
+                <img src={logoIcon} alt="" className="h-20 w-auto object-contain mix-blend-multiply" />
+                <img src={logo} alt={config.brandName || "DRIPDOGGY"} className="h-40 w-auto object-contain mix-blend-multiply mt-[-60px]" />
               </div>
-              <span className="block text-[16px] font-black tracking-[1.5px] text-[#B35A3C] uppercase">
+              <span className="block text-[16px] font-black tracking-[1.5px] text-[#B35A3C] uppercase mt-[-50px]">
                 {config.tagline || "Luxury Streetwear / Est. 2026"}
               </span>
               <p className="text-[14px] leading-[22px] text-[#6B6B6B] font-semibold max-w-sm">
@@ -275,23 +305,18 @@ export function Footer() {
         </div>
       </div>
 
-      {/* ═════════════════════════════════════════════════════════════════════
-          SECTION D — BOTTOM LEGAL BAR
-          ═════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[#030213]">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+      <div className="bg-[#030213] border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6 py-6 md:py-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[10px] text-white/40 font-bold tracking-wider uppercase order-2 md:order-1">
-              {config.copyrightText ? config.copyrightText.replace("{year}", new Date().getFullYear().toString()) : `© ${new Date().getFullYear()} Drip Doggy. All rights reserved.`}
+            <p className="text-[10px] text-white/40 font-extrabold tracking-[0.2em] uppercase order-2 md:order-1 text-center md:text-left">
+              © {new Date().getFullYear()} DRIPDOGGY. UNCOMPROMISED STREET LUXURY. ALL RIGHTS RESERVED.
             </p>
-            <div className="flex items-center gap-4 order-1 md:order-2">
-              <div className="hidden sm:flex items-center gap-3">
-                <Link to="/privacy" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Privacy</Link>
-                <span className="text-white/10 text-[8px]">|</span>
-                <Link to="/terms" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Terms</Link>
-                <span className="text-white/10 text-[8px]">|</span>
-                <Link to="/privacy" className="text-[9px] text-white/40 hover:text-white/70 transition-colors font-bold tracking-wider uppercase">Cookies</Link>
-              </div>
+            <div className="hidden md:flex items-center gap-1 order-1 md:order-2">
+              <Link to="/privacy" className="text-[10px] text-white/40 hover:text-white transition-colors font-extrabold tracking-[0.2em] uppercase">Privacy</Link>
+              <span className="text-white/10 font-bold mx-1.5 select-none">·</span>
+              <Link to="/terms" className="text-[10px] text-white/40 hover:text-white transition-colors font-extrabold tracking-[0.2em] uppercase">Terms</Link>
+              <span className="text-white/10 font-bold mx-1.5 select-none">·</span>
+              <Link to="/privacy" className="text-[10px] text-white/40 hover:text-white transition-colors font-extrabold tracking-[0.2em] uppercase">Cookies</Link>
             </div>
           </div>
         </div>

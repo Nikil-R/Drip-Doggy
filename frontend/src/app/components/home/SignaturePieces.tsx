@@ -3,6 +3,9 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { products } from "../../data/products";
 import type { Product } from "../../data/products";
+import { Star } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 
 function SignatureCard({ product }: { product: Product }) {
@@ -70,21 +73,42 @@ function SignatureCard({ product }: { product: Product }) {
         <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1 group-hover:underline">
           {product.name}
         </h3>
-        <div className="flex items-baseline gap-2 mt-0.5">
-          <span className="text-sm font-extrabold text-neutral-900">
-            ₹{product.price.toFixed(0)}
-          </span>
-          {product.originalPrice && (
-            <>
-              <span className="text-[10px] font-semibold text-neutral-450 line-through">
-                ₹{product.originalPrice.toFixed(0)}
-              </span>
-              {product.originalPrice > product.price && (
-                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
-                  {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+              ₹{product.price.toFixed(0)}
+            </span>
+            {product.originalPrice && (
+              <>
+                <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through">
+                  ₹{product.originalPrice.toFixed(0)}
                 </span>
-              )}
-            </>
+                {product.originalPrice > product.price && (
+                  <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
+                    {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+
+          {product.rating !== undefined && product.rating > 0 && (
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <div className="flex items-center text-[#ffc107]">
+                {[...Array(5)].map((_, i) => {
+                  const isFilled = i < Math.round(product.rating || 0);
+                  return (
+                    <Star
+                      key={i}
+                      className={`h-2.5 w-2.5 ${isFilled ? "fill-current" : "text-neutral-200"}`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-[8px] font-extrabold text-neutral-500 ml-0.5">
+                {product.rating.toFixed(1)}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -95,6 +119,7 @@ function SignatureCard({ product }: { product: Product }) {
 import { curatedCollectionApi } from "../../lib/curated-collection-api";
 
 export function SignaturePieces() {
+  const { isAuthenticated } = useAuth();
   const [config, setConfig] = useState({
     sectionTitle: "Signature Pieces",
     sectionSubtitle: "Brand Uniform",
@@ -111,13 +136,39 @@ export function SignaturePieces() {
           sectionSubtitle: data.subtitle || "Brand Uniform",
           active: data.isActive
         });
-        setFinalProducts(data.products || []);
+        
+        const rawProds = data.products || [];
+        const enriched = await Promise.all(
+          rawProds.map(async (prod) => {
+            try {
+              const reviewsUrl = `/dripdoggy/api/public/reviews/product/${prod.id}`;
+              const reviewsRes = await axios.get<any[]>(reviewsUrl);
+              const reviews = Array.isArray(reviewsRes.data) ? reviewsRes.data : [];
+              const avgRating = reviews.length > 0
+                ? Number((reviews.reduce((sum, rev) => sum + Number(rev.rating ?? 5), 0) / reviews.length).toFixed(1))
+                : 0;
+              return {
+                ...prod,
+                rating: avgRating,
+                reviewCount: reviews.length
+              };
+            } catch (err) {
+              console.error("Failed to load reviews for signature prod:", prod.id, err);
+              return {
+                ...prod,
+                rating: 0,
+                reviewCount: 0
+              };
+            }
+          })
+        );
+        setFinalProducts(enriched);
       } catch (err) {
         console.error("Failed to load signature products:", err);
       }
     }
     loadProducts();
-  }, []);
+  }, [isAuthenticated]);
 
   if (!config.active) return null;
 

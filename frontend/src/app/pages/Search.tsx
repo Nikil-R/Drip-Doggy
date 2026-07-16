@@ -277,7 +277,7 @@ export function Search() {
         if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
         return true;
       }).slice(0, 8);
-      fallbackMessage = `No products found. Explore our Drip Doggy collection:`;
+      fallbackMessage = `No products found. Explore our DripDoggy collection:`;
     }
   }
 

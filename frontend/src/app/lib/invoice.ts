@@ -244,7 +244,7 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
       <div class="footer">
         <div class="footer-divider"></div>
         <div class="footer-thanks">Thank You</div>
-        <div class="footer-thanks-sub">for shopping with Drip Doggy</div>
+        <div class="footer-thanks-sub">for shopping with DripDoggy</div>
         <div class="footer-support">
           ${cfg.email}<span class="sep">|</span>${cfg.phone}<span class="sep">|</span>${cfg.website}
         </div>
