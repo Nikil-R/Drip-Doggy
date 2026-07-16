@@ -12,7 +12,7 @@ export function FAQ() {
         },
         {
           q: "Can I cancel my order?",
-          a: "Orders can only be cancelled before they are confirmed for shipping. Once your order has been shipped, cancellations are not possible."
+          a: "Orders can only be cancelled before they are packed. Once your order has been packed, cancellations are not possible."
         },
         {
           q: "Can I change my order after placing it?",
@@ -97,7 +97,7 @@ export function FAQ() {
         },
         {
           q: "What are your customer support hours?",
-          a: "Monday – Saturday\n10:00 AM – 6:00 PM (IST)"
+          a: "Monday – Saturday\n10:00 AM – 7:00 PM (IST)"
         }
       ]
     }

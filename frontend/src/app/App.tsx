@@ -18,7 +18,6 @@ import { Wishlist } from "./pages/Wishlist";
 import { ComingSoon } from "./pages/ComingSoon";
 import { Search } from "./pages/Search";
 import { About } from "./pages/About";
-import { Help } from "./pages/Help";
 import { Contact } from "./pages/Contact";
 import { FAQ } from "./pages/FAQ";
 import { Returns } from "./pages/Returns";
@@ -109,7 +108,7 @@ export default function App() {
             <Route path="/coming-soon" element={<ComingSoon />} />
             <Route path="/search" element={<Search />} />
             <Route path="/about" element={<About />} />
-            <Route path="/help" element={<Help />} />
+            <Route path="/help" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/returns" element={<Returns />} />

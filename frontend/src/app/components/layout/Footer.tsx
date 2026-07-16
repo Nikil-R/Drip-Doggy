@@ -10,8 +10,8 @@ import {
   Facebook,
   Link2,
 } from "lucide-react";
-import logo from "../../../assets/logo.png";
-import logoIcon from "../../../assets/new_logo_icon.png";
+import logo from "@/assets/logo.png";
+import logoIcon from "@/assets/new_logo_icon.png";
 import { motion } from "motion/react";
 import { getFooterConfig } from "../../lib/content-store";
 import { validateEmail } from "../../utils/validation";
@@ -30,19 +30,45 @@ const ICON_MAP: Record<string, React.ElementType> = {
 function MobileAccordion({ title, links }: { title: string; links: { label: string; to: string }[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-neutral-200/70">
+    <div className="border-b border-[#E5E5E5]">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-3.5 text-[10px] font-extrabold tracking-[0.2em] uppercase text-neutral-800 bg-transparent border-none cursor-pointer"
+        className="w-full flex items-center justify-between py-4 text-[16px] font-black uppercase tracking-[0.1em] text-[#111111] bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
       >
-        {title}
-        <ChevronDown className={`h-3 w-3 text-neutral-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <span>{title}</span>
+        <ChevronDown className={`h-4 w-4 text-[#111111] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
-      <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-96 pb-3" : "max-h-0"}`}>
-        <ul className="space-y-2.5">
+      <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-96 pb-4" : "max-h-0"}`}>
+        <ul className="space-y-3.5 pt-1">
           {links.map((link) => (
             <li key={link.label}>
-              <Link to={link.to} className="text-[11px] text-neutral-500 hover:text-[#030213] transition-colors font-medium">{link.label}</Link>
+              <Link to={link.to} className="text-[13px] text-[#6B6B6B] hover:text-[#111111] transition-colors font-semibold uppercase tracking-wider">{link.label}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function DesktopAccordion({ title, links }: { title: string; links: { label: string; to: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-[#E5E5E5]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-4 text-[18px] font-black uppercase tracking-[0.1em] text-[#111111] bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
+      >
+        <span>{title}</span>
+        <ChevronDown className={`h-4.5 w-4.5 text-[#111111] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-96 pb-4" : "max-h-0"}`}>
+        <ul className="space-y-4 pt-2">
+          {links.map((link) => (
+            <li key={link.label}>
+              <Link to={link.to} className="text-[14px] text-[#6B6B6B] hover:text-[#111111] transition-colors font-medium">
+                {link.label}
+              </Link>
             </li>
           ))}
         </ul>
@@ -55,9 +81,9 @@ function SocialButton({ platform, label, href }: { platform: string; label: stri
   const Icon = ICON_MAP[platform.toLowerCase()] || Link2;
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
-      className="w-10 h-10 border border-neutral-300 flex items-center justify-center text-neutral-500 hover:bg-[#030213] hover:text-white hover:border-[#030213] transition-all duration-300 group"
+      className="w-11 h-11 lg:w-12 lg:h-12 border border-[#BDBDBD] flex items-center justify-center text-[#111111] hover:bg-[#111111] hover:text-white hover:border-[#111111] transition-all duration-300 bg-white"
       aria-label={label}>
-      <Icon className="h-4 w-4 stroke-[1.5]" />
+      <Icon className="h-[18px] w-[18px] lg:h-5 lg:w-5 stroke-[1.5]" />
     </a>
   );
 }
@@ -176,30 +202,30 @@ export function Footer() {
       {/* ═════════════════════════════════════════════════════════════════════
           SECTION B — WARM EDITORIAL MAIN FOOTER
           ═════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[#FAF8F5] border-t border-neutral-200/60 relative overflow-hidden">
+      <div className="bg-[#F7F5F2] border-t border-[#E5E5E5] relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden="true">
           <span className="text-[12vw] lg:text-[10vw] font-extrabold tracking-[0.05em] text-[#030213]/[0.025] whitespace-nowrap uppercase leading-none">
             {config.brandName || "DRIP DOGGY"}
           </span>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-14 lg:py-16">
+        <div className="relative z-10 max-w-7xl mx-auto pt-6 pb-14 lg:pt-8 lg:pb-16">
           {/* Desktop Layout */}
-          <div className="hidden lg:grid lg:grid-cols-12 gap-10">
-            <div className="col-span-5 space-y-6">
-              <div className="flex items-center gap-3">
+          <div className="hidden lg:block max-w-[1440px] mx-auto px-20">
+            <div className="max-w-2xl space-y-6">
+              <div className="flex items-center gap-6">
                 <img src={logoIcon} alt="" className="h-20 w-auto object-contain mix-blend-multiply" />
-                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-24 w-auto object-contain mix-blend-multiply" />
+                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-11 w-auto object-contain mix-blend-multiply" />
               </div>
-              <span className="block text-[9px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase">
+              <span className="block text-[18px] font-black tracking-[2px] text-[#B35A3C] uppercase">
                 {config.tagline || "Luxury Streetwear / Est. 2026"}
               </span>
-              <p className="text-sm text-neutral-500 leading-relaxed font-light max-w-sm">
+              <p className="text-[16px] leading-[26px] text-[#6B6B6B] font-semibold max-w-xl">
                 {config.description || "Architectural silhouettes, premium fabrication, and uncompromised street luxury for the modern wardrobe."}
               </p>
 
               {activeSocials.length > 0 && (
-                <div className="flex gap-2.5 pt-4">
+                <div className="flex gap-4 pt-2">
                   {activeSocials.map((s) => (
                     <SocialButton key={s.label} platform={s.platform} label={s.label} href={s.url} />
                   ))}
@@ -208,45 +234,29 @@ export function Footer() {
             </div>
             
             {config.linkGroups && config.linkGroups.length > 0 && (
-              <div 
-                className="col-span-7 grid gap-8"
-                style={{ gridTemplateColumns: `repeat(${config.linkGroups.length}, minmax(0, 1fr))` }}
-              >
+              <div className="space-y-4 mt-8">
                 {config.linkGroups.map((group, gi) => (
-                  <div key={gi}>
-                    <h4 className="text-[10px] font-extrabold tracking-[0.25em] text-neutral-800 uppercase mb-5">
-                      {group.title}
-                    </h4>
-                    <ul className="space-y-3">
-                      {group.links.map((link, li) => (
-                        <li key={li}>
-                          <Link to={link.to} className="text-[12px] text-neutral-500 hover:text-[#030213] transition-colors duration-200 font-medium">
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <DesktopAccordion key={gi} title={group.title} links={group.links} />
                 ))}
               </div>
             )}
           </div>
 
           {/* Mobile Layout */}
-          <div className="lg:hidden space-y-2">
-            <div className="space-y-4 pb-6 border-b border-neutral-200/70">
-              <div className="flex items-center gap-3">
-                <img src={logoIcon} alt="" className="h-22 w-auto object-contain mix-blend-multiply" />
-                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-24 w-auto object-contain mix-blend-multiply" />
+          <div className="lg:hidden px-6 space-y-2 text-center flex flex-col items-center">
+            <div className="space-y-4 pb-6 border-b border-[#E5E5E5] w-full flex flex-col items-center">
+              <div className="flex flex-col items-center gap-0">
+                <img src={logoIcon} alt="" className="h-16 w-auto object-contain mix-blend-multiply" />
+                <img src={logo} alt={config.brandName || "DRIP DOGGY"} className="h-10 w-auto object-contain mix-blend-multiply mt-[-10px]" />
               </div>
-              <span className="block text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase">
+              <span className="block text-[16px] font-black tracking-[1.5px] text-[#B35A3C] uppercase">
                 {config.tagline || "Luxury Streetwear / Est. 2026"}
               </span>
-              <p className="text-xs text-neutral-500 leading-relaxed font-light">
+              <p className="text-[14px] leading-[22px] text-[#6B6B6B] font-semibold max-w-sm">
                 {config.description || "Architectural silhouettes, premium fabrication, and uncompromised street luxury for the modern wardrobe."}
               </p>
               {activeSocials.length > 0 && (
-                <div className="flex gap-2.5 pt-2">
+                <div className="flex gap-3 pt-2 mb-6 justify-center">
                   {activeSocials.map((s) => (
                     <SocialButton key={s.label} platform={s.platform} label={s.label} href={s.url} />
                   ))}
@@ -254,9 +264,13 @@ export function Footer() {
               )}
             </div>
             
-            {config.linkGroups && config.linkGroups.map((group, gi) => (
-              <MobileAccordion key={gi} title={group.title} links={group.links} />
-            ))}
+            {config.linkGroups && (
+              <div className="w-full text-left space-y-4">
+                {config.linkGroups.map((group, gi) => (
+                  <MobileAccordion key={gi} title={group.title} links={group.links} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

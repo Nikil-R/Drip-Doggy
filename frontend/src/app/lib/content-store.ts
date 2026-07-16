@@ -101,7 +101,7 @@ function defaultHeroSlides(): HeroSlide[] {
 
 function defaultFeaturedProducts(): FeaturedProductsConfig {
   return {
-    sectionTitle: "New In",
+    sectionTitle: "New Arrivals",
     sectionSubtitle: "New This Season",
     // Products with badge=NEW or rating>=4.8 — currently filters dynamically
     productIds: [3, 7, 4, 1], // Boxy Minimalist Maxi, Parachute Cargo Skirt, Structured Canvas, Sartorial Trench
@@ -189,7 +189,7 @@ function defaultFooter(): FooterConfig {
       {
         title: "Shop",
         links: [
-          { label: "New In", to: "/shop" },
+          { label: "New Arrivals", to: "/shop" },
           { label: "Outerwear", to: "/shop?category=outerwear" },
           { label: "Knitwear", to: "/shop?category=knitwear" },
           { label: "Wishlist", to: "/account#wishlist" },

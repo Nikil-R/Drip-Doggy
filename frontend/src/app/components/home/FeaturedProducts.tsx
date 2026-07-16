@@ -92,7 +92,7 @@ import { curatedCollectionApi } from "../../lib/curated-collection-api";
 
 export function FeaturedProducts() {
   const [config, setConfig] = useState({
-    sectionTitle: "New In",
+    sectionTitle: "New Arrivals",
     sectionSubtitle: "New This Season",
     active: true
   });
@@ -103,7 +103,7 @@ export function FeaturedProducts() {
       try {
         const data = await curatedCollectionApi.getCollection("NEW_IN");
         setConfig({
-          sectionTitle: data.title || "New In",
+          sectionTitle: data.title || "New Arrivals",
           sectionSubtitle: data.subtitle || "New This Season",
           active: data.isActive
         });
@@ -127,7 +127,7 @@ export function FeaturedProducts() {
           </span>
           <div className="flex justify-between items-baseline">
             <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#030213] uppercase">
-              {config.sectionTitle || "New In"}
+              {config.sectionTitle || "New Arrivals"}
             </h2>
             <Link
               to="/shop"
