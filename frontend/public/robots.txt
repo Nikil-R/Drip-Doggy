@@ -1,0 +1,29 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+
+# Crawling Rules - Public Pages
+Allow: /
+Allow: /shop
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /returns
+Allow: /privacy
+Allow: /terms
+
+# Disallow Rules - Secure checkout, account dashboard, and dev assets
+Disallow: /checkout
+Disallow: /account
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /login
+Disallow: /onboarding
+Disallow: /search
+
+# Disallow Rules - Admin Console paths to prevent index pollution and security leakage
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/*
+
+# Sitemap Link
+Sitemap: https://dripdoggy.com/sitemap.xml

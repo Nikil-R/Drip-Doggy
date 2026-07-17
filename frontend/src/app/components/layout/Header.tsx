@@ -454,9 +454,9 @@ export function Header() {
           
           {/* Logo (Left) */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-4">
-              <img src={logoIcon} alt="" className="h-[60px] w-auto object-contain mix-blend-multiply" />
-              <img src={logo} alt="DRIPDOGGY" className="h-[100px] w-auto object-contain mix-blend-multiply ml-[-10px]" />
+            <Link to="/" className="flex items-center gap-3">
+              <img src={logoIcon} alt="" className="h-[70px] w-auto object-contain mix-blend-multiply" />
+              <img src={logo} alt="DRIPDOGGY" className="h-[110px] w-auto object-contain mix-blend-multiply ml-[-10px]" />
             </Link>
           </div>
 
