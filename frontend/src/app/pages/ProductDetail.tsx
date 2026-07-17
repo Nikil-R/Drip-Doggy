@@ -20,6 +20,7 @@ import { cartApi } from "../lib/cart-api";
 import { syncCart } from "../lib/cart-sync";
 import { wishlistApi } from "../lib/wishlist-api";
 import { syncWishlist } from "../lib/wishlist-sync";
+import { bundleApi } from "../lib/bundle-api";
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -128,6 +129,41 @@ function ProductDetailContent({ product }: { product: Product }) {
   const [editingComment, setEditingComment] = useState("");
   const [editingRating, setEditingRating] = useState(5);
   const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null);
+
+  // Active Bundle logic
+  const [activeBundle, setActiveBundle] = useState<any | null>(null);
+  const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<number, number>>({});
+
+  const activeVariantId = product.rawVariants?.find(
+    (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
+  )?.id;
+
+  useEffect(() => {
+    if (!activeVariantId) {
+      setActiveBundle(null);
+      return;
+    }
+    async function getBundle() {
+      try {
+        const bundle = await bundleApi.fetchBundleByVariantId(activeVariantId);
+        setActiveBundle(bundle);
+        if (bundle && bundle.variants) {
+          const initialSizes: Record<number, number> = {};
+          bundle.variants.forEach((v: any) => {
+            const availableSize = v.sizes?.find((s: any) => s.stockQuantity > 0 && s.isActive) || v.sizes?.[0];
+            if (availableSize) {
+              initialSizes[v.variantId] = availableSize.id;
+            }
+          });
+          setSelectedBundleSizes(initialSizes);
+        }
+      } catch (err) {
+        console.error(err);
+        setActiveBundle(null);
+      }
+    }
+    getBundle();
+  }, [activeVariantId, selectedColor]);
 
   const productImages = getVariantImages(product, selectedColor);
   const colorOptions = getColorOptions(product);
@@ -1237,62 +1273,112 @@ function ProductDetailContent({ product }: { product: Product }) {
       )}
 
       {/* ─── Frequently Bought Together ─────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-10 border-b border-neutral-200/60">
-        <h2 className="text-center text-xs font-extrabold tracking-[0.25em] mb-6 uppercase">
-          FREQUENTLY BOUGHT TOGETHER
-        </h2>
-        <div className="flex flex-col md:flex-row justify-center items-center gap-6 max-w-4xl mx-auto bg-white border border-neutral-100 rounded-xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-          {/* Images assembly */}
-          <div className="flex items-center gap-3">
-            <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden">
-              <img
-                src={productImages[0] ?? product.image}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="text-neutral-400 font-bold text-sm">+</span>
-            <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=150"
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="text-neutral-400 font-bold text-sm">+</span>
-            <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=150"
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Pricing */}
-          <div className="text-center md:text-left flex flex-col md:flex-row items-center gap-4">
-            <div>
-              <p className="text-[9px] font-bold tracking-widest text-neutral-400">
-                BUNDLE PRICE
-              </p>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-xl font-bold text-neutral-900">
-                  ₹{(product.price + 245 + 165).toFixed(0)}
-                </span>
-                <span className="text-xs text-neutral-400 line-through">
-                  ₹{(product.originalPrice ?? product.price + 245 + 165).toFixed(0)}
-                </span>
+      {activeBundle && (
+        <section className="max-w-7xl mx-auto px-6 py-10 border-b border-neutral-200/60 animate-in fade-in duration-300">
+          <h2 className="text-center text-xs font-extrabold tracking-[0.25em] mb-6 uppercase">
+            FREQUENTLY BOUGHT TOGETHER
+          </h2>
+          <div className="flex flex-col gap-6 max-w-4xl mx-auto bg-[#fafafa] border border-neutral-200/60 rounded-xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              
+              {/* Product items display with size selectors */}
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {activeBundle.variants.map((v: any, idx: number) => {
+                  const selectedSizeId = selectedBundleSizes[v.variantId];
+                  return (
+                    <div key={v.variantId} className="flex items-center gap-4">
+                      {idx > 0 && <span className="text-neutral-400 font-bold text-sm">+</span>}
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-20 bg-neutral-100 rounded overflow-hidden shadow-xs relative">
+                          <img
+                            src={v.primaryImageUrl}
+                            alt={v.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="text-[10px] font-black text-neutral-900 mt-2 max-w-[120px] text-center truncate uppercase tracking-wider">
+                          {v.productName}
+                        </div>
+                        <div className="text-[9px] text-[#224870] font-bold mb-1.5 uppercase">
+                          {v.variantName}
+                        </div>
+                        
+                        {/* Size Dropdown */}
+                        <select
+                          value={selectedSizeId || ""}
+                          onChange={(e) => {
+                            const newSizeId = Number(e.target.value);
+                            setSelectedBundleSizes(prev => ({
+                              ...prev,
+                              [v.variantId]: newSizeId
+                            }));
+                          }}
+                          className="text-[9px] font-bold uppercase py-1 px-1.5 bg-white border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#224870]"
+                        >
+                          {v.sizes?.map((sz: any) => (
+                            <option key={sz.id} value={sz.id} disabled={!sz.isActive || sz.stockQuantity === 0}>
+                              {sz.sizeName} {sz.stockQuantity === 0 ? "(Out of Stock)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Pricing & Add to Bag */}
+              <div className="text-center md:text-left flex flex-col items-center md:items-start gap-3 shrink-0">
+                <div>
+                  <p className="text-[9px] font-black tracking-widest text-[#224870] uppercase">
+                    {activeBundle.title}
+                  </p>
+                  <div className="flex items-baseline justify-center md:justify-start gap-2 mt-0.5">
+                    <span className="text-xl font-black text-neutral-900">
+                      ₹{activeBundle.bundlePrice}
+                    </span>
+                    <span className="text-xs text-neutral-450 line-through">
+                      ₹{activeBundle.originalTotal}
+                    </span>
+                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
+                      SAVE ₹{activeBundle.originalTotal - activeBundle.bundlePrice}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    const token = localStorage.getItem("dripdoggy_auth_token");
+                    if (!token) {
+                      navigate("/login");
+                      return;
+                    }
+                    try {
+                      // Collect selected product variant size IDs
+                      const sizeIds = activeBundle.variants.map((v: any) => selectedBundleSizes[v.variantId]).filter(Boolean);
+                      if (sizeIds.length < activeBundle.variants.length) {
+                        alert("Please select sizes for all products in the bundle.");
+                        return;
+                      }
+                      
+                      await cartApi.addBundleToCart(activeBundle.id, sizeIds, 1);
+                      await syncCart();
+                      window.dispatchEvent(new Event("cart-updated"));
+                      alert("Product Bundle added to bag successfully!");
+                    } catch (err: any) {
+                      console.error("Error adding bundle to cart", err);
+                      alert(err.response?.data?.message || "Failed to add bundle to bag.");
+                    }
+                  }}
+                  className="bg-[#224870] text-white px-6 py-3 rounded text-xs font-bold tracking-[0.2em] hover:bg-[#1a3858] transition-colors uppercase cursor-pointer border-none shadow-xs"
+                >
+                  ADD BUNDLE TO BAG
+                </button>
+              </div>
+
             </div>
-            <button
-              onClick={handleAddToBag}
-              className="bg-[#030213] text-white px-6 py-3 rounded text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-colors uppercase cursor-pointer"
-            >
-              ADD BUNDLE TO BAG
-            </button>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ─── You May Also Like ──────────────────────────────────────────── */}
       {recommendations.length > 0 && (
