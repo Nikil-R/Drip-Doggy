@@ -66,7 +66,9 @@ export async function syncCart() {
         discountValue,
         quantity: item.quantity || 1,
         image: item.primaryImageUrl || "",
-        backendId: item.id
+        backendId: item.id,
+        bundleId: item.bundleId,
+        bundleTitle: item.bundleTitle
       };
     });
 

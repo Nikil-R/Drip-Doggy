@@ -19,6 +19,8 @@ export interface BackendCartItem {
   variantName: string;
   price: number;
   primaryImageUrl: string;
+  bundleId?: number;
+  bundleTitle?: string;
 }
 
 export const cartApi = {
@@ -48,6 +50,18 @@ export const cartApi = {
     return response.data;
   },
 
+  updateCartItemSize: async (cartItemId: number, productVariantSizeId: number): Promise<any> => {
+    const response = await axios.put(
+      `${BASE_URL}/${cartItemId}/size`,
+      null,
+      {
+        params: { productVariantSizeId },
+        headers: getHeaders()
+      }
+    );
+    return response.data;
+  },
+
   removeFromCart: async (cartItemId: number): Promise<any> => {
     const response = await axios.delete(`${BASE_URL}/${cartItemId}`, { headers: getHeaders() });
     return response.data;
@@ -55,6 +69,15 @@ export const cartApi = {
 
   clearCart: async (): Promise<any> => {
     const response = await axios.delete(BASE_URL, { headers: getHeaders() });
+    return response.data;
+  },
+
+  addBundleToCart: async (bundleId: number, productVariantSizeIds: number[], quantity: number): Promise<any> => {
+    const response = await axios.post(
+      `${BASE_URL}/bundle`,
+      { bundleId, productVariantSizeIds, quantity },
+      { headers: getHeaders() }
+    );
     return response.data;
   }
 };
