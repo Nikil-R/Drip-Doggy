@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -11,6 +11,9 @@ import {
   Info,
   DollarSign
 } from "lucide-react";
+import { useAuthStore } from "@/app/store/auth-store";
+import { bundleApi } from "../lib/bundle-api";
+import { productApi } from "../lib/product-api";
 
 const RS = "₹";
 
@@ -27,94 +30,28 @@ interface Bundle {
   id: number;
   title: string;
   mainProductVariantId: number;
-  mainProductName: string;
-  mainVariantName: string;
-  mainPrice: number;
-  mainImageUrl: string;
-  discountType: "PERCENTAGE" | "FLAT";
+  mainProductName?: string;
+  mainVariantName?: string;
+  mainPrice?: number;
+  mainImageUrl?: string;
+  discountType: "PERCENTAGE" | "FLAT" | "FREE_SHIPPING";
   discountValue: number;
   isActive: boolean;
-  items: BundleItem[];
+  variants?: any[];
+  items?: BundleItem[];
 }
 
-// Highly stylized Mock Catalog Data for Admin composing
-const MOCK_CATALOG = [
-  {
-    productId: 101,
-    productName: "Drip Oversized Denim Jacket",
-    variants: [
-      { id: 1001, variantName: "Dark Indigo Wash", price: 3499, imageUrl: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=400&h=400&q=80" },
-      { id: 1002, variantName: "Acid Bleach Grey", price: 3699, imageUrl: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=400&h=400&q=80" }
-    ]
-  },
-  {
-    productId: 102,
-    productName: "Syndicate Utility Cargo Pants",
-    variants: [
-      { id: 2001, variantName: "Olive Drab Green", price: 2499, imageUrl: "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=400&h=400&q=80" },
-      { id: 2002, variantName: "Midnight Black", price: 2499, imageUrl: "https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&w=400&h=400&q=80" }
-    ]
-  },
-  {
-    productId: 103,
-    productName: "Classic Heavyweight Graphic Tee",
-    variants: [
-      { id: 3001, variantName: "Vintage Off-White", price: 1299, imageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=400&h=400&q=80" },
-      { id: 3002, variantName: "Carbon Black", price: 1299, imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&h=400&q=80" }
-    ]
-  },
-  {
-    productId: 104,
-    productName: "Drip Streetwear Chunky Sneakers",
-    variants: [
-      { id: 4001, variantName: "Triple Chalk White", price: 4999, imageUrl: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=400&h=400&q=80" },
-      { id: 4002, variantName: "Graffiti Neon", price: 5499, imageUrl: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&h=400&q=80" }
-    ]
-  }
-];
-
-// Initial mock bundles loaded
-const INITIAL_BUNDLES: Bundle[] = [
-  {
-    id: 1,
-    title: "Signature Cargo Matching Fit",
-    mainProductVariantId: 1001,
-    mainProductName: "Drip Oversized Denim Jacket",
-    mainVariantName: "Dark Indigo Wash",
-    mainPrice: 3499,
-    mainImageUrl: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=400&h=400&q=80",
-    discountType: "PERCENTAGE",
-    discountValue: 15,
-    isActive: true,
-    items: [
-      {
-        id: 11,
-        variantId: 2001,
-        productName: "Syndicate Utility Cargo Pants",
-        variantName: "Olive Drab Green",
-        price: 2499,
-        imageUrl: "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=400&h=400&q=80"
-      },
-      {
-        id: 12,
-        variantId: 3001,
-        productName: "Classic Heavyweight Graphic Tee",
-        variantName: "Vintage Off-White",
-        price: 1299,
-        imageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=400&h=400&q=80"
-      }
-    ]
-  }
-];
-
 export function ProductBundlesPage() {
-  const [bundles, setBundles] = useState<Bundle[]>(INITIAL_BUNDLES);
+  const { token } = useAuthStore();
+  const [catalog, setCatalog] = useState<any[]>([]);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showComposer, setShowComposer] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Composer Form States
   const [title, setTitle] = useState("");
-  const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FLAT">("PERCENTAGE");
+  const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FLAT" | "FREE_SHIPPING">("PERCENTAGE");
   const [discountValue, setDiscountValue] = useState<number>(10);
   
   // Selected variant structures in Composer
@@ -125,10 +62,42 @@ export function ProductBundlesPage() {
   const [mainSearch, setMainSearch] = useState("");
   const [companionSearch, setCompanionSearch] = useState("");
 
+  // Fetch bundles and products from API
+  const loadData = async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const fetchedProducts = await productApi.fetchAllProducts(token);
+      const mappedCatalog = fetchedProducts.map((p) => ({
+        productId: p.id,
+        productName: p.productName,
+        variants: (p.variants || []).map((v) => ({
+          id: v.id,
+          variantName: v.variantName,
+          price: v.price,
+          mrp: v.mrp,
+          imageUrl: v.primaryImageUrl || (v.imageUrls && v.imageUrls[0]) || ""
+        }))
+      }));
+      setCatalog(mappedCatalog);
+
+      const fetchedBundles = await bundleApi.fetchAllBundles(token);
+      setBundles(fetchedBundles);
+    } catch (err) {
+      console.error("Error loading bundle catalog details:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [token]);
+
   // Find variant details helper
   const findVariant = (id: number) => {
-    for (const prod of MOCK_CATALOG) {
-      const v = prod.variants.find((x) => x.id === id);
+    for (const prod of catalog) {
+      const v = prod.variants.find((x: any) => x.id === id);
       if (v) {
         return {
           productId: prod.productId,
@@ -141,8 +110,8 @@ export function ProductBundlesPage() {
   };
 
   // Pre-calculated filtered lists for composer selector widgets
-  const allCatalogVariants = MOCK_CATALOG.flatMap((p) =>
-    p.variants.map((v) => ({
+  const allCatalogVariants = catalog.flatMap((p) =>
+    p.variants.map((v: any) => ({
       ...v,
       productId: p.productId,
       productName: p.productName,
@@ -172,14 +141,27 @@ export function ProductBundlesPage() {
     }
   })();
 
-  const handleToggleActive = (id: number) => {
-    setBundles((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, isActive: !b.isActive } : b))
-    );
+  const handleToggleActive = async (id: number) => {
+    if (!token) return;
+    try {
+      await bundleApi.toggleBundleStatus(id, token);
+      loadData();
+    } catch (err) {
+      alert("Failed to toggle bundle active status.");
+      console.error(err);
+    }
   };
 
-  const handleDeleteBundle = (id: number) => {
-    setBundles((prev) => prev.filter((b) => b.id !== id));
+  const handleDeleteBundle = async (id: number) => {
+    if (!token) return;
+    if (!confirm("Are you sure you want to delete this bundle?")) return;
+    try {
+      await bundleApi.deleteBundle(id, token);
+      loadData();
+    } catch (err) {
+      alert("Failed to delete product bundle.");
+      console.error(err);
+    }
   };
 
   const handleAddBundleItem = (varId: number) => {
@@ -192,51 +174,40 @@ export function ProductBundlesPage() {
     }
   };
 
-  const handleSaveBundle = (e: React.FormEvent) => {
+  const handleSaveBundle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !selectedMainVariantId || selectedItems.length === 0) {
       alert("Please complete the bundle details and select at least one item.");
       return;
     }
+    if (!token) return;
 
-    const main = findVariant(selectedMainVariantId as number)!;
-    const mappedItems: BundleItem[] = selectedItems.map((id, index) => {
-      const item = findVariant(id)!;
-      return {
-        id: Date.now() + index,
-        variantId: item.id,
-        productName: item.productName,
-        variantName: item.variantName,
-        price: item.price,
-        imageUrl: item.imageUrl
+    try {
+      const payload = {
+        title: title.trim(),
+        mainProductVariantId: Number(selectedMainVariantId),
+        discountType: discountType,
+        discountValue: Number(discountValue),
+        productVariantIds: [Number(selectedMainVariantId), ...selectedItems.map(Number)],
+        isActive: true
       };
-    });
 
-    const newBundle: Bundle = {
-      id: Date.now(),
-      title: title.trim(),
-      mainProductVariantId: main.id,
-      mainProductName: main.productName,
-      mainVariantName: main.variantName,
-      mainPrice: main.price,
-      mainImageUrl: main.imageUrl,
-      discountType,
-      discountValue,
-      isActive: true,
-      items: mappedItems
-    };
-
-    setBundles((prev) => [newBundle, ...prev]);
-    
-    // Reset Form
-    setTitle("");
-    setDiscountType("PERCENTAGE");
-    setDiscountValue(10);
-    setSelectedMainVariantId("");
-    setSelectedItems([]);
-    setMainSearch("");
-    setCompanionSearch("");
-    setShowComposer(false);
+      await bundleApi.createOrUpdateBundle(payload, token);
+      loadData();
+      
+      // Reset Form
+      setTitle("");
+      setDiscountType("PERCENTAGE");
+      setDiscountValue(10);
+      setSelectedMainVariantId("");
+      setSelectedItems([]);
+      setMainSearch("");
+      setCompanionSearch("");
+      setShowComposer(false);
+    } catch (err) {
+      alert("Failed to publish product bundle.");
+      console.error(err);
+    }
   };
 
   const filteredBundles = bundles.filter((b) =>
@@ -552,8 +523,23 @@ export function ProductBundlesPage() {
             <tbody className="divide-y divide-neutral-100">
               {filteredBundles.length > 0 ? (
                 filteredBundles.map((b) => {
-                  const itemsPriceSum = b.items.reduce((sum, item) => sum + item.price, 0);
-                  const totalOrig = b.mainPrice + itemsPriceSum;
+                  const mainVariant = b.variants?.find((v: any) => v.variantId === b.mainProductVariantId) || {
+                    productName: b.mainProductName || "Main Product",
+                    variantName: b.mainVariantName || "Main Variant",
+                    price: b.mainPrice || 0,
+                    primaryImageUrl: b.mainImageUrl || ""
+                  };
+
+                  const companionVariants = b.variants?.filter((v: any) => v.variantId !== b.mainProductVariantId).map((v: any) => ({
+                    variantId: v.variantId,
+                    productName: v.productName,
+                    variantName: v.variantName,
+                    price: v.price,
+                    imageUrl: v.primaryImageUrl
+                  })) || (b.items || []);
+
+                  const itemsPriceSum = companionVariants.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
+                  const totalOrig = (mainVariant.price || 0) + itemsPriceSum;
                   const finalBPrice = b.discountType === "PERCENTAGE" 
                     ? Math.round(totalOrig * (1 - b.discountValue / 100))
                     : Math.max(0, totalOrig - b.discountValue);
@@ -573,13 +559,13 @@ export function ProductBundlesPage() {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <img
-                            src={b.mainImageUrl}
-                            alt={b.mainVariantName}
+                            src={mainVariant.primaryImageUrl || mainVariant.imageUrl}
+                            alt={mainVariant.variantName}
                             className="w-9 h-9 object-cover rounded border border-neutral-100"
                           />
                           <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-neutral-900 truncate">{b.mainProductName}</p>
-                            <p className="text-[9px] text-[#224870] truncate">{b.mainVariantName}</p>
+                            <p className="text-[10px] font-bold text-neutral-900 truncate">{mainVariant.productName}</p>
+                            <p className="text-[9px] text-[#224870] truncate">{mainVariant.variantName}</p>
                           </div>
                         </div>
                       </td>
@@ -587,17 +573,17 @@ export function ProductBundlesPage() {
                       {/* Companion Items thumbnails list */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-1.5 max-w-sm overflow-hidden">
-                          {b.items.map((item) => (
-                            <div key={item.id} className="relative group shrink-0">
+                          {companionVariants.map((item: any, idx: number) => (
+                            <div key={item.variantId || idx} className="relative group shrink-0">
                               <img
-                                src={item.imageUrl}
+                                src={item.imageUrl || item.primaryImageUrl}
                                 alt={item.variantName}
                                 className="w-8 h-8 object-cover rounded border border-neutral-100"
                               />
                             </div>
                           ))}
                           <span className="text-[10px] text-neutral-400 font-bold ml-1">
-                            (+{b.items.length} items)
+                            (+{companionVariants.length} items)
                           </span>
                         </div>
                       </td>
@@ -607,10 +593,12 @@ export function ProductBundlesPage() {
                         <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
                           b.discountType === "PERCENTAGE" 
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-150" 
+                            : b.discountType === "FREE_SHIPPING"
+                            ? "bg-amber-50 text-amber-700 border border-amber-150"
                             : "bg-[#224870]/10 text-[#224870] border border-[#224870]/20"
                         }`}>
                           {b.discountType === "PERCENTAGE" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
-                          {b.discountValue} {b.discountType === "PERCENTAGE" ? "% Off" : "Flat Off"}
+                          {b.discountValue} {b.discountType === "PERCENTAGE" ? "% Off" : b.discountType === "FREE_SHIPPING" ? "Free Ship" : "Flat Off"}
                         </span>
                       </td>
 
@@ -625,13 +613,13 @@ export function ProductBundlesPage() {
                       {/* Active Status toggle */}
                       <td className="py-4 px-6 text-center">
                         <button
-                          type="button"
-                          onClick={() => handleToggleActive(b.id)}
-                          className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border transition-all ${
-                            b.isActive
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-neutral-100 text-neutral-400 border-neutral-200"
-                          }`}
+                           type="button"
+                           onClick={() => handleToggleActive(b.id)}
+                           className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border transition-all ${
+                             b.isActive
+                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                               : "bg-neutral-100 text-neutral-400 border-neutral-200"
+                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${b.isActive ? "bg-emerald-500 animate-pulse" : "bg-neutral-300"}`} />
                           {b.isActive ? "ACTIVE" : "INACTIVE"}
