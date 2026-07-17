@@ -156,6 +156,42 @@ export function Header() {
     }
   });
 
+  const groupCartItems = (items: any[]) => {
+    const groups: any[] = [];
+    const bundleMap = new Map<number, any>();
+
+    items.forEach(item => {
+      if (item.bundleId) {
+        if (!bundleMap.has(item.bundleId)) {
+          const bundleGroup = {
+            isBundle: true,
+            bundleId: item.bundleId,
+            bundleTitle: item.bundleTitle || "Product Bundle",
+            quantity: item.quantity,
+            price: 0,
+            items: [] as any[]
+          };
+          bundleMap.set(item.bundleId, bundleGroup);
+          groups.push(bundleGroup);
+        }
+        bundleMap.get(item.bundleId).items.push(item);
+      } else {
+        groups.push({
+          isBundle: false,
+          ...item
+        });
+      }
+    });
+
+    groups.forEach(g => {
+      if (g.isBundle) {
+        g.price = g.items.reduce((sum: number, item: any) => sum + item.price, 0);
+      }
+    });
+
+    return groups;
+  };
+
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -371,6 +407,30 @@ export function Header() {
     setIsLoading(false);
   };
 
+  const removeBundleItems = async (itemsToRemove: any[]) => {
+    setIsLoading(true);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    try {
+      if (token) {
+        const itemWithId = itemsToRemove.find(item => item.backendId);
+        if (itemWithId) {
+          await cartApi.removeFromCart(itemWithId.backendId);
+        }
+        await syncCart();
+      } else {
+        const removeIds = new Set(itemsToRemove.map(item => item.cartItemId));
+        const updated = cartItems.filter(i => !removeIds.has(i.cartItemId));
+        setCartItems(updated);
+        saveCart(updated);
+      }
+    } catch (err) {
+      console.error("Error removing bundle items:", err);
+      alert("Failed to remove bundle items.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const quickShop = async (rec: { id: number; name: string; price: number; image: string }) => {
     setIsLoading(true);
     const size = "S";
@@ -547,7 +607,7 @@ export function Header() {
                   )}
                 </button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md bg-[#FAF8F5] p-4 flex flex-col h-full border-l border-neutral-200/60 shadow-xl overflow-hidden">
+              <SheetContent aria-describedby={undefined} className="w-full sm:max-w-md bg-[#FAF8F5] p-4 flex flex-col h-full border-l border-neutral-200/60 shadow-xl overflow-hidden">
                 <SheetHeader className="p-0 pb-3 border-b border-neutral-200/60 flex flex-row items-center justify-between pr-8 flex-shrink-0">
                   <SheetTitle className="text-sm font-extrabold tracking-[0.2em] uppercase text-neutral-800 leading-none flex items-center gap-2">
                     My Cart
@@ -572,27 +632,104 @@ export function Header() {
                       <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Your cart is empty</p>
                     </div>
                   ) : (
-                    cartItems.map(item => (
-                      <div key={item.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
-                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover bg-neutral-100 flex-shrink-0" />
+                    groupCartItems(cartItems).map(g => g.isBundle ? (
+                      <div key={`bundle-${g.bundleId}`} className="bg-[#FAF8F5] border border-[#224870]/20 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col gap-3">
+                        <div className="flex justify-between items-center border-b border-neutral-200 pb-2">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black tracking-widest text-[#224870] uppercase">{g.bundleTitle}</span>
+                            <span className="text-[7.5px] font-extrabold text-emerald-700 bg-emerald-50 px-1 py-0.25 rounded-sm border border-emerald-100 uppercase w-fit mt-0.5">Bundle Capsule</span>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              if (confirm("Remove entire matching bundle from bag?")) {
+                                removeBundleItems(g.items);
+                              }
+                            }} 
+                            className="text-[#b2533e] hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer p-1" 
+                            aria-label="Remove entire bundle"
+                          >
+                            <Trash2 className="h-4 w-4 stroke-[1.8]" />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3.5">
+                          {g.items.map((item: any) => (
+                            <div key={item.cartItemId} className="flex gap-3 bg-white p-2.5 border border-neutral-200/60 relative">
+                              <img src={item.image} alt={item.name} className="w-14 h-18 object-cover bg-neutral-100 flex-shrink-0" />
+                              <div className="flex-1 flex flex-col justify-between">
+                                <div>
+                                  <h4 className="text-[11px] font-extrabold text-neutral-900 tracking-tight leading-snug line-clamp-1">{item.name}</h4>
+                                  <div className="flex flex-col gap-0.5 mt-0.5">
+                                    <p className="text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
+                                      Color: {item.color}
+                                    </p>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[9px] font-bold text-neutral-450 uppercase tracking-wider">Size:</span>
+                                      <select 
+                                        value={item.size}
+                                        onChange={(e) => updateItemSize(item.cartItemId, e.target.value)}
+                                        className="text-[9px] font-extrabold uppercase bg-neutral-150 text-neutral-800 border-none px-1 py-0.25 outline-none cursor-pointer"
+                                        aria-label="Select size"
+                                      >
+                                        {getAvailableSizesForItem(item).map(sz => (
+                                          <option key={sz} value={sz}>{sz}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-[11px] font-extrabold text-neutral-900 mt-1">₹{Math.floor(item.price)}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-between items-center border-t border-neutral-200 pt-2 mt-1">
+                          <span className="text-xs font-black text-neutral-900">Total: ₹{Math.floor(g.price * g.quantity)}</span>
+                          
+                          {/* Sync Bundle Quantity */}
+                          <div className="flex items-center border border-neutral-300 px-2.5 py-1 bg-neutral-50 shadow-xs">
+                            <button 
+                              onClick={() => {
+                                g.items.forEach((item: any) => updateQuantity(item.cartItemId, -1));
+                              }} 
+                              className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="text-[11px] font-extrabold w-4 text-center text-neutral-800">{g.quantity}</span>
+                            <button 
+                              onClick={() => {
+                                g.items.forEach((item: any) => updateQuantity(item.cartItemId, 1));
+                              }} 
+                              className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={g.cartItemId} className="flex gap-4 bg-white border border-neutral-200/50 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] relative">
+                        <img src={g.image} alt={g.name} className="w-20 h-24 object-cover bg-neutral-100 flex-shrink-0" />
                         <div className="flex-1 flex flex-col justify-between">
                           <div>
-                            <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{item.brand}</span>
-                            <h4 className="text-[13px] font-extrabold text-neutral-900 tracking-tight leading-snug mt-1 pr-6 line-clamp-2">{item.name}</h4>
+                            <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">{g.brand}</span>
+                            <h4 className="text-[13px] font-extrabold text-neutral-900 tracking-tight leading-snug mt-1 pr-6 line-clamp-2">{g.name}</h4>
                             
                             <div className="flex flex-col gap-1 mt-1">
                               <p className="text-[10px] font-bold text-neutral-450 uppercase tracking-wider">
-                                Color: {item.color}
+                                Color: {g.color}
                               </p>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-wider">Size:</span>
                                 <select 
-                                  value={item.size}
-                                  onChange={(e) => updateItemSize(item.cartItemId, e.target.value)}
+                                  value={g.size}
+                                  onChange={(e) => updateItemSize(g.cartItemId, e.target.value)}
                                   className="text-[10px] font-extrabold uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-none px-1.5 py-0.5 outline-none cursor-pointer focus:ring-1 focus:ring-neutral-400"
                                   aria-label="Select size"
                                 >
-                                  {getAvailableSizesForItem(item).map(sz => (
+                                  {getAvailableSizesForItem(g).map(sz => (
                                     <option key={sz} value={sz}>{sz}</option>
                                   ))}
                                 </select>
@@ -601,38 +738,38 @@ export function Header() {
                           </div>
                           <div className="flex justify-between items-center mt-3">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-sm font-extrabold text-neutral-900">₹{Math.floor(item.price)}</span>
-                              {item.originalPrice && Math.floor(item.originalPrice) > Math.floor(item.price) && (
+                              <span className="text-sm font-extrabold text-neutral-900">₹{Math.floor(g.price)}</span>
+                              {g.originalPrice && Math.floor(g.originalPrice) > Math.floor(g.price) && (
                                 <>
-                                  <span className="text-[11px] font-semibold text-neutral-450 line-through">₹{Math.floor(item.originalPrice)}</span>
+                                  <span className="text-[11px] font-semibold text-neutral-450 line-through">₹{Math.floor(g.originalPrice)}</span>
                                   <span className="text-[8px] font-extrabold text-[#b2533e] bg-red-50 px-1 py-0.5 rounded-sm">
-                                    {item.discountType === "value" || item.discountType === "flat"
-                                      ? `₹${Math.floor(item.discountValue)} OFF`
-                                      : `${Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}% OFF`}
+                                    {g.discountType === "value" || g.discountType === "flat"
+                                      ? `₹${Math.floor(g.discountValue)} OFF`
+                                      : `${Math.round(((g.originalPrice - g.price) / g.originalPrice) * 100)}% OFF`}
                                   </span>
                                 </>
                               )}
                             </div>
                             <div className="flex items-center border border-neutral-300 px-2.5 py-1 bg-neutral-50 shadow-xs">
                               <button 
-                                onClick={() => updateQuantity(item.cartItemId, -1)} 
+                                onClick={() => updateQuantity(g.cartItemId, -1)} 
                                 className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
-                                aria-label={`Decrease quantity for ${item.name}`}
+                                aria-label={`Decrease quantity for ${g.name}`}
                               >
                                 -
                               </button>
-                              <span className="text-[11px] font-extrabold w-4 text-center text-neutral-800">{item.quantity}</span>
+                              <span className="text-[11px] font-extrabold w-4 text-center text-neutral-800">{g.quantity}</span>
                               <button 
-                                onClick={() => updateQuantity(item.cartItemId, 1)} 
+                                onClick={() => updateQuantity(g.cartItemId, 1)} 
                                 className="text-neutral-400 hover:text-neutral-900 px-1.5 text-xs font-bold bg-transparent border-none cursor-pointer"
-                                aria-label={`Increase quantity for ${item.name}`}
+                                aria-label={`Increase quantity for ${g.name}`}
                               >
                                 +
                               </button>
                             </div>
                           </div>
                         </div>
-                        <button onClick={() => removeItem(item.cartItemId)} className="absolute top-4 right-4 text-[#b2533e] hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer" aria-label="Remove item">
+                        <button onClick={() => removeItem(g.cartItemId)} className="absolute top-4 right-4 text-[#b2533e] hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer" aria-label="Remove item">
                           <Trash2 className="h-4 w-4 stroke-[1.8]" />
                         </button>
                       </div>
