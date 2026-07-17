@@ -26,6 +26,11 @@ public class Cart {
     @JsonIgnore
     private ProductVariantSize productVariantSize;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bundle_id")
+    @JsonIgnore
+    private Bundle bundle;
+
     // Constructors
     public Cart() {
     }
@@ -36,6 +41,15 @@ public class Cart {
         this.isActive = isActive;
         this.user = user;
         this.productVariantSize = productVariantSize;
+    }
+
+    public Cart(Long id, Integer quantity, Boolean isActive, User user, ProductVariantSize productVariantSize, Bundle bundle) {
+        this.id = id;
+        this.quantity = quantity;
+        this.isActive = isActive;
+        this.user = user;
+        this.productVariantSize = productVariantSize;
+        this.bundle = bundle;
     }
 
     // Getters and Setters
@@ -77,5 +91,13 @@ public class Cart {
 
     public void setProductVariantSize(ProductVariantSize productVariantSize) {
         this.productVariantSize = productVariantSize;
+    }
+
+    public Bundle getBundle() {
+        return bundle;
+    }
+
+    public void setBundle(Bundle bundle) {
+        this.bundle = bundle;
     }
 }

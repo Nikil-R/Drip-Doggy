@@ -13,6 +13,11 @@ public class CartResponseDto {
     private BigDecimal price;
     private String primaryImageUrl;
     private BigDecimal subTotal;
+    private Long bundleId;
+    private String bundleTitle;
+    private Boolean isAvailable;
+    private Boolean isOutOfStock;
+    private Integer itemsLeft;
 
     public CartResponseDto() {
     }
@@ -111,5 +116,45 @@ public class CartResponseDto {
 
     public void setSubTotal(BigDecimal subTotal) {
         this.subTotal = subTotal;
+    }
+
+    public Long getBundleId() {
+        return bundleId;
+    }
+
+    public void setBundleId(Long bundleId) {
+        this.bundleId = bundleId;
+    }
+
+    public String getBundleTitle() {
+        return bundleTitle;
+    }
+
+    public void setBundleTitle(String bundleTitle) {
+        this.bundleTitle = bundleTitle;
+    }
+
+    public Boolean getIsAvailable() {
+        return isAvailable;
+    }
+
+    public void setIsAvailable(Boolean isAvailable) {
+        this.isAvailable = isAvailable;
+    }
+
+    public Boolean getIsOutOfStock() {
+        return isOutOfStock;
+    }
+
+    public void setIsOutOfStock(Boolean isOutOfStock) {
+        this.isOutOfStock = isOutOfStock;
+    }
+
+    public Integer getItemsLeft() {
+        return itemsLeft;
+    }
+
+    public void setItemsLeft(Integer itemsLeft) {
+        this.itemsLeft = itemsLeft;
     }
 }

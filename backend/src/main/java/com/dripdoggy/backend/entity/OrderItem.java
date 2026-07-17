@@ -29,6 +29,11 @@ public class OrderItem {
     @JsonIgnore
     private ProductVariantSize productVariantSize;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bundle_id")
+    @JsonIgnore
+    private Bundle bundle;
+
     // Constructors
     public OrderItem() {
     }
@@ -40,6 +45,16 @@ public class OrderItem {
         this.subTotal = subTotal;
         this.order = order;
         this.productVariantSize = productVariantSize;
+    }
+
+    public OrderItem(Long id, Integer quantity, BigDecimal price, BigDecimal subTotal, Orders order, ProductVariantSize productVariantSize, Bundle bundle) {
+        this.id = id;
+        this.quantity = quantity;
+        this.price = price;
+        this.subTotal = subTotal;
+        this.order = order;
+        this.productVariantSize = productVariantSize;
+        this.bundle = bundle;
     }
 
     // Getters and Setters
@@ -89,5 +104,13 @@ public class OrderItem {
 
     public void setProductVariantSize(ProductVariantSize productVariantSize) {
         this.productVariantSize = productVariantSize;
+    }
+
+    public Bundle getBundle() {
+        return bundle;
+    }
+
+    public void setBundle(Bundle bundle) {
+        this.bundle = bundle;
     }
 }

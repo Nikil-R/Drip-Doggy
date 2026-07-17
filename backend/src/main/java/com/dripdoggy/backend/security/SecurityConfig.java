@@ -61,7 +61,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "https://dripdoggy.com",
                 "https://www.dripdoggy.com",
-                "http://192.168.1.5:5173"
+                "http://192.168.31.31:5173/"
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

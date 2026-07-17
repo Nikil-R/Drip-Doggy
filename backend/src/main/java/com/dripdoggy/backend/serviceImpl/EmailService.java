@@ -1303,16 +1303,7 @@ public class EmailService {
                              "</div>\n";
             }
 
-            String htmlContent = buildCustomerEmail(
-                    subject,
-                    "Exclusive newsletter drop from DripDoggy!",
-                    "Campaign Notice",
-                    "Newsletter",
-                    null, null,
-                    null, null,
-                    body + image1Html + image2Html,
-                    "You are receiving this email because you subscribed to DripDoggy's private customer database."
-            );
+            String htmlContent = body + image1Html + image2Html;
             
             helper.setText(htmlContent, true);
             

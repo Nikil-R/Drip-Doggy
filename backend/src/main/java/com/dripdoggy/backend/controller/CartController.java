@@ -2,6 +2,7 @@ package com.dripdoggy.backend.controller;
 
 import com.dripdoggy.backend.Iservice.ICartService;
 import com.dripdoggy.backend.RequestDto.CartRequestDto;
+import com.dripdoggy.backend.RequestDto.AddBundleToCartRequestDto;
 import com.dripdoggy.backend.ResponseDto.CartListResponseDto;
 import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import jakarta.validation.Valid;
@@ -28,6 +29,12 @@ public class CartController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @PostMapping("/bundle")
+    public ResponseEntity<ResponseMsgDto> addBundleToCart(@Valid @RequestBody AddBundleToCartRequestDto request) {
+        ResponseMsgDto response = cartService.addBundleToCart(request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @GetMapping
     public ResponseEntity<CartListResponseDto> getCart() {
         CartListResponseDto response = cartService.getCart();
@@ -39,6 +46,14 @@ public class CartController {
             @PathVariable Long cartItemId,
             @RequestParam Integer quantity) {
         ResponseMsgDto response = cartService.updateCartItemQuantity(cartItemId, quantity);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PutMapping("/{cartItemId}/size")
+    public ResponseEntity<ResponseMsgDto> updateCartItemSize(
+            @PathVariable Long cartItemId,
+            @RequestParam Long productVariantSizeId) {
+        ResponseMsgDto response = cartService.updateCartItemSize(cartItemId, productVariantSizeId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

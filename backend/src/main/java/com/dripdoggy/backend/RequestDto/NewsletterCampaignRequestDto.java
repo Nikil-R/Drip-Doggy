@@ -13,6 +13,7 @@ public class NewsletterCampaignRequestDto {
 
     private MultipartFile image1;
     private MultipartFile image2;
+    private String targetAudience;
 
     public NewsletterCampaignRequestDto() {
     }
@@ -59,5 +60,13 @@ public class NewsletterCampaignRequestDto {
 
     public void setImage2(MultipartFile image2) {
         this.image2 = image2;
+    }
+
+    public String getTargetAudience() {
+        return targetAudience;
+    }
+
+    public void setTargetAudience(String targetAudience) {
+        this.targetAudience = targetAudience;
     }
 }

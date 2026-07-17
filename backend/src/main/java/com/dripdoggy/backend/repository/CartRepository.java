@@ -1,5 +1,6 @@
 package com.dripdoggy.backend.repository;
 
+import com.dripdoggy.backend.entity.Bundle;
 import com.dripdoggy.backend.entity.Cart;
 import com.dripdoggy.backend.entity.ProductVariantSize;
 import com.dripdoggy.backend.entity.User;
@@ -14,6 +15,8 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
     List<Cart> findByUserAndIsActiveTrue(User user);
     
     Optional<Cart> findByUserAndProductVariantSize(User user, ProductVariantSize productVariantSize);
+    
+    Optional<Cart> findByUserAndProductVariantSizeAndBundle(User user, ProductVariantSize productVariantSize, Bundle bundle);
     
     Optional<Cart> findByIdAndUserAndIsActiveTrue(Long id, User user);
 }

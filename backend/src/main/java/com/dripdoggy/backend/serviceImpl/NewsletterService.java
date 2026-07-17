@@ -7,6 +7,7 @@ import com.dripdoggy.backend.ResponseDto.ResponseMsgDto;
 import com.dripdoggy.backend.entity.NewsletterSubscriber;
 import com.dripdoggy.backend.exception.InvalidOrderStateException;
 import com.dripdoggy.backend.repository.NewsletterSubscriberRepository;
+import com.dripdoggy.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +23,13 @@ public class NewsletterService implements INewsletterService {
 
     private final NewsletterSubscriberRepository newsletterSubscriberRepository;
     private final EmailService emailService;
+    private final UserRepository userRepository;
 
     @Autowired
-    public NewsletterService(NewsletterSubscriberRepository newsletterSubscriberRepository, EmailService emailService) {
+    public NewsletterService(NewsletterSubscriberRepository newsletterSubscriberRepository, EmailService emailService, UserRepository userRepository) {
         this.newsletterSubscriberRepository = newsletterSubscriberRepository;
         this.emailService = emailService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -45,26 +48,51 @@ public class NewsletterService implements INewsletterService {
     @Override
     @Transactional(readOnly = true)
     public ResponseMsgDto sendCampaign(NewsletterCampaignRequestDto dto) {
-        List<NewsletterSubscriber> subscribers = newsletterSubscriberRepository.findAll();
-        if (subscribers.isEmpty()) {
-            return new ResponseMsgDto(200, "No subscribers found. Campaign not sent.");
+        List<String> emails;
+        
+        if (dto.getTargetAudience() != null && 
+            (dto.getTargetAudience().equalsIgnoreCase("ALL_REGISTERED_USERS") || 
+             dto.getTargetAudience().equalsIgnoreCase("ALL_REGISTERED") ||
+             dto.getTargetAudience().equalsIgnoreCase("registered") ||
+             dto.getTargetAudience().equalsIgnoreCase("all"))) {
+            
+            emails = userRepository.findAllRegisteredEmails().stream()
+                    .filter(email -> email != null && !email.trim().isEmpty())
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .distinct()
+                    .collect(Collectors.toList());
+        } else {
+            emails = newsletterSubscriberRepository.findAll().stream()
+                    .map(NewsletterSubscriber::getEmail)
+                    .filter(email -> email != null && !email.trim().isEmpty())
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .distinct()
+                    .collect(Collectors.toList());
         }
 
-        for (NewsletterSubscriber subscriber : subscribers) {
+        if (emails.isEmpty()) {
+            return new ResponseMsgDto(200, "No recipients found. Campaign not sent.");
+        }
+
+        int successCount = 0;
+        for (String email : emails) {
             try {
                 emailService.sendCampaignEmail(
-                        subscriber.getEmail(),
+                        email,
                         dto.getSubject(),
                         dto.getContent(),
                         dto.getImage1(),
                         dto.getImage2()
                 );
+                successCount++;
             } catch (Exception e) {
-                System.err.println("Failed to send campaign email to " + subscriber.getEmail() + ": " + e.getMessage());
+                System.err.println("Failed to send campaign email to " + email + ": " + e.getMessage());
             }
         }
 
-        return new ResponseMsgDto(200, "Campaign email dispatched to " + subscribers.size() + " subscriber(s) successfully.");
+        return new ResponseMsgDto(200, "Campaign email dispatched to " + successCount + " recipient(s) successfully.");
     }
 
     @Override

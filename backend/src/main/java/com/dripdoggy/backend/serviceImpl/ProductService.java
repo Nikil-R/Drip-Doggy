@@ -845,6 +845,48 @@ public class ProductService implements IProductService {
         return mapToProductResponseDto(product);
     }
 
+    @Override
+    public com.dripdoggy.backend.ResponseDto.ProductVariantDetailsResponseDto fetchVariantDetailsById(Long variantId) {
+        ProductVariant variant = productVariantRepository.findById(variantId)
+                .orElseThrow(() -> new com.dripdoggy.backend.exception.ResourceNotFoundException("Product variant not found"));
+
+        if (Boolean.TRUE.equals(variant.getIsDeleted())) {
+            throw new com.dripdoggy.backend.exception.ResourceNotFoundException("Product variant not found");
+        }
+
+        Product product = variant.getProduct();
+        if (product == null || Boolean.TRUE.equals(product.getIsDeleted())) {
+            throw new com.dripdoggy.backend.exception.ResourceNotFoundException("Product not found");
+        }
+
+        List<String> imageUrls = new ArrayList<>();
+        if (variant.getImages() != null) {
+            imageUrls = variant.getImages().stream()
+                    .map(com.dripdoggy.backend.entity.Image::getImageUrl)
+                    .collect(Collectors.toList());
+        }
+
+        List<ProductVariantSizeResponseDto> sizeDtos = new ArrayList<>();
+        if (variant.getProductVariantSizes() != null) {
+            sizeDtos = variant.getProductVariantSizes().stream()
+                    .filter(sz -> sz.getIsActive() != null && sz.getIsActive())
+                    .map(sz -> new ProductVariantSizeResponseDto(sz.getId(), sz.getSizeName(), sz.getStockQuantity(), sz.getIsActive()))
+                    .collect(Collectors.toList());
+        }
+
+        return new com.dripdoggy.backend.ResponseDto.ProductVariantDetailsResponseDto(
+                variant.getId(),
+                variant.getVariantName(),
+                product.getId(),
+                product.getProductName(),
+                product.getProductDescription(),
+                variant.getPrice(),
+                variant.getMrp(),
+                imageUrls,
+                sizeDtos
+        );
+    }
+
     private boolean isCurrentUserAdmin() {
         org.springframework.security.core.Authentication authentication = 
                 org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();

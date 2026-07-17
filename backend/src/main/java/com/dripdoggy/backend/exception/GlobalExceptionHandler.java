@@ -145,7 +145,11 @@ public class GlobalExceptionHandler {
             String rootMsg = ex.getRootCause().getMessage();
             if (rootMsg.contains("Duplicate entry") || rootMsg.contains("ConstraintViolation") || rootMsg.contains("UK") || rootMsg.contains("duplicate key")) {
                 message = "A user with this email or phone number is already registered.";
+            } else {
+                message = "Database error: constraint violation. Details: " + rootMsg;
             }
+        } else {
+            message = "Database error: constraint violation. Details: " + ex.getMessage();
         }
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.CONFLICT.value(), message);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
@@ -173,6 +177,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseMsgDto> handleCartItemNotFound(CartItemNotFoundException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.NOT_FOUND.value(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CannotDeleteBundleException.class)
+    public ResponseEntity<ResponseMsgDto> handleCannotDeleteBundle(CannotDeleteBundleException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ProductVariantSizeNotAvailableException.class)
+    public ResponseEntity<ResponseMsgDto> handleProductVariantSizeNotAvailable(ProductVariantSizeNotAvailableException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(BundleSizeNotSelectedException.class)
+    public ResponseEntity<ResponseMsgDto> handleBundleSizeNotSelected(BundleSizeNotSelectedException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(UserNotRegisteredException.class)

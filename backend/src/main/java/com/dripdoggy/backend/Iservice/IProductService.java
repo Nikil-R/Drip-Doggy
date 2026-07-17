@@ -17,4 +17,5 @@ public interface IProductService {
     ResponseMsgDto toggleProductVariantSizeIsActive(Long id);
     ResponseMsgDto deleteProductVariant(Long id);
     com.dripdoggy.backend.ResponseDto.ProductResponseDto mapProductToDto(com.dripdoggy.backend.entity.Product product);
+    com.dripdoggy.backend.ResponseDto.ProductVariantDetailsResponseDto fetchVariantDetailsById(Long variantId);
 }

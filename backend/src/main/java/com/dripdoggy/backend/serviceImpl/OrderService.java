@@ -41,6 +41,7 @@ public class OrderService implements IOrderService {
     private final ICouponService couponService;
     private final EmailService emailService;
     private final OrderReturnRepository orderReturnRepository;
+    private final ProductVariantSizeRepository productVariantSizeRepository;
 
     @Autowired
     public OrderService(OrdersRepository ordersRepository, 
@@ -52,7 +53,8 @@ public class OrderService implements IOrderService {
                         OtpService otpService, 
                         ICouponService couponService, 
                         EmailService emailService,
-                        OrderReturnRepository orderReturnRepository) {
+                        OrderReturnRepository orderReturnRepository,
+                        ProductVariantSizeRepository productVariantSizeRepository) {
         this.ordersRepository = ordersRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
@@ -63,6 +65,7 @@ public class OrderService implements IOrderService {
         this.couponService = couponService;
         this.emailService = emailService;
         this.orderReturnRepository = orderReturnRepository;
+        this.productVariantSizeRepository = productVariantSizeRepository;
     }
 
     private User getCurrentCustomer() {
@@ -257,18 +260,31 @@ public class OrderService implements IOrderService {
             if (size == null || !Boolean.TRUE.equals(size.getIsActive())) {
                 throw new IllegalArgumentException("One of the items in your cart is no longer available.");
             }
+            int stock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
+            if (stock < cart.getQuantity()) {
+                throw new IllegalArgumentException("Insufficient stock for variant " + size.getProductVariant().getVariantName() + " (" + size.getSizeName() + "). Available: " + stock);
+            }
             BigDecimal price = size.getProductVariant().getPrice();
             subtotal = subtotal.add(price.multiply(BigDecimal.valueOf(cart.getQuantity())));
         }
 
+        // Calculate Bundle Discount
+        BigDecimal bundleDiscount = calculateBundleDiscount(cartItems);
+
         // 5. Apply Coupon Discount (if any)
-        BigDecimal discountVal = BigDecimal.ZERO;
+        BigDecimal couponDiscount = BigDecimal.ZERO;
+        BigDecimal remainingSubtotalForCoupon = subtotal.subtract(bundleDiscount);
+        if (remainingSubtotalForCoupon.compareTo(BigDecimal.ZERO) < 0) {
+            remainingSubtotalForCoupon = BigDecimal.ZERO;
+        }
         if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
             CouponValidationResponseDto couponResponse = couponService.validateAndCalculateDiscount(
-                    request.getCouponCode(), subtotal
+                    request.getCouponCode(), remainingSubtotalForCoupon
             );
-            discountVal = couponResponse.getCalculatedDiscount();
+            couponDiscount = couponResponse.getCalculatedDiscount();
         }
+
+        BigDecimal discountVal = bundleDiscount.add(couponDiscount);
 
         // 6. Calculate Tax (Tax calculations disabled - set to null as requested)
         BigDecimal discountedSubtotal = subtotal.subtract(discountVal);
@@ -314,8 +330,14 @@ public class OrderService implements IOrderService {
             orderItem.setQuantity(cart.getQuantity());
             orderItem.setPrice(size.getProductVariant().getPrice());
             orderItem.setSubTotal(size.getProductVariant().getPrice().multiply(BigDecimal.valueOf(cart.getQuantity())));
+            orderItem.setBundle(cart.getBundle());
             
             orderItemRepository.save(orderItem);
+
+            // Decrement Stock
+            int stock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
+            size.setStockQuantity(stock - cart.getQuantity());
+            productVariantSizeRepository.save(size);
 
             // Soft delete cart item
             cart.setIsActive(false);
@@ -386,18 +408,31 @@ public class OrderService implements IOrderService {
             if (size == null || !Boolean.TRUE.equals(size.getIsActive())) {
                 throw new IllegalArgumentException("One of the items in your cart is no longer available.");
             }
+            int stock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
+            if (stock < cart.getQuantity()) {
+                throw new IllegalArgumentException("Insufficient stock for variant " + size.getProductVariant().getVariantName() + " (" + size.getSizeName() + "). Available: " + stock);
+            }
             BigDecimal price = size.getProductVariant().getPrice();
             subtotal = subtotal.add(price.multiply(BigDecimal.valueOf(cart.getQuantity())));
         }
 
+        // Calculate Bundle Discount
+        BigDecimal bundleDiscount = calculateBundleDiscount(cartItems);
+
         // 3. Apply Coupon Discount (if any)
-        BigDecimal discountVal = BigDecimal.ZERO;
+        BigDecimal couponDiscount = BigDecimal.ZERO;
+        BigDecimal remainingSubtotalForCoupon = subtotal.subtract(bundleDiscount);
+        if (remainingSubtotalForCoupon.compareTo(BigDecimal.ZERO) < 0) {
+            remainingSubtotalForCoupon = BigDecimal.ZERO;
+        }
         if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
             CouponValidationResponseDto couponResponse = couponService.validateAndCalculateDiscount(
-                    request.getCouponCode(), subtotal
+                    request.getCouponCode(), remainingSubtotalForCoupon
             );
-            discountVal = couponResponse.getCalculatedDiscount();
+            couponDiscount = couponResponse.getCalculatedDiscount();
         }
+
+        BigDecimal discountVal = bundleDiscount.add(couponDiscount);
 
         // 4. Calculate Tax (Tax calculations disabled - set to null as requested)
         BigDecimal discountedSubtotal = subtotal.subtract(discountVal);
@@ -539,5 +574,75 @@ public class OrderService implements IOrderService {
         dto.setDeliveredTimestamp(order.getDeliveredTimestamp());
         dto.setCancelledTimestamp(order.getCancelledTimestamp());
         return dto;
+    }
+
+    private BigDecimal calculateBundleDiscount(List<Cart> cartItems) {
+        BigDecimal bundleDiscountTotal = BigDecimal.ZERO;
+
+        // Group cart items by bundle ID (only for items that belong to a bundle)
+        java.util.Map<Long, List<Cart>> bundleCartItemsMap = cartItems.stream()
+                .filter(c -> c.getBundle() != null)
+                .collect(java.util.stream.Collectors.groupingBy(c -> c.getBundle().getId()));
+
+        for (java.util.Map.Entry<Long, List<Cart>> entry : bundleCartItemsMap.entrySet()) {
+            List<Cart> itemsInCart = entry.getValue();
+            if (itemsInCart.isEmpty()) continue;
+
+            Bundle bundle = itemsInCart.get(0).getBundle();
+            
+            // Get the list of product variant IDs required for this bundle
+            java.util.Set<Long> bundleVariantIds = bundle.getProductVariants().stream()
+                    .map(ProductVariant::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+
+            // Get product variant IDs present in cart for this bundle
+            java.util.Set<Long> cartVariantIds = itemsInCart.stream()
+                    .map(c -> c.getProductVariantSize().getProductVariant().getId())
+                    .collect(java.util.stream.Collectors.toSet());
+
+            // Check if the complete bundle is present in the cart
+            if (cartVariantIds.containsAll(bundleVariantIds)) {
+                // Find how many complete bundles are in the cart (min quantity of bundle variants)
+                int bundleQuantity = itemsInCart.stream()
+                        .filter(c -> bundleVariantIds.contains(c.getProductVariantSize().getProductVariant().getId()))
+                        .mapToInt(Cart::getQuantity)
+                        .min()
+                        .orElse(0);
+
+                if (bundleQuantity > 0) {
+                    // Calculate the original total price for one bundle based on the specific variants in the cart
+                    BigDecimal bundleOriginalPrice = BigDecimal.ZERO;
+                    for (ProductVariant variant : bundle.getProductVariants()) {
+                        Cart matchingItem = itemsInCart.stream()
+                                .filter(c -> c.getProductVariantSize().getProductVariant().getId().equals(variant.getId()))
+                                .findFirst()
+                                .orElse(null);
+                        if (matchingItem != null) {
+                            bundleOriginalPrice = bundleOriginalPrice.add(matchingItem.getProductVariantSize().getProductVariant().getPrice());
+                        }
+                    }
+
+                    // Calculate bundle price
+                    BigDecimal discountedBundlePrice;
+                    if (bundle.getDiscountType() == DiscountType.PERCENTAGE) {
+                        BigDecimal discountFraction = bundle.getDiscountValue().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                        BigDecimal discountAmount = bundleOriginalPrice.multiply(discountFraction);
+                        discountedBundlePrice = bundleOriginalPrice.subtract(discountAmount);
+                    } else { // FLAT discount
+                        discountedBundlePrice = bundleOriginalPrice.subtract(bundle.getDiscountValue());
+                    }
+
+                    if (discountedBundlePrice.compareTo(BigDecimal.ZERO) < 0) {
+                        discountedBundlePrice = BigDecimal.ZERO;
+                    }
+
+                    // Bundle discount per bundle = bundleOriginalPrice - discountedBundlePrice
+                    BigDecimal discountPerBundle = bundleOriginalPrice.subtract(discountedBundlePrice);
+                    bundleDiscountTotal = bundleDiscountTotal.add(discountPerBundle.multiply(BigDecimal.valueOf(bundleQuantity)));
+                }
+            }
+        }
+
+        return bundleDiscountTotal;
     }
 }
