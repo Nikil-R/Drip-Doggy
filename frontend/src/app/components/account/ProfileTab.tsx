@@ -88,10 +88,12 @@ export function ProfileTab({ profile, setProfile, phoneVerified, setPhoneVerifie
           <label className="block text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-1.5">
             Email Address
           </label>
-          <div className="flex items-center gap-3 bg-green-50/50 border border-green-200/60 px-3.5 py-2.5">
-            <Mail className="h-4 w-4 text-green-600 stroke-[1.5] flex-shrink-0" />
-            <span className="flex-1 text-xs font-bold tracking-wide text-neutral-700 lowercase">{profile.email}</span>
-            <span className="flex items-center gap-1 text-[8px] font-extrabold tracking-widest text-green-600 uppercase">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 bg-green-50/50 border border-green-200/60 p-3 sm:px-3.5 sm:py-2.5">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <Mail className="h-4 w-4 text-green-600 stroke-[1.5] flex-shrink-0" />
+              <span className="text-xs font-bold tracking-wide text-neutral-700 lowercase truncate">{profile.email}</span>
+            </div>
+            <span className="flex items-center gap-1 text-[8px] font-extrabold tracking-widest text-green-600 uppercase self-start sm:self-auto shrink-0">
               <BadgeCheck className="h-3.5 w-3.5 stroke-[1.5]" />
               Verified
             </span>
@@ -106,13 +108,15 @@ export function ProfileTab({ profile, setProfile, phoneVerified, setPhoneVerifie
           <label className="block text-[8px] font-black tracking-[0.2em] text-neutral-400 uppercase mb-1.5">
             Phone Number
           </label>
-          <div className="flex items-center gap-3 bg-[#FAF8F5]/50 border border-neutral-200 px-3.5 py-2.5">
-            <Phone className="h-4 w-4 text-neutral-400 stroke-[1.5] flex-shrink-0" />
-            <input type="tel" required value={profile.phone}
-              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-              className="flex-1 bg-transparent border-none p-0 text-xs font-bold tracking-wide focus:outline-none text-neutral-700 placeholder-neutral-300"
-              placeholder="PHONE NUMBER" />
-            <div className="flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 bg-[#FAF8F5]/50 border border-neutral-200 p-3 sm:px-3.5 sm:py-2.5">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <Phone className="h-4 w-4 text-neutral-400 stroke-[1.5] flex-shrink-0" />
+              <input type="tel" required value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="flex-1 bg-transparent border-none p-0 text-xs font-bold tracking-wide focus:outline-none text-neutral-700 placeholder-neutral-300 min-w-0"
+                placeholder="PHONE NUMBER" />
+            </div>
+            <div className="self-start sm:self-auto shrink-0">
               {phoneVerified ? (
                 <span className="flex items-center gap-1 text-[8px] font-extrabold tracking-widest text-green-600 uppercase">
                   <BadgeCheck className="h-3.5 w-3.5 stroke-[1.5]" />

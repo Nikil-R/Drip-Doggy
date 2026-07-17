@@ -30,7 +30,7 @@ export function Login() {
   const [verifiedMethod, setVerifiedMethod] = useState<"email" | "phone" | null>(null);
 
   const handleIdentifierChange = (val: string) => {
-    setIdentifier(val);
+    setIdentifier(val.toLowerCase());
   };
 
   const fromPath = (location.state as { from?: { pathname: string } })?.from?.pathname;
@@ -274,7 +274,7 @@ export function Login() {
                   value={identifier}
                   onChange={(e) => handleIdentifierChange(e.target.value)}
                   placeholder="ENTER YOUR EMAIL ADDRESS"
-                  className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400 uppercase"
+                  className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400 lowercase"
                   autoComplete="username"
                 />
               </div>

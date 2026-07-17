@@ -67,7 +67,7 @@ export function AuthModal() {
   if (!visible) return null;
 
   const handleIdentifierChange = (val: string) => {
-    setIdentifier(val);
+    setIdentifier(val.toLowerCase());
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -277,7 +277,7 @@ export function AuthModal() {
                 value={identifier}
                 onChange={(e) => handleIdentifierChange(e.target.value)}
                 placeholder="ENTER YOUR EMAIL ADDRESS"
-                className="w-full bg-white border border-neutral-250 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-450 uppercase font-bold tracking-wider"
+                className="w-full bg-white border border-neutral-250 pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-450 lowercase font-bold tracking-wider"
               />
             </div>
 

@@ -172,7 +172,7 @@ export function Profile() {
               <h1 className="text-base font-extrabold tracking-wider uppercase text-[#030213]">
                 {profile.firstName} {profile.lastName}
               </h1>
-              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
+              <p className="text-[10px] text-neutral-500 font-bold lowercase tracking-widest mt-1">
                 {profile.email}
               </p>
             </div>

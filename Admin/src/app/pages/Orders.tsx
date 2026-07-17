@@ -8,6 +8,8 @@ import {
 import { INVOICE_CONFIG } from "../lib/invoice-config";
 import { customerApi } from "../lib/customer-api";
 import { useAuthStore } from "@/app/store/auth-store";
+import logoImg from "../../assets/logo.png";
+import logoIcon from "../../assets/new_logo_icon.png";
 
 const RS = "₹";
 
@@ -729,7 +731,7 @@ export function OrdersPage() {
     );
     const csv = [...headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `orders-export-${new Date().toISOString().split("T")[0]}.csv`;
@@ -737,10 +739,37 @@ export function OrdersPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handlePrintSimpleBill = (order: Order) => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+  const printHtmlContent = (htmlContent: string) => {
+    let iframe = document.getElementById("print-iframe") as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "print-iframe";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.visibility = "hidden";
+      document.body.appendChild(iframe);
+    }
+    
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+      
+      setTimeout(() => {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        }
+      }, 250);
+    }
+  };
 
+  const handlePrintSimpleBill = (order: Order) => {
     const breakdown = getOrderBreakdown(order);
     const cfg = INVOICE_CONFIG.company;
 
@@ -761,7 +790,7 @@ export function OrdersPage() {
       `${order.city}, ${order.state} \u2014 ${order.postalCode}`,
     ].filter(Boolean);
 
-    printWindow.document.write(`<!DOCTYPE html>
+    const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <title>Bill \u2014 ${order.id}</title>
@@ -770,15 +799,14 @@ export function OrdersPage() {
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Courier New", "Lucida Console", monospace;
-      background: #fff;
-      display: flex;
-      justify-content: center;
-      padding: 20px 16px;
       color: #000;
+      background: #fff;
+      padding: 0;
+      margin: 0;
     }
     .bill-shell { width: 100%; display: flex; justify-content: center; }
     .bill-sheet { width: min(100%, 580px); background: #fff; padding: 24px 28px; }
-
+    
     /* Header */
     .bill-header { text-align: center; margin-bottom: 12px; }
     .bill-store { font-size: 18px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
@@ -786,15 +814,15 @@ export function OrdersPage() {
     .bill-gstin { font-size: 7px; color: #555; margin-top: 4px; }
     .bill-hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
     .bill-hr-solid { border: none; border-top: 1px solid #999; margin: 8px 0; }
-
-    /* Info */
+    
+    /* Order Info */
     .bill-info { font-size: 9px; line-height: 1.7; }
     .bill-info-row { display: flex; justify-content: space-between; padding: 1px 0; }
     .bill-info-label { color: #666; }
     .bill-info-value { font-weight: 700; }
     .bill-section-title { font-size: 7px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin: 6px 0 3px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
-
-    /* Table */
+    
+    /* Items Table */
     .bill-table { width: 100%; border-collapse: collapse; margin: 4px 0; }
     .bill-table th { font-size: 7px; font-weight: 700; text-align: left; padding: 3px 2px; border-bottom: 1px solid #999; text-transform: uppercase; letter-spacing: 0.5px; }
     .bill-table th.th-right { text-align: right; }
@@ -804,19 +832,20 @@ export function OrdersPage() {
     .bill-table .td-amount { width: 25%; text-align: right; font-weight: 700; }
     .bill-table .item-name { font-weight: 700; font-size: 8.5px; }
     .bill-table .item-variant { display: block; font-size: 7px; color: #666; margin-top: 1px; }
-
+    
     /* Totals */
     .bill-totals { margin-top: 2px; }
     .bill-total-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 9px; }
     .bill-total-row.bill-grand { border-top: 2px solid #000; padding-top: 5px; margin-top: 2px; font-weight: 900; font-size: 11px; }
-
+    
     /* Footer */
     .bill-footer { text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #999; }
     .bill-footer-thanks { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
     .bill-footer-contact { font-size: 7px; color: #666; margin-top: 3px; }
-
+    
+    /* Print Styles */
     @media print {
-      body { padding: 0; }
+      body { padding: 0; background: #fff; }
       .bill-sheet { width: auto; padding: 0; margin: 0; box-shadow: none; border: none; }
     }
   </style>
@@ -824,17 +853,17 @@ export function OrdersPage() {
 <body>
   <div class="bill-shell">
     <div class="bill-sheet">
-
+      
       <!-- HEADER -->
       <div class="bill-header">
         <div class="bill-store">${cfg.name}</div>
         <div class="bill-tagline">${cfg.tagline}</div>
-        <div class="bill-gstin">GSTIN: ${cfg.gstin}</div>
+        ${cfg.gstin ? `<div class="bill-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
       </div>
-
+      
       <hr class="bill-hr-solid" />
-
-      <!-- ORDER INFO -->
+      
+      <!-- INFO -->
       <div class="bill-info">
         <div class="bill-info-row">
           <span class="bill-info-label">Order</span>
@@ -846,93 +875,83 @@ export function OrdersPage() {
         </div>
         <div class="bill-info-row">
           <span class="bill-info-label">Payment</span>
-          <span class="bill-info-value">COD \u2014 ${order.payment.toUpperCase()}</span>
+          <span class="bill-info-value">COD &mdash; ${order.payment.toUpperCase()}</span>
         </div>
       </div>
-
-      <!-- BILL TO -->
+      
       <div class="bill-section-title">Bill To</div>
       <div class="bill-info">
         <div class="bill-info-row">
           <span class="bill-info-label">Customer</span>
-          <span class="bill-info-value" style="font-weight: 700;">${order.customer}</span>
+          <span class="bill-info-value">${order.customer}</span>
         </div>
         <div class="bill-info-row">
-          <span class="bill-info-label">Contact</span>
-          <span>${order.email} | ${order.phone}</span>
+          <span class="bill-info-label">Phone</span>
+          <span class="bill-info-value">${order.phone}</span>
         </div>
         <div class="bill-info-row">
-          <span class="bill-info-label">Ship To</span>
-          <span style="text-align: right;">${addressParts.join(", ")}</span>
+          <span class="bill-info-label">Address</span>
+          <span class="bill-info-value" style="text-align: right; max-width: 70%;">${addressParts.join(", ")}</span>
         </div>
       </div>
-
+      
+      <hr class="bill-hr" />
+      
       <!-- ITEMS -->
       <div class="bill-section-title">Items</div>
       <table class="bill-table">
         <thead>
           <tr>
-            <th>Item</th>
-            <th class="th-right">Qty</th>
-            <th class="th-right">Amount</th>
+            <th class="td-item">Item Description</th>
+            <th class="td-qty" style="text-align: center;">Qty</th>
+            <th class="td-amount" style="text-align: right;">Amount</th>
           </tr>
         </thead>
         <tbody>
           ${itemRows}
         </tbody>
       </table>
-
+      
+      <hr class="bill-hr" />
+      
       <!-- TOTALS -->
       <div class="bill-totals">
         <div class="bill-total-row">
           <span>Subtotal</span>
-          <span>\u20B9${breakdown.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span>\u20B9${Number(breakdown.subtotal).toLocaleString("en-IN")}</span>
         </div>
-        ${breakdown.discount > 0 ? `
-        <div class="bill-total-row" style="color: #15803d; font-weight: 700;">
-          <span>Discount</span>
-          <span>-\u20B9${breakdown.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <div class="bill-total-row">
+          <span>Coupon Discount</span>
+          <span>-\u20B9${Number(breakdown.discount).toLocaleString("en-IN")}</span>
         </div>
-        ` : ""}
         <div class="bill-total-row">
           <span>GST (18%)</span>
-          <span>\u20B9${breakdown.gst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span>\u20B9${Number(breakdown.gst).toLocaleString("en-IN")}</span>
         </div>
-        ${breakdown.platformFee > 0 ? `
         <div class="bill-total-row">
-          <span>Platform Fee</span>
-          <span>\u20B9${breakdown.platformFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        ` : ""}
-        <div class="bill-total-row">
-          <span>Delivery</span>
-          <span>${breakdown.shipping > 0 ? `\u20B9${breakdown.shipping.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "FREE"}</span>
+          <span>Shipping Fee</span>
+          <span>\u20B9${Number(breakdown.shipping).toLocaleString("en-IN")}</span>
         </div>
         <div class="bill-total-row bill-grand">
-          <span>TOTAL</span>
-          <span>\u20B9${breakdown.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span>Grand Total</span>
+          <span>\u20B9${Number(breakdown.grandTotal).toLocaleString("en-IN")}</span>
         </div>
       </div>
-
+      
       <!-- FOOTER -->
       <div class="bill-footer">
         <div class="bill-footer-thanks">Thank you for your order!</div>
         <div class="bill-footer-contact">${cfg.email} | ${cfg.phone} | ${cfg.website}</div>
         <div class="bill-footer-contact" style="margin-top: 2px;">${cfg.address}</div>
       </div>
-
     </div>
   </div>
-  <script>window.onload = function() { window.print(); };\u003C/script>
 </body>
-</html>`);
-    printWindow.document.close();
+</html>`;
+    printHtmlContent(htmlContent);
   };
 
   const handlePrintInvoice = (order: Order) => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
     const breakdown = getOrderBreakdown(order);
     const cfg = INVOICE_CONFIG.company;
     const terms = INVOICE_CONFIG.terms;
@@ -954,116 +973,342 @@ export function OrdersPage() {
       order.addressLine1,
       order.addressLine2,
       `${order.city}, ${order.state} \u2014 ${order.postalCode}`,
-      order.country,
     ].filter(Boolean);
 
-    printWindow.document.write(`<!DOCTYPE html>
+    const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <title>Invoice \u2014 ${order.id}</title>
   <style>
-    @page { size: A4; margin: 12mm; }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
-      font-family: Inter, "Segoe UI", Arial, sans-serif;
-      background: #f5f2ed;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 24px 16px;
-      color: #1a1410;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #030213;
+      background: #ffffff;
+      line-height: 1.5;
+      font-size: 11px;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .invoice-shell { width: 100%; display: flex; justify-content: center; }
+    .invoice-shell {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
     .invoice-sheet {
-      width: min(100%, 820px);
+      width: 100%;
+      max-width: 800px;
       background: #ffffff;
-      padding: 32px 36px;
-      box-shadow: 0 2px 24px rgba(0,0,0,0.08);
-      border: 1px solid #e8e3dc;
     }
 
     /* Header */
-    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #1a1410; margin-bottom: 24px; }
-    .brand-name { font-size: 28px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; line-height: 1; color: #1a1410; }
-    .brand-tagline { font-size: 8px; color: #8a7f77; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 4px; font-weight: 600; }
-    .brand-gstin { font-size: 8px; color: #224870; letter-spacing: 1.5px; margin-top: 6px; font-weight: 700; }
-    .invoice-label { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #8a7f77; }
-    .invoice-id { font-size: 16px; font-weight: 900; margin-top: 2px; color: #224870; }
-    .header-meta { font-size: 8.5px; color: #615e56; margin-top: 3px; font-weight: 600; }
-
-    /* Info row */
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
-    .info-card { border: 1px solid #e8e3dc; padding: 16px; background: #faf8f5; }
-    .info-title { font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8a7f77; margin-bottom: 8px; }
-    .info-value { font-size: 10px; line-height: 1.7; font-weight: 600; color: #1a1410; }
-    .info-label { font-size: 7.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8a7f77; display: block; margin-top: 6px; margin-bottom: 1px; }
-    .info-section { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid #eeeae5; }
-    .info-section-title { font-size: 7px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: #a89f97; margin-bottom: 3px; }
-    .text-muted { color: #615e56; font-weight: 500; }
-    .text-accent { color: #224870; font-weight: 700; }
-    .payment-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
-    .dot-paid { background: #059669; }
-    .dot-unpaid { background: #dc2626; }
-    .dot-refunded { background: #a89f97; }
-
-    /* Table */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    thead { display: table-header-group; }
-    tr { page-break-inside: avoid; }
-    th { font-size: 7.5px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8a7f77; text-align: left; padding: 10px 6px 12px 6px; border-bottom: 2px solid #d4cdc4; }
-    td { padding: 10px 6px; border-bottom: 1px solid #eeeae5; font-size: 10px; vertical-align: top; }
-    tbody tr:last-child td { border-bottom: 2px solid #d4cdc4; }
-    tbody tr:nth-child(even) { background: #faf8f5; }
-    .td-item { width: 38%; }
-    .td-meta { width: 12%; text-align: center; color: #615e56; font-weight: 600; }
-    .td-qty { width: 12%; text-align: center; font-weight: 700; }
-    .td-price { width: 19%; text-align: right; font-weight: 600; }
-    .td-amount { width: 19%; text-align: right; font-weight: 700; }
-    .product-name { display: block; font-weight: 700; font-size: 10px; }
-    .product-sku { display: block; font-size: 8px; color: #8a7f77; font-weight: 500; margin-top: 1px; letter-spacing: 0.5px; }
-    th.th-right { text-align: right; }
-    th.th-center { text-align: center; }
-    .tfoot-summary { display: flex; justify-content: flex-end; align-items: center; gap: 24px; padding: 8px 6px 0; font-size: 8px; color: #8a7f77; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; border-top: none; margin-top: 2px; }
-    .tfoot-summary span { display: inline-flex; align-items: center; gap: 4px; }
-
-    /* Totals */
-    .totals-box { margin-left: auto; width: 280px; border: 1px solid #e8e3dc; background: #faf8f5; padding: 16px 20px; }
-    .total-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 10px; }
-    .total-label { color: #8a7f77; font-weight: 600; letter-spacing: 0.5px; }
-    .total-value { font-weight: 700; color: #1a1410; }
-    .total-value.txt-free { color: #059669; }
-    .total-sep { border: none; border-top: 1px dashed #d4cdc4; margin: 2px 0; }
-    .gst-breakdown { font-size: 7.5px; color: #615e56; text-align: right; letter-spacing: 0.3px; padding: 2px 0 6px; }
-    .gst-breakdown .gst-badge { display: inline-block; background: #f0ede8; padding: 2px 8px; border-radius: 2px; font-weight: 600; }
-    .total-row.grand { border-top: 2px solid #1a1410; padding-top: 10px; margin-top: 2px; }
-    .total-row.grand .total-label { font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #1a1410; }
-    .total-row.grand .total-value { font-size: 15px; font-weight: 900; color: #224870; }
-    .total-note { font-size: 7px; color: #a89f97; text-align: right; margin-top: 6px; letter-spacing: 0.3px; font-weight: 500; }
-
-    /* Footer */
-    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid #d4cdc4; text-align: center; }
-    .footer-divider { width: 44px; height: 2px; background: #1a1410; margin: 0 auto 14px; }
-    .footer-thanks { font-size: 11px; font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; color: #1a1410; line-height: 1.2; }
-    .footer-thanks-sub { font-size: 7.5px; color: #8a7f77; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; margin-top: 3px; }
-    .footer-support { font-size: 8px; color: #615e56; margin-top: 14px; font-weight: 600; letter-spacing: 0.3px; }
-    .footer-support .sep { color: #d4cdc4; margin: 0 8px; }
-    .footer-legal { font-size: 7px; color: #8a7f77; margin-top: 6px; letter-spacing: 0.3px; font-weight: 500; }
-    .footer-legal .sep { color: #d4cdc4; margin: 0 6px; }
-    .footer-note { font-size: 7px; color: #a89f97; margin-top: 12px; letter-spacing: 0.3px; font-weight: 500; border-top: 1px solid #eeeae5; padding-top: 10px; }
-
-    /* Print */
-    @media print {
-      body { background: #fff; padding: 0; }
-      .invoice-sheet { box-shadow: none; border: none; width: auto; padding: 0; margin: 0; }
-      .info-card { background: #faf8f5; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 25px;
+      border-bottom: 2px solid #030213;
+      margin-bottom: 30px;
+    }
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .logo-img {
+      height: 44px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 4px;
+    }
+    .brand-tagline {
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #52525b;
+      margin-top: -30px;
+      margin-left: 25px;
+      margin-bottom: -10px;
+    }
+    .brand-gstin {
+      font-size: 8px;
+      color: #71717a;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    .invoice-meta-container {
+      text-align: right;
+    }
+    .invoice-label {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #030213;
+      margin-bottom: 6px;
+    }
+    .meta-details {
+      font-size: 9.5px;
+      color: #3f3f46;
+      line-height: 1.6;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .meta-lbl {
+      color: #71717a;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 8.5px;
+      letter-spacing: 0.5px;
+    }
+    .meta-val {
+      font-weight: 750;
+      color: #030213;
     }
 
-    /* Screen-only */
-    @media screen {
-      .invoice-sheet { border: 1px solid #e8e3dc; }
+    /* Address Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+    .info-card {
+      background: #fafafa;
+      border: 1px solid #e4e4e7;
+      padding: 16px 18px;
+    }
+    .info-title {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #71717a;
+      border-bottom: 1px solid #e4e4e7;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .info-value {
+      font-size: 10.5px;
+      line-height: 1.7;
+      color: #18181b;
+    }
+    .info-value strong {
+      font-weight: 800;
+      font-size: 11px;
+      color: #030213;
+    }
+    .text-muted {
+      color: #52525b;
+    }
+    .payment-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .dot-paid { background: #16a34a; }
+    .dot-unpaid { background: #dc2626; }
+    .dot-refunded { background: #71717a; }
+
+    /* Table */
+    .table-container {
+      margin-bottom: 25px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+    }
+    th {
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: #030213;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th.th-right { text-align: right; }
+    th.th-center { text-align: center; }
+    td {
+      padding: 12px 12px;
+      border-bottom: 1px solid #e4e4e7;
+      font-size: 10.5px;
+      vertical-align: middle;
+    }
+    tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+    .td-item { width: 45%; }
+    .td-meta { width: 12%; text-align: center; font-weight: 600; color: #52525b; }
+    .td-qty { width: 10%; text-align: center; font-weight: 700; }
+    .td-price { width: 15%; text-align: right; }
+    .td-amount { width: 18%; text-align: right; font-weight: 700; color: #030213; }
+    .product-name { font-weight: 700; display: block; }
+    .product-sku { font-size: 8px; color: #71717a; display: block; margin-top: 3px; font-family: monospace; }
+    .tfoot-summary {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 15px;
+      font-size: 8px;
+      color: #71717a;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Totals */
+    .totals-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 35px;
+    }
+    .totals-box {
+      width: 300px;
+      border: 1px solid #e4e4e7;
+      background: #fafafa;
+      padding: 16px 18px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 10.5px;
+    }
+    .total-label {
+      color: #52525b;
+      font-weight: 600;
+    }
+    .total-value {
+      font-weight: 700;
+      color: #030213;
+    }
+    .total-value.txt-free {
+      color: #16a34a;
+      font-weight: 850;
+    }
+    .total-sep {
+      border: none;
+      border-top: 1px dashed #e4e4e7;
+      margin: 3px 0;
+    }
+    .gst-breakdown {
+      font-size: 8px;
+      color: #71717a;
+      text-align: right;
+      padding: 2px 0 5px;
+    }
+    .gst-badge {
+      display: inline-block;
+      background: #e4e4e7;
+      padding: 2px 6px;
+      font-weight: 600;
+      border-radius: 2px;
+    }
+    .total-row.grand {
+      border-top: 2px solid #030213;
+      padding-top: 10px;
+      margin-top: 3px;
+    }
+    .total-row.grand .total-label {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #030213;
+    }
+    .total-row.grand .total-value {
+      font-size: 15px;
+      font-weight: 900;
+      color: #030213;
+    }
+    .total-note {
+      font-size: 7.5px;
+      color: #71717a;
+      text-align: right;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #030213;
+      text-align: center;
+    }
+    .footer-divider {
+      width: 30px;
+      height: 2px;
+      background: #030213;
+      margin: 0 auto 10px;
+    }
+    .footer-thanks {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #030213;
+    }
+    .footer-thanks-sub {
+      font-size: 8px;
+      color: #71717a;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+    .footer-support {
+      font-size: 8.5px;
+      color: #030213;
+      margin-top: 12px;
+      font-weight: 700;
+    }
+    .footer-support .sep {
+      color: #e4e4e7;
+      margin: 0 8px;
+    }
+    .footer-legal {
+      font-size: 8px;
+      color: #52525b;
+      margin-top: 5px;
+    }
+    .footer-note {
+      font-size: 8px;
+      color: #71717a;
+      margin-top: 12px;
+      font-style: italic;
+      border-top: 1px solid #e4e4e7;
+      padding-top: 10px;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .invoice-sheet {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+      }
     }
   </style>
 </head>
@@ -1073,16 +1318,26 @@ export function OrdersPage() {
 
       <!-- HEADER -->
       <div class="header">
-        <div>
-          <div class="brand-name">${cfg.name}</div>
-          <div class="brand-tagline">${cfg.tagline}</div>
-          <div class="brand-gstin">GSTIN: ${cfg.gstin}</div>
+        <div class="logo-container">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; md-[-100px]">
+            <img src="${logoIcon}" style="height: 70px; width: auto; object-fit: contain;" alt="DripDoggy Icon" />
+            <img src="${logoImg}" style="height: 120px; width: auto; object-fit: contain;" alt="DripDoggy Logo" />
+          </div>
+          <div class="brand-tagline mt-[-100px]">${cfg.tagline}</div>
+          ${cfg.gstin ? `<div class="brand-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
         </div>
-        <div style="text-align: right;">
+        <div class="invoice-meta-container">
           <div class="invoice-label">Tax Invoice</div>
-          <div class="invoice-id">${order.id}</div>
-          <div class="header-meta">Date: ${order.date}</div>
-          <div class="header-meta">Status: ${order.status}</div>
+          <div class="meta-details">
+            <div class="meta-row">
+              <span class="meta-lbl">Invoice No:</span>
+              <span class="meta-val">${order.id.replace("#", "")}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-lbl">Date:</span>
+              <span class="meta-val">${order.date}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1090,117 +1345,108 @@ export function OrdersPage() {
       <div class="info-grid">
         <div class="info-card">
           <div class="info-title">Bill To</div>
-          <div class="info-section">
-            <div class="info-section-title">Customer</div>
-            <div class="info-value">
-              <strong>${order.customer}</strong><br />
-              <span class="text-muted">${order.email}</span><br />
-              <span class="text-muted">${order.phone}</span>
-            </div>
-          </div>
-          <div class="info-section">
-            <div class="info-section-title">Delivery Address</div>
-            <div class="info-value" style="font-weight: 500; line-height: 1.8;">
-              ${addressParts.join("<br />")}<br />
-              <span class="text-accent">Phone: ${order.deliveryPhone}</span>
-            </div>
+          <div class="info-value">
+            <strong>${order.customer}</strong><br />
+            <span class="text-muted">${order.email}</span><br />
+            <span class="text-muted">+91 ${order.phone}</span>
           </div>
         </div>
         <div class="info-card">
-          <div class="info-title">Order Details</div>
-          <div class="info-section">
-            <div class="info-section-title">Payment Method</div>
-            <div class="info-value">Cash on Delivery</div>
+          <div class="info-title">Ship To / Delivery</div>
+          <div class="info-value">
+            <strong>${order.customer}</strong><br />
+            ${addressParts.join("<br />")}<br />
+            <span class="text-muted">Contact: +91 ${order.deliveryPhone || order.phone}</span>
           </div>
-          <div class="info-section">
-            <div class="info-section-title">Payment Status</div>
-            <div class="info-value"><span class="payment-dot ${order.payment === "Paid" ? "dot-paid" : order.payment === "Refunded" ? "dot-refunded" : "dot-unpaid"}"></span>${order.payment.toUpperCase()}</div>
+        </div>
+      </div>
+
+      <!-- DETAILS GRID -->
+      <div class="info-grid" style="margin-bottom: 25px;">
+        <div class="info-card">
+          <div class="info-title">Payment Info</div>
+          <div class="info-value">
+            <span class="meta-lbl">Method:</span> <span class="meta-val">Cash on Delivery (COD)</span><br />
+            <span class="meta-lbl">Status:</span> <span class="meta-val"><span class="payment-dot ${order.payment === "Paid" ? "dot-paid" : order.payment === "Refunded" ? "dot-refunded" : "dot-unpaid"}"></span>${order.payment.toUpperCase()}</span>
           </div>
-          <div class="info-section">
-            <div class="info-section-title">Order Date</div>
-            <div class="info-value">${order.date}</div>
-          </div>
-          <div class="info-section">
-            <div class="info-section-title">Order Status</div>
-            <div class="info-value">${order.status}</div>
-          </div>
-          ${order.trackingNumber ? `
-          <div class="info-section">
-            <div class="info-section-title">Tracking</div>
-            <div class="info-value" style="font-family: 'Courier New', monospace; letter-spacing: 0.5px; color: #224870;">${order.trackingNumber}</div>
-          </div>` : ""}
-          <div class="info-section" style="border-bottom: none; padding-bottom: 0; margin-bottom: 0;">
-            <div class="info-section-title">Place of Supply</div>
-            <div class="info-value">${order.state}</div>
+        </div>
+        <div class="info-card">
+          <div class="info-title">Shipping & Logistics</div>
+          <div class="info-value">
+            ${order.trackingNumber ? `<span class="meta-lbl">Tracking No:</span> <span class="meta-val" style="font-family: monospace;">${order.trackingNumber}</span>` : `<span class="text-muted">Tracking details will be updated once shipped.</span>`}
           </div>
         </div>
       </div>
 
       <!-- ITEMS TABLE -->
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="th-center">Size</th>
-            <th class="th-center">Qty</th>
-            <th class="th-right">Price</th>
-            <th class="th-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemRows}
-        </tbody>
-        ${order.items.length > 1 ? `<tfoot>
-          <tr>
-            <td colspan="5" style="padding: 6px 6px 0 6px; border: none;">
-              <div class="tfoot-summary">
-                <span>\u26C5 ${order.items.length} items</span>
-                <span>\u2022</span>
-                <span>${order.items.reduce((s, i) => s + i.qty, 0)} total units</span>
-              </div>
-            </td>
-          </tr>
-        </tfoot>` : ""}
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="td-item">Item Description</th>
+              <th class="th-center">Size</th>
+              <th class="th-center">Qty</th>
+              <th class="th-right">Price</th>
+              <th class="th-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+          ${order.items.length > 1 ? `<tfoot>
+            <tr>
+              <td colspan="5" style="padding: 10px 12px; border: none; background: #fafafa;">
+                <div class="tfoot-summary">
+                  <span>${order.items.length} items</span>
+                  <span>&bull;</span>
+                  <span>${order.items.reduce((s, i) => s + Number(i.qty), 0)} total units</span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>` : ""}
+        </table>
+      </div>
 
-      <!-- TOTALS -->
-      <div class="totals-box">
-        <div class="total-row">
-          <span class="total-label">Subtotal (MRP)</span>
-          <span class="total-value">\u20B9${breakdown.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      <!-- SUMMARY & TOTALS -->
+      <div class="totals-wrapper">
+        <div class="totals-box">
+          <div class="total-row">
+            <span class="total-label">Subtotal (MRP)</span>
+            <span class="total-value">₹${Number(breakdown.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          ${breakdown.discount > 0 ? `
+          <hr class="total-sep" />
+          <div class="total-row" style="color: #16a34a; font-weight: 750;">
+            <span class="total-label">Discount</span>
+            <span class="total-value">-₹${Number(breakdown.discount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          ` : ""}
+          <hr class="total-sep" />
+          <div class="total-row">
+            <span class="total-label">Delivery Fee</span>
+            <span class="total-value ${breakdown.shipping === 0 ? "txt-free" : ""}">${breakdown.shipping > 0 ? `₹${Number(breakdown.shipping).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "FREE"}</span>
+          </div>
+          ${breakdown.platformFee > 0 ? `
+          <hr class="total-sep" />
+          <div class="total-row">
+            <span class="total-label">Platform Fee</span>
+            <span class="total-value">₹${Number(breakdown.platformFee).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          ` : ""}
+          <hr class="total-sep" />
+          <div class="total-row">
+            <span class="total-label">GST @ 18%</span>
+            <span class="total-value">₹${Number(breakdown.gst).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div class="gst-breakdown">
+            <span class="gst-badge">CGST 9%: ₹${Number(breakdown.gst / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &bull; SGST 9%: ₹${Number(breakdown.gst / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div class="total-row grand">
+            <span class="total-label">Grand Total</span>
+            <span class="total-value">₹${Number(breakdown.grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div class="total-note">Total amount payable (inclusive of all taxes)</div>
         </div>
-        ${breakdown.discount > 0 ? `
-        <hr class="total-sep" />
-        <div class="total-row" style="color: #15803d; font-weight: 700;">
-          <span class="total-label">Discount</span>
-          <span class="total-value">-\u20B9${breakdown.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        ` : ""}
-        <hr class="total-sep" />
-        <div class="total-row">
-          <span class="total-label">Delivery</span>
-          <span class="total-value ${breakdown.shipping === 0 ? "txt-free" : ""}">${breakdown.shipping > 0 ? `\u20B9${breakdown.shipping.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "FREE"}</span>
-        </div>
-        ${breakdown.platformFee > 0 ? `
-        <hr class="total-sep" />
-        <div class="total-row">
-          <span class="total-label">Platform Fee</span>
-          <span class="total-value">\u20B9${breakdown.platformFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        ` : ""}
-        <hr class="total-sep" />
-        <div class="total-row">
-          <span class="total-label">GST @ 18%</span>
-          <span class="total-value">\u20B9${breakdown.gst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        <div class="gst-breakdown">
-          <span class="gst-badge">CGST 9%: \u20B9${(breakdown.gst / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u2022 SGST 9%: \u20B9${(breakdown.gst / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        <div class="total-row grand">
-          <span class="total-label">Grand Total</span>
-          <span class="total-value">\u20B9${breakdown.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-        <div class="total-note">Total amount payable (inclusive of all taxes)</div>
       </div>
 
       <!-- FOOTER -->
@@ -1212,17 +1458,16 @@ export function OrdersPage() {
           ${cfg.email}<span class="sep">|</span>${cfg.phone}<span class="sep">|</span>${cfg.website}
         </div>
         <div class="footer-legal">
-          ${cfg.address}<span class="sep">|</span>GSTIN: ${cfg.gstin}
+          ${cfg.address}${cfg.gstin ? `<span class="sep">|</span>GSTIN: ${cfg.gstin}` : ""}
         </div>
-        <div class="footer-note">${terms.returnPolicy} \u2014 ${terms.paymentNote}</div>
+        <div class="footer-note">${terms.returnPolicy} &mdash; ${terms.paymentNote}</div>
       </div>
 
     </div>
   </div>
-  <script>window.onload = function() { window.print(); };\u003C/script>
 </body>
-</html>`);
-    printWindow.document.close();
+</html>`;
+    printHtmlContent(htmlContent);
   };
 
   const handlePageChange = (page: number) => {

@@ -818,10 +818,10 @@ function ProductDetailContent({ product }: { product: Product }) {
         <section className="bg-white border-y border-neutral-200/60 py-8 mt-4">
           <div className="max-w-7xl mx-auto px-6">
             {/* Tab Navigation */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-neutral-200/60 mb-8 text-[11px] font-bold tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30">
+            <div className="flex overflow-x-auto md:grid md:grid-cols-4 border border-neutral-200/60 mb-8 text-[9px] xs:text-[10px] md:text-[11px] font-bold tracking-[0.1em] md:tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30 scrollbar-none whitespace-nowrap">
               <button
                 onClick={() => setActiveTab("description")}
-                className={`py-4 px-6 text-center border-r md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-[110px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
                   activeTab === "description"
                     ? "bg-[#030213] text-white font-extrabold"
                     : "hover:bg-neutral-100/50 hover:text-black"
@@ -831,7 +831,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </button>
               <button
                 onClick={() => setActiveTab("specifications")}
-                className={`py-4 px-6 text-center md:border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-[125px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
                   activeTab === "specifications"
                     ? "bg-[#030213] text-white font-extrabold"
                     : "hover:bg-neutral-100/50 hover:text-black"
@@ -841,7 +841,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </button>
               <button
                 onClick={() => setActiveTab("shipping")}
-                className={`py-4 px-6 text-center border-r md:border-r-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-[145px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
                   activeTab === "shipping"
                     ? "bg-[#030213] text-white font-extrabold"
                     : "hover:bg-neutral-100/50 hover:text-black"
@@ -851,7 +851,7 @@ function ProductDetailContent({ product }: { product: Product }) {
               </button>
               <button
                 onClick={() => setActiveTab("reviews")}
-                className={`py-4 px-6 text-center transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-[115px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center transition-all duration-300 cursor-pointer ${
                   activeTab === "reviews"
                     ? "bg-[#030213] text-white font-extrabold"
                     : "hover:bg-neutral-100/50 hover:text-black"

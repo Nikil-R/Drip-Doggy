@@ -143,7 +143,7 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
         <div>
           <div class="brand-name">${cfg.name}</div>
           <div class="brand-tagline">${cfg.tagline}</div>
-          <div class="brand-gstin">GSTIN: ${cfg.gstin}</div>
+          ${cfg.gstin ? `<div class="brand-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
         </div>
         <div style="text-align: right;">
           <div class="invoice-label">Tax Invoice</div>
@@ -249,7 +249,7 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
           ${cfg.email}<span class="sep">|</span>${cfg.phone}<span class="sep">|</span>${cfg.website}
         </div>
         <div class="footer-legal">
-          ${cfg.address}<span class="sep">|</span>GSTIN: ${cfg.gstin}
+          ${cfg.address}${cfg.gstin ? `<span class="sep">|</span>GSTIN: ${cfg.gstin}` : ""}
         </div>
         <div class="footer-note">${INVOICE_CONFIG.terms.returnPolicy} — ${INVOICE_CONFIG.terms.paymentNote}</div>
       </div>
@@ -340,7 +340,7 @@ export function generateBillHTML(order: Order, user: { firstName: string; lastNa
       <div class="bill-header">
         <div class="bill-store">${cfg.name}</div>
         <div class="bill-tagline">${cfg.tagline}</div>
-        <div class="bill-gstin">GSTIN: ${cfg.gstin}</div>
+        ${cfg.gstin ? `<div class="bill-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
       </div>
 
       <hr class="bill-hr-solid" />

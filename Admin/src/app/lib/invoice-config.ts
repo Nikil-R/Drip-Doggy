@@ -5,13 +5,13 @@
 export const INVOICE_CONFIG = {
   company: {
     name: "DRIPDOGGY",
-    tagline: "Luxury Streetwear, Redefined.",
+    tagline: "Drip your way, Every day",
     description: "Architectural silhouettes, premium fabrication, uncompromised street luxury.",
     address: "42, Bandra West, Mumbai, Maharashtra 400050",
-    email: "hello@dripdoggy.com",
+    email: "support.dripdoggy@gmail.com",
     phone: "+91 98765 43210",
     website: "www.dripdoggy.com",
-    gstin: "27AABCU9603R1ZT",
+    gstin: "",
   },
   defaults: {
     taxRate: 0.18, // 18% GST
