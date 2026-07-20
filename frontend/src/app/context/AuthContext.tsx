@@ -39,6 +39,7 @@ type AuthContextValue = {
   }) => Promise<AuthActionResult>;
   pendingIdentifier: string | null;
   logout: () => void;
+  updateUser: (updatedUser: AuthUser) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -47,6 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingIdentifier, setPendingIdentifier] = useState<string | null>(null);
+
+  const updateUser = useCallback((updatedUser: AuthUser) => {
+    saveSessionUser(updatedUser);
+    setUser(updatedUser);
+  }, []);
 
   const logout = useCallback(async () => {
     const token = getSessionToken();
@@ -255,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         completeOnboarding,
         pendingIdentifier,
         logout,
+        updateUser,
       }}
     >
       {children}
