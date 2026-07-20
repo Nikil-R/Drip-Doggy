@@ -842,10 +842,13 @@ public class OrderReturnService implements IOrderReturnService {
 		exchangeOrder.setTotalAmount(BigDecimal.ZERO);
 		exchangeOrder.setDiscount(BigDecimal.ZERO);
 		exchangeOrder.setTax(BigDecimal.ZERO);
-		exchangeOrder.setPlatformFee(BigDecimal.ZERO);
-		exchangeOrder.setOrderTimestamp(LocalDateTime.now());
+		LocalDateTime now = LocalDateTime.now();
+		exchangeOrder.setOrderTimestamp(now);
+		exchangeOrder.setProcessingTimestamp(now);
+		exchangeOrder.setShippedTimestamp(now);
+		exchangeOrder.setDeliveredTimestamp(now);
 		exchangeOrder.setPaymentStatus(PaymentStatus.SUCCESS); // Pre-paid via exchange approval
-		exchangeOrder.setDeliveryStatus(DeliveryStatus.SHIPPED); // Marked as shipped immediately
+		exchangeOrder.setDeliveryStatus(DeliveryStatus.DELIVERED); // Marked as DELIVERED automatically upon exchange completion
 		exchangeOrder.setDeliveryMethod("EXCHANGE");
 		exchangeOrder.setShippingFee(BigDecimal.ZERO);
 		exchangeOrder.setTrackingNumber(trackingNumber);
@@ -899,6 +902,7 @@ public class OrderReturnService implements IOrderReturnService {
 
 		String productName = "";
 		String productSize = "";
+		String productColor = "";
 		Double productPrice = 0.0;
 		Integer productQuantity = 0;
 
@@ -909,10 +913,24 @@ public class OrderReturnService implements IOrderReturnService {
 			ProductVariantSize pvs = item.getProductVariantSize();
 			if (pvs != null) {
 				productSize = pvs.getSizeName();
-				if (pvs.getProductVariant() != null && pvs.getProductVariant().getProduct() != null) {
-					productName = pvs.getProductVariant().getProduct().getProductName();
+				if (pvs.getProductVariant() != null) {
+					productColor = pvs.getProductVariant().getVariantName();
+					if (pvs.getProductVariant().getProduct() != null) {
+						productName = pvs.getProductVariant().getProduct().getProductName();
+					}
 				}
 			}
+		}
+
+		String targetColor = null;
+		if (r.getTargetVariantId() != null) {
+			ProductVariant targetVariant = productVariantRepository.findById(r.getTargetVariantId()).orElse(null);
+			if (targetVariant != null) {
+				targetColor = targetVariant.getVariantName();
+			}
+		}
+		if (targetColor == null && r.getRequestType() == ReturnRequestType.EXCHANGE) {
+			targetColor = productColor;
 		}
 
 		Double priceDifference = 0.0;
@@ -932,7 +950,7 @@ public class OrderReturnService implements IOrderReturnService {
 				r.getRequestType() != null ? r.getRequestType().name() : null, r.getCancelReason(),
 				r.getDefectImageUrl1(), r.getDefectImageUrl2(), r.getDefectImageUrl3(), r.getTargetSize(),
 				r.getTargetVariantId(), r.getStatus() != null ? r.getStatus().name() : null, r.getCreatedAt(),
-				r.getResolvedAt(), customerName, customerEmail, productName, productSize, productPrice, productQuantity, requestedQty,
+				r.getResolvedAt(), customerName, customerEmail, productName, productSize, productColor, targetColor, productPrice, productQuantity, requestedQty,
 				r.getUpiId(), r.getUpiPhone(), r.getQrCodeImageUrl(), r.getBankAccountName(), r.getBankName(),
 				r.getBankIfsc(), r.getBankAccountNumber(), priceDifference, refundAmount);
 	}

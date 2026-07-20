@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     List<Wishlist> findByUserAndIsActiveTrue(User user);
     
-    Optional<Wishlist> findByUserAndProductVariantSize(User user, ProductVariantSize productVariantSize);
+    List<Wishlist> findByUserAndProductVariantSize(User user, ProductVariantSize productVariantSize);
     
     Optional<Wishlist> findByIdAndUserAndIsActiveTrue(Long id, User user);
 }

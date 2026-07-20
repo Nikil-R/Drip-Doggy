@@ -140,17 +140,6 @@ public class EmailService {
                 "                                </tr>\n" +
                 "                            </table>\n" +
                 "                            \n" +
-                "                            <!-- Mascot Circular Avatar with Sparkles & Party Horn -->\n" +
-                "                            <div style=\"display: inline-block; position: relative; margin-bottom: 25px;\">\n" +
-                "                                <div style=\"width: 100px; height: 100px; border-radius: 50%; border: 2px solid #dbebff; background-color: #ffffff; overflow: hidden; display: inline-block; padding: 5px; box-sizing: border-box;\">\n" +
-                "                                    <img src=\"cid:mascotLogo\" alt=\"DripDoggy Mascot\" style=\"width: 100%; height: 100%; object-fit: contain; border-radius: 50%;\" />\n" +
-                "                                </div>\n" +
-                "                                <!-- Sparkles top-left -->\n" +
-                "                                <div style=\"position: absolute; top: -8px; left: -8px; font-size: 20px; line-height: 1;\">✨</div>\n" +
-                "                                <!-- Party horn bottom-right -->\n" +
-                "                                <div style=\"position: absolute; bottom: -4px; right: -4px; font-size: 20px; line-height: 1;\">🎉</div>\n" +
-                "                            </div>\n" +
-                "                            \n" +
                 "                            <!-- Title -->\n" +
                 "                            <h2 style=\"margin: 0 0 10px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.3;\">\n" +
                 "                                " + title + "\n" +
@@ -246,11 +235,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -372,11 +357,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -493,11 +474,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -549,11 +526,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -616,11 +589,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -700,11 +669,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -760,11 +725,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -845,11 +806,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -896,11 +853,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -982,11 +935,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -1056,11 +1005,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -1170,11 +1115,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -1281,11 +1222,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
@@ -1330,11 +1267,7 @@ public class EmailService {
             
             helper.setText(htmlContent, true);
             
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
+
 
             if (image1 != null && !image1.isEmpty()) {
                 helper.addInline("campaignImage1", image1, image1.getContentType());

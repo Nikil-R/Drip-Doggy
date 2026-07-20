@@ -117,20 +117,25 @@ public class WishlistService implements IWishlistService {
         // Validate product status before adding
         validateProductActive(size);
 
-        Optional<Wishlist> existingWishlistOpt = wishlistRepository.findByUserAndProductVariantSize(user, size);
+        synchronized (("wishlist_user_" + user.getId()).intern()) {
+            List<Wishlist> existingWishlistList = wishlistRepository.findByUserAndProductVariantSize(user, size);
 
-        if (existingWishlistOpt.isPresent()) {
-            Wishlist existingWishlist = existingWishlistOpt.get();
-            if (!Boolean.TRUE.equals(existingWishlist.getIsActive())) {
-                existingWishlist.setIsActive(true);
-                wishlistRepository.save(existingWishlist);
+            if (!existingWishlistList.isEmpty()) {
+                Wishlist existingWishlist = existingWishlistList.get(0);
+                if (!Boolean.TRUE.equals(existingWishlist.getIsActive())) {
+                    existingWishlist.setIsActive(true);
+                    wishlistRepository.save(existingWishlist);
+                }
+                for (int i = 1; i < existingWishlistList.size(); i++) {
+                    wishlistRepository.delete(existingWishlistList.get(i));
+                }
+            } else {
+                Wishlist newWishlist = new Wishlist();
+                newWishlist.setUser(user);
+                newWishlist.setProductVariantSize(size);
+                newWishlist.setIsActive(true);
+                wishlistRepository.save(newWishlist);
             }
-        } else {
-            Wishlist newWishlist = new Wishlist();
-            newWishlist.setUser(user);
-            newWishlist.setProductVariantSize(size);
-            newWishlist.setIsActive(true);
-            wishlistRepository.save(newWishlist);
         }
 
         return new ResponseMsgDto(200, "Item added to wishlist successfully");

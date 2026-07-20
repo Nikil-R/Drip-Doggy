@@ -22,6 +22,8 @@ public class AdminReturnResponseDto {
     private String customerEmail;
     private String productName;
     private String productSize;
+    private String productColor;
+    private String targetColor;
     private Double productPrice;
     private Integer productQuantity;
     private Integer requestedQuantity;
@@ -40,7 +42,7 @@ public class AdminReturnResponseDto {
     public AdminReturnResponseDto() {
     }
 
-    public AdminReturnResponseDto(Long id, Long orderId, String orderNumber, Long orderItemId, String requestType, String cancelReason, String defectImageUrl1, String defectImageUrl2, String defectImageUrl3, String targetSize, Long targetVariantId, String status, LocalDateTime createdAt, LocalDateTime resolvedAt, String customerName, String customerEmail, String productName, String productSize, Double productPrice, Integer productQuantity, Integer requestedQuantity, String upiId, String upiPhone, String qrCodeImageUrl, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber, Double priceDifference, Double refundAmount) {
+    public AdminReturnResponseDto(Long id, Long orderId, String orderNumber, Long orderItemId, String requestType, String cancelReason, String defectImageUrl1, String defectImageUrl2, String defectImageUrl3, String targetSize, Long targetVariantId, String status, LocalDateTime createdAt, LocalDateTime resolvedAt, String customerName, String customerEmail, String productName, String productSize, String productColor, String targetColor, Double productPrice, Integer productQuantity, Integer requestedQuantity, String upiId, String upiPhone, String qrCodeImageUrl, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber, Double priceDifference, Double refundAmount) {
         this.id = id;
         this.orderId = orderId;
         this.orderNumber = orderNumber;
@@ -59,6 +61,8 @@ public class AdminReturnResponseDto {
         this.customerEmail = customerEmail;
         this.productName = productName;
         this.productSize = productSize;
+        this.productColor = productColor;
+        this.targetColor = targetColor;
         this.productPrice = productPrice;
         this.productQuantity = productQuantity;
         this.requestedQuantity = requestedQuantity;
@@ -109,6 +113,10 @@ public class AdminReturnResponseDto {
     public void setProductName(String productName) { this.productName = productName; }
     public String getProductSize() { return productSize; }
     public void setProductSize(String productSize) { this.productSize = productSize; }
+    public String getProductColor() { return productColor; }
+    public void setProductColor(String productColor) { this.productColor = productColor; }
+    public String getTargetColor() { return targetColor; }
+    public void setTargetColor(String targetColor) { this.targetColor = targetColor; }
     public Double getProductPrice() { return productPrice; }
     public void setProductPrice(Double productPrice) { this.productPrice = productPrice; }
     public Integer getProductQuantity() { return productQuantity; }

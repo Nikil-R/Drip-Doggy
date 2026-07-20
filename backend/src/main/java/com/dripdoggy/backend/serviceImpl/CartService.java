@@ -59,9 +59,41 @@ public class CartService implements ICartService {
     public CartListResponseDto getCart() {
         User user = getCurrentUser();
         List<Cart> rawCartItems = cartRepository.findByUserAndIsActiveTrue(user);
+        
+        // Self-healing duplicate cleanup for active cart items
+        java.util.Map<String, List<Cart>> groupedCartItems = new java.util.HashMap<>();
+        for (Cart item : rawCartItems) {
+            if (item.getProductVariantSize() == null) continue;
+            Long sizeId = item.getProductVariantSize().getId();
+            Long bundleId = item.getBundle() != null ? item.getBundle().getId() : null;
+            String key = sizeId + "_" + (bundleId != null ? bundleId : "null");
+            groupedCartItems.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+        }
+
+        List<Cart> itemsToKeep = new ArrayList<>();
+        for (List<Cart> group : groupedCartItems.values()) {
+            Cart primary = group.get(0);
+            if (group.size() > 1) {
+                int mergedQuantity = 0;
+                for (Cart c : group) {
+                    if (c.getQuantity() != null) {
+                        mergedQuantity += c.getQuantity();
+                    }
+                }
+                primary.setQuantity(mergedQuantity);
+                cartRepository.save(primary);
+                for (int i = 1; i < group.size(); i++) {
+                    Cart dup = group.get(i);
+                    dup.setIsActive(false);
+                    cartRepository.delete(dup);
+                }
+            }
+            itemsToKeep.add(primary);
+        }
+
         List<CartResponseDto> activeResponseItems = new ArrayList<>();
 
-        for (Cart item : rawCartItems) {
+        for (Cart item : itemsToKeep) {
             ProductVariantSize size = item.getProductVariantSize();
             if (size == null) {
                 // Self-healing soft delete
@@ -174,25 +206,38 @@ public class CartService implements ICartService {
             throw new ResourceNotFoundException("Product size is deactivated.");
         }
 
-        Optional<Cart> existingCartOpt = cartRepository.findByUserAndProductVariantSize(user, size);
+        synchronized (("cart_user_" + user.getId()).intern()) {
+            List<Cart> existingCarts = cartRepository.findByUserAndProductVariantSizeAndBundleNull(user, size);
 
-        if (existingCartOpt.isPresent()) {
-            Cart existingCart = existingCartOpt.get();
-            if (Boolean.TRUE.equals(existingCart.getIsActive())) {
-                int newQuantity = existingCart.getQuantity() + request.getQuantity();
-                existingCart.setQuantity(newQuantity);
+            if (!existingCarts.isEmpty()) {
+                Cart primaryCart = existingCarts.get(0);
+                int totalQuantity = primaryCart.getQuantity() != null ? primaryCart.getQuantity() : 0;
+                if (Boolean.TRUE.equals(primaryCart.getIsActive())) {
+                    totalQuantity += request.getQuantity();
+                } else {
+                    totalQuantity = request.getQuantity();
+                }
+                primaryCart.setIsActive(true);
+                primaryCart.setQuantity(totalQuantity);
+
+                for (int i = 1; i < existingCarts.size(); i++) {
+                    Cart dup = existingCarts.get(i);
+                    if (Boolean.TRUE.equals(dup.getIsActive()) && dup.getQuantity() != null) {
+                        totalQuantity += dup.getQuantity();
+                    }
+                    dup.setIsActive(false);
+                    cartRepository.delete(dup);
+                }
+                primaryCart.setQuantity(totalQuantity);
+                cartRepository.save(primaryCart);
             } else {
-                existingCart.setIsActive(true);
-                existingCart.setQuantity(request.getQuantity());
+                Cart newCart = new Cart();
+                newCart.setUser(user);
+                newCart.setProductVariantSize(size);
+                newCart.setQuantity(request.getQuantity());
+                newCart.setIsActive(true);
+                cartRepository.save(newCart);
             }
-            cartRepository.save(existingCart);
-        } else {
-            Cart newCart = new Cart();
-            newCart.setUser(user);
-            newCart.setProductVariantSize(size);
-            newCart.setQuantity(request.getQuantity());
-            newCart.setIsActive(true);
-            cartRepository.save(newCart);
         }
 
         return new ResponseMsgDto(200, "Item added to cart successfully");
@@ -333,25 +378,39 @@ public class CartService implements ICartService {
         }
 
         // Add or update cart items
-        for (ProductVariantSize size : selectedSizes) {
-            Optional<Cart> existingCartOpt = cartRepository.findByUserAndProductVariantSizeAndBundle(user, size, bundle);
-            if (existingCartOpt.isPresent()) {
-                Cart existingCart = existingCartOpt.get();
-                if (Boolean.TRUE.equals(existingCart.getIsActive())) {
-                    existingCart.setQuantity(existingCart.getQuantity() + request.getQuantity());
+        synchronized (("cart_user_" + user.getId()).intern()) {
+            for (ProductVariantSize size : selectedSizes) {
+                List<Cart> existingCarts = cartRepository.findByUserAndProductVariantSizeAndBundle(user, size, bundle);
+                if (!existingCarts.isEmpty()) {
+                    Cart primaryCart = existingCarts.get(0);
+                    int totalQuantity = primaryCart.getQuantity() != null ? primaryCart.getQuantity() : 0;
+                    if (Boolean.TRUE.equals(primaryCart.getIsActive())) {
+                        totalQuantity += request.getQuantity();
+                    } else {
+                        totalQuantity = request.getQuantity();
+                    }
+                    primaryCart.setIsActive(true);
+                    primaryCart.setQuantity(totalQuantity);
+
+                    for (int i = 1; i < existingCarts.size(); i++) {
+                        Cart dup = existingCarts.get(i);
+                        if (Boolean.TRUE.equals(dup.getIsActive()) && dup.getQuantity() != null) {
+                            totalQuantity += dup.getQuantity();
+                        }
+                        dup.setIsActive(false);
+                        cartRepository.delete(dup);
+                    }
+                    primaryCart.setQuantity(totalQuantity);
+                    cartRepository.save(primaryCart);
                 } else {
-                    existingCart.setIsActive(true);
-                    existingCart.setQuantity(request.getQuantity());
+                    Cart newCart = new Cart();
+                    newCart.setUser(user);
+                    newCart.setProductVariantSize(size);
+                    newCart.setBundle(bundle);
+                    newCart.setQuantity(request.getQuantity());
+                    newCart.setIsActive(true);
+                    cartRepository.save(newCart);
                 }
-                cartRepository.save(existingCart);
-            } else {
-                Cart newCart = new Cart();
-                newCart.setUser(user);
-                newCart.setProductVariantSize(size);
-                newCart.setBundle(bundle);
-                newCart.setQuantity(request.getQuantity());
-                newCart.setIsActive(true);
-                cartRepository.save(newCart);
             }
         }
 
@@ -393,43 +452,60 @@ public class CartService implements ICartService {
             return new ResponseMsgDto(200, "Cart item size updated successfully");
         }
 
-        // If it's a bundle item, check if there's already a cart item in this bundle with the new size
-        Bundle bundle = cartItem.getBundle();
-        if (bundle != null) {
-            Optional<Cart> existingCartOpt = cartRepository.findByUserAndProductVariantSizeAndBundle(user, newSize, bundle);
-            if (existingCartOpt.isPresent()) {
-                Cart existingCart = existingCartOpt.get();
-                if (Boolean.TRUE.equals(existingCart.getIsActive())) {
-                    existingCart.setQuantity(existingCart.getQuantity() + cartItem.getQuantity());
-                } else {
-                    existingCart.setIsActive(true);
-                    existingCart.setQuantity(cartItem.getQuantity());
+        synchronized (("cart_user_" + user.getId()).intern()) {
+            Bundle bundle = cartItem.getBundle();
+            if (bundle != null) {
+                List<Cart> existingCarts = cartRepository.findByUserAndProductVariantSizeAndBundle(user, newSize, bundle);
+                if (!existingCarts.isEmpty()) {
+                    Cart primaryCart = existingCarts.get(0);
+                    if (Boolean.TRUE.equals(primaryCart.getIsActive())) {
+                        primaryCart.setQuantity(primaryCart.getQuantity() + cartItem.getQuantity());
+                    } else {
+                        primaryCart.setIsActive(true);
+                        primaryCart.setQuantity(cartItem.getQuantity());
+                    }
+                    cartRepository.save(primaryCart);
+
+                    for (int i = 1; i < existingCarts.size(); i++) {
+                        Cart dup = existingCarts.get(i);
+                        dup.setIsActive(false);
+                        cartRepository.delete(dup);
+                    }
+
+                    if (!primaryCart.getId().equals(cartItem.getId())) {
+                        cartItem.setIsActive(false);
+                        cartRepository.save(cartItem);
+                    }
+                    return new ResponseMsgDto(200, "Cart item size updated successfully");
                 }
-                cartItem.setIsActive(false);
-                cartRepository.save(existingCart);
-                cartRepository.save(cartItem);
-                return new ResponseMsgDto(200, "Cart item size updated successfully");
-            }
-        } else {
-            // Standalone item: check if there's already a cart item with the new size (without a bundle)
-            List<Cart> activeItems = cartRepository.findByUserAndIsActiveTrue(user);
-            Optional<Cart> existingCartOpt = activeItems.stream()
-                    .filter(item -> item.getProductVariantSize() != null && item.getProductVariantSize().getId().equals(newSize.getId()) && item.getBundle() == null)
-                    .findFirst();
+            } else {
+                List<Cart> existingCarts = cartRepository.findByUserAndProductVariantSizeAndBundleNull(user, newSize);
+                if (!existingCarts.isEmpty()) {
+                    Cart primaryCart = existingCarts.get(0);
+                    if (!primaryCart.getId().equals(cartItem.getId())) {
+                        primaryCart.setQuantity(primaryCart.getQuantity() + cartItem.getQuantity());
+                        primaryCart.setIsActive(true);
+                        cartRepository.save(primaryCart);
 
-            if (existingCartOpt.isPresent()) {
-                Cart existingCart = existingCartOpt.get();
-                existingCart.setQuantity(existingCart.getQuantity() + cartItem.getQuantity());
-                cartItem.setIsActive(false);
-                cartRepository.save(existingCart);
-                cartRepository.save(cartItem);
-                return new ResponseMsgDto(200, "Cart item size updated successfully");
+                        for (int i = 1; i < existingCarts.size(); i++) {
+                            Cart dup = existingCarts.get(i);
+                            if (!dup.getId().equals(primaryCart.getId())) {
+                                dup.setIsActive(false);
+                                cartRepository.delete(dup);
+                            }
+                        }
+
+                        cartItem.setIsActive(false);
+                        cartRepository.save(cartItem);
+                        return new ResponseMsgDto(200, "Cart item size updated successfully");
+                    }
+                }
             }
+
+            // Otherwise, simply update the size on the current cart item
+            cartItem.setProductVariantSize(newSize);
+            cartRepository.save(cartItem);
         }
-
-        // Otherwise, simply update the size on the current cart item
-        cartItem.setProductVariantSize(newSize);
-        cartRepository.save(cartItem);
 
         return new ResponseMsgDto(200, "Cart item size updated successfully");
     }

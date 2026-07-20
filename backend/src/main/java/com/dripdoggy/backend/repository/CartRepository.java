@@ -14,9 +14,11 @@ import java.util.Optional;
 public interface CartRepository extends JpaRepository<Cart, Long> {
     List<Cart> findByUserAndIsActiveTrue(User user);
     
-    Optional<Cart> findByUserAndProductVariantSize(User user, ProductVariantSize productVariantSize);
+    List<Cart> findByUserAndProductVariantSize(User user, ProductVariantSize productVariantSize);
     
-    Optional<Cart> findByUserAndProductVariantSizeAndBundle(User user, ProductVariantSize productVariantSize, Bundle bundle);
+    List<Cart> findByUserAndProductVariantSizeAndBundle(User user, ProductVariantSize productVariantSize, Bundle bundle);
+
+    List<Cart> findByUserAndProductVariantSizeAndBundleNull(User user, ProductVariantSize productVariantSize);
     
     Optional<Cart> findByIdAndUserAndIsActiveTrue(Long id, User user);
     

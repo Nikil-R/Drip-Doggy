@@ -16,6 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRoleAndIsBlocked(UserRole role, boolean isBlocked);
     long countByRoleAndCreatedAtAfter(UserRole role, LocalDateTime dateTime);
 
-    @Query("SELECT u.email FROM User u WHERE u.email IS NOT NULL AND u.email <> '' AND (u.isBlocked = false OR u.isBlocked IS NULL)")
+    @Query("SELECT u.email FROM User u WHERE u.role = com.dripdoggy.backend.enums.UserRole.CUSTOMER AND u.email IS NOT NULL AND u.email <> '' AND (u.isBlocked = false OR u.isBlocked IS NULL)")
     List<String> findAllRegisteredEmails();
 }
