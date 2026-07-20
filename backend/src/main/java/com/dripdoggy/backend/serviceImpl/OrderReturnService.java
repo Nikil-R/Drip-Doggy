@@ -793,11 +793,16 @@ public class OrderReturnService implements IOrderReturnService {
 				throw new InvalidOrderStateException("Courier Tracking ID is required to resolve an exchange request.");
 			}
 			String trimmedTracking = trackingNumber.trim();
-			if (ordersRepository.existsByTrackingNumber(trimmedTracking)) {
+			if (ordersRepository.existsByTrackingNumberAndIdNot(trimmedTracking, order.getId())) {
 				throw new InvalidOrderStateException("Courier Tracking ID '" + trimmedTracking + "' is already assigned to another order.");
 			}
 			if (orderItem == null) {
 				throw new ResourceNotFoundException("Original order item not found");
+			}
+
+			// Clear tracking number from parent order if it was previously assigned to it
+			if (trimmedTracking.equalsIgnoreCase(order.getTrackingNumber())) {
+				order.setTrackingNumber(null);
 			}
 
 
