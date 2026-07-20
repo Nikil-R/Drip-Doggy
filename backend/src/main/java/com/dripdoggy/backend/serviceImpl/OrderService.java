@@ -2,6 +2,7 @@ package com.dripdoggy.backend.serviceImpl;
 
 import com.dripdoggy.backend.Iservice.IOrderService;
 import com.dripdoggy.backend.Iservice.ICouponService;
+import com.dripdoggy.backend.Iservice.IShippingFeeService;
 import com.dripdoggy.backend.RequestDto.OrderRequestDto;
 import com.dripdoggy.backend.RequestDto.OrderPreviewRequestDto;
 import com.dripdoggy.backend.RequestDto.CheckoutOtpRequest;
@@ -42,6 +43,7 @@ public class OrderService implements IOrderService {
     private final EmailService emailService;
     private final OrderReturnRepository orderReturnRepository;
     private final ProductVariantSizeRepository productVariantSizeRepository;
+    private final IShippingFeeService shippingFeeService;
 
     @Autowired
     public OrderService(OrdersRepository ordersRepository, 
@@ -54,7 +56,8 @@ public class OrderService implements IOrderService {
                         ICouponService couponService, 
                         EmailService emailService,
                         OrderReturnRepository orderReturnRepository,
-                        ProductVariantSizeRepository productVariantSizeRepository) {
+                        ProductVariantSizeRepository productVariantSizeRepository,
+                        IShippingFeeService shippingFeeService) {
         this.ordersRepository = ordersRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
@@ -66,6 +69,7 @@ public class OrderService implements IOrderService {
         this.emailService = emailService;
         this.orderReturnRepository = orderReturnRepository;
         this.productVariantSizeRepository = productVariantSizeRepository;
+        this.shippingFeeService = shippingFeeService;
     }
 
     private User getCurrentCustomer() {
@@ -294,10 +298,11 @@ public class OrderService implements IOrderService {
         BigDecimal taxAmount = null;
 
         // 7. Calculate Delivery Fee
-        BigDecimal shippingFee = new BigDecimal("90.00"); // Standard Delivery Fee
-        if ("EXPRESS".equalsIgnoreCase(request.getDeliveryMethod().trim())) {
-            shippingFee = new BigDecimal("150.00"); // Express Shipping Fee
-        }
+        BigDecimal shippingFee = shippingFeeService.calculateShippingFee(
+                address.getState(),
+                address.getCity(),
+                request.getDeliveryMethod()
+        );
 
         // 8. Calculate Final Total Amount (Discounted Subtotal + Tax + Shipping)
         BigDecimal taxForTotal = (taxAmount != null) ? taxAmount : BigDecimal.ZERO;
@@ -315,7 +320,10 @@ public class OrderService implements IOrderService {
         order.setOrderTimestamp(LocalDateTime.now());
         order.setPaymentStatus(PaymentStatus.PENDING);
         order.setDeliveryStatus(DeliveryStatus.PLACED);
-        order.setDeliveryMethod(request.getDeliveryMethod().toUpperCase().trim());
+        String dm = (request.getDeliveryMethod() != null && !request.getDeliveryMethod().trim().isEmpty())
+                ? request.getDeliveryMethod().toUpperCase().trim()
+                : "STANDARD";
+        order.setDeliveryMethod(dm);
         order.setShippingFee(shippingFee);
 
         Orders savedOrder = ordersRepository.save(order);
@@ -442,10 +450,27 @@ public class OrderService implements IOrderService {
         BigDecimal taxAmount = null;
 
         // 5. Calculate Delivery Fee
-        BigDecimal shippingFee = new BigDecimal("90.00"); // Standard Delivery Fee
-        if ("EXPRESS".equalsIgnoreCase(request.getDeliveryMethod().trim())) {
-            shippingFee = new BigDecimal("150.00"); // Express Shipping Fee
+        String state = request.getState();
+        String city = request.getCity();
+        if ((state == null || state.trim().isEmpty()) && request.getAddressId() != null) {
+            Address addr = addressRepository.findByIdAndUserAndIsActiveTrue(request.getAddressId(), user).orElse(null);
+            if (addr != null) {
+                state = addr.getState();
+                city = addr.getCity();
+            }
         }
+        if (state == null || state.trim().isEmpty()) {
+            List<Address> userAddresses = addressRepository.findByUserAndIsActiveTrue(user);
+            if (!userAddresses.isEmpty()) {
+                Address defaultAddr = userAddresses.stream()
+                        .filter(a -> Boolean.TRUE.equals(a.getIsDefault()))
+                        .findFirst()
+                        .orElse(userAddresses.get(0));
+                state = defaultAddr.getState();
+                city = defaultAddr.getCity();
+            }
+        }
+        BigDecimal shippingFee = shippingFeeService.calculateShippingFee(state, city, request.getDeliveryMethod());
 
         // 6. Calculate Final Total Amount
         BigDecimal taxForTotal = (taxAmount != null) ? taxAmount : BigDecimal.ZERO;

@@ -11,8 +11,7 @@ public class OrderRequestDto {
     @NotBlank(message = "Phone number is required")
     private String phoneNo;
 
-    @NotBlank(message = "Delivery method is required")
-    private String deliveryMethod; // "STANDARD" or "EXPRESS"
+    private String deliveryMethod = "STANDARD"; // Optional (defaults to STANDARD)
 
     private String couponCode; // Optional
 
