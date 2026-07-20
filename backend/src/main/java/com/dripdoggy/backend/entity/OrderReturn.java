@@ -78,6 +78,9 @@ public class OrderReturn {
     @Column(name = "refund_proof_image_url")
     private String refundProofImageUrl;
 
+    @Column(name = "transaction_id")
+    private String transactionId;
+
     public OrderReturn() {
     }
 
@@ -255,5 +258,13 @@ public class OrderReturn {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 }

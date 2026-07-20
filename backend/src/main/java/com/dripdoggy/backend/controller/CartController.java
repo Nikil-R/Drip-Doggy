@@ -63,6 +63,12 @@ public class CartController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @DeleteMapping("/bundle/{bundleId}")
+    public ResponseEntity<ResponseMsgDto> removeBundleFromCart(@PathVariable Long bundleId) {
+        ResponseMsgDto response = cartService.removeBundleFromCart(bundleId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @DeleteMapping
     public ResponseEntity<ResponseMsgDto> clearCart() {
         ResponseMsgDto response = cartService.clearCart();

@@ -24,37 +24,16 @@ public class ExchangeSubmitRequestDto {
 
     private List<MultipartFile> images;
 
-    // Refund details (in case target variant is cheaper than original variant)
-    private String upiId;
-    private String upiPhone;
-    private MultipartFile qrCodeImage;
-
-    private String bankAccountName;
-    private String bankName;
-    private String bankIfsc;
-    private String bankAccountNumber;
-
     public ExchangeSubmitRequestDto() {
     }
 
-    public ExchangeSubmitRequestDto(Long orderItemId, String exchangeReason, String targetSize, Long targetVariantId, Integer quantity, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
+    public ExchangeSubmitRequestDto(Long orderItemId, String exchangeReason, String targetSize, Long targetVariantId, Integer quantity, List<MultipartFile> images) {
         this.orderItemId = orderItemId;
         this.exchangeReason = exchangeReason;
         this.targetSize = targetSize;
         this.targetVariantId = targetVariantId;
         this.quantity = quantity;
         this.images = images;
-        this.upiId = upiId;
-        this.upiPhone = upiPhone;
-        this.qrCodeImage = qrCodeImage;
-        this.bankAccountName = bankAccountName;
-        this.bankName = bankName;
-        this.bankIfsc = bankIfsc;
-        this.bankAccountNumber = bankAccountNumber;
-    }
-
-    public ExchangeSubmitRequestDto(Long orderItemId, String exchangeReason, String targetSize, Long targetVariantId, List<MultipartFile> images, String upiId, String upiPhone, MultipartFile qrCodeImage, String bankAccountName, String bankName, String bankIfsc, String bankAccountNumber) {
-        this(orderItemId, exchangeReason, targetSize, targetVariantId, null, images, upiId, upiPhone, qrCodeImage, bankAccountName, bankName, bankIfsc, bankAccountNumber);
     }
 
     public Long getOrderItemId() {
@@ -95,62 +74,6 @@ public class ExchangeSubmitRequestDto {
 
     public void setImages(List<MultipartFile> images) {
         this.images = images;
-    }
-
-    public String getUpiId() {
-        return upiId;
-    }
-
-    public void setUpiId(String upiId) {
-        this.upiId = upiId;
-    }
-
-    public String getUpiPhone() {
-        return upiPhone;
-    }
-
-    public void setUpiPhone(String upiPhone) {
-        this.upiPhone = upiPhone;
-    }
-
-    public MultipartFile getQrCodeImage() {
-        return qrCodeImage;
-    }
-
-    public void setQrCodeImage(MultipartFile qrCodeImage) {
-        this.qrCodeImage = qrCodeImage;
-    }
-
-    public String getBankAccountName() {
-        return bankAccountName;
-    }
-
-    public void setBankAccountName(String bankAccountName) {
-        this.bankAccountName = bankAccountName;
-    }
-
-    public String getBankName() {
-        return bankName;
-    }
-
-    public void setBankName(String bankName) {
-        this.bankName = bankName;
-    }
-
-    public String getBankIfsc() {
-        return bankIfsc;
-    }
-
-    public void setBankIfsc(String bankIfsc) {
-        this.bankIfsc = bankIfsc;
-    }
-
-    public String getBankAccountNumber() {
-        return bankAccountNumber;
-    }
-
-    public void setBankAccountNumber(String bankAccountNumber) {
-        this.bankAccountNumber = bankAccountNumber;
     }
 
     public Integer getQuantity() {

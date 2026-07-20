@@ -19,4 +19,6 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
     Optional<Cart> findByUserAndProductVariantSizeAndBundle(User user, ProductVariantSize productVariantSize, Bundle bundle);
     
     Optional<Cart> findByIdAndUserAndIsActiveTrue(Long id, User user);
+    
+    List<Cart> findByUserAndBundleIdAndIsActiveTrue(User user, Long bundleId);
 }

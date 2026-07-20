@@ -16,6 +16,8 @@ public interface ICartService {
     
     ResponseMsgDto removeCartItem(Long cartItemId);
     
+    ResponseMsgDto removeBundleFromCart(Long bundleId);
+    
     ResponseMsgDto clearCart();
 
     ResponseMsgDto updateCartItemSize(Long cartItemId, Long productVariantSizeId);

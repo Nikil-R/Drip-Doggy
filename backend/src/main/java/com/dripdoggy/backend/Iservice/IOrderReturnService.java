@@ -17,7 +17,6 @@ public interface IOrderReturnService {
     List<AdminReturnResponseDto> getAllReturnRequests();
     AdminReturnResponseDto getReturnRequestById(Long returnId);
     ResponseMsgDto updateReturnStatus(Long returnId, String status);
-    ResponseMsgDto resolveReturnRequest(Long returnId, String action, String trackingNumber, MultipartFile proofImage);
-    ResponseMsgDto sendExchangePaymentRequest(Long returnId, MultipartFile qrCode);
+    ResponseMsgDto resolveReturnRequest(Long returnId, String action, String trackingNumber, String transactionId);
     ResponseMsgDto handleUnavailabilityChoice(Long returnId, String choice);
 }

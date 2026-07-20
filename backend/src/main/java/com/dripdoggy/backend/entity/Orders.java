@@ -153,7 +153,7 @@ public class Orders {
     }
 
     public BigDecimal getPlatformFee() {
-        return platformFee;
+        return platformFee != null ? platformFee : BigDecimal.ZERO;
     }
 
     public void setPlatformFee(BigDecimal platformFee) {

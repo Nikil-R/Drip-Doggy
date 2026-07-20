@@ -132,7 +132,7 @@ public class CartService implements ICartService {
             int stock = size.getStockQuantity() != null ? size.getStockQuantity() : 0;
             dto.setIsAvailable(stock >= item.getQuantity() && Boolean.TRUE.equals(size.getIsActive()));
             dto.setIsOutOfStock(stock <= 0);
-            dto.setItemsLeft(stock < 5 ? stock : null);
+            dto.setItemsLeft(stock < 10 ? stock : null);
 
             activeResponseItems.add(dto);
         }
@@ -432,5 +432,22 @@ public class CartService implements ICartService {
         cartRepository.save(cartItem);
 
         return new ResponseMsgDto(200, "Cart item size updated successfully");
+    }
+
+    @Override
+    public ResponseMsgDto removeBundleFromCart(Long bundleId) {
+        User user = getCurrentUser();
+        List<Cart> bundleItems = cartRepository.findByUserAndBundleIdAndIsActiveTrue(user, bundleId);
+        
+        if (bundleItems.isEmpty()) {
+            throw new ResourceNotFoundException("No active bundle with ID " + bundleId + " found in your cart.");
+        }
+
+        for (Cart item : bundleItems) {
+            item.setIsActive(false);
+        }
+        cartRepository.saveAll(bundleItems);
+
+        return new ResponseMsgDto(200, "Bundle removed from cart successfully");
     }
 }

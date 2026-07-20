@@ -61,17 +61,20 @@ public class AdminOrderService implements IAdminOrderService {
 
         // 1. Terminal Cancelled Check
         if (currentStatus == DeliveryStatus.CANCELLED) {
-            throw new InvalidOrderStateException("Cannot change status of a cancelled order.");
+            throw new OrderAlreadyProcessedException("This order is already cancelled.");
         }
 
         // 2. Terminal Delivered Check
         if (currentStatus == DeliveryStatus.DELIVERED && targetStatus != DeliveryStatus.RETURN_INITIATED && targetStatus != DeliveryStatus.EXCHANGE_INITIATED) {
-            throw new InvalidOrderStateException("Cannot change status of a delivered order except to initiate return or exchange.");
+            throw new OrderAlreadyProcessedException("This order is already delivered.");
         }
 
         // 3. Terminal Return/Exchange Delivered Check
-        if (currentStatus == DeliveryStatus.RETURN_DELIVERED || currentStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
-            throw new InvalidOrderStateException("Cannot change status of a returned/exchanged order.");
+        if (currentStatus == DeliveryStatus.RETURN_DELIVERED) {
+            throw new OrderAlreadyProcessedException("This order is already refund completed.");
+        }
+        if (currentStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
+            throw new OrderAlreadyProcessedException("This order is already exchange completed.");
         }
 
         // 4. Sequential Transition Validations
@@ -201,11 +204,15 @@ public class AdminOrderService implements IAdminOrderService {
         order.setDeliveryStatus(targetStatus);
         ordersRepository.save(order);
 
-        // Send email to customer for return logistics updates
+        // Send email to customer for return/exchange logistics updates
         if (targetStatus == DeliveryStatus.RETURN_PICKUPED ||
             targetStatus == DeliveryStatus.RETURN_SHIPPED ||
             targetStatus == DeliveryStatus.RETURN_OUT_OF_DELIVERY ||
-            targetStatus == DeliveryStatus.RETURN_DELIVERED) {
+            targetStatus == DeliveryStatus.RETURN_DELIVERED ||
+            targetStatus == DeliveryStatus.EXCHANGE_PICKUPED ||
+            targetStatus == DeliveryStatus.EXCHANGE_SHIPPED ||
+            targetStatus == DeliveryStatus.EXCHANGE_OUT_OF_DELIVERY ||
+            targetStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
             try {
                 User user = order.getUser();
                 Address address = order.getAddress();
@@ -237,12 +244,19 @@ public class AdminOrderService implements IAdminOrderService {
         Orders order = ordersRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
-        // Validation: Cannot add/edit tracking if order is cancelled or delivered
-        if (order.getDeliveryStatus() == DeliveryStatus.CANCELLED) {
-            throw new InvalidOrderStateException("Cannot set tracking number for a cancelled order.");
+        // Validation: Cannot add/edit tracking if order is cancelled, delivered, or return/exchange completed
+        DeliveryStatus currentStatus = order.getDeliveryStatus();
+        if (currentStatus == DeliveryStatus.CANCELLED) {
+            throw new OrderAlreadyProcessedException("This order is already cancelled.");
         }
-        if (order.getDeliveryStatus() == DeliveryStatus.DELIVERED) {
-            throw new InvalidOrderStateException("Cannot set tracking number for a delivered order.");
+        if (currentStatus == DeliveryStatus.DELIVERED) {
+            throw new OrderAlreadyProcessedException("This order is already delivered.");
+        }
+        if (currentStatus == DeliveryStatus.RETURN_DELIVERED) {
+            throw new OrderAlreadyProcessedException("This order is already refund completed.");
+        }
+        if (currentStatus == DeliveryStatus.EXCHANGE_DELIVERED) {
+            throw new OrderAlreadyProcessedException("This order is already exchange completed.");
         }
 
         // Validation: Courier Tracking ID must be unique (only check non-empty values)

@@ -126,7 +126,7 @@ public class EmailService {
                 "                                                    </svg>\n" +
                 "                                                </td>\n" +
                 "                                                <td style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 800; color: #0056cc; vertical-align: middle; letter-spacing: -0.5px;\">\n" +
-                "                                                    dripDoggy\n" +
+                "                                                    DripDoggy\n" +
                 "                                                </td>\n" +
                 "                                            </tr>\n" +
                 "                                        </table>\n" +
@@ -190,7 +190,7 @@ public class EmailService {
                 "                    <tr>\n" +
                 "                        <td style=\"color: #64748b; font-size: 12px; line-height: 1.8;\">\n" +
                 "                            <div style=\"margin-bottom: 12px; font-weight: 600;\">\n" +
-                "                                <a href=\"#\" style=\"color: #0056cc; text-decoration: none; margin: 0 8px;\">Support Center</a>\n" +
+                "                                <a href=\"mailto:support.dripdoggy@gmail.com\" style=\"color: #0056cc; text-decoration: none; margin: 0 8px;\">Support Center</a>\n" +
                 "                                <a href=\"#\" style=\"color: #0056cc; text-decoration: none; margin: 0 8px;\">Privacy Policy</a>\n" +
                 "                                <a href=\"#\" style=\"color: #0056cc; text-decoration: none; margin: 0 8px;\">Unsubscribe</a>\n" +
                 "                            </div>\n" +
@@ -199,7 +199,7 @@ public class EmailService {
                 "                                <span style=\"color: #1e293b;\">The DripDoggy Team</span>\n" +
                 "                            </div>\n" +
                 "                            <div style=\"color: #94a3b8; font-size: 10px; margin-top: 15px;\">\n" +
-                "                                &copy; 2026 dripDoggy Security Team. All rights reserved.\n" +
+                "                                &copy; 2026 DripDoggy Security Team. All rights reserved.\n" +
                 "                            </div>\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
@@ -349,6 +349,7 @@ public class EmailService {
             }
             
             billHtml.append("<tr><td align=\"left\">Shipping Fee</td><td align=\"right\">₹").append(shippingFee).append("</td></tr>")
+                    .append("<tr><td align=\"left\">Platform Fee</td><td align=\"right\" style=\"color: #16a34a; font-weight: 600;\">₹0.00 (FREE)</td></tr>")
                     .append("<tr style=\"font-size: 15px; font-weight: 800; color: #0056cc;\"><td align=\"left\" style=\"padding-top: 8px;\">Grand Total</td><td align=\"right\" style=\"padding-top: 8px;\">₹").append(grandTotal).append("</td></tr>")
                     .append("</table>");
             
@@ -463,12 +464,16 @@ public class EmailService {
                     "<td align=\"right\" style=\"padding: 6px 0; color: #475569;\">" + sizeName + "</td>" +
                     "</tr>" +
                     "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
-                    "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Price</td>" +
+                    "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Unit Price</td>" +
                     "<td align=\"right\" style=\"padding: 6px 0; color: #475569;\">₹" + price + "</td>" +
                     "</tr>" +
                     "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
                     "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Quantity</td>" +
                     "<td align=\"right\" style=\"padding: 6px 0; color: #475569;\">" + quantity + "</td>" +
+                    "</tr>" +
+                    "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
+                    "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Total Value</td>" +
+                    "<td align=\"right\" style=\"padding: 6px 0; color: #16a34a; font-weight: bold;\">₹" + (price * quantity) + "</td>" +
                     "</tr>" +
                     "</table>";
 
@@ -539,7 +544,7 @@ public class EmailService {
                     "Update Details",
                     statusText,
                     null,
-                    "If you have any questions or concerns about this update, please reach out to our Support Center."
+                    "If you have any questions or concerns about this update, please reach out to our <a href=\"mailto:support.dripdoggy@gmail.com\" style=\"color: #0056cc; text-decoration: underline;\">Support Center</a>."
             );
             
             helper.setText(htmlContent, true);
@@ -577,7 +582,9 @@ public class EmailService {
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
-            helper.setSubject("DripDoggy Return Package Update: " + deliveryStatus + " - " + orderNumber);
+            
+            String requestName = (deliveryStatus != null && deliveryStatus.startsWith("EXCHANGE")) ? "Exchange" : "Return";
+            helper.setSubject("DripDoggy " + requestName + " Package Update: " + deliveryStatus + " - " + orderNumber);
             
             String updateMessage = "";
             if (deliveryStatus.contains("PICKUPED")) {
@@ -592,8 +599,8 @@ public class EmailService {
                 updateMessage = "status has been updated to: " + deliveryStatus;
             }
             
-            String title = "Return Package Update";
-            String subtitle = "Hello, " + customerName + "! There is a new update regarding your return shipment.";
+            String title = requestName + " Package Update";
+            String subtitle = "Hello, " + customerName + "! There is a new update regarding your " + requestName.toLowerCase() + " shipment.";
             String htmlContent = buildCustomerEmail(
                     title,
                     subtitle,
@@ -604,7 +611,7 @@ public class EmailService {
                     "Logistics Update",
                     updateMessage,
                     null,
-                    "We are closely monitoring your return package transit back to our warehouse."
+                    "We are closely monitoring your " + requestName.toLowerCase() + " package transit back to our warehouse."
             );
             
             helper.setText(htmlContent, true);
@@ -617,10 +624,11 @@ public class EmailService {
             
             mailSender.send(mimeMessage);
         } catch (Exception e) {
+            String requestName = (deliveryStatus != null && deliveryStatus.startsWith("EXCHANGE")) ? "Exchange" : "Return";
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("DripDoggy Return Package Update: " + deliveryStatus + " - " + orderNumber);
+            message.setSubject("DripDoggy " + requestName + " Package Update: " + deliveryStatus + " - " + orderNumber);
             
             String updateMessage = "";
             if (deliveryStatus.contains("PICKUPED")) {
@@ -628,7 +636,7 @@ public class EmailService {
             } else if (deliveryStatus.contains("SHIPPED")) {
                 updateMessage = "has been shipped and is in transit back to our warehouse.";
             } else if (deliveryStatus.contains("OUT_OF_DELIVERY")) {
-                updateMessage = "is out for delivery to our warehouse.";
+                updateMessage = "is out for delivery to our warehouse for final inspection.";
             } else if (deliveryStatus.contains("DELIVERED")) {
                 updateMessage = "has been safely received at our warehouse. We are now processing your refund/replacement.";
             } else {
@@ -636,19 +644,20 @@ public class EmailService {
             }
             
             message.setText("Dear " + customerName + ",\n\n" +
-                       "Your return package for order " + orderNumber + " " + updateMessage + "\n\n" +
-                       "Logistics Status: " + deliveryStatus + "\n\n" +
-                       "Best regards,\n" +
-                       "The DripDoggy Team");
+                    "There is a new update regarding your " + requestName.toLowerCase() + " shipment for order " + orderNumber + ".\n\n" +
+                    "Status: " + deliveryStatus + "\n" +
+                    "Details: Your package " + updateMessage + "\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Team");
             mailSender.send(message);
         }
     }
 
-    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage, double refundAmount) {
-        sendCustomerRefundCompletedEmail(toEmail, orderNumber, customerName, productName, proofImageUrl, proofImage, false, refundAmount);
+    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String transactionId, double refundAmount) {
+        sendCustomerRefundCompletedEmail(toEmail, orderNumber, customerName, productName, transactionId, false, refundAmount);
     }
 
-    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String proofImageUrl, MultipartFile proofImage, boolean wasExchangeFallback, double refundAmount) {
+    public void sendCustomerRefundCompletedEmail(String toEmail, String orderNumber, String customerName, String productName, String transactionId, boolean wasExchangeFallback, double refundAmount) {
         try {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -664,7 +673,17 @@ public class EmailService {
             String title = "Your Refund has been Processed!";
             String subtitle = "Hello, " + customerName + "! We've successfully completed your refund for Order " + orderNumber + ".";
             
-            String footerNote = "Refund Proof Receipt: <a href=\"" + proofImageUrl + "\" style=\"color: #0056cc; font-weight: 600;\">Click here to view receipt</a><br/>Please allow 2-3 business days for the funds to reflect in your account.";
+            String footerNote = "Please allow 2-3 business days for the funds to reflect in your account.";
+            
+            String customDetailsHtml = null;
+            if (transactionId != null && !transactionId.trim().isEmpty()) {
+                customDetailsHtml = "<table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"6\" style=\"border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #334155; margin-top: 10px;\">" +
+                        "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
+                        "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Transaction ID</td>" +
+                        "<td align=\"right\" style=\"padding: 6px 0; color: #16a34a; font-weight: bold;\">" + transactionId.trim() + "</td>" +
+                        "</tr>" +
+                        "</table>";
+            }
 
             String htmlContent = buildCustomerEmail(
                     title,
@@ -675,7 +694,7 @@ public class EmailService {
                     "₹" + refundAmount,
                     "Reason for Refund",
                     refundReasonText,
-                    null,
+                    customDetailsHtml,
                     footerNote
             );
             
@@ -685,14 +704,6 @@ public class EmailService {
                 helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
             } catch (Exception imgEx) {
                 System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
-
-            if (proofImage != null && !proofImage.isEmpty()) {
-                String fileName = proofImage.getOriginalFilename();
-                if (fileName == null || fileName.isEmpty()) {
-                    fileName = "refund_proof.png";
-                }
-                helper.addAttachment(fileName, proofImage);
             }
             
             mailSender.send(mimeMessage);
@@ -706,11 +717,14 @@ public class EmailService {
                     ? "Your refund for order " + orderNumber + " has been processed because the replacement item for your exchange request was out of stock."
                     : "Your refund for order " + orderNumber + " has been successfully processed.";
             
+            String receiptLine = (transactionId != null && !transactionId.trim().isEmpty())
+                    ? "Transaction ID: " + transactionId.trim() + "\n"
+                    : "";
             message.setText("Dear " + customerName + ",\n\n" +
                     refundText + "\n\n" +
                     "Product: " + productName + "\n" +
                     "Refund Amount: ₹" + refundAmount + "\n" +
-                    "Refund Transaction Receipt URL: " + proofImageUrl + "\n\n" +
+                    receiptLine + "\n" +
                     "Please allow 2-3 business days for the funds to reflect in your account.\n\n" +
                     "Best regards,\n" +
                     "The DripDoggy Team");
@@ -768,62 +782,6 @@ public class EmailService {
         }
     }
 
-    public void sendCustomerExchangePaymentRequestEmail(String toEmail, String orderNumber, String customerName, String productName, String variantName, double amount, MultipartFile qrCode) {
-        try {
-            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
-            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
-            
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("DripDoggy Exchange Request - Payment Required - " + orderNumber);
-            
-            String title = "Exchange Payment Required";
-            String subtitle = "Hello, " + customerName + "! Your exchange request for order " + orderNumber + " requires a net price difference payment.";
-            String htmlContent = buildCustomerEmail(
-                    title,
-                    subtitle,
-                    "Replacement Product",
-                    productName + " (" + variantName + ")",
-                    "Net Difference Amount",
-                    "₹" + amount,
-                    "Payment Method",
-                    "Please scan the attached QR code or pay via UPI to: dripdoggyofficial@gmail.com",
-                    null,
-                    "Please pay the due amount so that we can proceed with shipping your replacement items."
-            );
-            
-            helper.setText(htmlContent, true);
-            
-            try {
-                helper.addInline("mascotLogo", new ClassPathResource("new_logo_icon.png"));
-            } catch (Exception imgEx) {
-                System.err.println("Could not add inline image logo to email: " + imgEx.getMessage());
-            }
-
-            if (qrCode != null && !qrCode.isEmpty()) {
-                String fileName = qrCode.getOriginalFilename();
-                if (fileName == null || fileName.isEmpty()) {
-                    fileName = "payment_qr.png";
-                }
-                helper.addAttachment(fileName, qrCode);
-            }
-            
-            mailSender.send(mimeMessage);
-        } catch (Exception e) {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(toEmail);
-            message.setSubject("DripDoggy Exchange Request - Payment Required - " + orderNumber);
-            message.setText("Dear " + customerName + ",\n\n" +
-                    "Your exchange request for order " + orderNumber + " requires a net difference payment of ₹" + amount + ".\n\n" +
-                    "Product: " + productName + " (" + variantName + ")\n" +
-                    "Please scan the QR code or pay the amount via UPI to: dripdoggyofficial@gmail.com\n\n" +
-                    "Best regards,\n" +
-                    "The DripDoggy Team");
-            mailSender.send(message);
-        }
-    }
-
     public void sendCustomerExchangeRefundInitiatedEmail(
             String toEmail, 
             String orderNumber, 
@@ -857,12 +815,16 @@ public class EmailService {
                     "<td align=\"right\" style=\"padding: 6px 0; color: #475569;\">" + sizeName + "</td>" +
                     "</tr>" +
                     "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
-                    "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Price</td>" +
+                    "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Unit Price</td>" +
                     "<td align=\"right\" style=\"padding: 6px 0; color: #475569;\">₹" + price + "</td>" +
                     "</tr>" +
                     "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
                     "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Quantity</td>" +
                     "<td align=\"right\" style=\"padding: 6px 0; color: #475569;\">" + quantity + "</td>" +
+                    "</tr>" +
+                    "<tr style=\"border-bottom: 1px solid #f1f5f9;\">" +
+                    "<td style=\"padding: 6px 0; font-weight: 600; color: #1e293b;\">Total Value</td>" +
+                    "<td align=\"right\" style=\"padding: 6px 0; color: #16a34a; font-weight: bold;\">₹" + (price * quantity) + "</td>" +
                     "</tr>" +
                     "</table>";
 
@@ -955,7 +917,19 @@ public class EmailService {
         }
     }
 
-    public void sendCustomerExchangeSizeUnavailableEmail(String toEmail, String orderNumber, String customerName, String productName, String targetSize, Long returnId) {
+    public void sendCustomerExchangeSizeUnavailableEmail(
+            String toEmail, 
+            String orderNumber, 
+            String customerName, 
+            String productName, 
+            String originalSize, 
+            String originalVariant, 
+            int quantity, 
+            String targetSize, 
+            String targetVariant, 
+            double refundAmount,
+            Long returnId
+    ) {
         try {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -965,12 +939,33 @@ public class EmailService {
             helper.setSubject("Action Required: Exchange Size Unavailable for Order " + orderNumber);
             
             String title = "Exchange Size Unavailable";
-            String subtitle = "Hello, " + customerName + "! We went to process your exchange for the product on order " + orderNumber + " but the requested size is unavailable.";
+            String subtitle = "Hello, " + customerName + "! The size you requested for your exchange is currently out of stock. Please select how you would like to proceed.";
             
-            String customDetailsHtml = "<div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #475569; line-height: 1.6;\">" +
-                    "<strong>Resolution Options:</strong><br/>" +
-                    "&bull; Option 1 (Refund): <a href=\"http://localhost:3000/returns/" + returnId + "/resolution?choice=REFUND\" style=\"color: #0056cc; font-weight: 600;\">Request full refund</a><br/>" +
-                    "&bull; Option 2 (Keep Original): <a href=\"http://localhost:3000/returns/" + returnId + "/resolution?choice=KEEP_ORIGINAL\" style=\"color: #0056cc; font-weight: 600;\">Keep original items</a>" +
+            String customDetailsHtml = "<div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #334155; line-height: 1.6;\">" +
+                    "<p style=\"margin: 0 0 15px 0;\">We were processing your exchange, but unfortunately, the target replacement size is currently out of stock.</p>" +
+                    "<div style=\"background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 15px 0;\">" +
+                    "<table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"4\" style=\"font-size: 13px; color: #475569;\">" +
+                    "<tr>" +
+                    "<td style=\"font-weight: 600; color: #1e293b;\" width=\"40%\">Original Product:</td>" +
+                    "<td><strong>" + quantity + " x</strong> " + productName + " (" + originalVariant + " / Size: " + originalSize + ")</td>" +
+                    "</tr>" +
+                    "<tr>" +
+                    "<td style=\"font-weight: 600; color: #1e293b;\">Requested Exchange:</td>" +
+                    "<td style=\"color: #ef4444; font-weight: 600;\">" + quantity + " x " + productName + " (" + targetVariant + " / Size: " + targetSize + ") <span style=\"font-size: 11px; font-weight: normal; background-color: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; margin-left: 5px;\">Out of Stock</span></td>" +
+                    "</tr>" +
+                    "</table>" +
+                    "</div>" +
+                    "<p style=\"margin: 15px 0 10px 0; font-weight: 600; color: #1e293b;\">How to resolve this:</p>" +
+                    "<ol style=\"margin: 0; padding-left: 20px; color: #475569; font-size: 13px;\">" +
+                    "<li style=\"margin-bottom: 8px;\">Log into your account on the <strong>DripDoggy Website</strong>.</li>" +
+                    "<li style=\"margin-bottom: 8px;\">Go to your <strong>Order History</strong> page.</li>" +
+                    "<li style=\"margin-bottom: 8px;\">Choose one of the following resolution options available on your order card:" +
+                    "<ul style=\"margin: 8px 0 0 0; padding-left: 20px;\">" +
+                    "<li style=\"margin-bottom: 4px;\"><strong>Option 1 (Refund):</strong> Convert the request to receive a full refund of <strong>₹" + refundAmount + "</strong>.</li>" +
+                    "<li style=\"margin-bottom: 4px;\"><strong>Option 2 (Keep Original):</strong> Keep your original items and close the exchange request.</li>" +
+                    "</ul>" +
+                    "</li>" +
+                    "</ol>" +
                     "</div>";
             
             String htmlContent = buildCustomerEmail(
@@ -979,10 +974,10 @@ public class EmailService {
                     "Requested Product",
                     productName + " (Size: " + targetSize + ")",
                     "Action Required",
-                    "Choose Resolution",
+                    "Choose Resolution on Site",
                     null, null,
                     customDetailsHtml,
-                    "Please click one of the options above to select how you would like to proceed with this exchange."
+                    "Please visit your Order History page on our website to choose a resolution."
             );
             
             helper.setText(htmlContent, true);
@@ -1002,36 +997,61 @@ public class EmailService {
             message.setText("Dear " + customerName + ",\n\n" +
                     "We went to process your exchange for the " + productName + " (Size: " + targetSize + "), but unfortunately this size is currently unavailable.\n\n" +
                     "Please choose how you would like to proceed:\n" +
-                    "Option 1 (Refund): http://localhost:3000/returns/" + returnId + "/resolution?choice=REFUND\n" +
-                    "Option 2 (Keep Original): http://localhost:3000/returns/" + returnId + "/resolution?choice=KEEP_ORIGINAL\n\n" +
+                    "Option 1 (Refund): Request Refund for the " + quantity + " x " + productName + " (Size: " + originalSize + ") you originally received and returned.\n" +
+                    "Option 2 (Keep Original): Cancel Exchange and keep your original " + quantity + " x " + productName + " (Size: " + originalSize + ").\n\n" +
                     "Best regards,\n" +
                     "The DripDoggy Team");
             mailSender.send(message);
         }
     }
 
-    public void sendCustomerExchangeUnavailableClosedEmail(String toEmail, String orderNumber, String customerName) {
+    public void sendCustomerExchangeUnavailableClosedEmail(
+            String toEmail, 
+            String orderNumber, 
+            String customerName,
+            String productName,
+            String variantName,
+            String sizeName,
+            int quantity
+    ) {
         try {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
-            helper.setSubject("Exchange Request Closed - " + orderNumber);
+            helper.setSubject("Exchange Request Resolved - " + orderNumber);
             
-            String title = "Exchange Request Closed";
-            String subtitle = "Hello, " + customerName + "! Your exchange request for order " + orderNumber + " has been closed.";
+            String title = "Exchange Request Resolved";
+            String subtitle = "Hello, " + customerName + "! Your exchange request for order " + orderNumber + " has been resolved.";
+            
+            String customDetailsHtml = "<div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #334155; line-height: 1.6;\">" +
+                    "<p style=\"margin: 0 0 10px 0;\">You chose to keep the original item in your possession instead of processing an exchange.</p>" +
+                    "<div style=\"background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 15px 0;\">" +
+                    "<table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"4\" style=\"font-size: 13px; color: #475569;\">" +
+                    "<tr>" +
+                    "<td style=\"font-weight: 600; color: #1e293b;\" width=\"40%\">Item Kept:</td>" +
+                    "<td>" + productName + " (" + variantName + " / Size: " + sizeName + ")</td>" +
+                    "</tr>" +
+                    "<tr>" +
+                    "<td style=\"font-weight: 600; color: #1e293b;\">Quantity Kept:</td>" +
+                    "<td><strong>" + quantity + "</strong></td>" +
+                    "</tr>" +
+                    "</table>" +
+                    "</div>" +
+                    "</div>";
+
             String htmlContent = buildCustomerEmail(
                     title,
                     subtitle,
                     "Order Reference",
                     orderNumber,
-                    "Ticket Status",
-                    "CLOSED",
-                    "Reason for Closure",
-                    "You chose to keep the original products in your possession.",
-                    null,
-                    "Thank you for shopping with us! Let us know if you need any further assistance."
+                    "Exchange Ticket Status",
+                    "RESOLVED",
+                    "Reason for Resolution",
+                    "Customer chose to keep the original items in their possession.",
+                    customDetailsHtml,
+                    "Thank you for shopping with us! If you have any questions, you can contact our <a href=\"mailto:support.dripdoggy@gmail.com\" style=\"color: #0056cc; text-decoration: underline;\">Support Center</a>."
             );
             
             helper.setText(htmlContent, true);
@@ -1047,10 +1067,11 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Exchange Request Closed - " + orderNumber);
+            message.setSubject("Exchange Request Resolved - " + orderNumber);
             message.setText("Dear " + customerName + ",\n\n" +
-                    "Your exchange request for order " + orderNumber + " has been closed as you chose to keep the original products.\n\n" +
-                    "Thank you for shopping with us!\n\n" +
+                    "Your exchange request for order " + orderNumber + " has been resolved as you chose to keep the original product: " +
+                    productName + " (Qty: " + quantity + ").\n\n" +
+                    "If you have any questions, you can contact our Support Center.\n\n" +
                     "Best regards,\n" +
                     "The DripDoggy Team");
             mailSender.send(message);
@@ -1123,6 +1144,7 @@ public class EmailService {
             }
             
             billHtml.append("<tr><td align=\"left\">Shipping Fee</td><td align=\"right\">₹").append(shippingFee).append("</td></tr>")
+                    .append("<tr><td align=\"left\">Platform Fee</td><td align=\"right\" style=\"color: #16a34a; font-weight: 600;\">₹0.00 (FREE)</td></tr>")
                     .append("<tr style=\"font-size: 15px; font-weight: 800; color: #ff0055;\"><td align=\"left\" style=\"padding-top: 8px;\">Grand Total Cancelled</td><td align=\"right\" style=\"padding-top: 8px;\">₹").append(grandTotal).append("</td></tr>")
                     .append("</table>");
             
@@ -1143,7 +1165,7 @@ public class EmailService {
                     "Cancellation Reason",
                     reason,
                     customDetailsHtml,
-                    "If this cancellation was done by mistake or if you need any assistance, please contact our Support Center."
+                    "If this cancellation was done by mistake or if you need any assistance, please contact our <a href=\"mailto:support.dripdoggy@gmail.com\" style=\"color: #0056cc; text-decoration: underline;\">Support Center</a>."
             );
             
             helper.setText(htmlContent, true);
@@ -1236,6 +1258,7 @@ public class EmailService {
             }
             
             billHtml.append("<tr><td align=\"left\">Shipping Fee</td><td align=\"right\">₹").append(shippingFee).append("</td></tr>")
+                    .append("<tr><td align=\"left\">Platform Fee</td><td align=\"right\" style=\"color: #16a34a; font-weight: 600;\">₹0.00 (FREE)</td></tr>")
                     .append("<tr style=\"font-size: 15px; font-weight: 800; color: #0056cc;\"><td align=\"left\" style=\"padding-top: 8px;\">Grand Total Paid</td><td align=\"right\" style=\"padding-top: 8px;\">₹").append(grandTotal).append("</td></tr>")
                     .append("</table>");
             
@@ -1253,7 +1276,7 @@ public class EmailService {
                     "Status Update",
                     "Your package has been successfully dropped off at your address.",
                     customDetailsHtml,
-                    "We hope you love your new products! If you have any questions or concerns, please reach out to our Support Center."
+                    "We hope you love your new products! If you have any questions or concerns, please reach out to our <a href=\"mailto:support.dripdoggy@gmail.com\" style=\"color: #0056cc; text-decoration: underline;\">Support Center</a>."
             );
             
             helper.setText(htmlContent, true);

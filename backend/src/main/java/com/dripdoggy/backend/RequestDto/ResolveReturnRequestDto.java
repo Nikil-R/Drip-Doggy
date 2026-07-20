@@ -1,21 +1,20 @@
 package com.dripdoggy.backend.RequestDto;
 
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.web.multipart.MultipartFile;
 
 public class ResolveReturnRequestDto {
     @NotBlank(message = "Action is required")
     private String action;
     private String trackingNumber;
-    private MultipartFile proofImage;
+    private String transactionId;
 
     public ResolveReturnRequestDto() {
     }
 
-    public ResolveReturnRequestDto(String action, String trackingNumber, MultipartFile proofImage) {
+    public ResolveReturnRequestDto(String action, String trackingNumber, String transactionId) {
         this.action = action;
         this.trackingNumber = trackingNumber;
-        this.proofImage = proofImage;
+        this.transactionId = transactionId;
     }
 
     public String getAction() {
@@ -34,11 +33,11 @@ public class ResolveReturnRequestDto {
         this.trackingNumber = trackingNumber;
     }
 
-    public MultipartFile getProofImage() {
-        return proofImage;
+    public String getTransactionId() {
+        return transactionId;
     }
 
-    public void setProofImage(MultipartFile proofImage) {
-        this.proofImage = proofImage;
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 }

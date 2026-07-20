@@ -256,6 +256,36 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(ReturnWindowExpiredException.class)
+    public ResponseEntity<ResponseMsgDto> handleReturnWindowExpired(ReturnWindowExpiredException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(OrderAlreadyCancelledException.class)
+    public ResponseEntity<ResponseMsgDto> handleOrderAlreadyCancelled(OrderAlreadyCancelledException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(OrderAlreadyProcessedException.class)
+    public ResponseEntity<ResponseMsgDto> handleOrderAlreadyProcessed(OrderAlreadyProcessedException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ReturnLogisticsIncompleteException.class)
+    public ResponseEntity<ResponseMsgDto> handleReturnLogisticsIncomplete(ReturnLogisticsIncompleteException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ReplacementSizeOutOfStockException.class)
+    public ResponseEntity<ResponseMsgDto> handleReplacementSizeOutOfStock(ReplacementSizeOutOfStockException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(MissingRefundProofException.class)
     public ResponseEntity<ResponseMsgDto> handleMissingRefundProof(MissingRefundProofException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
