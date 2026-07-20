@@ -165,10 +165,13 @@ export function Cart() {
     }
   };
 
-  const removeBundleItems = async (itemsToRemove: any[]) => {
+  const removeBundleItems = async (itemsToRemove: any[], bundleId?: number) => {
     const token = localStorage.getItem("dripdoggy_auth_token");
     try {
-      if (token) {
+      if (token && bundleId) {
+        await cartApi.removeBundleFromCart(bundleId);
+        await syncCart();
+      } else if (token) {
         const itemWithId = itemsToRemove.find(item => item.backendId);
         if (itemWithId) {
           await cartApi.removeFromCart(itemWithId.backendId);
@@ -466,7 +469,7 @@ export function Cart() {
                       </div>
                       <button onClick={() => {
                         if (confirm("Remove entire matching bundle from bag?")) {
-                          removeBundleItems(g.items);
+                          removeBundleItems(g.items, g.bundleId);
                         }
                       }} className="text-[#b2533e] hover:opacity-75 font-extrabold text-[10px] uppercase tracking-wider bg-transparent border-none cursor-pointer flex items-center gap-1.5">
                         <Trash2 className="h-4 w-4 stroke-[1.8]" /> Remove Set

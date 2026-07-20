@@ -79,5 +79,10 @@ export const cartApi = {
       { headers: getHeaders() }
     );
     return response.data;
+  },
+
+  removeBundleFromCart: async (bundleId: number): Promise<any> => {
+    const response = await axios.delete(`${BASE_URL}/bundle/${bundleId}`, { headers: getHeaders() });
+    return response.data;
   }
 };
