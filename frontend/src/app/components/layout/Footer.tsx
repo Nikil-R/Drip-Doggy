@@ -350,8 +350,8 @@ export function Footer() {
       <div className="bg-[#030213] border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-6 md:py-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[10px] text-white/40 font-extrabold tracking-[0.2em] uppercase order-2 md:order-1 text-center md:text-left">
-              © {new Date().getFullYear()} DRIPDOGGY. UNCOMPROMISED STREET LUXURY. ALL RIGHTS RESERVED.
+            <p className="text-[10px] text-white/40 font-extrabold tracking-[0.2em] order-2 md:order-1 text-center md:text-left">
+              © {new Date().getFullYear()} DripDoggy. Drip Your Way, Every Day. All Rights Reserved.
             </p>
             <div className="hidden md:flex items-center gap-1 order-1 md:order-2">
               <Link to="/privacy" className="text-[10px] text-white/40 hover:text-white transition-colors font-extrabold tracking-[0.2em] uppercase">Privacy</Link>
