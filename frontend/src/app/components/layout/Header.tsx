@@ -407,11 +407,14 @@ export function Header() {
     setIsLoading(false);
   };
 
-  const removeBundleItems = async (itemsToRemove: any[]) => {
+  const removeBundleItems = async (itemsToRemove: any[], bundleId?: number) => {
     setIsLoading(true);
     const token = localStorage.getItem("dripdoggy_auth_token");
     try {
-      if (token) {
+      if (token && bundleId) {
+        await cartApi.removeBundleFromCart(bundleId);
+        await syncCart();
+      } else if (token) {
         const itemWithId = itemsToRemove.find(item => item.backendId);
         if (itemWithId) {
           await cartApi.removeFromCart(itemWithId.backendId);
@@ -642,7 +645,7 @@ export function Header() {
                           <button 
                             onClick={() => {
                               if (confirm("Remove entire matching bundle from bag?")) {
-                                removeBundleItems(g.items);
+                                removeBundleItems(g.items, g.bundleId);
                               }
                             }} 
                             className="text-[#b2533e] hover:opacity-75 transition-opacity bg-transparent border-none cursor-pointer p-1" 

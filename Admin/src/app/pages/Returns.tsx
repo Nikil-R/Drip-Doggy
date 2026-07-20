@@ -63,7 +63,7 @@ interface ReturnRequest {
     qrCodeImage?: string;
   };
   timeline: StatusTimeline[];
-  receiptScreenshot?: string | null;
+  transactionId?: string;
   emailSent?: boolean;
   orderDbId?: number;
 }
@@ -334,7 +334,7 @@ export function ReturnsPage() {
     setPendingStageChange({ id, stage });
   };
 
-  const uploadProof = (id: string, url: string) => setReturns(prev => prev.map(r => r.id === id ? { ...r, receiptScreenshot: url } : r));
+  const updateTransactionId = (id: string, val: string) => setReturns(prev => prev.map(r => r.id === id ? { ...r, transactionId: val } : r));
 
   const handleConfirmRefundPayout = async () => {
     if (!active) return;
@@ -342,21 +342,12 @@ export function ReturnsPage() {
     setEmailStatusMessage("Resolving return request & transferring payout proof...");
 
     try {
-      // 1. Convert base64 mockup or screenshot url to File payload
-      let receiptFile: File | null = null;
-      if (active.receiptScreenshot) {
-        // Mock a File if it's already a string reference, or fetch file object
-        const response = await fetch(active.receiptScreenshot);
-        const blob = await response.blob();
-        receiptFile = new File([blob], `refund_receipt_${active.id}.png`, { type: "image/png" });
-      }
-
-      // 2. Resolve on backend (action: REFUND, passes proof image)
+      // 2. Resolve on backend (action: REFUND, passes transactionId)
       await adminOrderApi.resolveReturnRequest(
         Number(active.id),
         "REFUND",
         "",
-        receiptFile,
+        active.transactionId || null,
         token!
       );
 
@@ -714,46 +705,38 @@ export function ReturnsPage() {
 
               {/* Step 3: Refund proof submission (only after package reaches RECEIVED or RETURN_DELIVERED stage) */}
               {active.approvalStatus !== "PENDING" && active.approvalStatus !== "REJECTED" && (
-                <div>
                   <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund Verification & Closeout</span>
-                  {active.receiptScreenshot ? (
-                    <div className="space-y-3">
-                      <div className="border border-green-200 bg-green-50 p-4 flex items-center gap-3 rounded-sm">
-                        <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-[9.5px] font-bold uppercase tracking-widest text-green-700">Proof Uploaded</p>
-                          <p className="text-[9.5px] text-green-600 font-semibold mt-0.5">Transaction receipt recorded.</p>
-                        </div>
-                        <img src={active.receiptScreenshot} alt="Proof" className="w-12 h-12 object-cover border border-green-200" />
-                      </div>
-
-                      {active.approvalStatus !== "COMPLETED" && (
-                        <button
-                          onClick={() => setShowConfirmModal(true)}
-                          className="w-full bg-[#224870] hover:bg-[#1a3858] text-white text-[9.5px] font-black uppercase tracking-wider py-2.5 px-4 rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
-                        >
-                          <Mail className="w-4 h-4" /> Confirm & Send Email to Customer
-                        </button>
-                      )}
-
-                      {active.approvalStatus === "COMPLETED" && (
-                        <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold bg-green-50 border border-green-200 p-2.5 rounded-sm">
-                          <Check className="w-4 h-4" /> Refund complete. Email notifications sent successfully.
-                        </div>
-                      )}
+                  
+                  <div className="space-y-3">
+                    <div className="bg-card border border-neutral-200/80 p-4 rounded-sm">
+                      <label className="block text-[9.5px] font-bold tracking-widest text-[#615e56] uppercase mb-2">Transaction ID</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. TXN123456789"
+                        value={active.transactionId || ""}
+                        onChange={e => updateTransactionId(active.id, e.target.value)}
+                        className="w-full bg-white border border-neutral-200 p-2.5 text-xs font-semibold focus:outline-none focus:border-[#224870] transition-colors rounded-sm"
+                        disabled={active.approvalStatus === "COMPLETED"}
+                      />
+                      <p className="text-[9px] text-[#615e56] font-semibold mt-1.5">Enter the bank transaction ID for the refund to unlock confirmation.</p>
                     </div>
-                  ) : (
-                    <label className="flex items-center gap-3 border-2 border-dashed border-neutral-200 hover:border-[#224870] p-4 cursor-pointer transition-all group bg-card hover:bg-[#224870]/3">
-                      <div className="w-9 h-9 bg-neutral-100 group-hover:bg-[#224870]/10 flex items-center justify-center transition-all shrink-0">
-                        <Upload className="w-4 h-4 text-neutral-400 group-hover:text-[#224870] transition-colors" />
+
+                    {active.approvalStatus !== "COMPLETED" && (
+                      <button
+                        onClick={() => setShowConfirmModal(true)}
+                        disabled={!active.transactionId?.trim()}
+                        className={`w-full text-white text-[9.5px] font-black uppercase tracking-wider py-2.5 px-4 rounded-sm transition-all flex items-center justify-center gap-2 border-none ${active.transactionId?.trim() ? "bg-[#224870] hover:bg-[#1a3858] cursor-pointer" : "bg-neutral-300 cursor-not-allowed"}`}
+                      >
+                        <Mail className="w-4 h-4" /> Confirm & Send Email to Customer
+                      </button>
+                    )}
+
+                    {active.approvalStatus === "COMPLETED" && (
+                      <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold bg-green-50 border border-green-200 p-2.5 rounded-sm mt-2">
+                        <Check className="w-4 h-4" /> Refund complete. Email notifications sent successfully.
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#615e56] group-hover:text-[#224870] transition-colors">Upload Receipt Screenshot</p>
-                        <p className="text-[9.5px] text-[#615e56] font-semibold mt-0.5">Attach bank transaction proof to unlock confirmation.</p>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadProof(active.id, URL.createObjectURL(f)); }} />
-                    </label>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
 
