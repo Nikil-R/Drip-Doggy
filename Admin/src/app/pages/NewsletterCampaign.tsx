@@ -3,6 +3,8 @@ import { Mail, Check, Users, Send, Upload, Eye } from "lucide-react";
 import { useAuthStore } from "../store/auth-store";
 import { API_CONFIG } from "../utils/api-config";
 import axios from "axios";
+import logoImg from "../../assets/logo.png";
+import logoIcon from "../../assets/new_logo_icon.png";
 
 interface Subscriber {
   email: string;
@@ -139,9 +141,12 @@ export function NewsletterCampaignPage() {
 
     setIsLoading(true);
     try {
+      // Convert markdown to HTML before sending so the email renders with proper formatting
+      const htmlContent = parseMarkdownToHtml(content.trim());
+
       const formData = new FormData();
       formData.append("subject", subject.trim());
-      formData.append("content", content.trim());
+      formData.append("content", htmlContent);
       formData.append("targetGroup", targetGroup); // Passes "subscribers" or "all" to the backend
       if (image1) {
         formData.append("image1", image1);
@@ -360,55 +365,57 @@ export function NewsletterCampaignPage() {
                 <span className="text-neutral-800 font-semibold">DripDoggy Syndicate &lt;newsletter@dripdoggy.com&gt;</span>
               </div>
               <div>
-                <span className="font-bold uppercase text-[9px] tracking-wide text-neutral-400 mr-2">To:</span>
+                <span className="font-bold uppercase text-[9px] tracking-wide text-neutral-450 mr-2">To:</span>
                 <span className="text-neutral-800 font-semibold">
                   {targetGroup === "all" ? "all-registered-customers@dripdoggy.com" : "newsletter-subscribers@dripdoggy.com"}
                 </span>
               </div>
               <div className="pt-1 border-t border-neutral-100 mt-1">
-                <span className="font-bold uppercase text-[9px] tracking-wide text-neutral-400 mr-2">Subject:</span>
+                <span className="font-bold uppercase text-[9px] tracking-wide text-neutral-450 mr-2">Subject:</span>
                 <span className="text-neutral-900 font-bold tracking-wide uppercase">
-                  {subject || "Exclusive Campaign Notice"}
+                  {subject || "DripDoggy Syndicate Campaign"}
                 </span>
               </div>
             </div>
 
             {/* Rendered Template Body */}
             <div className="bg-white border border-neutral-200 p-6 rounded-sm shadow-inner max-h-[500px] overflow-y-auto">
-              <div style={{ fontFamily: "Inter, sans-serif", maxWidth: "600px", margin: "auto", color: "#000000", lineHeight: "1.6" }}>
+              <div style={{ fontFamily: "Inter, 'Helvetica Neue', Arial, sans-serif", maxWidth: "600px", margin: "auto", color: "#111111", lineHeight: "1.7" }}>
                 {/* Header Mascot Branding */}
-                <div style={{ textAlign: "center", marginBottom: "24px", borderBottom: "2px solid #000000", paddingBottom: "16px" }}>
-                  <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "900", letterSpacing: "0.1em", color: "#000000", textTransform: "uppercase" }}>
-                    DRIPDOGGY
-                  </h1>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "10px", fontWeight: "800", color: "#b2533e", textTransform: "uppercase", letterSpacing: "0.2em" }}>
-                    Exclusive Campaign Notice
-                  </p>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", borderBottom: "1px solid #eaeaea", paddingBottom: "20px", marginBottom: "24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                    <img src={logoIcon} style={{ height: "45px", width: "auto", objectFit: "contain" }} alt="Mascot Logo" />
+                    <img src={logoImg} style={{ height: "65px", width: "auto", objectFit: "contain" }} alt="Name Logo" />
+                  </div>
+                  <span style={{ fontSize: "9px", fontWeight: "900", letterSpacing: "0.2em", textTransform: "uppercase", color: "#b2533e", marginTop: "12px" }}>
+                    Drip your way, Every day
+                  </span>
                 </div>
 
                 {/* Email Body Content */}
                 <div 
-                  style={{ fontSize: "13px", color: "#333333", marginBottom: "24px" }}
+                  style={{ fontSize: "13.5px", color: "#2d2d2d", marginBottom: "28px" }}
                   dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(content) || "<p style='color:#a3a3a3;text-align:center;'>Your email content template will render here in real-time as you write...</p>" }}
                 />
 
                 {/* Inline Image Preview 1 */}
                 {image1Preview && (
-                  <div style={{ textAlign: "center", marginTop: "16px" }}>
-                    <img src={image1Preview} alt="Campaign Attachment 1" style={{ maxWidth: "100%", borderRadius: "8px", border: "1px solid #e2e8f0" }} />
+                  <div style={{ textAlign: "center", marginTop: "20px", marginBottom: "20px" }}>
+                    <img src={image1Preview} alt="Campaign Attachment 1" style={{ maxWidth: "100%", borderRadius: "4px", border: "1px solid #f1f1f1" }} />
                   </div>
                 )}
 
                 {/* Inline Image Preview 2 */}
                 {image2Preview && (
-                  <div style={{ textAlign: "center", marginTop: "16px" }}>
-                    <img src={image2Preview} alt="Campaign Attachment 2" style={{ maxWidth: "100%", borderRadius: "8px", border: "1px solid #e2e8f0" }} />
+                  <div style={{ textAlign: "center", marginTop: "20px", marginBottom: "20px" }}>
+                    <img src={image2Preview} alt="Campaign Attachment 2" style={{ maxWidth: "100%", borderRadius: "4px", border: "1px solid #f1f1f1" }} />
                   </div>
                 )}
 
                 {/* Email Footer Disclaimer */}
-                <div style={{ textAlign: "center", marginTop: "32px", borderTop: "1px solid #e5e5e5", paddingTop: "16px", fontSize: "9px", color: "#737373" }}>
-                  You received this email because you are registered at DripDoggy.
+                <div style={{ textAlign: "center", marginTop: "40px", borderTop: "1px solid #f0f0f0", paddingTop: "20px", fontSize: "9px", color: "#9c9c9c", letterSpacing: "0.05em" }}>
+                  <p style={{ margin: "0 0 4px 0", fontWeight: "700" }}>DRIPDOGGY APPAREL CO.</p>
+                  <p style={{ margin: "0" }}>You are receiving this email because you opted into our newsletter list or completed a purchase. To unsubscribe, click the link in your footer.</p>
                 </div>
               </div>
             </div>

@@ -1335,13 +1335,13 @@ function ProductDetailContent({ product }: { product: Product }) {
                   </p>
                   <div className="flex items-baseline justify-center md:justify-start gap-2 mt-0.5">
                     <span className="text-xl font-black text-neutral-900">
-                      ₹{activeBundle.bundlePrice}
+                      ₹{Math.round(activeBundle.bundlePrice)}
                     </span>
                     <span className="text-xs text-neutral-450 line-through">
-                      ₹{activeBundle.originalTotal}
+                      ₹{Math.round(activeBundle.originalTotal)}
                     </span>
                     <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
-                      SAVE ₹{activeBundle.originalTotal - activeBundle.bundlePrice}
+                      SAVE ₹{Math.round(activeBundle.originalTotal - activeBundle.bundlePrice)}
                     </span>
                   </div>
                 </div>
