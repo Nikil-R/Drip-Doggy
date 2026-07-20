@@ -95,8 +95,9 @@ export const adminOrderApi = {
     return res.data;
   },
 
-  cancelOrder: async (id: number | string, reason: string, token: string): Promise<any> => {
-    const res = await axios.patch(`${BASE_URL}/${id}/cancel`, { cancelReason: reason }, {
+  cancelOrder: async (id: number | string, reason: string | undefined, token: string): Promise<any> => {
+    const payload = reason ? { cancelReason: reason } : {};
+    const res = await axios.patch(`${BASE_URL}/${id}/cancel`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
@@ -120,31 +121,18 @@ export const adminOrderApi = {
     returnId: number,
     action: "REFUND" | "EXCHANGE",
     trackingNumber: string,
-    proofFile: File | null,
+    transactionId: string | null,
     token: string
   ): Promise<any> => {
     const formData = new FormData();
     formData.append("action", action);
     formData.append("trackingNumber", trackingNumber);
-    if (proofFile) {
-      formData.append("proofImage", proofFile);
+    if (transactionId) {
+      formData.append("transactionId", transactionId);
     }
     const res = await axios.patch(`${BASE_URL}/returns/${returnId}/resolve`, formData, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data"
-      }
-    });
-    return res.data;
-  },
-
-  sendExchangePaymentRequest: async (returnId: number, qrFile: File, token: string): Promise<any> => {
-    const formData = new FormData();
-    formData.append("qrCode", qrFile);
-    const res = await axios.patch(`${BASE_URL}/returns/${returnId}/payment-request`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data"
+        Authorization: `Bearer ${token}`
       }
     });
     return res.data;
