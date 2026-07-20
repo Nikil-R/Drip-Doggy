@@ -49,7 +49,7 @@ export function Profile() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const [profile, setProfile] = useState({
