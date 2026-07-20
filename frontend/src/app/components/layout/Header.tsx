@@ -516,10 +516,10 @@ export function Header() {
         <div className="flex h-[76px] items-center justify-between">
           
           {/* Logo (Left) */}
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-3">
-              <img src={logoIcon} alt="" className="h-[70px] w-auto object-contain mix-blend-multiply" />
-              <img src={logo} alt="DRIPDOGGY" className="h-[110px] w-auto object-contain mix-blend-multiply ml-[-10px]" />
+          <div className="flex items-center ">
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
+              <img src={logoIcon} alt="" className="h-[55px] sm:h-[70px] w-auto object-contain mix-blend-multiply" />
+              <img src={logo} alt="DRIPDOGGY" className="h-[90px] sm:h-[110px] w-auto object-contain mix-blend-multiply ml-[-10px]" />
             </Link>
           </div>
 
@@ -578,10 +578,10 @@ export function Header() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-6 h-full">
+          <div className="flex items-center gap-2.5 sm:gap-6 h-full">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="hover:opacity-75 transition-opacity bg-transparent border-none p-0 cursor-pointer outline-none flex items-center"
+              className="hidden sm:flex hover:opacity-75 transition-opacity bg-transparent border-none p-0 cursor-pointer outline-none items-center"
               aria-label="Open Search"
             >
               <Search className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
@@ -589,8 +589,8 @@ export function Header() {
 
             {isAuthenticated && (
               <>
-                <Link to="/wishlist" className="hidden sm:block hover:opacity-75 transition-opacity relative" aria-label="Wishlist">
-              <Heart className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
+                <Link to="/wishlist" className="hover:opacity-75 transition-opacity relative flex items-center" aria-label="Wishlist">
+              <Heart className="h-[20px] w-[20px] sm:h-[25px] sm:w-[25px] stroke-[1.8] text-neutral-800" />
               {wishlistCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                   {wishlistCount}
@@ -602,7 +602,7 @@ export function Header() {
             <Sheet>
               <SheetTrigger asChild>
                 <button className="relative hover:opacity-75 transition-opacity flex items-center bg-transparent border-none p-0 cursor-pointer outline-none">
-                  <ShoppingCart className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
+                  <ShoppingCart className="h-[20px] w-[20px] sm:h-[25px] sm:w-[25px] stroke-[1.8] text-neutral-800" />
                   {totalItemCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 bg-[#b2533e] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                       {totalItemCount}
@@ -888,14 +888,14 @@ export function Header() {
 
             {isAuthenticated ? (
               <div 
-                className="relative hidden sm:block h-full flex items-center px-3 cursor-pointer profile-menu-container"
+                className="relative h-full flex items-center px-1.5 sm:px-3 cursor-pointer profile-menu-container"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
               >
                 <div 
                   className="hover:opacity-75 transition-opacity flex items-center h-full" 
                   aria-label="Profile"
                 >
-                  <CircleUser className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
+                  <CircleUser className="h-[20px] w-[20px] sm:h-[25px] sm:w-[25px] stroke-[1.8] text-neutral-800" />
                 </div>
                 <div className={`absolute right-0 top-full pt-[10px] w-60 transition-all duration-300 ease-in-out z-50 ${
                   isProfileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -937,7 +937,7 @@ export function Header() {
                           Wishlist
                         </Link>
                         <button 
-                          onClick={() => { logout(); setIsProfileOpen(false); navigate('/login'); }}
+                          onClick={() => { logout(); setIsProfileOpen(false); navigate('/'); }}
                           className="w-full flex items-center gap-2 text-left px-5 py-3 text-red-600 hover:text-red-700 hover:bg-red-50/40 transition-colors border-t border-neutral-200/60 mt-2 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase bg-transparent border-none cursor-pointer"
                         >
                           <LogOut className="h-3.5 w-3.5 stroke-[1.8] text-red-600" />
@@ -951,10 +951,10 @@ export function Header() {
             ) : (
               <button 
                 onClick={() => navigate('/login')}
-                className="hidden sm:flex hover:opacity-75 transition-opacity items-center px-3 bg-transparent border-none cursor-pointer h-full"
+                className="flex hover:opacity-75 transition-opacity items-center px-1.5 sm:px-3 bg-transparent border-none cursor-pointer h-full"
                 aria-label="Login"
               >
-                <CircleUser className="h-[25px] w-[25px] stroke-[1.8] text-neutral-800" />
+                <CircleUser className="h-[20px] w-[20px] sm:h-[25px] sm:w-[25px] stroke-[1.8] text-neutral-800" />
               </button>
             )}
 
@@ -964,7 +964,7 @@ export function Header() {
               className="lg:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <svg className="h-[25px] w-[25px] text-neutral-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <svg className="h-[20px] w-[20px] sm:h-[25px] sm:w-[25px] text-neutral-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <line x1="4" y1="8" x2="20" y2="8" />
                 <line x1="4" y1="16" x2="20" y2="16" />
               </svg>
