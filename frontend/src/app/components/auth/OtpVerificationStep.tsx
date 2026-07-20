@@ -42,7 +42,7 @@ export function OtpVerificationStep({
         <OTPInput
           maxLength={6}
           value={otp}
-          onChange={onOtpChange}
+          onChange={(val) => onOtpChange(val.replace(/\D/g, ""))}
           disabled={isSubmitting}
           containerClassName="flex items-center gap-2 sm:gap-3"
           render={({ slots }) => (
@@ -50,11 +50,11 @@ export function OtpVerificationStep({
               {slots.map((slot, index) => (
                 <div
                   key={index}
-                  className={`w-10 sm:w-12 h-12 sm:h-14 flex items-center justify-center text-lg sm:text-xl font-mono font-extrabold bg-white border transition-all duration-200 ${
+                  className={`w-10 sm:w-12 h-12 sm:h-14 flex items-center justify-center text-lg sm:text-xl font-mono font-extrabold bg-white border rounded-md transition-all duration-200 ${
                     slot.isActive
-                      ? "border-[#030213] ring-1 ring-[#030213]/20 scale-105"
+                      ? "border-[#B89C72] ring-1 ring-[#B89C72]/20 scale-105"
                       : "border-neutral-200"
-                  } ${otp.length === 6 && !slot.isActive ? "border-[#030213]/30" : ""}`}
+                  } ${otp.length === 6 && !slot.isActive ? "border-[#B89C72]/30" : ""}`}
                 >
                   {slot.char ? (
                     <span className="animate-in fade-in duration-100">{slot.char}</span>
@@ -71,7 +71,7 @@ export function OtpVerificationStep({
       {/* Error Message */}
       {error && (
         <div className="bg-red-50/50 border border-red-200/50 px-4 py-3 text-center">
-          <p className="text-[11px] font-bold text-red-600 tracking-wider uppercase">
+          <p className="text-[10px] font-bold text-red-600 tracking-wider uppercase">
             {error}
           </p>
         </div>
@@ -106,7 +106,7 @@ export function OtpVerificationStep({
       <button
         type="submit"
         disabled={isSubmitting || otp.length !== 6}
-        className="group relative w-full bg-[#030213] text-white py-3.5 text-xs font-bold tracking-[0.2em] hover:bg-neutral-800 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer overflow-hidden"
+        className="w-full bg-[#1c1c1c] hover:bg-[#2c2c2c] disabled:bg-neutral-200 text-[#c5a880] disabled:text-neutral-400 rounded-md py-4 text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-200 flex items-center justify-center gap-2 border-none cursor-pointer"
       >
         <span className="relative z-10 flex items-center justify-center gap-2">
           {isSubmitting ? (
@@ -118,7 +118,6 @@ export function OtpVerificationStep({
             submitLabel
           )}
         </span>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
       </button>
 
       {/* Back Button */}
@@ -126,7 +125,7 @@ export function OtpVerificationStep({
         type="button"
         onClick={onBack}
         disabled={isSubmitting}
-        className="group w-full bg-transparent text-neutral-500 py-3 text-[10px] font-bold tracking-[0.15em] hover:text-neutral-900 transition-colors border-none cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5"
+        className="group w-full bg-transparent text-neutral-500 hover:text-[#B89C72] py-3 text-[9px] font-black tracking-[0.2em] uppercase transition-colors border-none cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5"
       >
         <ArrowLeft className="h-3 w-3 stroke-[2] transition-transform duration-200 group-hover:-translate-x-0.5" />
         CHANGE EMAIL / PHONE

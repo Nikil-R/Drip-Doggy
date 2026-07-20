@@ -56,7 +56,7 @@ export function Hero() {
 
   if (slides.length === 0) {
     return (
-      <section className="relative h-screen overflow-hidden bg-neutral-950 flex items-center justify-center sm:justify-start">
+      <section className="relative h-[100dvh] overflow-hidden bg-neutral-950 flex items-center justify-center sm:justify-start">
         <div className="absolute inset-0 bg-neutral-900/20 animate-pulse" />
         <div className="relative container mx-auto px-6 max-w-xl space-y-4 z-10">
           <div className="h-3 w-20 bg-white/10 rounded-sm animate-pulse" />
@@ -73,7 +73,7 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative h-screen overflow-hidden"
+      className="relative h-[92dvh] sm:h-[89dvh] overflow-hidden"
     >
       {/* Background Slides with parallax */}
       {slides.map((slide, index) => (
