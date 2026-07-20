@@ -141,13 +141,11 @@ export const orderApi = {
   submitExchange: async (
     orderId: string,
     orderItemId: number,
-    quantity: number,
     cancelReason: string,
-    targetSize: string,
-    targetVariantId: number,
     defectImages: File[],
-    refundMethod?: string,
-    refundDetails?: any
+    quantity: number,
+    targetSize: string,
+    targetVariantId: number
   ): Promise<any> => {
     const numericId = orderId.replace(/\D/g, "");
     const url = `${BASE_URL}/dripdoggy/api/customer/orders/${numericId}/exchanges`;
@@ -163,19 +161,6 @@ export const orderApi = {
       formData.append("images", file);
     });
 
-    if (refundMethod && refundDetails) {
-      if (refundMethod === "qr_code" && refundDetails.qrCodeFile) {
-        formData.append("qrCodeImage", refundDetails.qrCodeFile);
-      } else if (refundMethod === "upi") {
-        formData.append("upiId", refundDetails.upiId || "");
-        formData.append("upiPhone", refundDetails.phoneNumber || "");
-      } else if (refundMethod === "bank_transfer") {
-        formData.append("bankAccountName", refundDetails.accountHolderName || "");
-        formData.append("bankName", refundDetails.bankName || "");
-        formData.append("bankAccountNumber", refundDetails.accountNumber || "");
-        formData.append("bankIfsc", refundDetails.ifscCode || "");
-      }
-    }
 
     const response = await axios.post(url, formData, {
       headers: {
@@ -183,6 +168,12 @@ export const orderApi = {
         "Content-Type": "multipart/form-data"
       }
     });
+    return response.data;
+  },
+
+  handleUnavailabilityChoice: async (returnId: number, choice: "REFUND" | "KEEP_ORIGINAL"): Promise<any> => {
+    const url = `${BASE_URL}/dripdoggy/api/orders/returns/${returnId}/unavailability-choice?choice=${choice}`;
+    const response = await axios.patch(url, {}, { headers: getHeaders() });
     return response.data;
   }
 };

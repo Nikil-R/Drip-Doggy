@@ -507,8 +507,7 @@ export function OrdersPage() {
   const [returnRejectConfirmOrder, setReturnRejectConfirmOrder] = useState<Order | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [adminTxId, setAdminTxId] = useState("");
-  const [adminReceiptScreenshot, setAdminReceiptScreenshot] = useState<string | null>(null);
-  const [showReturnSuccessAlert, setShowReturnSuccessAlert] = useState<{ email: string; txId: string; customerName: string; receiptScreenshot: string | null } | null>(null);
+  const [showReturnSuccessAlert, setShowReturnSuccessAlert] = useState<{ email: string; txId: string; customerName: string } | null>(null);
 
   // Dashboard-style calendar
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -579,7 +578,7 @@ export function OrdersPage() {
       shipping = (order as any).shippingAmount;
     }
 
-    let platformFee = (order as any).platformAmount ?? 0;
+    let platformFee = (order as any).platformAmount;
 
     let grandTotal = (order as any).totalAmount !== undefined ? (order as any).totalAmount : (subtotal - discount + gst + shipping + platformFee);
 
@@ -612,7 +611,7 @@ export function OrdersPage() {
   const handleApproveReturn = (order: Order) => {
     setReturnApproveConfirmOrder(order);
     setAdminTxId("");
-    setAdminReceiptScreenshot(null);
+
   };
 
   const handleRejectReturn = (order: Order) => {
@@ -2558,38 +2557,8 @@ export function OrdersPage() {
                 />
               </div>
 
-              {/* Screenshot Receipt Upload */}
-              <div className="space-y-1">
-                <label className="block text-[8px] font-bold text-[#615e56] uppercase tracking-wider">
-                  Payment Receipt Screenshot <span className="text-red-500">*</span>
-                </label>
-                <div className="border border-dashed border-neutral-300 p-3 flex flex-col items-center justify-center cursor-pointer relative bg-neutral-50/50 hover:bg-neutral-50 rounded-sm">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const r = new FileReader();
-                        r.onloadend = () => setAdminReceiptScreenshot(r.result as string);
-                        r.readAsDataURL(file);
-                      }
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  {adminReceiptScreenshot ? (
-                    <img src={adminReceiptScreenshot} alt="Receipt Preview" className="h-16 object-contain border border-neutral-200" />
-                  ) : (
-                    <div className="text-center py-1">
-                      <Upload className="h-4 w-4 text-neutral-400 mx-auto mb-0.5" />
-                      <span className="text-[8px] text-neutral-500 font-bold uppercase">Upload Receipt Image</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <p className="text-amber-700 font-bold text-[8.5px] flex items-center gap-1 mt-1">
-                <AlertCircle className="w-3 h-3" /> Payout Transaction ID & Receipt are required to confirm refund. A confirmation email will be sent automatically.
+                <AlertCircle className="w-3 h-3" /> Payout Transaction ID is required to confirm refund. A confirmation email will be sent automatically.
               </p>
             </div>
             
@@ -2601,7 +2570,7 @@ export function OrdersPage() {
                 Cancel
               </button>
               <button
-                disabled={!adminTxId || !adminReceiptScreenshot}
+                disabled={!adminTxId}
                 onClick={() => {
                   setOrders((prev) =>
                     prev.map((o) =>
@@ -2620,13 +2589,12 @@ export function OrdersPage() {
                   setShowReturnSuccessAlert({
                     email: returnApproveConfirmOrder.email,
                     txId: adminTxId,
-                    customerName: returnApproveConfirmOrder.customer,
-                    receiptScreenshot: adminReceiptScreenshot
+                    customerName: returnApproveConfirmOrder.customer
                   });
                   setReturnApproveConfirmOrder(null);
                 }}
                 className={`text-white text-[9px] font-bold tracking-widest px-4 py-2 uppercase cursor-pointer border-none rounded-sm shadow-sm flex items-center gap-1.5 ${
-                  adminTxId && adminReceiptScreenshot ? "bg-green-700 hover:bg-green-800" : "bg-neutral-300 cursor-not-allowed"
+                  adminTxId ? "bg-green-700 hover:bg-green-800" : "bg-neutral-300 cursor-not-allowed"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" /> Confirm Payout
@@ -2709,12 +2677,6 @@ export function OrdersPage() {
                 <span className="text-neutral-500 text-[8px] uppercase tracking-wider">Transaction ID</span>
                 <span className="text-green-700">{showReturnSuccessAlert.txId}</span>
               </div>
-              {showReturnSuccessAlert.receiptScreenshot && (
-                <div className="pt-2 flex flex-col items-center border-t border-green-100 mt-2">
-                  <span className="text-neutral-500 text-[8px] uppercase tracking-wider mb-1 block self-start">Sent Payout Receipt</span>
-                  <img src={showReturnSuccessAlert.receiptScreenshot} className="h-24 border border-green-200 bg-white object-contain" alt="Receipt Attachment" />
-                </div>
-              )}
             </div>
             <div className="flex justify-end pt-1">
               <button

@@ -186,10 +186,10 @@ function getTimelineSteps(order: Order, datePlaced: string) {
     return [
       { title: "Exchange Initiated", description: "Exchange request submitted", date: datePlaced, done: isInitiated },
       { title: "Exchange Approved", description: "Request approved by warehouse", date: isApproved ? "Approved" : "Pending", done: isApproved },
-      { title: "Out for Pickup", description: "Courier pickup agent assigned", date: "Pending", done: isPickedup },
-      { title: "Received at Warehouse", description: "Undergoing quality inspection", date: "Pending", done: isReceived },
-      { title: "Replacement Dispatched", description: "New variant shipped out", date: "Pending", done: isDispatched },
-      { title: "Exchange Completed", description: "Replacement variant delivered", date: "Pending", done: isCompleted }
+      { title: "Package Picked Up", description: "Courier picked up your package", date: isPickedup ? "In Transit" : "Pending", done: isPickedup },
+      { title: "In Transit", description: "Package on the way to warehouse", date: isReceived ? "In Transit" : "Pending", done: isReceived },
+      { title: "Out for Delivery", description: "Out for delivery to our warehouse", date: isDispatched ? "Arriving" : "Pending", done: isDispatched },
+      { title: "Delivered to Warehouse", description: "Package received at warehouse", date: isCompleted ? "Completed" : "Pending", done: isCompleted }
     ];
   }
 
@@ -684,29 +684,6 @@ export function OrdersTab() {
 
         setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Return Requested", returnRequest: returnReq as any, rawDeliveryStatus: "RETURN_INITIATED" } : o));
         setToastMessage("Return request submitted successfully. Our team will review your defect images and complete your refund.");
-      } else {
-        const isCheaper = adjustment < 0;
-        if (isCheaper) {
-          if (refundMethod === "qr_code" && !refundDetails.qrCodeImage) {
-            alert("Please upload your UPI QR Code image for the partial refund.");
-            setIsSubmitting(false);
-            return;
-          }
-          if (refundMethod === "upi" && !refundDetails.upiId && !refundDetails.phoneNumber) {
-            alert("Please fill in your UPI ID for the partial refund.");
-            setIsSubmitting(false);
-            return;
-          }
-          if (refundMethod === "bank_transfer") {
-            const { accountHolderName, bankName, accountNumber, ifscCode } = refundDetails;
-            if (!accountHolderName || !bankName || !accountNumber || !ifscCode) {
-              alert("Please complete the bank payout transfer details.");
-              setIsSubmitting(false);
-              return;
-            }
-          }
-        }
-
         // Call backend API exchange submission for each selected item
         for (const item of selectedItemsToProcess) {
           const qty = returnQuantities[item.id] || 1;
@@ -716,13 +693,11 @@ export function OrdersTab() {
           await orderApi.submitExchange(
             selectedOrder.id,
             item.id,
-            qty,
             finalReason,
-            targetSize,
-            targetVariantId,
             defectFiles,
-            isCheaper ? refundMethod : undefined,
-            isCheaper ? { ...refundDetails, qrCodeFile: qrFile } : undefined
+            qty,
+            targetSize,
+            targetVariantId
           );
         }
 
@@ -873,6 +848,7 @@ export function OrdersTab() {
                               const rawDel = ((ex?.rawDeliveryStatus || "") as string).toUpperCase();
                               const st = (ex?.status || "") as string;
                               if (st === "completed" || rawDel === "EXCHANGE_DELIVERED") return "Completed";
+                              if (st.toUpperCase() === "REPLACEMENT_UNAVAILABLE") return "Size Unavailable";
                               if (st === "approved" || rawDel.startsWith("EXCHANGE_")) return "Approved";
                               return "Pending";
                             })()}
@@ -933,7 +909,55 @@ export function OrdersTab() {
                       <Printer className="h-3.5 w-3.5" /> Bill
                     </button>
                   </div>
+                  </div>
                 </div>
+
+                {/* Unavailability Choice UI */}
+                {order.items.some((i: any) => i.exchangeRequest?.status?.toUpperCase() === "REPLACEMENT_UNAVAILABLE") && (
+                  <div className="bg-red-50/50 border-t border-red-100 p-4 flex flex-col gap-3">
+                    <div className="flex items-start gap-2 text-red-700">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest">Exchange Size Unavailable</p>
+                        <p className="text-[9.5px] font-semibold mt-1 opacity-90">The replacement size you requested is currently out of stock. How would you like to proceed?</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          const itemWithReq = order.items.find((i: any) => i.exchangeRequest?.status?.toUpperCase() === "REPLACEMENT_UNAVAILABLE");
+                          if (!itemWithReq) return;
+                          try {
+                            await orderApi.handleUnavailabilityChoice((itemWithReq as any).exchangeRequest.id, "REFUND");
+                            alert("Successfully converted to refund.");
+                            window.location.reload();
+                          } catch (e) {
+                            alert("Failed to submit choice.");
+                          }
+                        }}
+                        className="flex-1 bg-white border border-red-200 hover:bg-red-50 text-red-700 py-2.5 text-[9px] font-black tracking-widest uppercase cursor-pointer"
+                      >
+                        Request Refund
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          const itemWithReq = order.items.find((i: any) => i.exchangeRequest?.status?.toUpperCase() === "REPLACEMENT_UNAVAILABLE");
+                          if (!itemWithReq) return;
+                          try {
+                            await orderApi.handleUnavailabilityChoice((itemWithReq as any).exchangeRequest.id, "KEEP_ORIGINAL");
+                            alert("Successfully cancelled exchange. You will keep your original items.");
+                            window.location.reload();
+                          } catch (e) {
+                            alert("Failed to submit choice.");
+                          }
+                        }}
+                        className="flex-1 bg-red-700 hover:bg-red-800 text-white border-none py-2.5 text-[9px] font-black tracking-widest uppercase cursor-pointer"
+                      >
+                        Keep Original Items
+                      </button>
+                    </div>
+                  </div>
+                )}
 
               </div>
             );
@@ -1281,7 +1305,7 @@ export function OrdersTab() {
                       }
                       setValidationErrors({});
 
-                      if (requestType === "return" || calculateAdjustment() < 0) {
+                      if (requestType === "return") {
                         setFlowStep(2);
                       } else {
                         handleSubmitRequest();
@@ -1289,7 +1313,7 @@ export function OrdersTab() {
                     }}
                     className="w-full bg-[#030213] text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase border-none hover:bg-neutral-800 transition-colors cursor-pointer"
                   >
-                    {requestType === "return" || calculateAdjustment() < 0 ? "Next Step" : "Submit Request"}
+                    {requestType === "return" ? "Next Step" : "Submit Request"}
                   </button>
                 </div>
               ) : (
