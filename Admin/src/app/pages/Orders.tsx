@@ -697,7 +697,17 @@ export function OrdersPage() {
       
       // Call API (using order number directly as order ID)
       await adminOrderApi.updateOrderStatus(selectedOrderId.replace(/\D/g, ""), backendStatus, token!);
-      setOrders((prev) => prev.map((o) => (o.id === selectedOrderId ? { ...o, status } : o)));
+      setOrders((prev) => prev.map((o) => {
+        if (o.id === selectedOrderId) {
+          let updatedPayment = o.payment;
+          // Automatically mark Unpaid COD as Paid when delivered
+          if (status === "Delivered" && o.payment === "Unpaid") {
+            updatedPayment = "Paid";
+          }
+          return { ...o, status, payment: updatedPayment };
+        }
+        return o;
+      }));
     } catch (e) {
       console.error("Failed to update status on backend:", e);
     }
@@ -2112,7 +2122,7 @@ export function OrdersPage() {
                 Close
               </button>
               <button
-                onClick={handleSaveDetails}
+                onClick={() => handleSaveDetails(false)}
                 className="bg-[#224870] text-white hover:bg-[#224870]/85 text-[9.5px] font-bold tracking-widest px-6 py-2.5 uppercase cursor-pointer rounded-full border-none transition-all"
               >
                 Save & Close

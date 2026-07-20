@@ -58,15 +58,15 @@ export interface OrderResponse {
 }
 
 export const orderApi = {
-  sendCheckoutOtp: async (phoneNo: string): Promise<any> => {
+  sendCheckoutOtp: async (phoneNo: string, email: string): Promise<any> => {
     const url = BASE_URL + API_CONFIG.ENDPOINTS.ORDERS_SEND_OTP;
-    const response = await axios.post(url, { phoneNo }, { headers: getHeaders() });
+    const response = await axios.post(url, { phoneNo, email }, { headers: getHeaders() });
     return response.data;
   },
 
-  verifyCheckoutOtp: async (phoneNo: string, otpCode: string): Promise<any> => {
+  verifyCheckoutOtp: async (phoneNo: string, email: string, otpCode: string): Promise<any> => {
     const url = BASE_URL + API_CONFIG.ENDPOINTS.ORDERS_VERIFY_OTP;
-    const response = await axios.post(url, { phoneNo, otpCode }, { headers: getHeaders() });
+    const response = await axios.post(url, { phoneNo, email, otpCode }, { headers: getHeaders() });
     return response.data;
   },
 

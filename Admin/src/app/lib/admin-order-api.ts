@@ -57,6 +57,8 @@ export interface AdminReturnResponse {
   productSize: string;
   productPrice: number;
   productQuantity: number;
+  productColor?: string;
+  targetColor?: string;
   upiId?: string;
   upiPhone?: string;
   qrCodeImageUrl?: string;

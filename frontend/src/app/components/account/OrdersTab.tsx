@@ -347,14 +347,14 @@ export function OrdersTab() {
                 reason: "",
                 status: rawItemStatus.toLowerCase(),
                 submittedAt: "",
-                rawDeliveryStatus: "RETURN_" + rawItemStatus
+                rawDeliveryStatus: rawStatus.startsWith("RETURN_") ? rawStatus : "RETURN_" + rawItemStatus
               };
             } else if (rawItemType === "EXCHANGE") {
               itemExchangeReq = {
                 reason: "",
                 status: rawItemStatus.toLowerCase(),
                 submittedAt: "",
-                rawDeliveryStatus: "EXCHANGE_" + rawItemStatus
+                rawDeliveryStatus: rawStatus.startsWith("EXCHANGE_") ? rawStatus : "EXCHANGE_" + rawItemStatus
               };
             } else if (!hasAnyItemRequest) {
               itemReturnReq = returnReq;
@@ -424,7 +424,6 @@ export function OrdersTab() {
   const [returnQuantities, setReturnQuantities] = useState<Record<number, number>>({});
   const [exchangeSizes, setExchangeSizes] = useState<Record<number, string>>({});
   const [exchangeColors, setExchangeColors] = useState<Record<number, string>>({});
-  const [exchangeTypes, setExchangeTypes] = useState<Record<number, "size_only" | "color_only" | "color_and_size">>({});
   
   // Max 3 optional defect/payout details images
   const [defectImages, setDefectImages] = useState<string[]>([]);
@@ -501,7 +500,6 @@ export function OrdersTab() {
     setReturnQuantities(itemsQty);
     setExchangeSizes(excSizes);
     setExchangeColors(excColors);
-    setExchangeTypes(excTypes);
   };
 
   // Prevent background scrolling when Return/Exchange modal is active
@@ -585,28 +583,6 @@ export function OrdersTab() {
     reader.readAsDataURL(file);
   };
 
-  const calculateAdjustment = () => {
-    if (!selectedOrder || requestType !== "exchange") return 0;
-    let totalAdj = 0;
-    selectedOrder.items.forEach(item => {
-      if (!selectedItemIds[item.id]) return;
-      const details = getProductDetails(item.name, availableProducts);
-      const exType = exchangeTypes[item.id] || "size_only";
-      
-      let replacementPrice = item.price;
-      if (exType !== "size_only") {
-        const targetColor = exchangeColors[item.id] || item.color;
-        const colorConfig = details.colors.find(c => c.name.toLowerCase() === targetColor.toLowerCase());
-        if (colorConfig) {
-          replacementPrice = colorConfig.price;
-        }
-      }
-      
-      const qty = returnQuantities[item.id] || 1;
-      totalAdj += (replacementPrice - item.price) * qty;
-    });
-    return totalAdj;
-  };
 
   const handleSubmitRequest = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -624,6 +600,17 @@ export function OrdersTab() {
       errors.images = "Uploading at least 1 defect/verification photo is mandatory.";
     }
 
+    if (requestType === "exchange" && hasSelectedItems) {
+      const sameVariantSelected = selectedItemsToProcess.some(item => {
+        const targetColor = exchangeColors[item.id] || item.color;
+        const targetSize = exchangeSizes[item.id] || item.size;
+        return targetColor.toLowerCase() === item.color.toLowerCase() && targetSize === item.size;
+      });
+      if (sameVariantSelected) {
+        errors.items = "You must select a different color or size. Exchanging for the exact same item is not allowed.";
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
@@ -631,7 +618,6 @@ export function OrdersTab() {
     setValidationErrors({});
 
     const finalReason = reason === "Other" ? `Other: ${otherReasonText}` : reason;
-    const adjustment = calculateAdjustment();
 
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -684,6 +670,7 @@ export function OrdersTab() {
 
         setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Return Requested", returnRequest: returnReq as any, rawDeliveryStatus: "RETURN_INITIATED" } : o));
         setToastMessage("Return request submitted successfully. Our team will review your defect images and complete your refund.");
+      } else if (requestType === "exchange") {
         // Call backend API exchange submission for each selected item
         for (const item of selectedItemsToProcess) {
           const qty = returnQuantities[item.id] || 1;
@@ -707,19 +694,15 @@ export function OrdersTab() {
           requestedSize: exchangeSizes[selectedItemsToProcess[0]?.id] || selectedItemsToProcess[0]?.size,
           originalColor: selectedItemsToProcess[0]?.color,
           requestedColor: exchangeColors[selectedItemsToProcess[0]?.id] || selectedItemsToProcess[0]?.color,
-          adjustmentAmount: adjustment,
-          refundDetails: isCheaper ? { method: refundMethod, ...refundDetails } : null,
+          adjustmentAmount: 0,
+          refundDetails: null,
           defectImages,
           submittedAt: new Date().toLocaleString(),
           status: "pending"
         };
 
         setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "Exchange Requested", exchangeRequest: exchangeReq as any, rawDeliveryStatus: "EXCHANGE_INITIATED" } : o));
-        setToastMessage(
-          adjustment > 0
-            ? `Exchange request submitted. Doorstep COD of ${RS}${adjustment} will be collected during delivery.`
-            : "Exchange request submitted successfully. Our logistics partner will coordinate pickup."
-          );
+        setToastMessage("Exchange request submitted successfully. Our logistics partner will coordinate pickup.");
       }
     } catch (err: any) {
       console.error("Failed to submit request to backend:", err);
@@ -834,10 +817,11 @@ export function OrdersTab() {
                           <span className="px-2 py-0.5 text-[7px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
                             {(() => {
                               const raw = ((item.returnRequest as any).rawDeliveryStatus || "").toUpperCase();
-                              if (raw === "REFUND_COMPLETED" || raw === "RETURN_DELIVERED") return "Refund Completed";
+                              const st = ((item.returnRequest as any).status || "").toUpperCase();
+                              if (st === "COMPLETED" || st === "REFUND_COMPLETED" || raw === "REFUND_COMPLETED" || raw === "RETURN_DELIVERED") return "Refund Completed";
                               if (raw === "RECEIVED_AT_WAREHOUSE" || raw === "RETURN_SHIPPED" || raw === "RETURN_OUT_OF_DELIVERY") return "At Warehouse";
                               if (raw === "OUT_FOR_PICKUP" || raw === "RETURN_PICKUPED") return "Out for Pickup";
-                              if (raw === "RETURN_APPROVED" || raw === "RETURN_ACCEPTED") return "Return Approved";
+                              if (st === "APPROVED" || raw === "RETURN_APPROVED" || raw === "RETURN_ACCEPTED") return "Return Approved";
                               return "Return Initiated";
                             })()}
                           </span>
@@ -846,10 +830,13 @@ export function OrdersTab() {
                             Exchange: {(() => {
                               const ex = (item as any).exchangeRequest;
                               const rawDel = ((ex?.rawDeliveryStatus || "") as string).toUpperCase();
-                              const st = (ex?.status || "") as string;
-                              if (st === "completed" || rawDel === "EXCHANGE_DELIVERED") return "Completed";
-                              if (st.toUpperCase() === "REPLACEMENT_UNAVAILABLE") return "Size Unavailable";
-                              if (st === "approved" || rawDel.startsWith("EXCHANGE_")) return "Approved";
+                              const st = ((ex?.status || "") as string).toUpperCase();
+                              if (st === "COMPLETED" || st === "EXCHANGE_COMPLETED" || rawDel === "EXCHANGE_DELIVERED") return "Completed";
+                              if (st === "REPLACEMENT_UNAVAILABLE") return "Size Unavailable";
+                              if (rawDel === "EXCHANGE_PICKUPED") return "Out for Pickup";
+                              if (rawDel === "EXCHANGE_SHIPPED") return "At Warehouse";
+                              if (rawDel === "EXCHANGE_PACKED" || rawDel === "EXCHANGE_OUT_OF_DELIVERY") return "Replacement Placed";
+                              if (st === "APPROVED" || st === "RECEIVED" || rawDel === "EXCHANGE_INITIATED") return "Approved";
                               return "Pending";
                             })()}
                           </span>
@@ -980,7 +967,7 @@ export function OrdersTab() {
 
             <div className="flex items-center justify-center gap-4 text-[9px] font-extrabold uppercase tracking-wider border-b border-neutral-100 pb-4">
               <span className={flowStep === 1 ? "text-[#b2533e]" : "text-neutral-400"}>1. Selection & Reason</span>
-              {(requestType === "return" || calculateAdjustment() < 0) && (
+              {requestType === "return" && (
                 <>
                   <span className="text-neutral-300">/</span>
                   <span className={flowStep === 2 ? "text-[#b2533e]" : "text-neutral-400"}>2. Refund Details</span>
@@ -1052,134 +1039,72 @@ export function OrdersTab() {
                                 {/* Exchange Variant Selectors */}
                                 {requestType === "exchange" && (() => {
                                   const details = getProductDetails(item.name, availableProducts);
-                                  const currentType = exchangeTypes[item.id] || "size_only";
                                   const selectedColor = exchangeColors[item.id] || item.color;
                                   
-                                  // Color choices for different color exchange (excluding current color)
-                                  const otherColors = details.colors.filter(c => c.name.toLowerCase() !== item.color.toLowerCase());
-                                  
-                                  // Sizes available for the selected variant
+                                  const allColors = details.colors;
                                   const variantConfig = details.colors.find(c => c.name.toLowerCase() === selectedColor.toLowerCase());
                                   const availableSizesForColor = variantConfig ? variantConfig.sizes : details.sizes;
-                                  
-                                  // Sizes for same-color exchange (excluding current size)
-                                  const currentVariantConfig = details.colors.find(c => c.name.toLowerCase() === item.color.toLowerCase());
-                                  const otherSizesSameColor = currentVariantConfig 
-                                    ? currentVariantConfig.sizes.filter((s: string) => s !== item.size)
-                                    : details.sizes.filter((s: string) => s !== item.size);
 
                                   return (
                                     <div className="border border-neutral-100 p-3 bg-neutral-50/50 space-y-3">
                                       <p className="text-[8px] font-black tracking-widest text-[#030213] uppercase">Select Replacement Variant</p>
                                       
-                                      {/* Exchange Option Selector */}
+                                      {/* Color selection dropdown */}
                                       <div>
                                         <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
-                                          Exchange Option
+                                          Color / Style
                                         </label>
                                         <select
-                                          value={currentType}
+                                          value={selectedColor}
                                           onChange={(e) => {
-                                            const val = e.target.value as "size_only" | "color_only" | "color_and_size";
-                                            setExchangeTypes(prev => ({ ...prev, [item.id]: val }));
+                                            const val = e.target.value;
+                                            setExchangeColors(prev => ({ ...prev, [item.id]: val }));
                                             
-                                            // Reset selections depending on option
-                                            if (val === "size_only") {
-                                              setExchangeColors(prev => ({ ...prev, [item.id]: item.color }));
-                                              setExchangeSizes(prev => ({ ...prev, [item.id]: otherSizesSameColor[0] || item.size }));
-                                            } else if (val === "color_only") {
-                                              const newColor = otherColors[0]?.name || item.color;
-                                              setExchangeColors(prev => ({ ...prev, [item.id]: newColor }));
-                                              setExchangeSizes(prev => ({ ...prev, [item.id]: item.size }));
-                                            } else {
-                                              const newColor = otherColors[0]?.name || item.color;
-                                              setExchangeColors(prev => ({ ...prev, [item.id]: newColor }));
-                                              const newColorConfig = details.colors.find(c => c.name.toLowerCase() === newColor.toLowerCase());
-                                              const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
-                                              setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes[0] || item.size }));
-                                            }
+                                            const newColorConfig = details.colors.find(c => c.name.toLowerCase() === val.toLowerCase());
+                                            const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
+                                            setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes.includes(item.size) ? item.size : newColorSizes[0] || item.size }));
                                           }}
                                           className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
                                         >
-                                          <option value="size_only">Size Exchange (Same color, different size)</option>
-                                          <option value="color_only">Color Exchange (Different color, same size)</option>
-                                          <option value="color_and_size">Color & Size Exchange (Different color & size)</option>
+                                          {allColors.length > 0 ? allColors.map(c => {
+                                            const isCurrentColor = c.name.toLowerCase() === item.color.toLowerCase();
+                                            return (
+                                              <option key={c.name} value={c.name} disabled={isCurrentColor}>
+                                                {c.name} {isCurrentColor ? "(Current)" : ""}
+                                              </option>
+                                            );
+                                          }) : (
+                                            <option value={item.color}>{item.color} (No other colors available)</option>
+                                          )}
                                         </select>
                                       </div>
 
-                                      {/* Color selection dropdown (shown if color_only or color_and_size) */}
-                                      {currentType !== "size_only" && (
-                                        <div>
-                                          <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
-                                            New Color / Style
-                                          </label>
-                                          <select
-                                            value={selectedColor}
-                                            onChange={(e) => {
-                                              const val = e.target.value;
-                                              setExchangeColors(prev => ({ ...prev, [item.id]: val }));
-                                              
-                                              if (currentType === "color_and_size") {
-                                                const newColorConfig = details.colors.find(c => c.name.toLowerCase() === val.toLowerCase());
-                                                const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
-                                                setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes[0] || item.size }));
-                                              }
-                                            }}
-                                            className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
-                                          >
-                                            {otherColors.map(c => (
-                                              <option key={c.name} value={c.name}>
-                                                {c.name} {c.price !== item.price && `(₹${c.price})`}
+                                      {/* Size selection dropdown */}
+                                      <div>
+                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                          Size
+                                        </label>
+                                        <select
+                                          value={exchangeSizes[item.id] || item.size}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
+                                          }}
+                                          className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
+                                        >
+                                          {availableSizesForColor.length > 0 ? availableSizesForColor.map((s: string) => {
+                                            const isOriginalColor = selectedColor.toLowerCase() === item.color.toLowerCase();
+                                            const isCurrentSize = isOriginalColor && s === item.size;
+                                            return (
+                                              <option key={s} value={s} disabled={isCurrentSize}>
+                                                {s} {isCurrentSize ? "(Current)" : ""}
                                               </option>
-                                            ))}
-                                            {otherColors.length === 0 && (
-                                              <option value={item.color}>{item.color} (No other colors available)</option>
-                                            )}
-                                          </select>
-                                        </div>
-                                      )}
-
-                                      {/* Size selection dropdown (shown if size_only or color_and_size) */}
-                                      {currentType !== "color_only" && (
-                                        <div>
-                                          <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
-                                            New Size
-                                          </label>
-                                          <select
-                                            value={exchangeSizes[item.id] || item.size}
-                                            onChange={(e) => {
-                                              const val = e.target.value;
-                                              setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
-                                            }}
-                                            className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
-                                          >
-                                            {currentType === "size_only" ? (
-                                              otherSizesSameColor.map(s => (
-                                                <option key={s} value={s}>{s}</option>
-                                              ))
-                                            ) : (
-                                              availableSizesForColor.map(s => (
-                                                <option key={s} value={s}>{s}</option>
-                                              ))
-                                            )}
-                                            {currentType === "size_only" && otherSizesSameColor.length === 0 && (
-                                              <option value={item.size}>{item.size} (No other sizes available)</option>
-                                            )}
-                                          </select>
-                                        </div>
-                                      )}
-
-                                      {/* Display fixed options as text if not editable */}
-                                      {currentType === "size_only" && (
-                                        <div className="text-[9px] text-neutral-500 font-medium">
-                                          Color locked to original: <span className="font-extrabold text-[#030213]">{item.color}</span>
-                                        </div>
-                                      )}
-                                      {currentType === "color_only" && (
-                                        <div className="text-[9px] text-neutral-500 font-medium">
-                                          Size locked to original: <span className="font-extrabold text-[#030213]">{item.size}</span>
-                                        </div>
-                                      )}
+                                            );
+                                          }) : (
+                                            <option value={item.size}>{item.size} (No sizes available)</option>
+                                          )}
+                                        </select>
+                                      </div>
                                     </div>
                                   );
                                 })()}
@@ -1194,18 +1119,6 @@ export function OrdersTab() {
                     )}
                   </div>
 
-                  {requestType === "exchange" && (
-                    <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-[10px]">
-                      <span className="font-bold text-neutral-500 uppercase">Adjustment Due:</span>
-                      {calculateAdjustment() === 0 ? (
-                        <span className="font-extrabold text-[#030213]">Even Swap (₹0)</span>
-                      ) : calculateAdjustment() > 0 ? (
-                        <span className="font-extrabold text-red-600">Pay Balance: +₹{calculateAdjustment()}</span>
-                      ) : (
-                        <span className="font-extrabold text-green-700">Refund Due: -₹{Math.abs(calculateAdjustment())}</span>
-                      )}
-                    </div>
-                  )}
 
                   {/* Reason Dropdown */}
                   <div>
