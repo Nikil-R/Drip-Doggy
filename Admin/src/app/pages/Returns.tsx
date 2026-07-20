@@ -705,6 +705,7 @@ export function ReturnsPage() {
 
               {/* Step 3: Refund proof submission (only after package reaches RECEIVED or RETURN_DELIVERED stage) */}
               {active.approvalStatus !== "PENDING" && active.approvalStatus !== "REJECTED" && (
+                <div>
                   <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund Verification & Closeout</span>
                   
                   <div className="space-y-3">
