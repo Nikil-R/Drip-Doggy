@@ -569,7 +569,7 @@ export function OrdersPage() {
       discount = 843.64;
     }
 
-    let gst = (order as any).taxAmount !== undefined ? (order as any).taxAmount : Math.max(0, subtotal - discount) * 0.18;
+    let gst = 0;
 
     let shipping = 90;
     if (order.delivery && order.delivery.toLowerCase().includes("express")) {
@@ -578,9 +578,9 @@ export function OrdersPage() {
       shipping = (order as any).shippingAmount;
     }
 
-    let platformFee = (order as any).platformAmount;
+    let platformFee = 0;
 
-    let grandTotal = (order as any).totalAmount !== undefined ? (order as any).totalAmount : (subtotal - discount + gst + shipping + platformFee);
+    let grandTotal = (order as any).totalAmount !== undefined ? (order as any).totalAmount : (subtotal - discount + shipping);
 
     return {
       subtotal,
@@ -932,10 +932,6 @@ export function OrdersPage() {
         <div class="bill-total-row">
           <span>Coupon Discount</span>
           <span>-\u20B9${Number(breakdown.discount).toLocaleString("en-IN")}</span>
-        </div>
-        <div class="bill-total-row">
-          <span>GST (18%)</span>
-          <span>\u20B9${Number(breakdown.gst).toLocaleString("en-IN")}</span>
         </div>
         <div class="bill-total-row">
           <span>Shipping Fee</span>
@@ -1336,7 +1332,7 @@ export function OrdersPage() {
           ${cfg.gstin ? `<div class="brand-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
         </div>
         <div class="invoice-meta-container">
-          <div class="invoice-label">Tax Invoice</div>
+          <div class="invoice-label">Invoice</div>
           <div class="meta-details">
             <div class="meta-row">
               <span class="meta-lbl">Invoice No:</span>
@@ -1435,26 +1431,12 @@ export function OrdersPage() {
             <span class="total-label">Delivery Fee</span>
             <span class="total-value ${breakdown.shipping === 0 ? "txt-free" : ""}">${breakdown.shipping > 0 ? `₹${Number(breakdown.shipping).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "FREE"}</span>
           </div>
-          ${breakdown.platformFee > 0 ? `
           <hr class="total-sep" />
-          <div class="total-row">
-            <span class="total-label">Platform Fee</span>
-            <span class="total-value">₹${Number(breakdown.platformFee).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          ` : ""}
-          <hr class="total-sep" />
-          <div class="total-row">
-            <span class="total-label">GST @ 18%</span>
-            <span class="total-value">₹${Number(breakdown.gst).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          <div class="gst-breakdown">
-            <span class="gst-badge">CGST 9%: ₹${Number(breakdown.gst / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &bull; SGST 9%: ₹${Number(breakdown.gst / 2).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
           <div class="total-row grand">
             <span class="total-label">Grand Total</span>
             <span class="total-value">₹${Number(breakdown.grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          <div class="total-note">Total amount payable (inclusive of all taxes)</div>
+          <div class="total-note">Total amount payable</div>
         </div>
       </div>
 

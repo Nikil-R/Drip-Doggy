@@ -332,9 +332,13 @@ export function Checkout() {
     async function updateOrderPreview() {
       if (cartItems.length === 0) return;
       try {
+        const activeAddress = addresses.find(a => a.id === selectedAddressId) || null;
         const preview = await orderApi.previewOrder({
           deliveryMethod: shippingMethod.toUpperCase(),
-          couponCode: appliedPromo || undefined
+          couponCode: appliedPromo || undefined,
+          addressId: selectedAddressId || undefined,
+          state: activeAddress?.state || undefined,
+          city: activeAddress?.city || undefined
         });
         setSubtotal((preview as any).subTotal ?? preview.subtotal ?? 0);
         setPromoDiscount(preview.discount ?? 0);
@@ -359,7 +363,7 @@ export function Checkout() {
       }
     }
     updateOrderPreview();
-  }, [cartItems, shippingMethod, appliedPromo]);
+  }, [cartItems, shippingMethod, appliedPromo, selectedAddressId, addresses]);
 
 
   useEffect(() => { localStorage.setItem("addresses", JSON.stringify(addresses)); }, [addresses]);
@@ -1259,10 +1263,6 @@ export function Checkout() {
                     <span>-₹{promoDiscount.toFixed(0)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>GST (18%)</span>
-                  <span className="font-extrabold text-neutral-950 text-[11px]">₹{tax.toFixed(0)}</span>
-                </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
                   <span className={`font-extrabold text-[11px] ${shippingCost === 0 ? "text-green-600" : "text-neutral-950"}`}>

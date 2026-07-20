@@ -398,7 +398,10 @@ export function OrdersTab() {
             exchangeRequest: exchangeReq as any,
             rawDeliveryStatus: rawStatus as any,
             orderTimestamp: oh.orderTimestamp,
-            deliveredTimestamp: oh.deliveredTimestamp
+            deliveredTimestamp: oh.deliveredTimestamp,
+            shippingFee: oh.shippingFee || 0,
+            discount: oh.discount || 0,
+            platformFee: oh.platformFee || 0
           };
         });
 

@@ -21,6 +21,9 @@ export interface CheckoutOtpVerifyRequest {
 export interface OrderPreviewRequest {
   deliveryMethod: string; // "STANDARD" or "EXPRESS"
   couponCode?: string;
+  addressId?: number;
+  state?: string;
+  city?: string;
 }
 
 export interface OrderPreviewResponse {

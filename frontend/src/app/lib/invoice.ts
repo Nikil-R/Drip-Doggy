@@ -2,16 +2,17 @@ import type { Order } from "../types/account";
 import { INVOICE_CONFIG } from "./invoice-config";
 
 const cfg = INVOICE_CONFIG.company;
-const { currency: curr, taxRate } = INVOICE_CONFIG.defaults;
+const { currency: curr } = INVOICE_CONFIG.defaults;
 
 function formatPrice(n: number) {
   return `${curr}${n.toLocaleString("en-IN")}`;
 }
 
 export function generateInvoiceHTML(order: Order, user: { firstName: string; lastName: string; email: string; phone: string }) {
-  const subtotal = order.total;
-  const gstAmount = subtotal * taxRate;
-  const grandTotal = subtotal + gstAmount;
+  const shippingFee = (order as any).shippingFee !== undefined ? (order as any).shippingFee : 0;
+  const discount = (order as any).discount !== undefined ? (order as any).discount : 0;
+  const subtotal = order.items.reduce((s, i) => s + (i.price * i.quantity), 0);
+  const grandTotal = order.total;
 
   const itemRows = order.items
     .map(
@@ -61,7 +62,6 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
     .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #1a1410; margin-bottom: 24px; }
     .brand-name { font-size: 28px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; line-height: 1; color: #1a1410; }
     .brand-tagline { font-size: 8px; color: #8a7f77; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 4px; font-weight: 600; }
-    .brand-gstin { font-size: 8px; color: #224870; letter-spacing: 1.5px; margin-top: 6px; font-weight: 700; }
     .invoice-label { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #8a7f77; }
     .invoice-id { font-size: 16px; font-weight: 900; margin-top: 2px; color: #224870; }
     .header-meta { font-size: 8.5px; color: #615e56; margin-top: 3px; font-weight: 600; }
@@ -103,8 +103,6 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
     .total-value { font-weight: 700; color: #1a1410; }
     .total-value.txt-free { color: #059669; }
     .total-sep { border: none; border-top: 1px dashed #d4cdc4; margin: 2px 0; }
-    .gst-breakdown { font-size: 7.5px; color: #615e56; text-align: right; letter-spacing: 0.3px; padding: 2px 0 6px; }
-    .gst-breakdown .gst-badge { display: inline-block; background: #f0ede8; padding: 2px 8px; border-radius: 2px; font-weight: 600; }
     .total-row.grand { border-top: 2px solid #1a1410; padding-top: 10px; margin-top: 2px; }
     .total-row.grand .total-label { font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #1a1410; }
     .total-row.grand .total-value { font-size: 15px; font-weight: 900; color: #224870; }
@@ -143,10 +141,9 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
         <div>
           <div class="brand-name">${cfg.name}</div>
           <div class="brand-tagline">${cfg.tagline}</div>
-          ${cfg.gstin ? `<div class="brand-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
         </div>
         <div style="text-align: right;">
-          <div class="invoice-label">Tax Invoice</div>
+          <div class="invoice-label">Invoice</div>
           <div class="invoice-id">${order.id}</div>
           <div class="header-meta">Date: ${order.date}</div>
           <div class="header-meta">Status: ${order.status}</div>
@@ -205,8 +202,8 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
           <tr>
             <td colspan="5" style="padding: 6px 6px 0 6px; border: none;">
               <div class="tfoot-summary">
-                <span>\u26C5 ${order.items.length} items</span>
-                <span>\u2022</span>
+                <span>&#9203; ${order.items.length} items</span>
+                <span>&bull;</span>
                 <span>${order.items.reduce((s, i) => s + i.quantity, 0)} total units</span>
               </div>
             </td>
@@ -220,24 +217,23 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
           <span class="total-label">Subtotal</span>
           <span class="total-value">${formatPrice(subtotal)}</span>
         </div>
+        ${discount > 0 ? `
+        <hr class="total-sep" />
+        <div class="total-row" style="color: #059669;">
+          <span class="total-label" style="color: #059669;">Discount</span>
+          <span class="total-value">-${formatPrice(discount)}</span>
+        </div>` : ""}
         <hr class="total-sep" />
         <div class="total-row">
           <span class="total-label">Delivery</span>
-          <span class="total-value txt-free">FREE</span>
+          <span class="total-value ${shippingFee === 0 ? "txt-free" : ""}">${shippingFee > 0 ? formatPrice(shippingFee) : "FREE"}</span>
         </div>
         <hr class="total-sep" />
-        <div class="total-row">
-          <span class="total-label">GST @ 18%</span>
-          <span class="total-value">${formatPrice(gstAmount)}</span>
-        </div>
-        <div class="gst-breakdown">
-          <span class="gst-badge">CGST 9%: ${formatPrice(gstAmount / 2)} · SGST 9%: ${formatPrice(gstAmount / 2)}</span>
-        </div>
         <div class="total-row grand">
           <span class="total-label">Grand Total</span>
           <span class="total-value">${formatPrice(grandTotal)}</span>
         </div>
-        <div class="total-note">Total amount payable (inclusive of all taxes)</div>
+        <div class="total-note">Total amount payable</div>
       </div>
 
       <!-- FOOTER -->
@@ -261,7 +257,10 @@ export function generateInvoiceHTML(order: Order, user: { firstName: string; las
 }
 
 export function generateBillHTML(order: Order, user: { firstName: string; lastName: string; email: string; phone: string }) {
-  const subtotal = order.total;
+  const shippingFee = (order as any).shippingFee !== undefined ? (order as any).shippingFee : 0;
+  const discount = (order as any).discount !== undefined ? (order as any).discount : 0;
+  const subtotal = order.items.reduce((s, i) => s + (i.price * i.quantity), 0);
+  const grandTotal = order.total;
   const cfg = INVOICE_CONFIG.company;
 
   const itemRows = order.items
@@ -340,7 +339,6 @@ export function generateBillHTML(order: Order, user: { firstName: string; lastNa
       <div class="bill-header">
         <div class="bill-store">${cfg.name}</div>
         <div class="bill-tagline">${cfg.tagline}</div>
-        ${cfg.gstin ? `<div class="bill-gstin">GSTIN: ${cfg.gstin}</div>` : ""}
       </div>
 
       <hr class="bill-hr-solid" />
@@ -391,13 +389,18 @@ export function generateBillHTML(order: Order, user: { firstName: string; lastNa
           <span>Subtotal</span>
           <span>${formatPrice(subtotal)}</span>
         </div>
+        ${discount > 0 ? `
+        <div class="bill-total-row" style="color: #059669;">
+          <span>Discount</span>
+          <span>-${formatPrice(discount)}</span>
+        </div>` : ""}
         <div class="bill-total-row">
           <span>Delivery</span>
-          <span>FREE</span>
+          <span class="${shippingFee === 0 ? "txt-free" : ""}">${shippingFee > 0 ? formatPrice(shippingFee) : "FREE"}</span>
         </div>
         <div class="bill-total-row bill-grand">
           <span>TOTAL</span>
-          <span>${formatPrice(subtotal)}</span>
+          <span>${formatPrice(grandTotal)}</span>
         </div>
       </div>
 
