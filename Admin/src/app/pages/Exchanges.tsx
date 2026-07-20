@@ -66,7 +66,7 @@ interface ExchangeRequest {
     ifscCode?: string;
     qrCodeImage?: string;
   };
-  receiptScreenshot?: string | null;
+  transactionId?: string;
   timeline: StatusTimeline[];
 }
 
@@ -364,24 +364,23 @@ export const ExchangesPage = () => {
     }
   };
 
-  const uploadProof = async (id: string, url: string) => {
+  const updateTransactionId = (id: string, val: string) => setExchanges(prev => prev.map(e => e.id === id ? { ...e, transactionId: val } : e));
+
+  const resolveExchangeRefund = async (id: string) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      let receiptFile: File | null = null;
-      if (url) {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        receiptFile = new File([blob], `exchange_refund_${id}.png`, { type: "image/png" });
-      }
+      const e = exchanges.find(x => x.id === id);
+      if (!e) return;
+      
       // Resolve negative adjustment payout refunds
-      await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "", receiptFile, token!);
+      await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "", e.transactionId || null, token!);
       setExchanges(prev => prev.map(e => {
         if (e.id !== id) return e;
         const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
         return {
           ...e,
-          receiptScreenshot: url,
+          transactionId: e.transactionId,
           paymentStatus: "refunded",
           timeline: [...e.timeline, { status: e.approvalStatus, timestamp: ts, note: `Refund payout of ${RS}${Math.abs(e.adjustmentAmount)} confirmed.` }]
         };
@@ -749,27 +748,31 @@ export const ExchangesPage = () => {
                   {/* Proof upload */}
                   <div>
                     <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Upload Refund Payout Proof</span>
-                    {active.receiptScreenshot ? (
-                      <div className="border border-green-200 bg-green-50 p-4 flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-[9.5px] font-bold uppercase tracking-widest text-green-700">Refund Transferred</p>
-                          <p className="text-[9.5px] text-green-600 font-semibold mt-0.5">Transaction receipt recorded.</p>
+                    <div className="bg-card border border-neutral-200/80 p-4 rounded-sm space-y-3">
+                      <label className="block text-[9.5px] font-bold tracking-widest text-[#615e56] uppercase mb-1">Transaction ID</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. TXN123456789"
+                        value={active.transactionId || ""}
+                        onChange={e => updateTransactionId(active.id, e.target.value)}
+                        className="w-full bg-white border border-neutral-200 p-2.5 text-xs font-semibold focus:outline-none focus:border-[#224870] transition-colors rounded-sm"
+                        disabled={active.paymentStatus === "refunded"}
+                      />
+                      
+                      {active.paymentStatus === "refunded" ? (
+                        <div className="flex items-center gap-1.5 text-[10px] text-green-600 font-bold bg-green-50 border border-green-200 p-2.5 rounded-sm">
+                          <Check className="w-3.5 h-3.5" /> Refund confirmed.
                         </div>
-                        <img src={active.receiptScreenshot} alt="Proof" className="w-12 h-12 object-cover border border-green-200 rounded-sm" />
-                      </div>
-                    ) : (
-                      <label className="flex items-center gap-3 border-2 border-dashed border-neutral-200 hover:border-[#224870] p-4 cursor-pointer transition-all group bg-card hover:bg-[#224870]/3">
-                        <div className="w-9 h-9 bg-neutral-100 group-hover:bg-[#224870]/10 flex items-center justify-center transition-all shrink-0">
-                          <Upload className="w-4 h-4 text-neutral-400 group-hover:text-[#224870] transition-colors" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-[#615e56] group-hover:text-[#224870] transition-colors">Upload Payout Screenshot</p>
-                          <p className="text-[9.5px] text-[#615e56] font-semibold mt-0.5">Upload bank screenshot of refund transfer.</p>
-                        </div>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadProof(active.id, URL.createObjectURL(f)); }} />
-                      </label>
-                    )}
+                      ) : (
+                        <button
+                          onClick={() => resolveExchangeRefund(active.id)}
+                          disabled={!active.transactionId?.trim()}
+                          className={`w-full text-white text-[9.5px] font-black uppercase tracking-wider py-2.5 px-4 rounded-sm transition-all flex items-center justify-center gap-2 border-none ${active.transactionId?.trim() ? "bg-[#224870] hover:bg-[#1a3858] cursor-pointer" : "bg-neutral-300 cursor-not-allowed"}`}
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> Confirm Payout
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
