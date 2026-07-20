@@ -193,7 +193,7 @@ export function ReturnsPage() {
             email: r.customerEmail || "",
             phone: r.upiPhone || r.phone || "",
             date: r.createdAt?.split("T")?.[0] || "2026-07-08",
-            amount: r.productPrice * r.productQuantity,
+            amount: r.productPrice * (r.requestedQuantity || r.productQuantity || 1),
             reason: r.cancelReason || "No reason provided",
             approvalStatus: mappedApproval,
             deliveryStatus: mappedDelivery,
@@ -201,7 +201,7 @@ export function ReturnsPage() {
               name: r.productName,
               sku: `DD-VAR-${r.orderItemId}`,
               size: r.productSize || "M",
-              qty: r.productQuantity || 1,
+              qty: r.requestedQuantity || r.productQuantity || 1,
               price: r.productPrice,
               image: r.defectImageUrl1 || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
             }],

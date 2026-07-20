@@ -6,6 +6,7 @@ import {
   TrendingUp, TrendingDown, Palette, Tag,
   ArrowRight, CreditCard, Building, QrCode, Phone, Upload, CheckCircle2, ShieldAlert
 } from "lucide-react";
+import { productApi } from "../lib/product-api";
 
 const RS = "₹";
 
@@ -45,6 +46,7 @@ interface ExchangeItem {
 
 interface ExchangeRequest {
   id: string;
+  orderDbId?: number;
   orderId: string;
   customerName: string;
   email: string;
@@ -67,6 +69,7 @@ interface ExchangeRequest {
     qrCodeImage?: string;
   };
   transactionId?: string;
+  defectImages?: string[];
   timeline: StatusTimeline[];
 }
 
@@ -75,7 +78,7 @@ const DELIVERY_STAGES: { key: DeliveryStatus; label: string; icon: React.Compone
   { key: "EXCHANGE_APPROVED",     label: "Exchange Approved",     icon: Clock },
   { key: "OUT_FOR_PICKUP",        label: "Out for Pickup",        icon: Package },
   { key: "RECEIVED_AT_WAREHOUSE", label: "Received at Warehouse", icon: Building },
-  { key: "REPLACEMENT_DISPATCHED",label: "Replacement Dispatched",icon: Truck },
+  { key: "REPLACEMENT_DISPATCHED",label: "Replacement Placed",    icon: Truck },
   { key: "EXCHANGE_COMPLETED",    label: "Exchange Completed",    icon: Home },
 ];
 
@@ -87,73 +90,7 @@ const APPROVAL_META: Record<ReturnStatus, { bg: string; text: string; border: st
   "COMPLETED": { bg: "bg-green-50",   text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Completed" },
 };
 
-const initialExchanges: ExchangeRequest[] = [
-  {
-    id: "EXC-2012", orderId: "#DD-6544", customerName: "Karan Johar",
-    email: "karan.j@gmail.com", phone: "+91 99999 77777", date: "2026-06-26",
-    reason: "Jacket fits too snug around shoulders. Requesting size up and different color.",
-    approvalStatus: "PENDING",
-    deliveryStatus: "EXCHANGE_INITIATED",
-    paymentStatus: "no_adjustment",
-    adjustmentAmount: 0,
-    items: [{
-      name: "Structured Canvas Jacket", sku: "DD-STR-001",
-      originalSize: "M", requestedSize: "L",
-      originalColor: "Navy Blue", requestedColor: "Sage Green",
-      qty: 1, originalPrice: 5800, replacementPrice: 5800,
-      image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
-    }],
-    timeline: [{ status: "EXCHANGE_INITIATED", timestamp: "2026-06-26 11:20", note: "Customer submitted exchange request via profile dashboard." }]
-  },
-  {
-    id: "EXC-2011", orderId: "#DD-6542", customerName: "Meera Patel",
-    email: "meera.p@yahoo.com", phone: "+91 98765 00000", date: "2026-06-25",
-    reason: "Dress size feels too loose. Requesting size S and upgraded premium fabric color variant.",
-    approvalStatus: "APPROVED",
-    deliveryStatus: "OUT_FOR_PICKUP",
-    paymentStatus: "pending_payment",
-    adjustmentAmount: 600,
-    items: [{
-      name: "Everyday Relaxed Shift Dress", sku: "DD-EVE-002",
-      originalSize: "M", requestedSize: "S",
-      originalColor: "Classic Denim", requestedColor: "Indigo Linen",
-      qty: 1, originalPrice: 3200, replacementPrice: 3800,
-      image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200&auto=format&fit=crop"
-    }],
-    timeline: [
-      { status: "PENDING", timestamp: "2026-06-25 09:45", note: "Customer requested exchange." },
-      { status: "APPROVED", timestamp: "2026-06-25 15:00", note: "Admin approved exchange. Awaiting adjustment payment." }
-    ]
-  },
-  {
-    id: "EXC-2010", orderId: "#DD-6538", customerName: "Vikram Nair",
-    email: "vikram.n@gmail.com", phone: "+91 90000 11111", date: "2026-06-21",
-    reason: "Downgrading to standard cotton knitwear and smaller size.",
-    approvalStatus: "COMPLETED",
-    deliveryStatus: "EXCHANGE_COMPLETED",
-    paymentStatus: "refunded",
-    adjustmentAmount: -700,
-    refundMethod: "bank_transfer",
-    refundDetails: {
-      accountHolderName: "Vikram Nair",
-      bankName: "HDFC Bank",
-      accountNumber: "50100293847291",
-      ifscCode: "HDFC0000001"
-    },
-    items: [{
-      name: "French Terry Hoodie", sku: "DD-FTH-001",
-      originalSize: "M", requestedSize: "S",
-      originalColor: "Charcoal Grey", requestedColor: "Sandstone",
-      qty: 1, originalPrice: 3900, replacementPrice: 3200,
-      image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=200&auto=format&fit=crop"
-    }],
-    timeline: [
-      { status: "PENDING", timestamp: "2026-06-21 14:10", note: "Customer requested exchange." },
-      { status: "APPROVED", timestamp: "2026-06-21 16:30", note: "Admin approved request." },
-      { status: "EXCHANGE_COMPLETED", timestamp: "2026-06-23 11:15", note: "Logistics complete. Replacement item delivered." }
-    ]
-  }
-];
+
 
 function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
   const m = APPROVAL_META[status];
@@ -170,12 +107,14 @@ import { useAuthStore } from "@/app/store/auth-store";
 import { adminOrderApi } from "../lib/admin-order-api";
 
 export const ExchangesPage = () => {
-  const [exchanges, setExchanges] = useState<ExchangeRequest[]>(initialExchanges);
+  const [exchanges, setExchanges] = useState<ExchangeRequest[]>([]);
   const [activeTab, setActiveTab] = useState<"All" | "Pending Review" | "Active Logistics" | "Completed">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExchangeId, setSelectedExchangeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingStageChange, setPendingStageChange] = useState<{ id: string; stage: DeliveryStatus } | null>(null);
+  const [trackingInput, setTrackingInput] = useState("");
   const ITEMS_PER_PAGE = 6;
   const { token } = useAuthStore();
 
@@ -183,11 +122,26 @@ export const ExchangesPage = () => {
     if (!token) return;
     async function load() {
       try {
-        const backendRequests = await adminOrderApi.getAllReturnRequests(token!);
+        const [backendRequests, products, allOrders] = await Promise.all([
+          adminOrderApi.getAllReturnRequests(token!),
+          productApi.fetchAllProducts(token!).catch(() => []),
+          adminOrderApi.getAllOrders(token!).catch(() => [])
+        ]);
         if (!backendRequests) return;
 
-        // Filter for EXCHANGE types
-        const exchangeRequests = backendRequests.filter(r => r.requestType === "EXCHANGE");
+        const orderStatusMap = new Map<number, string>();
+        const orderTrackingMap = new Map<number, string>();
+        if (allOrders) {
+          allOrders.forEach((o: any) => {
+            if (o.orderNumber) {
+              const numericId = Number(o.orderNumber.replace("#DD-", "").replace("DD-", ""));
+              orderStatusMap.set(numericId, o.deliveryStatus);
+              orderTrackingMap.set(numericId, o.trackingNumber);
+            }
+          });
+        }
+
+        const exchangeRequests = backendRequests.filter(r => r.requestType?.toUpperCase() === "EXCHANGE");
         const loaded: ExchangeRequest[] = exchangeRequests.map(r => {
           let mappedApproval: ReturnStatus = "PENDING";
           let mappedDelivery: DeliveryStatus = "EXCHANGE_INITIATED";
@@ -210,16 +164,39 @@ export const ExchangesPage = () => {
             mappedDelivery = "EXCHANGE_COMPLETED";
           }
 
+          if (r.orderId) {
+            const orderDelivery = orderStatusMap.get(Number(r.orderId));
+            if (orderDelivery) {
+              const oUpper = orderDelivery.toUpperCase();
+              if (oUpper === "EXCHANGE_PICKUPED" || oUpper === "OUT_FOR_PICKUP" || oUpper === "RETURN_PICKUPED") {
+                mappedDelivery = "OUT_FOR_PICKUP";
+              } else if (oUpper === "EXCHANGE_SHIPPED" || oUpper === "RECEIVED_AT_WAREHOUSE" || oUpper === "RETURN_SHIPPED") {
+                mappedDelivery = "RECEIVED_AT_WAREHOUSE";
+              } else if (oUpper === "EXCHANGE_PACKED" || oUpper === "EXCHANGE_OUT_OF_DELIVERY" || oUpper === "REPLACEMENT_DISPATCHED" || oUpper === "RETURN_OUT_OF_DELIVERY") {
+                mappedDelivery = "REPLACEMENT_DISPATCHED";
+              } else if (oUpper === "EXCHANGE_DELIVERED" || oUpper === "EXCHANGE_COMPLETED" || oUpper === "RETURN_DELIVERED") {
+                mappedDelivery = "EXCHANGE_COMPLETED";
+              }
+            }
+          }
+
+          const matchedProduct = products.find((p: any) => (p.name || p.productName || "").toLowerCase() === (r.productName || "").toLowerCase());
+          const originalColor = (r as any).productColor || "N/A";
+          const matchedVariant = matchedProduct?.variants?.find((v: any) => (v.variantName || "").toLowerCase() === originalColor.toLowerCase());
+          const imgUrl = matchedVariant?.imageUrls?.[0] || matchedProduct?.images?.[0] || matchedProduct?.variants?.[0]?.imageUrls?.[0] || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop";
+
           return {
-            id: String(r.id),
+            id: r.id.toString().startsWith("EXC-") ? r.id.toString() : "EXE-" + String(r.id).padStart(3, '0'),
+            orderDbId: r.orderId,
             orderId: r.orderNumber,
             customerName: r.customerName || "Customer",
             email: r.customerEmail || "",
-            phone: r.customerEmail || "",
+            phone: (r as any).customerPhone || r.upiPhone || "",
             date: r.createdAt?.split("T")?.[0] || "2026-07-08",
             reason: r.cancelReason || "Exchange request submitted.",
             approvalStatus: mappedApproval,
             deliveryStatus: mappedDelivery,
+            trackingNumber: r.trackingNumber || (r.orderId ? orderTrackingMap.get(Number(r.orderId)) : undefined),
             paymentStatus: "no_adjustment",
             adjustmentAmount: 0,
             items: [{
@@ -227,13 +204,14 @@ export const ExchangesPage = () => {
               sku: `DD-VAR-${r.orderItemId}`,
               originalSize: r.productSize || "M",
               requestedSize: r.targetSize || "M",
-              originalColor: "Standard",
-              requestedColor: "Standard",
-              qty: r.productQuantity || 1,
+              originalColor: originalColor,
+              requestedColor: (r as any).targetColor || "N/A",
+              qty: r.requestedQuantity || 1,
               originalPrice: r.productPrice,
               replacementPrice: r.productPrice,
-              image: r.defectImageUrl1 || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=200&auto=format&fit=crop"
+              image: imgUrl
             }],
+            defectImages: [r.defectImageUrl1, r.defectImageUrl2, r.defectImageUrl3].filter(Boolean) as string[],
             timeline: [
               { status: "PENDING", timestamp: r.createdAt || "2026-07-08 12:00", note: "Exchange request submitted." },
               r.resolvedAt ? { status: "COMPLETED", timestamp: r.resolvedAt, note: "Exchange resolved." } : null
@@ -242,7 +220,8 @@ export const ExchangesPage = () => {
         });
 
         setExchanges(prev => {
-          const merged = [...loaded, ...initialExchanges];
+          const merged = [...loaded];
+          merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.id.localeCompare(a.id));
           const seen = new Set<string>();
           return merged.filter(e => {
             if (seen.has(e.id)) return false;
@@ -278,8 +257,19 @@ export const ExchangesPage = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const numericId = parseInt(id.replace(/\D/g, ''), 10);
+      const exchangeRequest = exchanges.find(r => r.id === id);
+      const orderDbId = exchangeRequest?.orderDbId;
+
       if (s === "APPROVED" || s === "REJECTED") {
-        await adminOrderApi.updateReturnStatus(Number(id), s, token!);
+        await adminOrderApi.updateReturnStatus(numericId, s, token!);
+      }
+      if (s === "APPROVED" && orderDbId) {
+        try {
+          await adminOrderApi.updateOrderStatus(orderDbId, "EXCHANGE_INITIATED", token!);
+        } catch (e) {
+          console.warn("Parent order state transition ignored or failed:", e);
+        }
       }
       setExchanges(prev => prev.map(e => {
         if (e.id !== id) return e;
@@ -297,22 +287,51 @@ export const ExchangesPage = () => {
           timeline: [...e.timeline, { status: s, timestamp: ts, note: `Admin updated request status to: ${s}` }]
         };
       }));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update exchange approval status:", err);
+      const errMsg = err?.response?.data?.message || err?.message || "Unknown error";
+      alert("Failed to update approval status: " + errMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const updateDeliveryStatus = async (id: string, ds: DeliveryStatus) => {
+  const updateDeliveryStatus = async (id: string, ds: DeliveryStatus, trackingId?: string) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      if (ds === "RECEIVED_AT_WAREHOUSE") {
-        await adminOrderApi.updateReturnStatus(Number(id), "RECEIVED", token!);
-      } else if (ds === "EXCHANGE_COMPLETED") {
+      const numericId = parseInt(id.replace(/\D/g, ''), 10);
+      const exchangeRequest = exchanges.find(r => r.id === id);
+      const orderDbId = exchangeRequest?.orderDbId;
+
+      const backendStatusMap: Partial<Record<DeliveryStatus, string>> = {
+        "OUT_FOR_PICKUP": "EXCHANGE_PICKUPED",
+        "RECEIVED_AT_WAREHOUSE": "EXCHANGE_SHIPPED", 
+        "REPLACEMENT_DISPATCHED": "EXCHANGE_PACKED",
+        "EXCHANGE_COMPLETED": "EXCHANGE_DELIVERED"
+      };
+      const backendStatus = backendStatusMap[ds];
+
+      if (ds === "OUT_FOR_PICKUP" && orderDbId) {
+        try {
+          await adminOrderApi.updateOrderStatus(orderDbId, "EXCHANGE_INITIATED", token!);
+        } catch (e) {
+          console.warn("Pre-transition to EXCHANGE_INITIATED failed or was ignored:", e);
+        }
+      }
+
+      if (ds === "REPLACEMENT_DISPATCHED" && trackingId && orderDbId) {
+        await adminOrderApi.updateOrderTracking(orderDbId, trackingId, token!);
+      }
+
+      if (backendStatus && orderDbId) {
+        await adminOrderApi.updateOrderStatus(orderDbId, backendStatus, token!);
+      }
+
+      if (ds === "EXCHANGE_COMPLETED") {
+        const trackingNum = exchangeRequest?.trackingNumber || "EXCH-SHP-" + id;
         // Resolve exchange directly on the backend
-        await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "EXCH-SHP-" + id, null, token!);
+        await adminOrderApi.resolveReturnRequest(numericId, "EXCHANGE", trackingNum, null, token!);
       }
       setExchanges(prev => prev.map(e => {
         if (e.id !== id) return e;
@@ -332,13 +351,39 @@ export const ExchangesPage = () => {
           deliveryStatus: ds,
           approvalStatus: appStatus,
           paymentStatus: payStatus,
+          trackingNumber: trackingId || e.trackingNumber,
           timeline: [...e.timeline, { status: ds, timestamp: ts, note: `Logistics update: exchange package is now ${ds.replaceAll("_", " ")}.` }]
         };
       }));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update exchange logistics status:", err);
+      const errMsg = err?.response?.data?.message || err?.message || "Unknown error";
+      alert("Failed to update logistics stage: " + errMsg);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditTracking = async (id: string, newTracking: string) => {
+    try {
+      const exchangeRequest = exchanges.find(r => r.id === id);
+      const orderDbId = exchangeRequest?.orderDbId;
+      if (!orderDbId) {
+        alert("Cannot find parent order database ID for tracking update.");
+        return;
+      }
+      await adminOrderApi.updateOrderTracking(orderDbId, newTracking, token!);
+      setExchanges(prev => prev.map(e => {
+        if (e.id !== id) return e;
+        return {
+          ...e,
+          trackingNumber: newTracking
+        };
+      }));
+    } catch (err: any) {
+      console.error("Failed to update tracking details:", err);
+      const errMsg = err?.response?.data?.message || err?.message || "Unknown error";
+      alert("Failed to save tracking details on backend: " + errMsg);
     }
   };
 
@@ -346,8 +391,9 @@ export const ExchangesPage = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const numericId = parseInt(id.replace(/\D/g, ''), 10);
       // Mock payment verification resolves completed exchanges
-      await adminOrderApi.resolveReturnRequest(Number(id), "EXCHANGE", "EXCH-SHP-" + id, null, token!);
+      await adminOrderApi.resolveReturnRequest(numericId, "EXCHANGE", "EXCH-SHP-" + id, null, token!);
       setExchanges(prev => prev.map(e => {
         if (e.id !== id) return e;
         const ts = new Date().toISOString().replace("T", " ").substring(0, 16);
@@ -460,7 +506,7 @@ export const ExchangesPage = () => {
               <th className="p-4">Order</th>
               <th className="p-4">Customer</th>
               <th className="p-4">Item Swap details</th>
-              <th className="p-4">Price Adjustment</th>
+
               <th className="p-4">Review Status</th>
               <th className="p-4">Logistics status</th>
             </tr>
@@ -481,35 +527,17 @@ export const ExchangesPage = () => {
                       <p className="text-[10.5px] font-bold text-[#382d24] leading-tight">{exc.items[0]?.name}</p>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-neutral-100 text-neutral-600 rounded-sm">
-                          {exc.items[0]?.originalSize} / {exc.items[0]?.originalColor}
+                          {exc.items[0]?.originalColor && exc.items[0]?.originalColor !== "N/A" ? exc.items[0]?.originalColor + " " : ""}{exc.items[0]?.originalSize}
                         </span>
                         <span className="text-[8.5px] text-neutral-400 font-bold">→</span>
                         <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-[#224870]/10 text-[#224870] rounded-sm">
-                          {exc.items[0]?.requestedSize} / {exc.items[0]?.requestedColor}
+                          {exc.items[0]?.requestedColor && exc.items[0]?.requestedColor !== "N/A" ? exc.items[0]?.requestedColor + " " : ""}{exc.items[0]?.requestedSize}
                         </span>
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="p-4 font-bold text-[11px]">
-                  {exc.adjustmentAmount === 0 ? (
-                    <span className="text-neutral-500">Even Swap (₹0)</span>
-                  ) : exc.adjustmentAmount > 0 ? (
-                    <div>
-                      <span className="text-red-600 font-extrabold">+{RS}{exc.adjustmentAmount}</span>
-                      <p className={`text-[8.5px] font-bold uppercase mt-0.5 ${exc.paymentStatus === "paid" ? "text-green-600" : "text-amber-600"}`}>
-                        {exc.paymentStatus === "paid" ? "Paid" : "Awaiting Pay"}
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <span className="text-green-700 font-extrabold">-{RS}{Math.abs(exc.adjustmentAmount)}</span>
-                      <p className={`text-[8.5px] font-bold uppercase mt-0.5 ${exc.paymentStatus === "refunded" ? "text-green-600" : "text-blue-600"}`}>
-                        {exc.paymentStatus === "refunded" ? "Refunded" : "Awaiting Ref"}
-                      </p>
-                    </div>
-                  )}
-                </td>
+
                 <td className="p-4"><ApprovalStatusBadge status={exc.approvalStatus} /></td>
                 <td className="p-4 text-[9.5px] text-[#615e56] font-bold uppercase tracking-wider">
                   {exc.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
@@ -575,7 +603,9 @@ export const ExchangesPage = () => {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[12px] text-[#382d24]">{active.customerName}</p>
                   <p className="text-[9.5px] text-[#615e56] mt-0.5">{active.email}</p>
-                  <p className="text-[9.5px] text-[#615e56]">{active.phone}</p>
+                  {active.phone && active.phone !== active.email && (
+                    <p className="text-[9.5px] text-[#615e56]">{active.phone}</p>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <ApprovalStatusBadge status={active.approvalStatus} />
@@ -611,6 +641,29 @@ export const ExchangesPage = () => {
                 </div>
               )}
 
+              {/* Reason for Exchange Highlighted */}
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-800">Reason for Exchange</p>
+                </div>
+                <p className="text-[12px] font-bold text-amber-900 leading-snug">{active.reason}</p>
+                
+                {/* Defect Images */}
+                {active.defectImages && active.defectImages.length > 0 && (
+                  <div className="mt-3 border-t border-amber-200/50 pt-3">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-amber-800 mb-2">Customer Uploaded Photos</p>
+                    <div className="flex gap-2">
+                      {active.defectImages.map((img, idx) => (
+                        <a key={idx} href={img} target="_blank" rel="noreferrer" className="block">
+                          <img src={img} alt="Defect" className="w-12 h-12 object-cover border border-amber-200 rounded-sm hover:opacity-80 transition-opacity" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Items with size swap */}
               <div>
                 <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Exchange Item</span>
@@ -630,8 +683,7 @@ export const ExchangesPage = () => {
                         <p className="text-[8.5px] font-bold uppercase tracking-widest text-red-600 mb-2">Original Choice</p>
                         <div className="space-y-1 text-[10px]">
                           <p className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-neutral-400" /> Size: <strong className="text-[#382d24]">{item.originalSize}</strong></p>
-                          <p className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-neutral-400" /> Color: <strong className="text-[#382d24]">{item.originalColor}</strong></p>
-                          <p className="text-[#615e56] mt-1 font-semibold">Price Paid: <strong>{RS}{item.originalPrice}</strong></p>
+                          <p className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-neutral-400" /> Variant / Color: <strong className="text-[#382d24]">{item.originalColor}</strong></p>
                         </div>
                       </div>
 
@@ -640,56 +692,15 @@ export const ExchangesPage = () => {
                         <p className="text-[8.5px] font-bold uppercase tracking-widest text-green-700 mb-2">Replacement Choice</p>
                         <div className="space-y-1 text-[10px]">
                           <p className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-neutral-400" /> Size: <strong className="text-[#382d24]">{item.requestedSize}</strong></p>
-                          <p className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-neutral-400" /> Color: <strong className="text-[#382d24]">{item.requestedColor}</strong></p>
-                          <p className="text-[#615e56] mt-1 font-semibold">New Price: <strong>{RS}{item.replacementPrice}</strong></p>
+                          <p className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-neutral-400" /> Variant / Color: <strong className="text-[#382d24]">{item.requestedColor}</strong></p>
                         </div>
                       </div>
                     </div>
                   </div>
                 ))}
-                <div className="mt-3 px-3.5 py-3 bg-neutral-50 border border-neutral-200/60 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#615e56]">Reason for Exchange</p>
-                    <p className="text-[10.5px] font-semibold text-[#382d24] mt-0.5">{active.reason}</p>
-                  </div>
-                </div>
               </div>
 
-              {/* Price adjustment & Transaction ledger */}
-              <div>
-                <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Price Adjustment Status</span>
-                <div className="border border-neutral-200/80 bg-card rounded-sm p-4 space-y-3">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-neutral-500 font-semibold">Replacement item price:</span>
-                    <span className="font-bold text-[#382d24]">{RS}{active.items[0]?.replacementPrice}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] border-b border-neutral-200/50 pb-2">
-                    <span className="text-neutral-500 font-semibold">Original item price:</span>
-                    <span className="font-bold text-[#382d24]">{RS}{active.items[0]?.originalPrice}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold text-[#382d24] uppercase">Net Adjustment:</span>
-                    {active.adjustmentAmount === 0 ? (
-                      <span className="text-[12px] font-bold text-[#382d24]">Even Swap (₹0)</span>
-                    ) : active.adjustmentAmount > 0 ? (
-                      <div className="text-right">
-                        <span className="text-[13px] font-bold text-red-600">+{RS}{active.adjustmentAmount}</span>
-                        <p className={`text-[8.5px] font-bold uppercase ${active.paymentStatus === "paid" ? "text-green-600" : "text-amber-600"}`}>
-                          {active.paymentStatus === "paid" ? "Payment Completed" : "Awaiting Pay"}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="text-right">
-                        <span className="text-[13px] font-bold text-green-700">Refund Customer {RS}{Math.abs(active.adjustmentAmount)}</span>
-                        <p className={`text-[8.5px] font-bold uppercase ${active.paymentStatus === "refunded" ? "text-green-600" : "text-blue-600"}`}>
-                          {active.paymentStatus === "refunded" ? "Refund Transferred" : "Pending Refund Process"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+
 
               {/* Step 2: Physical courier logistics tracking */}
               {active.approvalStatus !== "PENDING" && active.approvalStatus !== "REJECTED" && (
@@ -701,16 +712,22 @@ export const ExchangesPage = () => {
                       const stageIdx = DELIVERY_STAGES.findIndex(s => s.key === active.deliveryStatus);
                       const isDone = idx <= stageIdx;
                       const isCurrent = idx === stageIdx;
+                      const isClickable = idx === stageIdx + 1;
                       const log = active.timeline.find(t => t.status === stage.key);
                       const Icon = stage.icon;
                       return (
                         <div key={stage.key} className="relative flex items-start gap-4 pb-5">
                           <button
-                            disabled={active.adjustmentAmount > 0 && active.paymentStatus === "pending_payment" && idx > 0}
-                            onClick={() => updateDeliveryStatus(active.id, stage.key)}
+                            disabled={!isClickable || isSubmitting}
+                            onClick={() => {
+                              if (!isDone) {
+                                setPendingStageChange({ id: active.id, stage: stage.key });
+                              }
+                            }}
                             className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${
                               isCurrent ? "bg-[#224870] border-[#224870] text-white shadow-md scale-105" :
                               isDone ? "bg-white border-[#224870] text-[#224870]" :
+                              isClickable ? "bg-white border-[#224870]/60 text-[#224870]/60 hover:bg-[#224870]/5" :
                               "bg-white border-neutral-200 text-neutral-300"
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
@@ -721,8 +738,43 @@ export const ExchangesPage = () => {
                               <p className={`text-[10.5px] font-bold uppercase tracking-wide ${isCurrent ? "text-[#224870]" : isDone ? "text-[#382d24]" : "text-neutral-300"}`}>{stage.label}</p>
                               {isCurrent && <span className="text-[7.5px] font-bold uppercase tracking-widest bg-[#224870]/10 text-[#224870] px-2 py-0.5 rounded-full">Active</span>}
                             </div>
-                            {log ? <p className="text-[9.5px] text-[#615e56] mt-0.5 leading-relaxed">{log.note}</p> : !isDone ? <p className="text-[9.5px] text-neutral-300 mt-0.5 italic">Awaiting transit scan</p> : null}
-                            {log && <p className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</p>}
+                            {log && (
+                              <div className="text-[8.5px] font-semibold text-neutral-400 mt-1 flex flex-wrap items-center gap-2">
+                                <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {log.timestamp}</span>
+                                {stage.key === "REPLACEMENT_DISPATCHED" && (
+                                  <>
+                                    {active.trackingNumber ? (
+                                      <span className="inline-flex items-center gap-1 bg-[#224870]/10 text-[#224870] px-1.5 py-0.5 rounded-sm">
+                                        Tracking: <strong className="text-[#382d24]">{active.trackingNumber}</strong>
+                                        <button
+                                          onClick={() => {
+                                            const newTracking = prompt("Edit Courier Tracking ID:", active.trackingNumber);
+                                            if (newTracking !== null && newTracking.trim()) {
+                                              handleEditTracking(active.id, newTracking.trim());
+                                            }
+                                          }}
+                                          className="text-neutral-500 hover:text-neutral-700 underline ml-1 cursor-pointer bg-transparent border-none p-0 text-[8.5px] font-bold"
+                                        >
+                                          Edit
+                                        </button>
+                                      </span>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          const newTracking = prompt("Enter Courier Tracking ID:");
+                                          if (newTracking !== null && newTracking.trim()) {
+                                            handleEditTracking(active.id, newTracking.trim());
+                                          }
+                                        }}
+                                        className="text-[#224870] hover:underline cursor-pointer bg-transparent border-none p-0 text-[8.5px] font-bold"
+                                      >
+                                        + Add Tracking ID
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -731,52 +783,72 @@ export const ExchangesPage = () => {
                 </div>
               )}
 
-              {/* If Refund is Due & Not refunded yet, show refund inputs */}
-              {active.adjustmentAmount < 0 && (
-                <div className="space-y-4">
-                  {/* Bank Details section */}
-                  <div>
-                    <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Refund Bank Details</span>
-                    <div className="border border-neutral-200/80 bg-card rounded-sm p-4 space-y-2.5 text-[10.5px]">
-                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">Account Holder</span><span className="font-bold text-[#382d24]">{active.refundDetails?.accountHolderName || active.customerName}</span></div>
-                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">Bank Name</span><span className="font-bold text-[#382d24]">{active.refundDetails?.bankName || "HDFC Bank"}</span></div>
-                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">Account Number</span><span className="font-bold text-[#382d24] font-mono">{active.refundDetails?.accountNumber || "50100293847291"}</span></div>
-                      <div className="flex justify-between"><span className="text-[#615e56] font-semibold">IFSC Code</span><span className="font-bold text-[#382d24] font-mono">{active.refundDetails?.ifscCode || "HDFC0000001"}</span></div>
-                    </div>
-                  </div>
 
-                  {/* Proof upload */}
-                  <div>
-                    <span className="text-[9px] font-bold tracking-[0.2em] text-[#615e56] uppercase block mb-3">Upload Refund Payout Proof</span>
-                    <div className="bg-card border border-neutral-200/80 p-4 rounded-sm space-y-3">
-                      <label className="block text-[9.5px] font-bold tracking-widest text-[#615e56] uppercase mb-1">Transaction ID</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. TXN123456789"
-                        value={active.transactionId || ""}
-                        onChange={e => updateTransactionId(active.id, e.target.value)}
-                        className="w-full bg-white border border-neutral-200 p-2.5 text-xs font-semibold focus:outline-none focus:border-[#224870] transition-colors rounded-sm"
-                        disabled={active.paymentStatus === "refunded"}
-                      />
-                      
-                      {active.paymentStatus === "refunded" ? (
-                        <div className="flex items-center gap-1.5 text-[10px] text-green-600 font-bold bg-green-50 border border-green-200 p-2.5 rounded-sm">
-                          <Check className="w-3.5 h-3.5" /> Refund confirmed.
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => resolveExchangeRefund(active.id)}
-                          disabled={!active.transactionId?.trim()}
-                          className={`w-full text-white text-[9.5px] font-black uppercase tracking-wider py-2.5 px-4 rounded-sm transition-all flex items-center justify-center gap-2 border-none ${active.transactionId?.trim() ? "bg-[#224870] hover:bg-[#1a3858] cursor-pointer" : "bg-neutral-300 cursor-not-allowed"}`}
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Confirm Payout
-                        </button>
-                      )}
-                    </div>
-                  </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Logistics Stage */}
+      {pendingStageChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-[13px] font-black text-[#382d24] uppercase tracking-wide">Update Stage?</h3>
+                  <p className="text-[10px] text-neutral-500 mt-0.5">Are you sure you want to change the logistics stage?</p>
+                </div>
+              </div>
+              <div className="bg-neutral-50 p-3 rounded-md border border-neutral-100 mb-5">
+                <p className="text-[11px] font-bold text-center text-[#224870]">
+                  New Stage: {DELIVERY_STAGES.find(s => s.key === pendingStageChange.stage)?.label}
+                </p>
+              </div>
+
+              {pendingStageChange.stage === "REPLACEMENT_DISPATCHED" && (
+                <div className="mb-5">
+                  <label className="block text-[9.5px] font-bold uppercase tracking-widest text-[#382d24] mb-2">Courier Tracking ID</label>
+                  <input
+                    type="text"
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
+                    placeholder="Enter Tracking ID (e.g. EXCH-SHP-010)"
+                    className="w-full border border-neutral-200 p-2.5 text-[11px] font-medium outline-none focus:border-[#224870] rounded-sm"
+                  />
                 </div>
               )}
 
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setPendingStageChange(null);
+                    setTrackingInput("");
+                  }}
+                  disabled={isSubmitting}
+                  className="flex-1 bg-white border border-neutral-200 text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-2.5 rounded-sm hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (pendingStageChange.stage === "REPLACEMENT_DISPATCHED" && !trackingInput.trim()) {
+                      alert("Please enter a Courier Tracking ID.");
+                      return;
+                    }
+                    await updateDeliveryStatus(pendingStageChange.id, pendingStageChange.stage, trackingInput.trim());
+                    setPendingStageChange(null);
+                    setTrackingInput("");
+                  }}
+                  disabled={isSubmitting}
+                  className="flex-1 bg-[#224870] hover:bg-[#1a3857] text-white text-[10px] font-bold uppercase tracking-widest py-2.5 rounded-sm transition-colors flex items-center justify-center"
+                >
+                  {isSubmitting ? "Updating..." : "Yes, Update"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

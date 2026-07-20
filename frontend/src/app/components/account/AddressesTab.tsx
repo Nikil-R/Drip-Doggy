@@ -95,7 +95,7 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
       buildingNo: addressForm.buildingNo,
       buildingName: addressForm.buildingName,
       street: addressForm.street,
-      area: addressForm.area,
+      area: addressForm.area || addressForm.city,
       city: addressForm.city,
       state: addressForm.state,
       postalCode: addressForm.postalCode,
@@ -111,12 +111,12 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
       }
       const list = await addressApi.getAddresses();
       setAddresses(list);
-    } catch (err) {
+      setIsAddressFormOpen(false);
+      setEditingAddressId(null);
+    } catch (err: any) {
       console.error("Error saving address:", err);
+      setAddressFormError(err?.response?.data?.message || "Failed to save address. Please check all fields.");
     }
-
-    setIsAddressFormOpen(false);
-    setEditingAddressId(null);
   };
 
   return (

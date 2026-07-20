@@ -7,6 +7,7 @@ export const REGEX = {
   PHONE: /^[6-9]\d{9}$/,
   POSTAL_CODE: /^\d{6}$/,
   NAME: /^[a-zA-Z\s]{2,50}$/,
+  LAST_NAME: /^[a-zA-Z\s]{1,15}$/,
   PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
   OTP: /^\d{4,6}$/,
 };
@@ -34,7 +35,17 @@ export const validatePostalCode = (val: string): string | null => {
 
 export const validateName = (fieldName: string, val: string): string | null => {
   if (!val.trim()) return `${fieldName} is required.`;
-  if (!REGEX.NAME.test(val.trim())) return `${fieldName} must contain letters only (2-50 characters).`;
+  
+  if (fieldName.toLowerCase().includes("last")) {
+    if (!REGEX.LAST_NAME.test(val.trim())) {
+      return `${fieldName} must contain letters only (1-15 characters).`;
+    }
+  } else {
+    if (!REGEX.NAME.test(val.trim())) {
+      return `${fieldName} must contain letters only (2-50 characters).`;
+    }
+  }
+  
   return null;
 };
 

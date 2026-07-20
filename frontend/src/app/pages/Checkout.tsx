@@ -10,7 +10,7 @@ import { addressApi } from "../lib/address-api";
 import { cartApi } from "../lib/cart-api";
 import { couponApi } from "../lib/coupon-api";
 import { orderApi } from "../lib/order-api";
-import { getSessionToken } from "../lib/auth-storage";
+import { getSessionToken, saveSessionUser } from "../lib/auth-storage";
 import { validateEmail, validatePhone, validatePostalCode, validateName } from "../utils/validation";
 
 interface CartItem {
@@ -187,7 +187,7 @@ function OTPVerification({
 }
 
 export function Checkout() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth() || {};
   const navigate = useNavigate();
 
   const [cartItems] = useState<CartItem[]>(() => {
@@ -395,25 +395,48 @@ export function Checkout() {
     const requestData = {
       type: finalType, firstName: addressForm.firstName, lastName: addressForm.lastName,
       buildingNo: addressForm.buildingNo, buildingName: addressForm.buildingName, street: addressForm.street,
-      area: addressForm.area, city: addressForm.city, state: addressForm.state,
+      area: addressForm.area || addressForm.city, city: addressForm.city, state: addressForm.state,
       postalCode: addressForm.postalCode, phone: addressForm.phone, isDefault: addressForm.isDefault
     };
 
     if (editingAddressId !== null) {
       if (getSessionToken()) {
-        try { await addressApi.updateAddress(editingAddressId, requestData); }
-        catch (err) { console.error("Failed to update address via API", err); }
+        try { 
+          await addressApi.updateAddress(editingAddressId, requestData); 
+          const list = await addressApi.getAddresses();
+          if (list) setAddresses(list);
+        }
+        catch (err: any) { 
+          console.error("Failed to update address via API", err); 
+          setAddressFormError(err?.response?.data?.message || "Failed to update address. Please check all fields.");
+          return;
+        }
+      } else {
+        setAddresses(prev => prev.map(a => a.id === editingAddressId ? { ...a, ...requestData } : addressForm.isDefault ? { ...a, isDefault: false } : a));
       }
-      setAddresses(prev => prev.map(a => a.id === editingAddressId ? { ...a, ...requestData } : addressForm.isDefault ? { ...a, isDefault: false } : a));
     } else {
       let savedId = Date.now();
       if (getSessionToken()) {
-        try { const res = await addressApi.createAddress(requestData); if (res?.data?.id) savedId = res.data.id; }
-        catch (err) { console.error("Failed to create address via API", err); }
+        try { 
+          await addressApi.createAddress(requestData); 
+          const list = await addressApi.getAddresses();
+          if (list && list.length > 0) {
+            setAddresses(list);
+            // Default to the newly added address (usually last or default)
+            const d = list.find(a => a.isDefault);
+            savedId = d ? d.id : list[list.length - 1].id;
+          }
+        }
+        catch (err: any) { 
+          console.error("Failed to create address via API", err); 
+          setAddressFormError(err?.response?.data?.message || "Failed to create address. Please check all fields.");
+          return;
+        }
+      } else {
+        const newAddr: Address = { id: savedId, ...requestData, isDefault: addressForm.isDefault || addresses.length === 0 };
+        setAddresses(prev => addressForm.isDefault ? prev.map(a => ({ ...a, isDefault: false })).concat(newAddr) : [...prev, newAddr]);
       }
-      const newAddr: Address = { id: savedId, ...requestData, isDefault: addressForm.isDefault || addresses.length === 0 };
-      setAddresses(prev => addressForm.isDefault ? prev.map(a => ({ ...a, isDefault: false })).concat(newAddr) : [...prev, newAddr]);
-      setSelectedAddressId(newAddr.id);
+      setSelectedAddressId(savedId);
     }
     setIsFormOpen(false);
     setEditingAddressId(null);
@@ -438,7 +461,7 @@ export function Checkout() {
       setPhoneError(null);
       setIsSendingOtp(true);
       try {
-        await orderApi.sendCheckoutOtp(cleanPhone);
+        await orderApi.sendCheckoutOtp(cleanPhone, email);
         setVerifyingTarget(target);
         setOtpCode("");
         setOtpError(null);
@@ -465,10 +488,13 @@ export function Checkout() {
         }
       } else if (verifyingTarget === "phone") {
         const cleanPhone = phone.replace(/\D/g, "");
-        await orderApi.verifyCheckoutOtp(cleanPhone, otpCode);
+        await orderApi.verifyCheckoutOtp(cleanPhone, email, otpCode);
         setIsPhoneVerifiedLocally(true);
         setPhoneError(null);
         setVerifyingTarget(null);
+        if (user && updateUser) {
+          updateUser({ ...user, phone: cleanPhone });
+        }
       }
     } catch (err: any) {
       console.error("Failed to verify OTP", err);
@@ -857,7 +883,7 @@ export function Checkout() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[6.5px] font-black tracking-[0.2em] mb-1 text-neutral-400 uppercase">Delivery Phone</label>
+                        <label className="block text-[6.5px] font-black tracking-[0.2em] mb-1 text-neutral-400 uppercase">Alternative Phone Number</label>
                         <input type="tel" required placeholder="Phone number for this address" value={addressForm.phone}
                           onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
                           className="w-full bg-white border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213] uppercase" />
