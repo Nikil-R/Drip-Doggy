@@ -854,42 +854,45 @@ function ProductDetailContent({ product }: { product: Product }) {
         <section className="bg-white border-y border-neutral-200/60 py-8 mt-4">
           <div className="max-w-7xl mx-auto px-6">
             {/* Tab Navigation */}
-            <div className="flex overflow-x-auto md:grid md:grid-cols-4 border border-neutral-200/60 mb-8 text-[9px] xs:text-[10px] md:text-[11px] font-bold tracking-[0.1em] md:tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30 scrollbar-none whitespace-nowrap">
+            <div className="grid grid-cols-2 md:grid-cols-4 border border-neutral-200/60 mb-8 text-[9px] min-[360px]:text-[9.5px] md:text-[11px] font-semibold tracking-[0.05em] md:tracking-[0.15em] uppercase text-neutral-500 bg-[#FAF8F5]/30">
               <button
                 onClick={() => setActiveTab("description")}
-                className={`flex-1 min-w-[110px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-0 py-3.5 px-1 xs:px-2 md:py-4 md:px-6 text-center border-r border-b md:border-b-0 border-neutral-200/60 transition-all duration-300 cursor-pointer ${
                   activeTab === "description"
-                    ? "bg-[#030213] text-white font-extrabold"
+                    ? "bg-[#030213] text-white font-bold"
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                DESCRIPTION
+                <span className="hidden md:inline">DESCRIPTION</span>
+                <span className="inline md:hidden">DESC</span>
               </button>
               <button
                 onClick={() => setActiveTab("specifications")}
-                className={`flex-1 min-w-[125px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-0 py-3.5 px-1 xs:px-2 md:py-4 md:px-6 text-center border-b md:border-b-0 md:border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
                   activeTab === "specifications"
-                    ? "bg-[#030213] text-white font-extrabold"
+                    ? "bg-[#030213] text-white font-bold"
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                SPECIFICATIONS
+                <span className="hidden md:inline">SPECIFICATIONS</span>
+                <span className="inline md:hidden">SPECS</span>
               </button>
               <button
                 onClick={() => setActiveTab("shipping")}
-                className={`flex-1 min-w-[145px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-0 py-3.5 px-1 xs:px-2 md:py-4 md:px-6 text-center border-r border-neutral-200/60 transition-all duration-300 cursor-pointer ${
                   activeTab === "shipping"
-                    ? "bg-[#030213] text-white font-extrabold"
+                    ? "bg-[#030213] text-white font-bold"
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >
-                SHIPPING & RETURNS
+                <span className="hidden md:inline">SHIPPING & RETURNS</span>
+                <span className="inline md:hidden">SHIPPING</span>
               </button>
               <button
                 onClick={() => setActiveTab("reviews")}
-                className={`flex-1 min-w-[115px] md:min-w-0 py-3.5 px-4 md:py-4 md:px-6 text-center transition-all duration-300 cursor-pointer ${
+                className={`flex-1 min-w-0 py-3.5 px-1 xs:px-2 md:py-4 md:px-6 text-center transition-all duration-300 cursor-pointer ${
                   activeTab === "reviews"
-                    ? "bg-[#030213] text-white font-extrabold"
+                    ? "bg-[#030213] text-white font-bold"
                     : "hover:bg-neutral-100/50 hover:text-black"
                 }`}
               >

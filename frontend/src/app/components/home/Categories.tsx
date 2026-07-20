@@ -64,8 +64,8 @@ export function Categories() {
   }, [isAuthenticated]);
 
   return (
-    <section id="categories" className="pt-16 pb-8 lg:pt-20 lg:pb-10 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="categories" className="pt-8 pb-8 lg:pt-20 lg:pb-10 bg-white">
+      <div className="max-w-7xl mx-auto px-6 ">
         <div className="mb-10">
           <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-2">
             Shop by Category
