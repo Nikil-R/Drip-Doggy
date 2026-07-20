@@ -909,7 +909,6 @@ export function OrdersTab() {
                       <Printer className="h-3.5 w-3.5" /> Bill
                     </button>
                   </div>
-                  </div>
                 </div>
 
                 {/* Unavailability Choice UI */}
