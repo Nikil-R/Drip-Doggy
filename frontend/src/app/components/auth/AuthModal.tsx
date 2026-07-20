@@ -307,12 +307,12 @@ export function AuthModal() {
         {/* Identifier Step */}
         {step === "identifier" && (
           <form onSubmit={handleSendOtp} className="space-y-4">
-            <p className="text-[11px] font-medium leading-relaxed text-[#666666] text-center max-w-xs mx-auto mb-4">
-              Join the DripDoggy community. Enter your email to unlock exclusive collections, early drops, and member-only updates.
+            <p className="text-[11px] font-extrabold tracking-wider text-[#666666] text-center max-w-xs mx-auto mb-4 uppercase">
+              Please enter your email address first.
             </p>
 
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-450 pointer-events-none">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-455 pointer-events-none">
                 <Mail className="h-4 w-4 stroke-[1.5]" />
               </div>
               <input
@@ -337,34 +337,9 @@ export function AuthModal() {
               disabled={isSubmitting || !identifier.trim()}
               className="w-full bg-[#1c1c1c] hover:bg-[#2c2c2c] disabled:bg-neutral-200 text-[#c5a880] disabled:text-neutral-400 rounded-md py-4 text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-200 flex items-center justify-center gap-2 border-none cursor-pointer"
             >
-              <span>JOIN THE COMMUNITY</span>
+              <span>CONTINUE</span>
               <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-[#c5a880]" />
             </button>
-
-            <div className="flex items-center gap-3 my-4">
-              <div className="h-[1px] flex-1 bg-neutral-200/80" />
-              <span className="text-[8px] font-bold tracking-widest text-[#B89C72] uppercase">
-                OR
-              </span>
-              <div className="h-[1px] flex-1 bg-neutral-200/80" />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleIHaveCode}
-              className="w-full bg-white border border-neutral-200/80 hover:border-neutral-300 text-[#1c1c1c] rounded-md py-4 text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-200 flex items-between justify-between px-5 cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <Lock className="h-4 w-4 text-[#B89C72] stroke-[1.5]" />
-                <span>I HAVE A CODE</span>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-[#1c1c1c]" />
-            </button>
-
-            <div className="mt-5 flex items-center justify-center gap-1.5 text-neutral-400">
-              <Shield className="h-3.5 w-3.5 stroke-[1.5]" />
-              <span className="text-[10px] font-medium">Your privacy is important to us.</span>
-            </div>
           </form>
         )}
 
@@ -378,7 +353,7 @@ export function AuthModal() {
               onBack={handleBackToIdentifier}
               isSubmitting={isSubmitting}
               error={error}
-              showDevHelper={true}
+              showDevHelper={false}
             />
 
             {/* Resend OTP */}
@@ -410,7 +385,7 @@ export function AuthModal() {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
-                  className="w-full bg-white border border-neutral-250 pl-9 pr-3.5 py-3 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
+                  className="w-full bg-white border border-neutral-200 rounded-md pl-9 pr-3.5 py-3.5 text-xs text-[#222222] placeholder-neutral-400 font-medium focus:outline-none focus:border-[#B89C72] transition-colors"
                 />
               </div>
               <div>
@@ -420,14 +395,14 @@ export function AuthModal() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
-                  className="w-full bg-white border border-neutral-250 px-3.5 py-3 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
+                  className="w-full bg-white border border-neutral-200 rounded-md px-3.5 py-3.5 text-xs text-[#222222] placeholder-neutral-400 font-medium focus:outline-none focus:border-[#B89C72] transition-colors"
                 />
               </div>
             </div>
 
             {/* Gender Identity */}
             <div>
-              <label className="text-[9px] font-extrabold tracking-[0.2em] text-neutral-500 uppercase block mb-2.5">
+              <label className="text-[9px] font-black tracking-[0.2em] text-[#B89C72] uppercase block mb-2">
                 Gender Identity
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -436,10 +411,10 @@ export function AuthModal() {
                     key={option}
                     type="button"
                     onClick={() => setGender(option)}
-                    className={`py-3 text-[10px] font-extrabold tracking-[0.15em] uppercase border transition-all duration-200 cursor-pointer ${
+                    className={`py-3.5 text-[9px] font-black tracking-[0.15em] uppercase border transition-all duration-200 cursor-pointer rounded-md ${
                       gender === option
-                        ? "bg-[#030213] text-white border-[#030213]"
-                        : "bg-white text-neutral-600 border-neutral-200 hover:border-[#030213] hover:text-[#030213]"
+                        ? "bg-[#1c1c1c] text-[#c5a880] border-[#1c1c1c]"
+                        : "bg-white text-[#222222] border-neutral-200 hover:border-[#B89C72] hover:text-[#B89C72]"
                     }`}
                   >
                     {option}
@@ -450,7 +425,7 @@ export function AuthModal() {
 
             {/* Date of Birth */}
             <div>
-              <label className="text-[9px] font-extrabold tracking-[0.2em] text-neutral-500 uppercase block mb-2.5">
+              <label className="text-[9px] font-black tracking-[0.2em] text-[#B89C72] uppercase block mb-2">
                 Date of Birth
               </label>
               <input
@@ -458,7 +433,7 @@ export function AuthModal() {
                 required
                 value={dateOfBirth}
                 onChange={(e) => setDateOfBirth(e.target.value)}
-                className="w-full bg-white border border-neutral-250 px-4 py-3 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
+                className="w-full bg-white border border-neutral-200 rounded-md px-4 py-3.5 text-xs text-[#222222] focus:outline-none focus:border-[#B89C72] transition-colors"
               />
             </div>
 
@@ -475,7 +450,7 @@ export function AuthModal() {
             <button
               type="submit"
               disabled={isSubmitting || !firstName.trim() || !lastName.trim() || !gender || !dateOfBirth.trim()}
-              className="group relative w-full bg-[#030213] text-white py-3.5 text-[10px] font-extrabold tracking-[0.2em] hover:bg-neutral-800 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer overflow-hidden uppercase"
+              className="w-full bg-[#1c1c1c] hover:bg-[#2c2c2c] disabled:bg-neutral-200 text-[#c5a880] disabled:text-neutral-400 rounded-md py-4 text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-200 flex items-center justify-center gap-2 border-none cursor-pointer"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {isSubmitting ? (
@@ -486,7 +461,7 @@ export function AuthModal() {
                 ) : (
                   <>
                     COMPLETE ACCOUNT SETUP{" "}
-                    <ArrowRight className="h-3.5 w-3.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-0.5" />
+                    <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-[#c5a880]" />
                   </>
                 )}
               </span>
