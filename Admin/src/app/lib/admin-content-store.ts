@@ -172,6 +172,38 @@ export function updateCuratedCollection(id: string, updates: Partial<CuratedColl
   if (idx !== -1) { cols[idx] = { ...cols[idx], ...updates }; setCuratedCollections(cols); }
 }
 export function deleteCuratedCollection(id: string): void { setCuratedCollections(getCuratedCollections().filter(c => c.id !== id)); }
+export interface ComingSoonSlide {
+  id: string;
+  tagline: string;
+  title: string;
+  description: string;
+  image: string;
+  ctaText?: string;
+  ctaLink?: string;
+  order: number;
+  active: boolean;
+}
+
+const DEFAULT_COMING_SOON_SLIDES: ComingSoonSlide[] = [
+  {
+    id: "cs-1",
+    tagline: "UPCOMING RELEASE",
+    title: "MEN'S SYNDICATE",
+    description: "An exploration of structural tailoring, heavyweight fabrication, and utilitarian precision. The first menswear capsule from DripDoggy — engineered for the modern wardrobe.",
+    image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1920",
+    ctaText: "NOTIFY ME",
+    ctaLink: "#notify",
+    order: 0,
+    active: true
+  }
+];
+
+export function getComingSoonSlides(): ComingSoonSlide[] {
+  return getItem<ComingSoonSlide[]>(KEYS.comingSoonTeasers, DEFAULT_COMING_SOON_SLIDES);
+}
+export function setComingSoonSlides(slides: ComingSoonSlide[]): void {
+  setItem(KEYS.comingSoonTeasers, slides);
+}
 
 export function getLastUpdated(): string { return localStorage.getItem(KEYS.lastUpdated) || "Never"; }
 export function seedAllContent(): boolean { return !localStorage.getItem(KEYS.heroSlides); }

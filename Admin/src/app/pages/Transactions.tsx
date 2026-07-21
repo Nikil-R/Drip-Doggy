@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Coins, AlertCircle } from "lucide-react";
+import { Search, Download, Check, Clock, Calendar } from "lucide-react";
 import { adminOrderApi, AdminOrderResponse } from "../lib/admin-order-api";
 
 const RS = "₹";
@@ -10,6 +10,16 @@ export function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [dateRange, setDateRange] = useState("All Time");
+
+  // Local state for Bank Settlement toggle (persisted in localStorage)
+  const [bankSettledMap, setBankSettledMap] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("dripdoggy_bank_settled_map") || "{}");
+    } catch {
+      return {};
+    }
+  });
 
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -35,49 +45,52 @@ export function TransactionsPage() {
     fetchOrders();
   }, [token]);
 
+  // Persist Bank Settlement toggle status
+  const toggleBankSettled = (orderNumber: string) => {
+    setBankSettledMap((prev) => {
+      const updated = { ...prev, [orderNumber]: !prev[orderNumber] };
+      localStorage.setItem("dripdoggy_bank_settled_map", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Normalize order date to YYYY-MM-DD
   const getOrderDate = (timestamp: string) => {
     if (!timestamp) return "N/A";
     return timestamp.split("T")[0];
   };
 
-  // Check if order was placed today (local timezone check based on ISO string)
-  const isPlacedToday = (timestamp: string) => {
+  // Date range filtering helper
+  const matchesDateRange = (timestamp: string, range: string) => {
     if (!timestamp) return false;
-    const today = new Date().toISOString().split("T")[0];
-    return timestamp.startsWith(today);
+    if (range === "All Time") return true;
+
+    const dateStr = timestamp.split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    if (range === "Today") {
+      return dateStr === todayStr;
+    }
+
+    if (range === "This Week") {
+      const orderTime = new Date(dateStr).getTime();
+      const nowTime = new Date().getTime();
+      const diffDays = (nowTime - orderTime) / (1000 * 3600 * 24);
+      return diffDays <= 7;
+    }
+
+    if (range === "This Month") {
+      const currentMonthStr = todayStr.substring(0, 7); // YYYY-MM
+      return dateStr.startsWith(currentMonthStr);
+    }
+
+    return true;
   };
 
-  // Process KPI metrics dynamically from backend orders
-  const stats = useMemo(() => {
-    let totalOrdersCount = orders.length;
-    let totalRevenue = 0;
-    let todayRevenue = 0;
-    let cancelledOrdersCount = 0;
-    let lostMoney = 0;
-
-    orders.forEach(o => {
-      const isCancelled = o.deliveryStatus?.toUpperCase() === "CANCELLED" || o.paymentStatus?.toUpperCase() === "REFUNDED";
-      
-      if (isCancelled) {
-        cancelledOrdersCount++;
-        lostMoney += o.totalAmount;
-      } else {
-        totalRevenue += o.totalAmount;
-        if (isPlacedToday(o.orderTimestamp)) {
-          todayRevenue += o.totalAmount;
-        }
-      }
-    });
-
-    return {
-      totalOrdersCount,
-      totalRevenue,
-      todayRevenue,
-      cancelledOrdersCount,
-      lostMoney
-    };
-  }, [orders]);
+  // Filter orders by date range first
+  const dateFilteredOrders = useMemo(() => {
+    return orders.filter((o) => matchesDateRange(o.orderTimestamp, dateRange));
+  }, [orders, dateRange]);
 
   // Map order status to ledger payment states
   const getLedgerStatus = (o: AdminOrderResponse): "Paid" | "Pending" | "Cancelled" => {
@@ -93,9 +106,42 @@ export function TransactionsPage() {
     return "Pending";
   };
 
-  // Filtered orders list based on search and status
+  // Process KPI metrics dynamically from date-filtered orders
+  const stats = useMemo(() => {
+    let totalOrdersCount = dateFilteredOrders.length;
+    let totalRevenue = 0;
+    let todayRevenue = 0;
+    let cancelledOrdersCount = 0;
+    let lostMoney = 0;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    dateFilteredOrders.forEach((o) => {
+      const isCancelled = o.deliveryStatus?.toUpperCase() === "CANCELLED" || o.paymentStatus?.toUpperCase() === "REFUNDED";
+
+      if (isCancelled) {
+        cancelledOrdersCount++;
+        lostMoney += o.totalAmount;
+      } else {
+        totalRevenue += o.totalAmount;
+        if (o.orderTimestamp?.startsWith(todayStr)) {
+          todayRevenue += o.totalAmount;
+        }
+      }
+    });
+
+    return {
+      totalOrdersCount,
+      totalRevenue,
+      todayRevenue,
+      cancelledOrdersCount,
+      lostMoney
+    };
+  }, [dateFilteredOrders]);
+
+  // Filtered orders list based on status and search query
   const filteredOrders = useMemo(() => {
-    return orders.filter(o => {
+    return dateFilteredOrders.filter((o) => {
       const ledgerStatus = getLedgerStatus(o);
       if (statusFilter !== "All" && ledgerStatus !== statusFilter) return false;
 
@@ -105,36 +151,40 @@ export function TransactionsPage() {
         o.orderNumber?.toLowerCase().includes(q)
       );
     });
-  }, [orders, statusFilter, searchQuery]);
+  }, [dateFilteredOrders, statusFilter, searchQuery]);
+
+  // One-click CSV Export functionality
+  const handleExportCSV = () => {
+    if (filteredOrders.length === 0) return;
+
+    const headers = ["Order Number", "Customer Name", "Payment Type", "Order Amount (INR)", "Order Date", "Payment Status", "Bank Remittance Status"];
+    const rows = filteredOrders.map((o) => [
+      `"${o.orderNumber}"`,
+      `"${o.customerName || "Anonymous Customer"}"`,
+      "COD",
+      o.totalAmount,
+      `"${getOrderDate(o.orderTimestamp)}"`,
+      `"${getLedgerStatus(o)}"`,
+      `"${bankSettledMap[o.orderNumber] ? "Bank Deposited" : "Pending Deposit"}"`
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `DripDoggy_Payment_Ledger_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-8 font-sans text-[#382d24]">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200/60 pb-5">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2">
-            <Coins className="w-5 h-5 text-[#224870]" /> Payments Ledger
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Real-time Cash-on-Delivery (COD) financial reporting generated directly from order entries
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200/60 p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-[10px] font-bold text-red-800 uppercase tracking-widest">Error Loading Ledger</h4>
-            <p className="text-[9px] text-red-700 font-bold uppercase tracking-wider mt-1">{error}</p>
-          </div>
-        </div>
-      )}
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-card border border-neutral-200/80 p-4 flex flex-col justify-between min-h-[90px]">
-          <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Total Active Cash Flow</span>
+          <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase">Active Cash Flow</span>
           <span className="text-2xl font-bold tracking-tight text-green-700 mt-2">
             {loading ? "..." : `${RS}${stats.totalRevenue.toLocaleString("en-IN")}`}
           </span>
@@ -165,16 +215,26 @@ export function TransactionsPage() {
           <div>
             <span className="text-[10px] font-bold tracking-[0.15em] text-[#615e56] uppercase block">General COD Ledger Logs</span>
             <p className="text-[9.5px] text-[#615e56]/80 font-normal mt-0.5">
-              {loading ? "Loading transactions..." : `${filteredOrders.length} matching transactions`}
+              {loading ? "Loading transactions..." : `${filteredOrders.length} matching transactions (${dateRange})`}
             </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Export CSV Button */}
+            <button
+              onClick={handleExportCSV}
+              disabled={filteredOrders.length === 0}
+              className="bg-[#224870] hover:bg-[#224870]/85 disabled:opacity-50 text-white text-[9px] font-bold tracking-widest px-3.5 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-all"
+            >
+              <Download className="w-3.5 h-3.5" /> Export to CSV
+            </button>
           </div>
         </div>
 
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-4 w-full">
-          {/* Tabs */}
+          {/* Status Tabs */}
           <div className="flex bg-background border border-neutral-200 p-1 rounded-full gap-0.5 flex-wrap">
-            {["All", "Paid", "Pending", "Cancelled"].map(status => (
+            {["All", "Paid", "Pending", "Cancelled"].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -187,16 +247,33 @@ export function TransactionsPage() {
             ))}
           </div>
 
-          {/* Search */}
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-450" />
-            <input
-              type="text"
-              placeholder="Search Order Number, name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-card border border-neutral-200 pl-9 pr-3 py-2 text-[9.5px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#224870] placeholder-neutral-300 w-full rounded-none transition-all text-[#382d24]"
-            />
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            {/* Date Range Dropdown */}
+            <div className="flex items-center gap-1.5 bg-card border border-neutral-200 px-3 py-1.5 text-[9.5px] font-bold uppercase tracking-wider">
+              <Calendar className="w-3.5 h-3.5 text-[#224870]" />
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="bg-transparent text-[#382d24] font-bold outline-none cursor-pointer border-none text-[9.5px] uppercase"
+              >
+                <option value="All Time">All Time</option>
+                <option value="Today">Today</option>
+                <option value="This Week">This Week</option>
+                <option value="This Month">This Month</option>
+              </select>
+            </div>
+
+            {/* Search */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-450" />
+              <input
+                type="text"
+                placeholder="Search Order Number, name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-card border border-neutral-200 pl-9 pr-3 py-2 text-[9.5px] font-semibold uppercase tracking-widest focus:outline-none focus:border-[#224870] placeholder-neutral-300 w-full rounded-none transition-all text-[#382d24]"
+              />
+            </div>
           </div>
         </div>
 
@@ -210,42 +287,69 @@ export function TransactionsPage() {
                 <th className="p-3 font-bold">Payment Type</th>
                 <th className="p-3 font-bold">Order Amount</th>
                 <th className="p-3 font-bold">Date</th>
-                <th className="p-3 font-bold text-right">Status</th>
+                <th className="p-3 font-bold">Order Status</th>
+                <th className="p-3 font-bold text-right">Bank Settlement</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200/60 font-semibold">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-neutral-400 uppercase tracking-widest text-[9.5px]">
+                  <td colSpan={7} className="p-8 text-center text-neutral-400 uppercase tracking-widest text-[9.5px]">
                     Syncing Ledger Data...
                   </td>
                 </tr>
-              ) : filteredOrders.map((o) => {
-                const ledgerStatus = getLedgerStatus(o);
-                return (
-                  <tr key={o.orderNumber} className="hover:bg-neutral-100/50 transition-colors">
-                    <td className="p-3 font-black text-[#224870] text-[11px] tracking-wide">{o.orderNumber}</td>
-                    <td className="p-3 text-[#382d24]">{o.customerName || "Anonymous Customer"}</td>
-                    <td className="p-3 text-[#615e56]">COD</td>
-                    <td className="p-3 font-black text-[#382d24] text-[11px]">{RS}{o.totalAmount.toLocaleString("en-IN")}</td>
-                    <td className="p-3 text-neutral-500 font-mono text-[9.5px]">{getOrderDate(o.orderTimestamp)}</td>
-                    <td className="p-3 text-right">
-                      <span className={`inline-flex items-center px-2 py-0.5 border text-[7.5px] font-bold tracking-widest uppercase ${
-                        ledgerStatus === "Paid" 
-                          ? "text-green-700 bg-green-50 border-green-200" 
-                          : ledgerStatus === "Pending" 
-                            ? "text-amber-700 bg-amber-50 border-amber-200" 
-                            : "text-red-700 bg-red-50 border-red-200"
-                      }`}>
-                        {ledgerStatus}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              ) : (
+                filteredOrders.map((o) => {
+                  const ledgerStatus = getLedgerStatus(o);
+                  const isSettled = !!bankSettledMap[o.orderNumber];
+                  return (
+                    <tr key={o.orderNumber} className="hover:bg-neutral-100/50 transition-colors">
+                      <td className="p-3 font-black text-[#224870] text-[11px] tracking-wide">{o.orderNumber}</td>
+                      <td className="p-3 text-[#382d24]">{o.customerName || "Anonymous Customer"}</td>
+                      <td className="p-3 text-[#615e56]">COD</td>
+                      <td className="p-3 font-black text-[#382d24] text-[11px]">{RS}{o.totalAmount.toLocaleString("en-IN")}</td>
+                      <td className="p-3 text-neutral-500 font-mono text-[9.5px]">{getOrderDate(o.orderTimestamp)}</td>
+                      <td className="p-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 border text-[7.5px] font-bold tracking-widest uppercase ${
+                            ledgerStatus === "Paid"
+                              ? "text-green-700 bg-green-50 border-green-200"
+                              : ledgerStatus === "Pending"
+                              ? "text-amber-700 bg-amber-50 border-amber-200"
+                              : "text-red-700 bg-red-50 border-red-200"
+                          }`}
+                        >
+                          {ledgerStatus}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => toggleBankSettled(o.orderNumber)}
+                          title="Click to toggle Bank Deposit status"
+                          className={`inline-flex items-center gap-1 px-2 py-1 border text-[7.5px] font-bold tracking-widest uppercase cursor-pointer transition-all rounded-none ${
+                            isSettled
+                              ? "text-green-800 bg-green-100/80 border-green-300 hover:bg-green-200/80"
+                              : "text-amber-800 bg-amber-100/60 border-amber-300 hover:bg-amber-200/60"
+                          }`}
+                        >
+                          {isSettled ? (
+                            <>
+                              <Check className="w-3 h-3 text-green-700" /> Bank Deposited
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 text-amber-700" /> Pending Deposit
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
               {!loading && filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-neutral-400 uppercase tracking-widest text-[9.5px]">
+                  <td colSpan={7} className="p-8 text-center text-neutral-400 uppercase tracking-widest text-[9.5px]">
                     No transactions found
                   </td>
                 </tr>
