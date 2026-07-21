@@ -6,8 +6,8 @@ const RS = "\u20B9";
 
 const sections = [
   { name: "Hero Slides", icon: Image, status: "3 Active", lastEdited: "2 days ago", desc: "Main carousel slides", route: "hero-slides", color: "from-[#030213] to-neutral-800" },
-  { name: "Featured Products", icon: Star, status: "8 Products", lastEdited: "5 days ago", desc: "Homepage featured grid", route: "featured-products", color: "from-[#b2533e] to-[#8a3f2e]" },
-  { name: "Signature Pieces", icon: Shirt, status: "6 Products", lastEdited: "1 week ago", desc: "Signature collection showcase", route: "signature-pieces", color: "from-[#030213] to-neutral-700" },
+  { name: "Showcase Section 2", icon: Star, status: "8 Products", lastEdited: "5 days ago", desc: "Homepage showcase section 2", route: "featured-products", color: "from-[#b2533e] to-[#8a3f2e]" },
+  { name: "Showcase Section 1", icon: Shirt, status: "6 Products", lastEdited: "1 week ago", desc: "Homepage showcase section 1", route: "signature-pieces", color: "from-[#030213] to-neutral-700" },
   { name: "Home Categories", icon: Layers, status: "6 Categories", lastEdited: "1 week ago", desc: "Category grid on homepage", route: "home-categories", color: "from-[#556b2f] to-[#3d4f20]" },
   { name: "Curated Collections", icon: ShoppingBag, status: "4 Collections", lastEdited: "2 weeks ago", desc: "Curated collection blocks", route: "curated-collections", color: "from-[#36454f] to-[#1a2226]" },
   { name: "Newsletter Config", icon: Mail, status: "Active", lastEdited: "2 weeks ago", desc: "Email signup section", route: "newsletter-config", color: "from-[#c49a6c] to-[#a67c4e]" },

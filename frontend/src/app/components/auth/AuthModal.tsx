@@ -337,8 +337,14 @@ export function AuthModal() {
               disabled={isSubmitting || !identifier.trim()}
               className="w-full bg-[#1c1c1c] hover:bg-[#2c2c2c] disabled:bg-neutral-200 text-[#c5a880] disabled:text-neutral-400 rounded-md py-4 text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-200 flex items-center justify-center gap-2 border-none cursor-pointer"
             >
-              <span>CONTINUE</span>
-              <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-[#c5a880]" />
+              {isSubmitting ? (
+                <span className="inline-block w-3.5 h-3.5 border-2 border-[#c5a880]/30 border-t-[#c5a880] rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>CONTINUE</span>
+                  <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-[#c5a880]" />
+                </>
+              )}
             </button>
           </form>
         )}
@@ -431,8 +437,16 @@ export function AuthModal() {
               <input
                 type="date"
                 required
+                max={new Date().toISOString().split("T")[0]}
                 value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && new Date(val) > new Date()) {
+                    alert("Future date of birth is not allowed.");
+                    return;
+                  }
+                  setDateOfBirth(val);
+                }}
                 className="w-full bg-white border border-neutral-200 rounded-md px-4 py-3.5 text-xs text-[#222222] focus:outline-none focus:border-[#B89C72] transition-colors"
               />
             </div>

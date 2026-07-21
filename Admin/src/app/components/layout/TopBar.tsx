@@ -49,8 +49,8 @@ export function TopBar() {
     if (path.includes("/admin/content/coming-soon")) return "Coming Soon Banner Editor";
     if (path.includes("/admin/content/hero-slides")) return "Hero Slides Editor";
     if (path.includes("/admin/content/home-categories")) return "Home Categories Editor";
-    if (path.includes("/admin/content/signature-pieces")) return "Signature Pieces Editor";
-    if (path.includes("/admin/content/featured-products")) return "Featured Products Editor";
+    if (path.includes("/admin/content/signature-pieces")) return "Showcase Section 1 Editor";
+    if (path.includes("/admin/content/featured-products")) return "Showcase Section 2 Editor";
     if (path.includes("/admin/content/newsletter")) return "Newsletter Config Editor";
     if (path.includes("/admin/content/footer")) return "Footer Settings Editor";
     if (path.includes("/admin/content/site-pages")) return "Site Pages Editor";

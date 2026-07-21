@@ -417,10 +417,16 @@ function ProductDetailContent({ product }: { product: Product }) {
           <div className="lg:col-span-6 space-y-4">
             {/* Back Button */}
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                } else {
+                  navigate("/shop");
+                }
+              }}
               className="text-[9.5px] font-black uppercase text-[#615e56] hover:text-[#224870] tracking-widest flex items-center gap-1.5 bg-transparent border-none cursor-pointer mb-2 transition-colors focus:outline-none"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Catalog
+              <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
 
             <div className="flex flex-col-reverse md:flex-row gap-4">

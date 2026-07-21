@@ -42,6 +42,12 @@ export function Profile() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeTab]);
+
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
     window.location.hash = tab;
@@ -74,18 +80,26 @@ export function Profile() {
     }
   }, [user]);
 
+  const [isAddressLoading, setIsAddressLoading] = useState(true);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(true);
+
   useEffect(() => {
     const token = localStorage.getItem("dripdoggy_auth_token");
     if (token) {
       async function loadAddresses() {
+        setIsAddressLoading(true);
         try {
           const list = await addressApi.getAddresses();
           setAddresses(list);
         } catch (err) {
           console.error("Error loading addresses:", err);
+        } finally {
+          setIsAddressLoading(false);
         }
       }
       loadAddresses();
+    } else {
+      setIsAddressLoading(false);
     }
   }, [user]);
 
@@ -110,14 +124,20 @@ export function Profile() {
 
   useEffect(() => {
     const token = localStorage.getItem("dripdoggy_auth_token");
-    if (!token) return;
+    if (!token) {
+      setIsWishlistLoading(false);
+      return;
+    }
     async function loadWishlist() {
+      setIsWishlistLoading(true);
       try {
         await syncWishlist();
         const stored = localStorage.getItem("wishlist");
         if (stored) setWishlistItems(JSON.parse(stored));
       } catch (err) {
         console.error("Error loading wishlist:", err);
+      } finally {
+        setIsWishlistLoading(false);
       }
     }
     loadWishlist();
@@ -238,10 +258,10 @@ export function Profile() {
             )}
             {activeTab === "orders" && <OrdersTab />}
             {activeTab === "addresses" && (
-              <AddressesTab addresses={addresses} setAddresses={setAddresses} profile={profile} />
+              <AddressesTab addresses={addresses} setAddresses={setAddresses} profile={profile} isLoading={isAddressLoading} />
             )}
             {activeTab === "wishlist" && (
-              <WishlistTab wishlistItems={wishlistItems} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
+              <WishlistTab wishlistItems={wishlistItems} isLoading={isWishlistLoading} onRemove={removeWishlistItem} onAddToCart={addWishlistToCart}
                 onToggleArchive={toggleWishlistArchive}
               />
             )}

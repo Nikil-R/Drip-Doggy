@@ -844,9 +844,13 @@ export const ExchangesPage = () => {
                     setTrackingInput("");
                   }}
                   disabled={isSubmitting}
-                  className="flex-1 bg-[#224870] hover:bg-[#1a3857] text-white text-[10px] font-bold uppercase tracking-widest py-2.5 rounded-sm transition-colors flex items-center justify-center"
+                  className="flex-1 bg-[#224870] hover:bg-[#1a3857] text-white text-[10px] font-bold uppercase tracking-widest py-2.5 rounded-sm transition-colors flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50"
                 >
-                  {isSubmitting ? "Updating..." : "Yes, Update"}
+                  {isSubmitting ? (
+                    <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                  ) : (
+                    "Yes, Update"
+                  )}
                 </button>
               </div>
             </div>

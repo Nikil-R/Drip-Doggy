@@ -124,37 +124,6 @@ export function Footer() {
     };
   }, []);
 
-  // 2. Proactive check if the logged in user is already in the subscribers table
-  useEffect(() => {
-    const checkPersistentSubscription = async () => {
-      if (isAuthenticated && user?.email) {
-        // If already loaded from localStorage, skip
-        const saved = localStorage.getItem("dripdoggy_subscribed_email");
-        if (saved && saved.toLowerCase() === user.email.toLowerCase()) {
-          return;
-        }
-        
-        try {
-          // Attempt silent subscription to verify if they are already in the DB
-          await axios.post(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/newsletter/subscribe`, {
-            email: user.email.trim()
-          });
-          localStorage.setItem("dripdoggy_subscribed_email", user.email.trim());
-          setEmail(user.email.trim());
-          setSubscribeStatus("success");
-        } catch (err: any) {
-          const msg = err.response?.data?.message || "";
-          if (msg.includes("already subscribed") || err.response?.status === 400) {
-            localStorage.setItem("dripdoggy_subscribed_email", user.email.trim());
-            setEmail(user.email.trim());
-            setSubscribeStatus("success");
-          }
-        }
-      }
-    };
-    checkPersistentSubscription();
-  }, [isAuthenticated, user]);
-
   if (!config || !config.active) return null;
 
   const [subscribeError, setSubscribeError] = useState<string | null>(null);

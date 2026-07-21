@@ -1147,7 +1147,7 @@ export function Checkout() {
                   <button type="submit" disabled={isSubmittingOrder}
                     className="w-full md:w-2/3 bg-[#030213] hover:bg-neutral-800 text-white py-3.5 text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 uppercase cursor-pointer border-none disabled:opacity-50">
                     {isSubmittingOrder ? (
-                      <span>Placing Order...</span>
+                      <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4 stroke-[2]" /> Confirm & Place Order

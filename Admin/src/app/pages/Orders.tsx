@@ -49,7 +49,7 @@ interface Order {
   email: string;
   phone: string;
   date: string;
-  payment: "Paid" | "Unpaid" | "Refunded";
+  payment: "Paid" | "Unpaid" | "Refunded" | "Cancelled";
   status: "Placed" | "Processing" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled" | "Return Requested" | "Exchange Requested";
   delivery: string;
   // Full address fields
@@ -340,11 +340,11 @@ function maskAccountNumber(num?: string) {
 }
 
 function PaymentBadge({ val }: { val: string }) {
-  const label = val === "Paid" ? "COD - Paid" : val === "Refunded" ? "COD - Refunded" : "COD - Unpaid";
+  const label = val === "Paid" ? "COD - Paid" : val === "Refunded" ? "COD - Refunded" : val === "Cancelled" ? "Cancelled" : "COD - Unpaid";
   return (
     <span className="flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase">
-      <span className={`w-2 h-2 rounded-full ${val === "Paid" ? "bg-green-500" : val === "Refunded" ? "bg-neutral-400" : "bg-red-500"}`} />
-      <span className={val === "Paid" ? "text-green-700" : val === "Refunded" ? "text-neutral-500" : "text-red-500"}>{label}</span>
+      <span className={`w-2 h-2 rounded-full ${val === "Paid" ? "bg-green-500" : val === "Refunded" ? "bg-neutral-400" : val === "Cancelled" ? "bg-neutral-400" : "bg-red-500"}`} />
+      <span className={val === "Paid" ? "text-green-700" : val === "Refunded" ? "text-neutral-500" : val === "Cancelled" ? "text-neutral-500" : "text-red-500"}>{label}</span>
     </span>
   );
 }
@@ -389,9 +389,7 @@ export function OrdersPage() {
     async function loadBackendOrders() {
       try {
         const orderResponses = await adminOrderApi.getAllOrders(token!);
-        console.log("getAllOrders raw response:", orderResponses);
         if (!orderResponses || orderResponses.length === 0) {
-          console.log("No orders returned from API");
           setOrders([]);
           return;
         }
@@ -400,11 +398,6 @@ export function OrdersPage() {
         let indexNo = initialOrders.length + 1;
 
         for (const oRes of orderResponses) {
-          let mappedPayment: "Paid" | "Unpaid" | "Refunded" = "Unpaid";
-          const payUpper = oRes.paymentStatus?.toUpperCase() || "";
-          if (payUpper === "PAID" || payUpper === "COMPLETED") mappedPayment = "Paid";
-          else if (payUpper === "REFUNDED") mappedPayment = "Refunded";
-
           let mappedStatus: Order["status"] = "Placed";
           const sUpper = oRes.deliveryStatus?.toUpperCase() || "";
           let hasActiveReturnRequest = false;
@@ -420,6 +413,16 @@ export function OrdersPage() {
             // Under return request, keep parent status as Delivered but flag the active return request
             mappedStatus = "Delivered";
             hasActiveReturnRequest = true;
+          }
+
+          let mappedPayment: "Paid" | "Unpaid" | "Refunded" | "Cancelled" = "Unpaid";
+          const payUpper = oRes.paymentStatus?.toUpperCase() || "";
+          if (mappedStatus === "Cancelled" || payUpper === "CANCELLED" || payUpper === "FAILED") {
+            mappedPayment = "Cancelled";
+          } else if (payUpper === "PAID" || payUpper === "COMPLETED" || payUpper === "SUCCESS") {
+            mappedPayment = "Paid";
+          } else if (payUpper === "REFUNDED") {
+            mappedPayment = "Refunded";
           }
 
           const itemsList: OrderItem[] = oRes.items.map((item: any) => ({
@@ -471,7 +474,6 @@ export function OrdersPage() {
           } as any);
         }
 
-        console.log("Setting backendOrders mapped values:", backendOrders);
         // Sort dynamic backend orders newest first (descending)
         backendOrders.sort((a, b) => {
           const timeA = new Date(a.stageTimestamps?.placedAt || a.date || 0).getTime();
@@ -1130,6 +1132,7 @@ export function OrdersPage() {
     .dot-paid { background: #16a34a; }
     .dot-unpaid { background: #dc2626; }
     .dot-refunded { background: #71717a; }
+    .dot-cancelled { background: #71717a; }
 
     /* Table */
     .table-container {
@@ -1372,7 +1375,7 @@ export function OrdersPage() {
           <div class="info-title">Payment Info</div>
           <div class="info-value">
             <span class="meta-lbl">Method:</span> <span class="meta-val">Cash on Delivery (COD)</span><br />
-            <span class="meta-lbl">Status:</span> <span class="meta-val"><span class="payment-dot ${order.payment === "Paid" ? "dot-paid" : order.payment === "Refunded" ? "dot-refunded" : "dot-unpaid"}"></span>${order.payment.toUpperCase()}</span>
+            <span class="meta-lbl">Status:</span> <span class="meta-val"><span class="payment-dot ${order.payment === "Paid" ? "dot-paid" : order.payment === "Refunded" ? "dot-refunded" : order.payment === "Cancelled" ? "dot-cancelled" : "dot-unpaid"}"></span>${order.payment.toUpperCase()}</span>
           </div>
         </div>
         <div class="info-card">
@@ -1591,15 +1594,19 @@ export function OrdersPage() {
                     })();
                     const todayStr = new Date().toISOString().split("T")[0];
                     const isToday = cellStr === todayStr;
+                    const isFuture = cellStr > todayStr;
                     return (
                       <button
                         key={dayNum}
-                        onClick={() => handleDateClick(dayNum)}
-                        className={`p-1.5 font-bold rounded-none text-center cursor-pointer text-[9px] transition-colors ${
-                          isSelected ? "bg-[#224870] text-white border-none" :
-                          inRange ? "bg-[#224870]/15 text-[#382d24] border-none" :
-                          isToday ? "bg-amber-100 text-amber-900 border border-amber-500 font-extrabold" :
-                          "bg-transparent text-[#382d24] hover:bg-neutral-200/40 border-none"
+                        disabled={isFuture}
+                        onClick={() => !isFuture && handleDateClick(dayNum)}
+                        title={isFuture ? "Future dates cannot be selected" : ""}
+                        className={`p-1.5 font-bold rounded-none text-center text-[9px] transition-colors ${
+                          isFuture ? "opacity-25 cursor-not-allowed text-neutral-400 border-none" :
+                          isSelected ? "bg-[#224870] text-white border-none cursor-pointer" :
+                          inRange ? "bg-[#224870]/15 text-[#382d24] border-none cursor-pointer" :
+                          isToday ? "bg-amber-100 text-amber-900 border border-amber-500 font-extrabold cursor-pointer" :
+                          "bg-transparent text-[#382d24] hover:bg-neutral-200/40 border-none cursor-pointer"
                         }`}
                       >{dayNum}</button>
                     );

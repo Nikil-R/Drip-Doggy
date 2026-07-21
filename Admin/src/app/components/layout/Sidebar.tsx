@@ -78,11 +78,11 @@ const menuSections: SidebarSection[] = [
     accent: "#2d5a27",
     iconColor: "text-[#2d5a27]",
     items: [
-      { to: "/admin/content/hero-slides",       label: "Hero Slides",      icon: ImageIcon },
-      { to: "/admin/content/home-categories",   label: "Home Categories",  icon: LayoutList },
-      { to: "/admin/content/signature-pieces",  label: "Signature Pieces", icon: Award },
-      { to: "/admin/content/featured-products", label: "New In",           icon: Sparkles },
-      { to: "/admin/content/coming-soon",       label: "Coming Soon",      icon: Zap },
+      { to: "/admin/content/hero-slides",       label: "Hero Slides",        icon: ImageIcon },
+      { to: "/admin/content/home-categories",   label: "Home Categories",    icon: LayoutList },
+      { to: "/admin/content/signature-pieces",  label: "Showcase Section 1", icon: Award },
+      { to: "/admin/content/featured-products", label: "Showcase Section 2", icon: Sparkles },
+      { to: "/admin/content/coming-soon",       label: "Coming Soon",        icon: Zap },
     ],
   },
 ];

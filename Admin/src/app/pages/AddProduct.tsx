@@ -454,8 +454,18 @@ export function AddProductPage() {
       {/* Header Actions */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-[#382d24]/15 pb-5">
         <div>
-          <button type="button" onClick={() => navigate("/admin/products")} className="text-[10px] font-black uppercase text-[#615e56] hover:text-[#224870] tracking-widest flex items-center gap-1.5 bg-transparent border-none cursor-pointer mb-2.5 transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Catalog
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate("/admin/products");
+              }
+            }}
+            className="text-[10px] font-black uppercase text-[#615e56] hover:text-[#224870] tracking-widest flex items-center gap-1.5 bg-transparent border-none cursor-pointer mb-2.5 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back
           </button>
           <h1 className="text-2xl font-[950] text-[#382d24] uppercase tracking-widest">
             {isEdit ? "Edit Product Details" : "Add New Product"}

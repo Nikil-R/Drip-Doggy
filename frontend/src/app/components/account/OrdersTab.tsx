@@ -114,8 +114,9 @@ function getTimelineSteps(order: Order, datePlaced: string) {
     effectiveRaw === "RECEIVED_AT_WAREHOUSE" ||
     effectiveRaw === "REFUND_COMPLETED" ||
     order.status === "Return Requested" ||
+    order.status === "Return Delivered" ||
     !!order.returnRequest;
-  const isExchange = rawDeliveryStatus.startsWith("EXCHANGE_") || order.status === "Exchange Requested" || !!(order as any).exchangeRequest;
+  const isExchange = rawDeliveryStatus.startsWith("EXCHANGE_") || order.status === "Exchange Requested" || order.status === "Exchange Delivered" || !!(order as any).exchangeRequest;
 
   if (isReturn) {
     // All 5 admin stages mapped to boolean flags:
@@ -239,9 +240,15 @@ export function OrdersTab() {
     loadProducts();
   }, []);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
     async function loadStorefrontOrders() {
+      setIsLoading(true);
       try {
         const orderHistory = await orderApi.getCustomerOrders();
         const mappedOrders: Order[] = orderHistory.map(oh => {
@@ -267,9 +274,11 @@ export function OrdersTab() {
           else if (rawStatus === "PACKED") mappedStatus = "Packed";
           else if (rawStatus === "SHIPPED") mappedStatus = "Shipped";
           else if (rawStatus === "OUT_FOR_DELIVERY") mappedStatus = "Out for Delivery";
+          else if (rawStatus === "RETURN_DELIVERED") mappedStatus = "Return Delivered";
           // Treat all return-related statuses as "Return Requested"
           else if (isReturnFlow) mappedStatus = "Return Requested";
           // Treat all exchange-related statuses as "Exchange Requested"
+          else if (rawStatus === "EXCHANGE_DELIVERED") mappedStatus = "Exchange Delivered";
           else if (rawStatus.startsWith("EXCHANGE_")) mappedStatus = "Exchange Requested";
           else mappedStatus = oh.deliveryStatus?.charAt(0).toUpperCase() + (oh.deliveryStatus?.slice(1).toLowerCase() || "");
 
@@ -408,6 +417,8 @@ export function OrdersTab() {
         setOrders(mappedOrders);
       } catch (err) {
         console.error("Failed to load storefront order history:", err);
+      } finally {
+        setIsLoading(false);
       }
     }
     loadStorefrontOrders();
@@ -742,7 +753,29 @@ export function OrdersTab() {
         <h1 className="text-lg font-extrabold tracking-[0.1em] uppercase">Order History</h1>
       </div>
 
-      {orders.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-6">
+          {[1, 2].map((n) => (
+            <div key={n} className="bg-white border border-neutral-200/85 p-6 space-y-4 animate-pulse">
+              <div className="flex justify-between items-center pb-3 border-b border-neutral-100">
+                <div className="space-y-1.5 w-1/3">
+                  <div className="h-2.5 bg-neutral-200/70 rounded w-1/2" />
+                  <div className="h-4 bg-neutral-200/70 rounded w-2/3" />
+                </div>
+                <div className="h-6 bg-neutral-200/70 rounded w-24" />
+              </div>
+              <div className="flex gap-4 items-center">
+                <div className="w-16 h-20 bg-neutral-200/70 rounded-sm shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-neutral-200/70 rounded w-1/4" />
+                  <div className="h-4 bg-neutral-200/70 rounded w-1/2" />
+                  <div className="h-3 bg-neutral-200/70 rounded w-1/3" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : orders.length === 0 ? (
         <div className="bg-white border border-neutral-200/80 p-16 text-center">
           <Package className="h-12 w-12 mx-auto text-neutral-300 stroke-[1.2] mb-4" />
           <h2 className="text-sm font-extrabold tracking-[0.15em] uppercase mb-2">No Orders Yet</h2>
@@ -780,9 +813,9 @@ export function OrdersTab() {
                   
                   {/* Status Indicator */}
                   <div className="flex items-center self-start sm:self-center">
-                    {order.status === "Delivered" ? (
+                    {order.status === "Delivered" || order.status === "Exchange Delivered" || order.status === "Return Delivered" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-700 border border-green-200/60">
-                        <CheckCircle className="h-3 w-3" /> Delivered
+                        <CheckCircle className="h-3 w-3" /> {order.status}
                       </span>
                     ) : order.status === "Cancelled" ? (
                       <span className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-red-50 text-red-700 border border-red-200/60">
@@ -1226,9 +1259,13 @@ export function OrdersTab() {
                         handleSubmitRequest();
                       }
                     }}
-                    className="w-full bg-[#030213] text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase border-none hover:bg-neutral-800 transition-colors cursor-pointer"
+                    className="w-full bg-[#030213] text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase border-none hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center"
                   >
-                    {requestType === "return" ? "Next Step" : "Submit Request"}
+                    {isSubmitting ? (
+                      <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                    ) : (
+                      requestType === "return" ? "Next Step" : "Submit Request"
+                    )}
                   </button>
                 </div>
               ) : (
@@ -1366,9 +1403,13 @@ export function OrdersTab() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-1/2 bg-[#030213] hover:bg-neutral-800 disabled:bg-neutral-400 text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase transition-colors cursor-pointer border-none flex items-center justify-center gap-1.5"
+                      className="w-1/2 bg-[#030213] hover:bg-neutral-800 disabled:bg-neutral-400 text-white py-3 text-[9px] font-extrabold tracking-[0.2em] uppercase transition-colors cursor-pointer border-none flex items-center justify-center"
                     >
-                      {isSubmitting ? "Submitting..." : "Submit Request"}
+                      {isSubmitting ? (
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                      ) : (
+                        "Submit Request"
+                      )}
                     </button>
                   </div>
                 </div>

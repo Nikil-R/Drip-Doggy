@@ -780,9 +780,13 @@ export function ReturnsPage() {
                 <button
                   disabled={isSubmitting}
                   onClick={() => updateDeliveryStatus(pendingStageChange.id, pendingStageChange.stage)}
-                  className="flex-1 bg-[#224870] hover:bg-[#1a3858] text-white text-[10px] font-black uppercase tracking-wider py-2.5 rounded-sm cursor-pointer transition-all border-none disabled:opacity-50"
+                  className="flex-1 bg-[#224870] hover:bg-[#1a3858] text-white text-[10px] font-black uppercase tracking-wider py-2.5 rounded-sm cursor-pointer transition-all border-none disabled:opacity-50 flex items-center justify-center"
                 >
-                  Yes, Change
+                  {isSubmitting ? (
+                    <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                  ) : (
+                    "Yes, Change"
+                  )}
                 </button>
               </div>
             </div>
@@ -838,7 +842,11 @@ export function ReturnsPage() {
                 onClick={handleConfirmRefundPayout}
                 className="flex-1 bg-green-700 hover:bg-green-800 text-white text-[10px] font-bold uppercase tracking-wider py-2 rounded-sm cursor-pointer transition-all flex items-center justify-center gap-1 border-none disabled:opacity-50"
               >
-                {sendingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Yes, Send Receipt"}
+                {sendingEmail ? (
+                  <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                ) : (
+                  "Yes, Send Receipt"
+                )}
               </button>
             </div>
             {emailStatusMessage && (

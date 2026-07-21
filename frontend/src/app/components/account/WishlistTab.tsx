@@ -4,25 +4,40 @@ import type { WishlistItem } from "../../types/account";
 
 interface WishlistTabProps {
   wishlistItems: WishlistItem[];
+  isLoading?: boolean;
   onRemove: (id: number) => void;
   onAddToCart: (item: WishlistItem, e: React.MouseEvent) => void;
   onToggleArchive?: (item: WishlistItem) => void;
 }
 
-export function WishlistTab({ wishlistItems, onRemove, onAddToCart, onToggleArchive }: WishlistTabProps) {
+export function WishlistTab({ wishlistItems, isLoading, onRemove, onAddToCart, onToggleArchive }: WishlistTabProps) {
   return (
     <div className="bg-white border border-neutral-200/80 p-8">
       <div className="flex items-center gap-3 pb-4 border-b border-neutral-200 mb-8">
         <Heart className="h-5 w-5 text-neutral-400 stroke-[1.5]" />
         <h1 className="text-lg font-extrabold tracking-[0.1em] uppercase">Wishlist</h1>
-        {wishlistItems.length > 0 && (
+        {wishlistItems.length > 0 && !isLoading && (
           <span className="text-[8px] font-extrabold tracking-widest text-neutral-400 uppercase ml-auto">
             {wishlistItems.length} {wishlistItems.length === 1 ? "Item" : "Items"}
           </span>
         )}
       </div>
 
-      {wishlistItems.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="flex gap-4 border border-neutral-200 p-4 animate-pulse">
+              <div className="w-20 h-24 bg-neutral-200/70 shrink-0 rounded-sm" />
+              <div className="flex-1 space-y-2.5 py-1">
+                <div className="h-2.5 bg-neutral-200/70 rounded w-1/3" />
+                <div className="h-4 bg-neutral-200/70 rounded w-2/3" />
+                <div className="h-3 bg-neutral-200/70 rounded w-1/4" />
+                <div className="h-6 bg-neutral-200/70 rounded w-1/2 mt-2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : wishlistItems.length === 0 ? (
         <div className="py-16 text-center">
           <Heart className="h-12 w-12 mx-auto text-neutral-300 stroke-[1.2] mb-4" />
           <h2 className="text-sm font-extrabold tracking-[0.15em] uppercase mb-2">Your Wishlist is Empty</h2>

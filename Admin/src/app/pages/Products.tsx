@@ -190,7 +190,6 @@ export function ProductsPage() {
     try {
       setLoading(true);
       const list = await productApi.fetchAllProducts(token);
-      console.log("FETCHED PRODUCTS:", JSON.stringify(list, null, 2));
       setProducts(list.map(mapBackendProductToFrontend).filter(Boolean));
     } catch (e) {
       console.error("Error loading products", e);

@@ -30,6 +30,7 @@ export function SignaturePiecesEditorPage() {
   });
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; price: number }[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState("");
 
   const loadData = async () => {
@@ -86,11 +87,6 @@ export function SignaturePiecesEditorPage() {
   };
 
   const toggleProduct = (id: number) => {
-    const limit = config.maxProducts || 4;
-    if (!selectedIds.includes(id) && selectedIds.length >= limit) {
-      showToast(`Cannot select more than ${limit} products (Limit reached)`);
-      return;
-    }
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
@@ -107,46 +103,17 @@ export function SignaturePiecesEditorPage() {
     [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
     setSelectedIds(arr);
   };
-
   return (
-    <div className="space-y-8 font-sans text-[#382d24]">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-200/60 pb-5">
-        <div>
-          <h1 className="text-xl font-[950] text-[#382d24] uppercase tracking-widest flex items-center gap-2.5">
-            <Star className="w-5 h-5 text-[#224870]" /> Signature Pieces Editor
-          </h1>
-          <p className="text-[11px] text-[#382d24] font-[900] uppercase tracking-wider mt-1">
-            Configure the "Signature Pieces" showcase on the home page
-          </p>
-        </div>
-        <div className="flex gap-2.5">
-          <button
-            onClick={reset}
-            className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[9px] font-semibold tracking-widest px-3 py-2 uppercase cursor-pointer bg-white rounded-none flex items-center gap-1.5 transition-colors"
-          >
-            <RotateCcw className="w-3 h-3" /> Reset Defaults
-          </button>
-          <button
-            onClick={save}
-            className="bg-[#224870] hover:bg-[#1a3a5c] text-white text-[9px] font-bold tracking-widest px-5 py-2 uppercase flex items-center gap-1.5 cursor-pointer rounded-none border-none transition-colors"
-          >
-            <Check className="w-3.5 h-3.5" /> Save Changes
-          </button>
-        </div>
-      </div>
-
+    <div className="space-y-6 font-sans text-[#382d24]">
       {/* Editor Content Area */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         
-        {/* Left Side: Inputs and Selections */}
-        <div className="xl:col-span-2 space-y-6">
-          
+        {/* Column 1: Settings & Display Order */}
+        <div className="xl:col-span-5 space-y-6">
           {/* Metadata Block */}
-          <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
+          <div className="bg-white border border-neutral-200/80 p-5 space-y-4 shadow-sm">
             <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">Section Settings</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-4">
               <div>
                 <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Section Title</label>
                 <input 
@@ -165,77 +132,49 @@ export function SignaturePiecesEditorPage() {
                   className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
                 />
               </div>
-              <div>
-                <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase mb-1.5 block">Max Display Limit</label>
-                <input 
-                  type="number" 
-                  value={config.maxProducts || 4} 
-                  onChange={e => setConfigState({ ...config, maxProducts: Number(e.target.value) })}
-                  className="w-full border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#224870] rounded-none bg-white text-[#030213]" 
-                />
+              <div className="flex flex-wrap items-center justify-between border-t border-neutral-100 pt-4 mt-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase">Active Status</label>
+                  <ToggleSwitch enabled={config.active} onClick={() => setConfigState({ ...config, active: !config.active })} />
+                  <span className="text-[7px] text-neutral-400 font-semibold uppercase tracking-wider min-w-[45px]">
+                    {config.active ? "Visible" : "Hidden"}
+                  </span>
+                </div>
+                <div className="flex gap-2.5 shrink-0">
+                  <button
+                    onClick={reset}
+                    className="border border-neutral-200 hover:border-[#030213] text-neutral-500 text-[8px] font-semibold tracking-widest px-3 py-1.5 uppercase cursor-pointer bg-white rounded-none flex items-center gap-1 transition-colors"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" /> Reset
+                  </button>
+                  <button
+                    onClick={save}
+                    className="bg-[#224870] hover:bg-[#1a3a5c] text-white text-[8px] font-bold tracking-widest px-4 py-1.5 uppercase flex items-center gap-1 cursor-pointer rounded-none border-none transition-colors"
+                  >
+                    <Check className="w-3 h-3" /> Save Settings
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <label className="text-[8px] font-bold tracking-wider text-neutral-400 uppercase">Section Active</label>
-              <ToggleSwitch enabled={config.active} onClick={() => setConfigState({ ...config, active: !config.active })} />
-              <span className="text-[7px] text-neutral-400">
-                {config.active ? "Section is visible on the home page" : "Section is hidden on the home page"}
-              </span>
-            </div>
           </div>
 
-          {/* Product Grid Catalog Selector */}
-          <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
-            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">Select Products</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {productCatalog.map(p => {
-                const selected = selectedIds.includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => toggleProduct(p.id)}
-                    className={`text-left p-3.5 border cursor-pointer transition-all duration-150 rounded-none flex flex-col justify-between h-20 ${
-                      selected 
-                        ? "border-[#224870] bg-[#224870]/5" 
-                        : "border-neutral-200 bg-white hover:border-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between w-full">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider line-clamp-2 mr-2 ${selected ? "text-[#224870]" : "text-neutral-800"}`}>
-                        {p.name}
-                      </span>
-                      <div className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 rounded-none ${selected ? "bg-[#224870] border-[#224870]" : "border-neutral-350"}`}>
-                        {selected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                      </div>
-                    </div>
-                    <span className="text-[9px] font-extrabold text-neutral-400 mt-2">₹{p.price.toLocaleString("en-IN")}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Order list and display logic */}
-        <div className="space-y-6">
-          {/* Order and Prioritization List */}
-          <div className="bg-white border border-neutral-200/80 p-5 space-y-4">
+          {/* Order list */}
+          <div className="bg-white border border-neutral-200/80 p-5 space-y-4 shadow-sm">
             <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-100 pb-2">
-              Item Display Order ({selectedIds.length} items) · Max Display Limit: {config.maxProducts || 4}
+              Item Display Order ({selectedIds.length})
             </h3>
             {selectedIds.length === 0 ? (
               <p className="text-[8px] text-neutral-400 uppercase tracking-wider font-semibold py-4 text-center">No products selected.</p>
             ) : (
-              <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
                 {selectedIds.map((id, index) => {
                   const p = productCatalog.find(prod => prod.id === id);
                   if (!p) return null;
                   return (
-                    <div key={id} className="flex items-center justify-between border border-neutral-200/80 bg-neutral-50/50 px-2.5 py-1.5">
+                    <div key={id} className="flex items-center justify-between border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5">
                       <div className="min-w-0 flex-1 pr-2">
                         <span className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider mr-1.5">#{index + 1}</span>
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-800 truncate inline-block max-w-[150px] align-middle">{p.name}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-800 truncate inline-block max-w-[140px] align-middle">{p.name}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <button onClick={() => moveUp(index)} disabled={index === 0} className="p-1 text-neutral-400 hover:text-[#224870] disabled:opacity-20 cursor-pointer bg-transparent border-none">
@@ -254,34 +193,77 @@ export function SignaturePiecesEditorPage() {
               </div>
             )}
           </div>
+        </div>
 
-          {/* Simple Live Preview Box */}
-          <div className="bg-[#FAF8F5] border border-neutral-200 p-5 space-y-4">
-            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-200/60 pb-2">Home Preview</h3>
-            
-            <div className="bg-white border border-neutral-200/80 p-4">
-              <span className="text-[6px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-1">
-                {config.sectionSubtitle || "Brand Uniform"}
-              </span>
-              <h4 className="text-[12px] font-extrabold tracking-tight text-[#030213] uppercase mb-4">
-                {config.sectionTitle || "Signature Pieces"}
-              </h4>
-              
-              <div className="grid grid-cols-2 gap-2">
-                {selectedIds.slice(0, config.maxProducts || 4).map(id => {
-                  const p = productCatalog.find(prod => prod.id === id);
-                  if (!p) return null;
-                  return (
-                    <div key={id} className="border border-neutral-100 p-2 bg-neutral-50/20">
-                      <div className="aspect-[3/4] bg-neutral-100 mb-1 flex items-center justify-center">
-                        <span className="text-[6px] font-black text-neutral-400 uppercase tracking-widest">Product Image</span>
+        {/* Column 2: Search & Selector */}
+        <div className="xl:col-span-4 bg-white border border-neutral-200/80 p-5 space-y-4 shadow-sm h-[580px] flex flex-col">
+          <div className="border-b border-neutral-100 pb-3 flex items-center justify-between gap-4">
+            <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400">Select Products</h3>
+            <input 
+              type="text"
+              placeholder="Search catalog..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="border border-neutral-200 px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#224870] rounded-none bg-neutral-50 text-[#030213] w-40" 
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-1 flex-1 content-start">
+            {productCatalog
+              .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map(p => {
+                const selected = selectedIds.includes(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => toggleProduct(p.id)}
+                    className={`text-left p-3 border cursor-pointer transition-all duration-150 rounded-none flex flex-col justify-between h-20 ${
+                      selected 
+                        ? "border-[#224870] bg-[#224870]/5" 
+                        : "border-neutral-200 bg-white hover:border-neutral-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between w-full">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider line-clamp-2 mr-2 ${selected ? "text-[#224870]" : "text-neutral-800"}`}>
+                        {p.name}
+                      </span>
+                      <div className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 rounded-none ${selected ? "bg-[#224870] border-[#224870]" : "border-neutral-350"}`}>
+                        {selected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                       </div>
-                      <span className="text-[7px] font-bold uppercase tracking-wider text-neutral-800 line-clamp-1 block">{p.name}</span>
-                      <span className="text-[7px] font-black text-[#224870] mt-0.5 block">₹{p.price.toLocaleString("en-IN")}</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <span className="text-[9px] font-extrabold text-neutral-400">₹{p.price.toLocaleString("en-IN")}</span>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+
+        {/* Column 3: Live Home Preview */}
+        <div className="xl:col-span-3 bg-[#FAF8F5] border border-neutral-200 p-5 space-y-4 shadow-sm h-[580px] flex flex-col">
+          <h3 className="text-[9px] font-black tracking-widest uppercase text-neutral-400 border-b border-neutral-200/60 pb-2">Home Preview</h3>
+          
+          <div className="bg-white border border-neutral-200/80 p-4 flex-1 overflow-y-auto">
+            <span className="text-[6px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase block mb-1">
+              {config.sectionSubtitle || "Brand Uniform"}
+            </span>
+            <h4 className="text-[12px] font-extrabold tracking-tight text-[#030213] uppercase mb-4 border-b border-neutral-100 pb-2">
+              {config.sectionTitle || "Signature Pieces"}
+            </h4>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {selectedIds.map(id => {
+                const p = productCatalog.find(prod => prod.id === id);
+                if (!p) return null;
+                return (
+                  <div key={id} className="border border-neutral-100 p-2 bg-neutral-50/20">
+                    <div className="aspect-[3/4] bg-neutral-100 mb-1 flex items-center justify-center">
+                      <span className="text-[5px] font-bold text-neutral-400 uppercase tracking-widest">Product Image</span>
+                    </div>
+                    <span className="text-[7px] font-bold uppercase tracking-wider text-neutral-800 line-clamp-1 block">{p.name}</span>
+                    <span className="text-[7px] font-black text-[#224870] mt-0.5 block">₹{p.price.toLocaleString("en-IN")}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

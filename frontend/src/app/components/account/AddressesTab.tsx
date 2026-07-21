@@ -8,9 +8,10 @@ interface AddressesTabProps {
   addresses: AddressItem[];
   setAddresses: React.Dispatch<React.SetStateAction<AddressItem[]>>;
   profile: { firstName: string; lastName: string; phone: string };
+  isLoading?: boolean;
 }
 
-export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabProps) {
+export function AddressesTab({ addresses, setAddresses, profile, isLoading }: AddressesTabProps) {
   const [addressFormError, setAddressFormError] = useState<string | null>(null);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
@@ -134,7 +135,21 @@ export function AddressesTab({ addresses, setAddresses, profile }: AddressesTabP
         )}
       </div>
 
-      {isAddressFormOpen ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[1, 2].map((n) => (
+            <div key={n} className="border border-neutral-200 p-5 space-y-3 animate-pulse bg-white">
+              <div className="flex justify-between items-center">
+                <div className="h-4 bg-neutral-200/70 rounded w-1/4" />
+                <div className="h-4 bg-neutral-200/70 rounded w-1/6" />
+              </div>
+              <div className="h-4 bg-neutral-200/70 rounded w-2/3" />
+              <div className="h-3 bg-neutral-200/70 rounded w-full" />
+              <div className="h-3 bg-neutral-200/70 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : isAddressFormOpen ? (
         <form onSubmit={handleSaveAddress} className="bg-white border border-neutral-200 p-6 space-y-5 mb-8">
           <div className="flex items-center justify-between">
             <h4 className="text-[10px] font-black tracking-[0.2em] text-[#030213] uppercase">

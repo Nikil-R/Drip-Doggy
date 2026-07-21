@@ -674,6 +674,8 @@ export function CustomersPage() {
                       const fm = String(calMonth + 1).padStart(2, "0");
                       const fd = String(dayNum).padStart(2, "0");
                       const cellStr = `${calYear}-${fm}-${fd}`;
+                      const todayStr = new Date().toISOString().split("T")[0];
+                      const isFuture = cellStr > todayStr;
                       const isSelected = dateRange.start === cellStr || dateRange.end === cellStr;
                       const inRange = (() => {
                         if (!dateRange.start || !dateRange.end) return false;
@@ -683,11 +685,14 @@ export function CustomersPage() {
                       return (
                         <button
                           key={dayNum}
-                          onClick={() => handleDateClick(dayNum)}
-                          className={`p-1.5 font-bold rounded-none text-center cursor-pointer text-[9px] transition-colors border-none ${
-                            isSelected ? "bg-[#224870] text-white" :
-                            inRange    ? "bg-[#224870]/15 text-[#382d24]" :
-                                         "bg-transparent text-[#382d24] hover:bg-neutral-200/40"
+                          disabled={isFuture}
+                          onClick={() => !isFuture && handleDateClick(dayNum)}
+                          title={isFuture ? "Future dates cannot be selected" : ""}
+                          className={`p-1.5 font-bold rounded-none text-center text-[9px] transition-colors border-none ${
+                            isFuture   ? "opacity-25 cursor-not-allowed text-neutral-400" :
+                            isSelected ? "bg-[#224870] text-white cursor-pointer" :
+                            inRange    ? "bg-[#224870]/15 text-[#382d24] cursor-pointer" :
+                                         "bg-transparent text-[#382d24] hover:bg-neutral-200/40 cursor-pointer"
                           }`}
                         >{dayNum}</button>
                       );

@@ -363,7 +363,13 @@ export function RolesPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-[#615e56] uppercase tracking-wider block">Date of Birth</label>
-                  <input type="date" name="dob" required
+                  <input type="date" name="dob" required max={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      if (e.target.value && new Date(e.target.value) > new Date()) {
+                        alert("Future date of birth is not allowed.");
+                        e.target.value = "";
+                      }
+                    }}
                     className="w-full bg-[#faf8f5] border border-neutral-300 px-3.5 py-1.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24] cursor-pointer hover:bg-[#faf8f5]/60 transition-colors [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100" />
                 </div>
               </div>

@@ -221,8 +221,16 @@ export function Onboarding() {
               <input
                 type="date"
                 required
+                max={new Date().toISOString().split("T")[0]}
                 value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && new Date(val) > new Date()) {
+                    alert("Future date of birth is not allowed.");
+                    return;
+                  }
+                  setDateOfBirth(val);
+                }}
                 className="w-full bg-white border border-neutral-200 px-4 py-3 text-sm focus:outline-none focus:border-[#030213] transition-all duration-200 text-neutral-900 placeholder-neutral-400"
               />
             </div>
