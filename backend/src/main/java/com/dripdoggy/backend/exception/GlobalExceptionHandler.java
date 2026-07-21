@@ -232,6 +232,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MultipartException.class)
+    public ResponseEntity<ResponseMsgDto> handleMultipartException(org.springframework.web.multipart.MultipartException ex) {
+        String detailMsg = ex.getMessage() != null ? ex.getMessage() : "Invalid multipart format.";
+        String hint = "Please ensure file parts in your API client (Bruno/Postman) have Content-Type set to 'Auto' or left empty instead of 'multipart/mixed'.";
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), "Failed to parse multipart request: " + detailMsg + ". " + hint);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(CouponExpiredException.class)
     public ResponseEntity<ResponseMsgDto> handleCouponExpired(CouponExpiredException ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());

@@ -161,6 +161,7 @@ public class AdminOrderService implements IAdminOrderService {
                 throw new InvalidOrderStateException("Cannot cancel order after courier tracking ID has been generated.");
             }
             order.setCancelledTimestamp(LocalDateTime.now());
+            order.setPaymentStatus(PaymentStatus.FAILED);
         } else if (targetStatus == DeliveryStatus.RETURN_INITIATED) {
             if (currentStatus != DeliveryStatus.DELIVERED) {
                 throw new InvalidOrderStateException("Can only transition to RETURN_INITIATED from DELIVERED.");

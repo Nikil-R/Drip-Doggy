@@ -61,8 +61,14 @@ public class AuthService implements IAuthService {
                     .or(() -> userRepository.findByPhoneNo(alternative));
         }
 
-        if (userOpt.isPresent() && Boolean.TRUE.equals(userOpt.get().getIsBlocked())) {
-            throw new InvalidCredentialsException("Your account has been blocked by the administrator.");
+        if (userOpt.isPresent()) {
+            User existingUser = userOpt.get();
+            if (Boolean.TRUE.equals(existingUser.getIsBlocked())) {
+                throw new InvalidCredentialsException("Your account has been blocked by the administrator.");
+            }
+            if (existingUser.getRole() == UserRole.ADMIN) {
+                throw new InvalidCredentialsException("An account with this email already exists. Please sign in or use a different email.");
+            }
         }
 
         boolean exists = userOpt.isPresent();
@@ -94,8 +100,14 @@ public class AuthService implements IAuthService {
                         .or(() -> userRepository.findByPhoneNo(alternative));
             }
 
-            if (userOpt.isPresent() && Boolean.TRUE.equals(userOpt.get().getIsBlocked())) {
-                throw new InvalidCredentialsException("Your account has been blocked by the administrator.");
+            if (userOpt.isPresent()) {
+                User existingUser = userOpt.get();
+                if (Boolean.TRUE.equals(existingUser.getIsBlocked())) {
+                    throw new InvalidCredentialsException("Your account has been blocked by the administrator.");
+                }
+                if (existingUser.getRole() == UserRole.ADMIN) {
+                    throw new InvalidCredentialsException("An account with this email already exists. Please sign in or use a different email.");
+                }
             }
 
             User user;

@@ -471,28 +471,25 @@ public class ProductService implements IProductService {
                     }
                 }
 
-                // Handle Variant Images: Keep existing ones, upload new ones
+                // Handle Variant Images: Keep existing ones, update in-place for new uploads, delete unkept ones
                 List<Image> variantImages = new ArrayList<>();
+                List<Image> existingUnusedImages = new ArrayList<>();
+
                 if (!isNew && savedVariant.getImages() != null) {
-                    List<String> keepUrls;
-                    if (varDto.getExistingImageUrls() == null) {
-                        // If the frontend doesn't send any existingImageUrls, it means all existing images were removed!
-                        keepUrls = new ArrayList<>();
-                    } else {
-                        keepUrls = varDto.getExistingImageUrls();
-                    }
+                    List<String> keepUrls = (varDto.getExistingImageUrls() != null) 
+                            ? varDto.getExistingImageUrls() 
+                            : new ArrayList<>();
+
                     for (Image existingImg : savedVariant.getImages()) {
                         if (keepUrls.contains(existingImg.getImageUrl())) {
                             variantImages.add(existingImg);
                         } else {
-                            // Detach/delete old images
-                            existingImg.setProductVariant(null);
-                            imageRepository.save(existingImg);
+                            existingUnusedImages.add(existingImg);
                         }
                     }
                 }
 
-                // Upload new variant images to S3
+                // Upload new variant images to S3 & reuse/update existing rows or create new ones
                 String primaryImgUrl = varDto.getPrimaryImageUrl();
                 String resolvedPrimaryUrl = null;
 
@@ -501,13 +498,24 @@ public class ProductService implements IProductService {
                         if (!imageFile.isEmpty()) {
                             try {
                                 String imageUrl = s3Service.uploadFile(imageFile);
-                                Image image = new Image();
-                                image.setImageUrl(imageUrl);
-                                image.setIsActive(true);
-                                image.setProductVariant(savedVariant);
-                                image.setProduct(product);
-                                imageRepository.save(image);
-                                variantImages.add(image);
+                                Image imageToSave;
+                                if (!existingUnusedImages.isEmpty()) {
+                                    // Reuse and update the existing DB row in place!
+                                    imageToSave = existingUnusedImages.remove(0);
+                                    imageToSave.setImageUrl(imageUrl);
+                                    imageToSave.setIsActive(true);
+                                    imageToSave.setProductVariant(savedVariant);
+                                    imageToSave.setProduct(product);
+                                } else {
+                                    // Create a new DB row if no existing unused image row is available
+                                    imageToSave = new Image();
+                                    imageToSave.setImageUrl(imageUrl);
+                                    imageToSave.setIsActive(true);
+                                    imageToSave.setProductVariant(savedVariant);
+                                    imageToSave.setProduct(product);
+                                }
+                                imageRepository.save(imageToSave);
+                                variantImages.add(imageToSave);
 
                                 if (primaryImgUrl != null && imageFile.getOriginalFilename() != null 
                                         && imageFile.getOriginalFilename().equalsIgnoreCase(primaryImgUrl.trim())) {
@@ -519,7 +527,16 @@ public class ProductService implements IProductService {
                         }
                     }
                 }
+
+                // Hard delete any remaining unused image rows from the database table to prevent orphans!
+                if (!existingUnusedImages.isEmpty()) {
+                    for (Image unusedImg : existingUnusedImages) {
+                        imageRepository.delete(unusedImg);
+                    }
+                }
+
                 savedVariant.setImages(variantImages);
+
 
                 // Set/Update Primary Image Url
                 if (resolvedPrimaryUrl != null) {

@@ -16,6 +16,7 @@ public class ProductVariantRequestDto {
     private List<String> existingImageUrls; // List of S3 URLs to keep (for updates)
     private List<ProductVariantSizeRequestDto> sizes;
     private String primaryImageUrl;
+    private List<ImageMetadataRequestDto> imagesMetadata;
 
     // Constructors
     public ProductVariantRequestDto() {
@@ -34,6 +35,14 @@ public class ProductVariantRequestDto {
     }
 
     // Getters and Setters
+    public List<ImageMetadataRequestDto> getImagesMetadata() {
+        return imagesMetadata;
+    }
+
+    public void setImagesMetadata(List<ImageMetadataRequestDto> imagesMetadata) {
+        this.imagesMetadata = imagesMetadata;
+    }
+
     public String getVariantName() {
         return variantName;
     }

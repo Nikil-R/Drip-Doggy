@@ -23,7 +23,9 @@ public enum DeliveryStatus {
 	EXCHANGE_PICKUPED,
 	EXCHANGE_SHIPPED,
 	EXCHANGE_PACKED,
-	EXCHANGE_DELIVERED;
+	EXCHANGE_DELIVERED,
+	
+	PENDING;
 
 	@JsonCreator
 	public static DeliveryStatus fromString(String value) {
