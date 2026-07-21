@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.dripdoggy.backend.Iservice.IPaymentService;
+
 @Service
 @Transactional
 public class AdminOrderService implements IAdminOrderService {
@@ -25,13 +27,15 @@ public class AdminOrderService implements IAdminOrderService {
     private final OrdersRepository ordersRepository;
     private final EmailService emailService;
     private final OrderReturnRepository orderReturnRepository;
+    private final IPaymentService paymentService;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
-    public AdminOrderService(OrdersRepository ordersRepository, EmailService emailService, OrderReturnRepository orderReturnRepository) {
+    public AdminOrderService(OrdersRepository ordersRepository, EmailService emailService, OrderReturnRepository orderReturnRepository, IPaymentService paymentService) {
         this.ordersRepository = ordersRepository;
         this.emailService = emailService;
         this.orderReturnRepository = orderReturnRepository;
+        this.paymentService = paymentService;
     }
 
     @Override
@@ -203,6 +207,13 @@ public class AdminOrderService implements IAdminOrderService {
 
         order.setDeliveryStatus(targetStatus);
         ordersRepository.save(order);
+
+        // Sync Payment Record Status automatically
+        try {
+            paymentService.syncPaymentOnOrderStatusChange(order, targetStatus);
+        } catch (Exception e) {
+            System.err.println("Could not sync payment status: " + e.getMessage());
+        }
 
         // Send email to customer for return/exchange logistics updates
         if (targetStatus == DeliveryStatus.RETURN_PICKUPED ||

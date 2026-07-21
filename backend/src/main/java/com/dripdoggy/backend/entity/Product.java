@@ -17,7 +17,8 @@ public class Product {
     @Column(name = "base_title")
     private String baseTitle;
 
-    @Column(name = "product_description")
+    @Lob
+    @Column(name = "product_description", columnDefinition = "LONGTEXT")
     private String productDescription;
 
     @Column(name = "is_active")

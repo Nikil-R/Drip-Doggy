@@ -391,6 +391,30 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(PaymentAlreadySettledException.class)
+    public ResponseEntity<ResponseMsgDto> handlePaymentAlreadySettled(PaymentAlreadySettledException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidPaymentOperationException.class)
+    public ResponseEntity<ResponseMsgDto> handleInvalidPaymentOperation(InvalidPaymentOperationException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UnauthorizedAdminAccessException.class)
+    public ResponseEntity<ResponseMsgDto> handleUnauthorizedAdminAccess(UnauthorizedAdminAccessException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.FORBIDDEN.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(InvalidBankSettlementException.class)
+    public ResponseEntity<ResponseMsgDto> handleInvalidBankSettlement(InvalidBankSettlementException ex) {
+        ResponseMsgDto response = new ResponseMsgDto(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseMsgDto> handleGlobalException(Exception ex) {
         ResponseMsgDto response = new ResponseMsgDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());

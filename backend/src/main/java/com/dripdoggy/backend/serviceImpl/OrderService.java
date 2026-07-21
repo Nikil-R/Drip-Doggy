@@ -26,11 +26,11 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.dripdoggy.backend.Iservice.IPaymentService;
+
 @Service
 @Transactional
 public class OrderService implements IOrderService {
-
-
 
     private final OrdersRepository ordersRepository;
     private final OrderItemRepository orderItemRepository;
@@ -44,6 +44,7 @@ public class OrderService implements IOrderService {
     private final OrderReturnRepository orderReturnRepository;
     private final ProductVariantSizeRepository productVariantSizeRepository;
     private final IShippingFeeService shippingFeeService;
+    private final IPaymentService paymentService;
 
     @Autowired
     public OrderService(OrdersRepository ordersRepository, 
@@ -57,7 +58,8 @@ public class OrderService implements IOrderService {
                         EmailService emailService,
                         OrderReturnRepository orderReturnRepository,
                         ProductVariantSizeRepository productVariantSizeRepository,
-                        IShippingFeeService shippingFeeService) {
+                        IShippingFeeService shippingFeeService,
+                        IPaymentService paymentService) {
         this.ordersRepository = ordersRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
@@ -70,6 +72,7 @@ public class OrderService implements IOrderService {
         this.orderReturnRepository = orderReturnRepository;
         this.productVariantSizeRepository = productVariantSizeRepository;
         this.shippingFeeService = shippingFeeService;
+        this.paymentService = paymentService;
     }
 
     private User getCurrentCustomer() {
@@ -327,6 +330,13 @@ public class OrderService implements IOrderService {
         order.setShippingFee(shippingFee);
 
         Orders savedOrder = ordersRepository.save(order);
+
+        // Auto-create Payment Ledger Record for COD / Order
+        try {
+            paymentService.createPaymentRecordForOrder(savedOrder);
+        } catch (Exception e) {
+            System.err.println("Could not create payment record: " + e.getMessage());
+        }
 
         // 9. Convert Cart Items to OrderItems, and Soft Delete Cart Items
         for (Cart cart : cartItems) {
