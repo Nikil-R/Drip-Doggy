@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: identifier.includes("@") ? identifier : (res.user?.email || ""),
               phone: identifier.includes("@") ? (res.user?.phone || "") : identifier,
               gender: res.user?.gender || "",
-              dateOfBirth: res.user?.dateOfBirth || "",
+              dateOfBirth: res.user?.dob || res.user?.dateOfBirth || "",
             };
             saveSessionUser(authUser);
             setUser(authUser);

@@ -26,8 +26,7 @@ interface Address {
 
 const STEPS = [
   { num: "01", label: "Information", desc: "Contact & delivery destination" },
-  { num: "02", label: "Delivery", desc: "Choose shipping method" },
-  { num: "03", label: "Review & Confirm", desc: "Verify & place order" },
+  { num: "02", label: "Review & Confirm", desc: "Verify & place order" },
 ] as const;
 
 function StepIndicator({ current }: { current: number }) {
@@ -86,11 +85,11 @@ function SummaryCard({ children, className = "" }: { children: React.ReactNode; 
 
 function SectionHeading({ icon: Icon, label, right }: { icon: any; label: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-5">
-      <div className="w-6 h-6 bg-[#030213] flex items-center justify-center">
-        <Icon className="h-3 w-3 text-white stroke-[2]" />
+    <div className="flex items-center gap-2.5 mb-5 pb-2.5 border-b border-neutral-100/60">
+      <div className="w-6.5 h-6.5 bg-[#030213] flex items-center justify-center rounded-xs shrink-0">
+        <Icon className="h-3.5 w-3.5 text-white stroke-[2]" />
       </div>
-      <span className="text-[9px] font-black tracking-[0.25em] text-[#030213] uppercase flex-1">{label}</span>
+      <span className="text-[11.5px] font-black tracking-[0.18em] text-[#030213] uppercase flex-1">{label}</span>
       {right}
     </div>
   );
@@ -205,7 +204,7 @@ export function Checkout() {
     }
   }, [cartItems.length, isOrdered, navigate]);
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
 
   const registeredEmail = user?.email || "";
@@ -525,8 +524,7 @@ export function Checkout() {
     return valid;
   };
 
-  const handleContinueToDelivery = () => { if (validateStep1()) setStep(2); };
-  const handleContinueToReview = () => setStep(3);
+  const handleContinueToReview = () => { if (validateStep1()) setStep(2); };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1000,63 +998,15 @@ export function Checkout() {
                 </SummaryCard>
 
                 {/* Continue button */}
-                <button onClick={handleContinueToDelivery}
+                <button onClick={handleContinueToReview}
                   className="w-full bg-[#030213] hover:bg-neutral-800 text-white py-4 text-[10px] font-bold tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 uppercase cursor-pointer border-none">
-                  Continue to Delivery <ChevronRight className="h-3.5 w-3.5 stroke-[2]" />
+                  Continue to Review & Confirm <ChevronRight className="h-3.5 w-3.5 stroke-[2]" />
                 </button>
               </div>
             )}
 
-            {/* ——— STEP 2 — DELIVERY ——— */}
+            {/* ——— STEP 2 — REVIEW & CONFIRM ——— */}
             {step === 2 && activeAddress && (
-              <div className="space-y-8">
-                {/* Recap */}
-                <SummaryCard>
-                  <RecapRow label="Contact" value={`${email} | ${phone}`} onEdit={() => setStep(1)} />
-                  <div className="mt-1" />
-                  <RecapRow label="Destination"
-                    value={`${activeAddress.firstName} ${activeAddress.lastName}, ${activeAddress.buildingNo ? `${activeAddress.buildingNo}, ` : ""}${activeAddress.buildingName ? `${activeAddress.buildingName}, ` : ""}${activeAddress.street}${activeAddress.area ? `, ${activeAddress.area}` : ""}, ${activeAddress.city}, ${activeAddress.state} — ${activeAddress.postalCode}`}
-                    onEdit={() => setStep(1)} />
-                </SummaryCard>
-
-                {/* Delivery method */}
-                <SummaryCard>
-                  <SectionHeading icon={Truck} label="Delivery Method" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <MethodCard title="Standard Delivery" subtitle="3 — 5 Working Days"
-                      price={deliveryFee === 0 ? "FREE" : `₹${deliveryFee.toFixed(0)}`} badge="Recommended"
-                      isSelected={shippingMethod === "standard"} onSelect={() => setShippingMethod("standard")}>
-                      <div className="flex items-center gap-3 text-[7.5px] text-neutral-400 font-medium">
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3 stroke-[1.5]" /> Tracked Dispatch</span>
-                        <span className="flex items-center gap-1"><Check className="h-3 w-3 stroke-[1.5]" /> COD Eligible</span>
-                      </div>
-                    </MethodCard>
-                    <MethodCard title="Express Shipping" subtitle="Next Working Day" price="₹150" badge="Fastest"
-                      isSelected={shippingMethod === "express"} onSelect={() => setShippingMethod("express")}>
-                      <div className="flex items-center gap-3 text-[7.5px] text-neutral-400 font-medium">
-                        <span className="flex items-center gap-1"><Zap className="h-3 w-3 stroke-[1.5]" /> Priority Dispatch</span>
-                        <span className="flex items-center gap-1"><Check className="h-3 w-3 stroke-[1.5]" /> COD Eligible</span>
-                      </div>
-                    </MethodCard>
-                  </div>
-                </SummaryCard>
-
-                {/* Navigation */}
-                <div className="flex flex-col md:flex-row gap-3">
-                  <button onClick={() => setStep(1)}
-                    className="w-full md:w-1/3 border border-neutral-200 hover:bg-neutral-50 bg-white text-neutral-500 py-3.5 text-[9px] font-extrabold tracking-wider uppercase flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
-                    <ArrowLeft className="h-3 w-3 stroke-[2]" /> Back to Info
-                  </button>
-                  <button onClick={handleContinueToReview}
-                    className="w-full md:w-2/3 bg-[#030213] hover:bg-neutral-800 text-white py-3.5 text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 uppercase cursor-pointer border-none">
-                    Continue to Review <ChevronRight className="h-3.5 w-3.5 stroke-[2]" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ——— STEP 3 — REVIEW & CONFIRM ——— */}
-            {step === 3 && activeAddress && (
               <div className="space-y-8">
                 {/* Order Summary Review */}
                 <SummaryCard>
@@ -1067,8 +1017,7 @@ export function Checkout() {
                       value={`${activeAddress.firstName} ${activeAddress.lastName}, ${activeAddress.buildingNo ? `${activeAddress.buildingNo}, ` : ""}${activeAddress.buildingName ? `${activeAddress.buildingName}, ` : ""}${activeAddress.street}${activeAddress.area ? `, ${activeAddress.area}` : ""}, ${activeAddress.city}, ${activeAddress.state} — ${activeAddress.postalCode}`}
                       onEdit={() => setStep(1)} />
                     <RecapRow label="Method"
-                      value={shippingMethod === "express" ? "Express Shipping — ₹150" : `Standard Delivery — ${deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}`}
-                      onEdit={() => setStep(2)} />
+                      value={`Standard Delivery — ${deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}`} />
                   </div>
                 </SummaryCard>
 
@@ -1140,9 +1089,9 @@ export function Checkout() {
                 )}
 
                 <form onSubmit={handleSubmitOrder} className="flex flex-col md:flex-row gap-3">
-                  <button type="button" onClick={() => setStep(2)} disabled={isSubmittingOrder}
+                  <button type="button" onClick={() => setStep(1)} disabled={isSubmittingOrder}
                     className="w-full md:w-1/3 border border-neutral-200 hover:bg-neutral-50 bg-white text-neutral-500 py-3.5 text-[9px] font-extrabold tracking-wider uppercase flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40">
-                    <ArrowLeft className="h-3 w-3 stroke-[2]" /> Back to Delivery
+                    <ArrowLeft className="h-3 w-3 stroke-[2]" /> Back to Info
                   </button>
                   <button type="submit" disabled={isSubmittingOrder}
                     className="w-full md:w-2/3 bg-[#030213] hover:bg-neutral-800 text-white py-3.5 text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 uppercase cursor-pointer border-none disabled:opacity-50">
@@ -1164,7 +1113,7 @@ export function Checkout() {
           <div className="lg:col-span-4 space-y-5 sticky top-24">
             {/* Cart Items */}
             <SummaryCard>
-              <h2 className="text-[9px] font-extrabold tracking-[0.2em] pb-3 border-b border-neutral-200/60 uppercase flex items-center justify-between">
+              <h2 className="text-[11.5px] font-black tracking-[0.18em] pb-3 border-b border-neutral-200/60 uppercase flex items-center justify-between">
                 Your Cart Items
                 <span className="text-[7px] font-bold text-neutral-400 tracking-wider">{totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}</span>
               </h2>

@@ -6,6 +6,7 @@ import { products } from "../data/products";
 import { cartApi } from "../lib/cart-api";
 import { syncCart } from "../lib/cart-sync";
 import { couponApi } from "../lib/coupon-api";
+import { productApi } from "../lib/product-api";
 
 interface CartItem {
   id: number;
@@ -67,6 +68,20 @@ export function Cart() {
   const [promoError, setPromoError] = useState<string | null>(null);
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [productList, setProductList] = useState<any[]>([]);
+
+  // Fetch live products for recommendations
+  useEffect(() => {
+    async function loadLiveProducts() {
+      try {
+        const fetched = await productApi.fetchProducts();
+        setProductList(fetched);
+      } catch (err) {
+        console.error("Failed to load products from API in cart", err);
+      }
+    }
+    loadLiveProducts();
+  }, []);
 
   // Fetch available coupons on mount (public + customer-specific if logged in)
   useEffect(() => {
@@ -255,8 +270,10 @@ export function Cart() {
     return groups;
   };
 
+  const activeCatalog = productList.length > 0 ? productList : products;
+
   const getAvailableSizesForItem = (item: any) => {
-    const prod = products.find(p => p.id === item.id);
+    const prod = activeCatalog.find(p => p.id === item.id);
     if (!prod || !prod.rawVariants) return ["XS", "S", "M", "L", "XL", "XXL"];
     const variant = prod.rawVariants.find((v: any) => (v.variantName || "Default").toLowerCase() === item.color.toLowerCase());
     if (!variant || !variant.sizes) return ["XS", "S", "M", "L", "XL", "XXL"];
@@ -268,7 +285,7 @@ export function Cart() {
     if (!itemToChange || !itemToChange.backendId) return;
 
     try {
-      const catalog = products.find(p => p.id === itemToChange.id);
+      const catalog = activeCatalog.find(p => p.id === itemToChange.id);
       const variant = catalog?.rawVariants?.find(
         (v: any) => (v.variantName || "Default").toLowerCase() === itemToChange.color.toLowerCase()
       );
@@ -363,7 +380,7 @@ export function Cart() {
 
   const getOriginalPrice = (item: CartItem) => {
     if (item.originalPrice) return item.originalPrice;
-    const catalog = products.find(p => p.id === item.id);
+    const catalog = activeCatalog.find(p => p.id === item.id);
     if (catalog?.originalPrice) return catalog.originalPrice;
     return Math.round(item.price * 2.05);
   };
@@ -373,17 +390,16 @@ export function Cart() {
 
   // Recommended products from shared catalog (exclude items already in cart)
   const cartItemIds = new Set(cartItems.map(i => i.id));
-  const recommendedProducts = products
+  const recommendedProducts = activeCatalog
     .filter(p => !cartItemIds.has(p.id))
-    .sort(() => Math.random() - 0.5)
     .slice(0, 4)
     .map(p => ({
       id: p.id,
-      brand: p.brand,
+      brand: p.brand || "DripDoggy",
       name: p.name,
       price: p.price,
       originalPrice: p.originalPrice,
-      images: p.images,
+      images: p.images || [p.image],
       badge: p.badge,
     }));
 
@@ -629,33 +645,6 @@ export function Cart() {
             <div>
               <h2 className="text-xs font-extrabold tracking-[0.2em] mb-4 pb-2 border-b border-neutral-200/60 uppercase">ORDER SUMMARY</h2>
 
-              {/* Free Shipping Progress Bar */}
-              <div className="mb-6 p-4 bg-white border border-neutral-200/60">
-                {subtotal >= 1999 ? (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[9px] font-extrabold tracking-wider text-green-600 uppercase">You qualify for FREE shipping!</span>
-                      <span className="text-[10px] font-black text-green-600">100%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-neutral-100 overflow-hidden">
-                      <div className="h-full bg-green-600 w-full transition-all duration-500"></div>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[9px] font-extrabold tracking-wider text-neutral-500 uppercase">
-                        Add <span className="text-neutral-900 font-black">₹{(1999 - subtotal).toFixed(0)}</span> more for FREE shipping
-                      </span>
-                      <span className="text-[10px] font-black text-neutral-850">{Math.round((subtotal / 1999) * 100)}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-neutral-100 overflow-hidden">
-                      <div className="h-full bg-black transition-all duration-500" style={{ width: `${(subtotal / 1999) * 100}%` }}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
                <div className="space-y-3.5 text-[10px] font-bold tracking-wider text-neutral-600 uppercase mb-6">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
@@ -667,16 +656,13 @@ export function Cart() {
                     <span>-₹{Math.floor(promoDiscount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>Delivery Fee</span>
-                  <span className={`font-extrabold ${deliveryFeeValue === 0 ? "text-green-600 tracking-widest font-black text-[9.5px]" : "text-neutral-950"}`}>
-                    {deliveryFeeValue === 0 ? "FREE" : `₹${Math.floor(deliveryFeeValue)}`}
-                  </span>
-                </div>
                 <div className="border-t border-neutral-200 pt-3.5 flex justify-between text-xs font-extrabold text-neutral-950">
-                  <span>Total To Pay</span>
-                  <span className="text-sm font-extrabold">₹{Math.floor(totalToPay)}.00</span>
+                  <span>Total</span>
+                  <span className="text-sm font-extrabold">₹{Math.floor(Math.max(0, subtotal - promoDiscount))}.00</span>
                 </div>
+                <p className="text-[8.5px] text-neutral-450 font-bold tracking-wide normal-case mt-1.5">
+                  * Shipping & taxes calculated at checkout.
+                </p>
               </div>
 
               {/* Promo Code */}
@@ -702,25 +688,41 @@ export function Cart() {
                   </div>
                 )}
                 {promoError && <p className="text-[#ba1a1a] text-[9px] mt-1.5 font-bold uppercase tracking-wider">{promoError}</p>}
-                {!appliedPromo && !promoError && availableCoupons.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <p className="text-[7px] text-neutral-400 font-medium tracking-wide uppercase">Available Coupons:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableCoupons.map((cpn: any) => (
-                        <button
-                          key={cpn.id || cpn.code}
-                          onClick={() => {
-                            setPromoCode(cpn.code);
-                          }}
-                          className="text-[7px] font-extrabold tracking-wider text-[#b2533e] bg-red-50 border border-red-100 px-1.5 py-0.5 uppercase hover:bg-red-100 transition-colors cursor-pointer"
-                        >
-                          {cpn.code}
-                        </button>
-                      ))}
-                    </div>
+                {!appliedPromo && availableCoupons.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <span className="block text-[8px] font-black tracking-[0.25em] text-neutral-400 uppercase">Available Offers & Coupons</span>
+                    {availableCoupons.map((cpn: any) => (
+                      <button
+                        key={cpn.id || cpn.code}
+                        onClick={() => {
+                          setPromoCode(cpn.code);
+                        }}
+                        className="w-full text-left bg-gradient-to-r from-[#224870] to-[#1a3650] p-3.5 border-none cursor-pointer hover:brightness-110 transition-all duration-200 group rounded-xs shadow-xs"
+                      >
+                        <div className="flex items-center justify-between gap-2.5">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="bg-white text-[#224870] font-black text-[9px] px-2 py-0.5 uppercase tracking-widest">{cpn.code}</span>
+                              <span className="text-white/70 text-[7.5px] font-bold uppercase tracking-widest">
+                                {cpn.discountType === "percentage" ? `${cpn.discountValue}% OFF` : cpn.discountType === "freeship" ? "FREE SHIPPING" : `FLAT ₹${cpn.discountValue}`}
+                              </span>
+                            </div>
+                            <p className="text-white/80 text-[8px] font-medium tracking-wide leading-tight">
+                              {cpn.description || (cpn.discountType === "percentage"
+                                ? `Save ${cpn.discountValue}% on your order`
+                                : cpn.discountType === "freeship"
+                                ? `Free shipping on orders above ₹${(cpn.minOrder || 0).toLocaleString("en-IN")}`
+                                : `Flat ₹${cpn.discountValue} off on orders above ₹${(cpn.minOrder || 0).toLocaleString("en-IN")}`
+                              )}
+                            </p>
+                          </div>
+                          <span className="flex-shrink-0 text-[8px] font-extrabold tracking-widest text-white/70 uppercase underline underline-offset-2 group-hover:text-white transition-colors">APPLY</span>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 )}
-                {!appliedPromo && !promoError && availableCoupons.length === 0 && (
+                {!appliedPromo && availableCoupons.length === 0 && (
                   <p className="text-[7px] text-neutral-400 font-medium mt-1.5 tracking-wide">Enter a promo code if you have one.</p>
                 )}
               </div>

@@ -133,6 +133,7 @@ function ProductDetailContent({ product }: { product: Product }) {
   // Active Bundle logic
   const [activeBundle, setActiveBundle] = useState<any | null>(null);
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<number, number>>({});
+  const [isImageHovered, setIsImageHovered] = useState(false);
 
   const activeVariantId = product.rawVariants?.find(
     (v: any) => (v.variantName || "Default").toLowerCase() === selectedColor.toLowerCase()
@@ -166,6 +167,14 @@ function ProductDetailContent({ product }: { product: Product }) {
   }, [activeVariantId, selectedColor]);
 
   const productImages = getVariantImages(product, selectedColor);
+
+  useEffect(() => {
+    if (isImageHovered || productImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % productImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isImageHovered, productImages.length]);
   const colorOptions = getColorOptions(product);
   const displaySizes = (product.sizes && product.sizes.length > 0) ? product.sizes : DEFAULT_SIZES;
   const discountPercent = product.originalPrice
@@ -449,15 +458,8 @@ function ProductDetailContent({ product }: { product: Product }) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ─── LEFT COLUMN — Images ──────────────────────────────────── */}
           <div className="lg:col-span-6 space-y-4">
-            {/* Back Button */}
             <button
-              onClick={() => {
-                if (window.history.length > 1) {
-                  navigate(-1);
-                } else {
-                  navigate("/shop");
-                }
-              }}
+              onClick={() => navigate(-1)}
               className="text-[9.5px] font-black uppercase text-[#615e56] hover:text-[#224870] tracking-widest flex items-center gap-1.5 bg-transparent border-none cursor-pointer mb-2 transition-colors focus:outline-none"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
@@ -487,11 +489,55 @@ function ProductDetailContent({ product }: { product: Product }) {
               </div>
 
               {/* Main Image */}
-              <div className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[3/4] group">
+              <div 
+                onMouseEnter={() => setIsImageHovered(true)}
+                onMouseLeave={() => setIsImageHovered(false)}
+                className="relative flex-1 bg-neutral-100 rounded-xl overflow-hidden aspect-[3/4] group"
+              >
                 <img
                   src={productImages[currentImageIndex]}
                   alt={product.name}
                   className="w-full h-full object-cover transition-all duration-300"
+                />
+
+                {/* Progress indicators */}
+                {productImages.length > 1 && (
+                  <div className="absolute top-3 inset-x-4 flex gap-1.5 z-10">
+                    {productImages.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="h-[2px] flex-1 bg-white/25 overflow-hidden relative"
+                      >
+                        {idx === currentImageIndex ? (
+                          <div
+                            key={`progress-detail-${idx}`}
+                            style={{ 
+                              animation: "progressGrowDetail 3s linear forwards",
+                              animationPlayState: isImageHovered ? "paused" : "running"
+                            }}
+                            className="absolute left-0 top-0 h-full bg-white"
+                          />
+                        ) : (
+                          <div
+                            className={`absolute left-0 top-0 h-full bg-white/50 ${
+                              idx < currentImageIndex ? "w-full" : "w-0"
+                            }`}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <style
+                  dangerouslySetInnerHTML={{
+                    __html: `
+                    @keyframes progressGrowDetail {
+                      from { width: 0%; }
+                      to { width: 100%; }
+                    }
+                  `,
+                  }}
                 />
 
                 {/* Image Navigation Arrows */}

@@ -64,7 +64,7 @@ export function Profile() {
     email: user?.email || "",
     phone: user?.phone || "",
     gender: user?.gender || "",
-    dateOfBirth: user?.dateOfBirth || "",
+    dateOfBirth: user?.dateOfBirth || (user as any)?.dob || "",
   });
 
   useEffect(() => {
@@ -75,8 +75,9 @@ export function Profile() {
         email: user.email || "",
         phone: user.phone || "",
         gender: user.gender || "",
-        dateOfBirth: user.dateOfBirth || "",
+        dateOfBirth: user.dateOfBirth || (user as any).dob || "",
       });
+      setPhoneVerified(!!user.phone);
     }
   }, [user]);
 
@@ -103,7 +104,7 @@ export function Profile() {
     }
   }, [user]);
 
-  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(!!user?.phone);
 
   const [addresses, setAddresses] = useState<AddressItem[]>(() => {
     try {
@@ -144,11 +145,22 @@ export function Profile() {
   }, [user]);
 
   const removeWishlistItem = async (id: number) => {
+    const targetItem = wishlistItems.find((item: any) => item.id === id);
+    const backendId = targetItem?.backendId;
+
     setWishlistItems(prev => {
       const updated = prev.filter((i: any) => i.id !== id);
       localStorage.setItem("wishlist", JSON.stringify(updated));
       return updated;
     });
+
+    if (backendId) {
+      try {
+        await wishlistApi.removeFromWishlist(backendId);
+      } catch (err) {
+        console.error("Error removing item from wishlist database:", err);
+      }
+    }
   };
 
   const toggleWishlistArchive = async (item: any) => {

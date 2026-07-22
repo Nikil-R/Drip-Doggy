@@ -19,6 +19,7 @@ export interface VerifyOtpResponse {
     phone: string;
     gender?: string;
     dateOfBirth?: string;
+    dob?: string;
   };
 }
 

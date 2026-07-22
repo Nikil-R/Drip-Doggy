@@ -112,7 +112,10 @@ export function ProfileTab({ profile, setProfile, phoneVerified, setPhoneVerifie
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <Phone className="h-4 w-4 text-neutral-400 stroke-[1.5] flex-shrink-0" />
               <input type="tel" required value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  setProfile({ ...profile, phone: val });
+                }}
                 className="flex-1 bg-transparent border-none p-0 text-xs font-bold tracking-wide focus:outline-none text-neutral-700 placeholder-neutral-300 min-w-0"
                 placeholder="PHONE NUMBER" />
             </div>
