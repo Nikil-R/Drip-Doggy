@@ -1286,4 +1286,93 @@ public class EmailService {
             mailSender.send(message);
         }
     }
+
+    public void sendContactSupportEmail(String contactEmail, String firstName, String lastName, String orderId, String messageContent) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo("support.dripdoggy@gmail.com");
+            helper.setSubject("New Customer Support Inquiry: " + firstName + " " + lastName);
+            
+            String htmlContent = "<h3>New Support Inquiry Received</h3>" +
+                    "<table border='0' cellpadding='6' cellspacing='0' style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:14px;color:#1e293b;'>" +
+                    "<tr><td><b>First Name:</b></td><td>" + firstName + "</td></tr>" +
+                    "<tr><td><b>Last Name:</b></td><td>" + lastName + "</td></tr>" +
+                    "<tr><td><b>Email:</b></td><td>" + contactEmail + "</td></tr>" +
+                    "<tr><td><b>Order ID:</b></td><td>" + (orderId != null ? orderId : "N/A") + "</td></tr>" +
+                    "<tr><td valign='top'><b>Message:</b></td><td>" + messageContent + "</td></tr>" +
+                    "</table>" +
+                    "<p style='color:#64748b;font-size:12px;margin-top:20px;'>Submitted via DripDoggy Contact Support Form.</p>";
+            
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo("support.dripdoggy@gmail.com");
+            message.setSubject("New Customer Support Inquiry: " + firstName + " " + lastName);
+            message.setText("New Customer Support Inquiry Received:\n\n" +
+                    "First Name: " + firstName + "\n" +
+                    "Last Name: " + lastName + "\n" +
+                    "Email: " + contactEmail + "\n" +
+                    "Order ID: " + (orderId != null ? orderId : "N/A") + "\n\n" +
+                    "Message:\n" + messageContent);
+            mailSender.send(message);
+        }
+    }
+
+    public void sendCustomerSupportConfirmationEmail(String customerEmail, String firstName, String lastName, String orderId, String messageContent) {
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(customerEmail);
+            helper.setSubject("DripDoggy Support Request Received");
+            
+            String ticketId = "#DD-TKT-" + (System.currentTimeMillis() % 100000);
+            String title = "Support Request Received";
+            String subtitle = "Hello " + firstName + "! We've received your inquiry and our support team is reviewing it.";
+            
+            String detailsHtml = "";
+            if (orderId != null && !orderId.trim().isEmpty()) {
+                detailsHtml = "<div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #475569; margin-top: 10px;\">" +
+                        "<b>Associated Order ID:</b> " + orderId.trim() +
+                        "</div>";
+            }
+
+            String htmlContent = buildCustomerEmail(
+                    title,
+                    subtitle,
+                    "Support Reference",
+                    ticketId,
+                    "Estimated Response Time",
+                    "Within 24 Hours",
+                    "Your Message Summary",
+                    messageContent,
+                    detailsHtml,
+                    "Please do not hesitate to reply to this email if you need to add any more details. We're here to help!"
+            );
+            
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(customerEmail);
+            message.setSubject("DripDoggy Support Request Received");
+            message.setText("Dear " + firstName + ",\n\n" +
+                    "We have successfully received your support inquiry.\n\n" +
+                    "Associated Order ID: " + (orderId != null ? orderId : "N/A") + "\n" +
+                    "Your Message: " + messageContent + "\n\n" +
+                    "Our support team will respond to you within 24 hours.\n\n" +
+                    "Best regards,\n" +
+                    "The DripDoggy Support Team");
+            mailSender.send(message);
+        }
+    }
 }
+
+
