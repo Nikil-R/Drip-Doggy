@@ -884,10 +884,6 @@ export function OrdersPage() {
           <span class="bill-info-label">Date</span>
           <span class="bill-info-value">${order.date}</span>
         </div>
-        <div class="bill-info-row">
-          <span class="bill-info-label">Payment</span>
-          <span class="bill-info-value">COD &mdash; ${order.payment.toUpperCase()}</span>
-        </div>
       </div>
       
       <div class="bill-section-title">Bill To</div>
@@ -948,8 +944,8 @@ export function OrdersPage() {
       <!-- FOOTER -->
       <div class="bill-footer">
         <div class="bill-footer-thanks">Thank you for your order!</div>
-        <div class="bill-footer-contact">${cfg.email} | ${cfg.phone} | ${cfg.website}</div>
-        <div class="bill-footer-contact" style="margin-top: 2px;">${cfg.address}</div>
+        <div class="bill-footer-contact">support@support.gmail.com | dripdoggy.com</div>
+        <div class="bill-footer-contact" style="margin-top: 2px;">Bangalore, Karnataka</div>
       </div>
     </div>
   </div>
@@ -979,7 +975,7 @@ export function OrdersPage() {
     const addressParts = [
       order.addressLine1,
       order.addressLine2,
-      `${order.city}, ${order.state} \u2014 ${order.postalCode}`,
+      `${order.city || ""} ${order.state || ""} ${order.postalCode || ""}`.trim(),
     ].filter(Boolean);
 
     const htmlContent = `<!DOCTYPE html>
@@ -1370,18 +1366,12 @@ export function OrdersPage() {
       </div>
 
       <!-- DETAILS GRID -->
-      <div class="info-grid" style="margin-bottom: 25px;">
+      <div class="info-grid" style="margin-bottom: 25px; grid-template-columns: 1fr;">
         <div class="info-card">
           <div class="info-title">Payment Info</div>
           <div class="info-value">
             <span class="meta-lbl">Method:</span> <span class="meta-val">Cash on Delivery (COD)</span><br />
-            <span class="meta-lbl">Status:</span> <span class="meta-val"><span class="payment-dot ${order.payment === "Paid" ? "dot-paid" : order.payment === "Refunded" ? "dot-refunded" : order.payment === "Cancelled" ? "dot-cancelled" : "dot-unpaid"}"></span>${order.payment.toUpperCase()}</span>
-          </div>
-        </div>
-        <div class="info-card">
-          <div class="info-title">Shipping & Logistics</div>
-          <div class="info-value">
-            ${order.trackingNumber ? `<span class="meta-lbl">Tracking No:</span> <span class="meta-val" style="font-family: monospace;">${order.trackingNumber}</span>` : `<span class="text-muted">Tracking details will be updated once shipped.</span>`}
+            <span class="meta-lbl">Status:</span> <span class="meta-val"><span class="payment-dot dot-paid"></span>PAID</span>
           </div>
         </div>
       </div>
@@ -1447,14 +1437,14 @@ export function OrdersPage() {
       <div class="footer">
         <div class="footer-divider"></div>
         <div class="footer-thanks">Thank You</div>
-        <div class="footer-thanks-sub">for shopping with DripDoggy</div>
+        <div class="footer-thanks-sub">drip your way every day</div>
         <div class="footer-support">
-          ${cfg.email}<span class="sep">|</span>${cfg.phone}<span class="sep">|</span>${cfg.website}
+          support@dripdoggy.com<span class="sep">|</span>dripdoggy.com
         </div>
         <div class="footer-legal">
-          ${cfg.address}${cfg.gstin ? `<span class="sep">|</span>GSTIN: ${cfg.gstin}` : ""}
+          Bangalore, Karnataka
         </div>
-        <div class="footer-note">${terms.returnPolicy} &mdash; ${terms.paymentNote}</div>
+        <div class="footer-note">Returns accepted within 24 hours of delivery. &mdash; ${terms.paymentNote}</div>
       </div>
 
     </div>
@@ -2518,7 +2508,7 @@ export function OrdersPage() {
               <p>You are about to approve the return and confirm manual payment payout of <strong className="text-green-700">{RS}{getOrderTotal(returnApproveConfirmOrder).toLocaleString()}</strong> to the customer's selected destination:</p>
               
               <div className="bg-neutral-50 border border-neutral-200 p-3 rounded-sm space-y-1 font-mono text-[9px]">
-                <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Method:</span> <span className="text-[#382d24] font-extrabold uppercase">{returnApproveConfirmOrder.returnRequest?.refundDetails.method.replace("_", " ")}</span></p>
+                <p><span className="text-neutral-400 uppercase tracking-wider text-[8px] font-bold">Method:</span> <span className="text-[#382d24] font-extrabold uppercase">{returnApproveConfirmOrder.returnRequest?.refundDetails.method.replace(/_/g, " ")}</span></p>
                 
                 {returnApproveConfirmOrder.returnRequest?.refundDetails.method === "qr_code" && (
                   <div className="pt-1.5 flex flex-col items-center">

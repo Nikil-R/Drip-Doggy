@@ -100,14 +100,7 @@ export function Categories() {
                   }`}
                 />
 
-                {/* Coming Soon Badge */}
-                {category.comingSoon && !(category as any).hideBadge && (
-                  <div className="absolute top-4 right-4 sm:top-6 sm:right-6 border border-white/20 px-2 sm:px-3 py-1 sm:py-1.5 z-10 bg-[#382d24]/40 backdrop-blur-xs">
-                    <span className="text-white text-[6px] sm:text-[8px] font-extrabold tracking-[0.25em] uppercase">
-                      COMING SOON // {category.comingSeason || "FW26"}
-                    </span>
-                  </div>
-                )}
+
 
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white z-10">
                   <h3 className="text-xs sm:text-xl lg:text-2xl font-extrabold tracking-tight mb-1 uppercase">

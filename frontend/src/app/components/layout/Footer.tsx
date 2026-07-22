@@ -253,20 +253,20 @@ export function Footer() {
         <div className="relative z-10 max-w-7xl mx-auto pt-6 pb-14 lg:pt-8 lg:pb-16">
           {/* Desktop Layout */}
           <div className="hidden lg:block max-w-[1440px] mx-auto px-10 mt-[-25px]">
-            <div className="max-w-2xl space-y-2">
-              <div className="flex items-center gap-6">
+            <div className="max-w-2xl mx-auto space-y-2 text-center flex flex-col items-center">
+              <div className="flex items-center justify-center gap-6">
                 <img src={logoIcon} alt="" className="h-20 w-auto object-contain mix-blend-multiply" />
                 <img src={logo} alt={config.brandName || "DRIPDOGGY"} className="h-30 w-auto object-contain mix-blend-multiply ml-[-15px]" />
               </div>
               <span className="block text-[18px] font-black tracking-[2px] text-[#B35A3C] uppercase">
                 {config.tagline || "Luxury Streetwear / Est. 2026"}
               </span>
-              <p className="text-[16px] leading-[26px] text-[#6B6B6B] font-semibold max-w-xl">
+              <p className="text-[16px] leading-[26px] text-[#6B6B6B] font-semibold max-w-xl text-center">
                 {config.description || "Architectural silhouettes, premium fabrication, and uncompromised street luxury for the modern wardrobe."}
               </p>
 
               {activeSocials.length > 0 && (
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 justify-center">
                   {activeSocials.map((s) => (
                     <SocialButton key={s.label} platform={s.platform} label={s.label} href={s.url} />
                   ))}

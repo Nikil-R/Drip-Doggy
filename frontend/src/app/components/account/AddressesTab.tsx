@@ -247,7 +247,7 @@ export function AddressesTab({ addresses, setAddresses, profile, isLoading }: Ad
           </div>
 
           <div>
-            <label className="block text-[7px] font-black tracking-[0.2em] mb-1 text-neutral-400 uppercase">Phone Number</label>
+            <label className="block text-[7px] font-black tracking-[0.2em] mb-1 text-neutral-400 uppercase">Alternate Phone Number</label>
             <input type="tel" required placeholder="Phone number" value={addressForm.phone}
               onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
               className="w-full bg-white border border-neutral-200 px-3 py-2.5 text-xs font-bold focus:outline-none focus:border-[#030213] uppercase" />

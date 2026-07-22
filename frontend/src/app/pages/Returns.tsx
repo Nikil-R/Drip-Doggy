@@ -17,8 +17,7 @@ export function Returns() {
       bullets: [
         "Products requested after the 24-hour return window.",
         "Items without original tags or packaging.",
-        "Products that have been used, washed, or altered.",
-        "Sale, clearance, or promotional items (unless received damaged or incorrect)."
+        "Products that have been used, washed, or altered."
       ]
     },
     {

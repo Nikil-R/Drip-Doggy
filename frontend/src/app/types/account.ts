@@ -38,6 +38,11 @@ export interface Order {
   returnRequest?: ReturnRequest;
   orderTimestamp?: string;
   deliveredTimestamp?: string;
+  shippingFee?: number;
+  discount?: number;
+  destinationAddress?: string;
+  phoneNumber?: string;
+  customerName?: string;
 }
 
 export interface AddressItem {

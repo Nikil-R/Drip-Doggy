@@ -410,7 +410,10 @@ export function OrdersTab() {
             deliveredTimestamp: oh.deliveredTimestamp,
             shippingFee: oh.shippingFee || 0,
             discount: oh.discount || 0,
-            platformFee: oh.platformFee || 0
+            platformFee: oh.platformFee || 0,
+            destinationAddress: oh.destinationAddress || oh.destination || "",
+            phoneNumber: oh.phoneNumber || "",
+            customerName: oh.customerName || ""
           };
         });
 
@@ -919,18 +922,22 @@ export function OrdersTab() {
                       </>
                     )}
                     
-                    <button
-                      onClick={() => printInvoice(order, profile)}
-                      className="bg-[#030213] hover:bg-neutral-800 text-white px-4 py-2.5 text-[8.5px] font-black tracking-widest uppercase transition-all cursor-pointer border-none flex items-center justify-center gap-1.5"
-                    >
-                      <Printer className="h-3.5 w-3.5" /> Invoice
-                    </button>
-                    <button
-                      onClick={() => printBill(order, profile)}
-                      className="bg-white border border-neutral-200 hover:border-[#030213] text-neutral-600 hover:text-[#030213] px-4 py-2.5 text-[8.5px] font-black tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Printer className="h-3.5 w-3.5" /> Bill
-                    </button>
+                    {(order.status === "Delivered" || order.status === "Exchange Delivered" || order.status === "Return Delivered") && (
+                      <>
+                        <button
+                          onClick={() => printInvoice(order, profile)}
+                          className="bg-[#030213] hover:bg-neutral-800 text-white px-4 py-2.5 text-[8.5px] font-black tracking-widest uppercase transition-all cursor-pointer border-none flex items-center justify-center gap-1.5"
+                        >
+                          <Printer className="h-3.5 w-3.5" /> Invoice
+                        </button>
+                        <button
+                          onClick={() => printBill(order, profile)}
+                          className="bg-white border border-neutral-200 hover:border-[#030213] text-neutral-600 hover:text-[#030213] px-4 py-2.5 text-[8.5px] font-black tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Printer className="h-3.5 w-3.5" /> Bill
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 

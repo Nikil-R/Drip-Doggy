@@ -104,6 +104,12 @@ export function AddProductPage() {
   const isEdit = !!id;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [successModal, setSuccessModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: "",
+    message: ""
+  });
+
   // Core Form States
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
@@ -440,8 +446,11 @@ export function AddProductPage() {
       }
 
       localStorage.removeItem("dripdoggy-product-draft");
-      alert(`"${productName}" (${sku}) has been successfully ${isEdit ? "updated" : "published"}!`);
-      navigate("/admin/products");
+      setSuccessModal({
+        isOpen: true,
+        title: isEdit ? "Product Updated" : "Product Published",
+        message: `"${productName}" (${sku}) has been successfully ${isEdit ? "updated" : "published"}!`
+      });
     } catch (err: any) {
       console.error("Error publishing product", err);
       alert(`Failed to save product: ${err?.response?.data?.message || err?.message || err}`);
@@ -1316,6 +1325,37 @@ export function AddProductPage() {
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successModal.isOpen && (
+        <div className="fixed inset-0 bg-[#030213]/60 backdrop-blur-xs flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-[#faf8f5] border border-neutral-300 p-6 max-w-sm w-full mx-4 shadow-xl flex flex-col items-center text-center space-y-4">
+            <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-extrabold tracking-widest text-[#030213] uppercase">
+                {successModal.title}
+              </h3>
+              <p className="text-[11px] text-neutral-500 font-bold leading-relaxed">
+                {successModal.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessModal(prev => ({ ...prev, isOpen: false }));
+                navigate("/admin/products");
+              }}
+              className="w-full bg-[#030213] hover:bg-neutral-800 text-white py-2.5 text-[10px] font-extrabold tracking-[0.2em] uppercase transition-all border-none cursor-pointer rounded-none"
+            >
+              Back to Products
+            </button>
           </div>
         </div>
       )}

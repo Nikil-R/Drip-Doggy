@@ -342,6 +342,21 @@ function ProductDetailContent({ product }: { product: Product }) {
     }
   };
 
+  const handleInstagramShare = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      setToastMessage("Link copied! Paste and share on Instagram Stories or DMs.");
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+      setIsShareModalOpen(false);
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("Failed to copy link for Instagram share:", err);
+    }
+  };
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem("wishlist");
@@ -1405,17 +1420,23 @@ function ProductDetailContent({ product }: { product: Product }) {
                       // Collect selected product variant size IDs
                       const sizeIds = activeBundle.variants.map((v: any) => selectedBundleSizes[v.variantId]).filter(Boolean);
                       if (sizeIds.length < activeBundle.variants.length) {
-                        alert("Please select sizes for all products in the bundle.");
+                        setToastMessage("Please select sizes for all products in the bundle.");
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 3000);
                         return;
                       }
                       
                       await cartApi.addBundleToCart(activeBundle.id, sizeIds, 1);
                       await syncCart();
                       window.dispatchEvent(new Event("cart-updated"));
-                      alert("Product Bundle added to bag successfully!");
+                      setToastMessage("Product Bundle added to bag successfully!");
+                      setShowToast(true);
+                      setTimeout(() => setShowToast(false), 3000);
                     } catch (err: any) {
                       console.error("Error adding bundle to cart", err);
-                      alert(err.response?.data?.message || "Failed to add bundle to bag.");
+                      setToastMessage(err.response?.data?.message || "Failed to add bundle to bag.");
+                      setShowToast(true);
+                      setTimeout(() => setShowToast(false), 3000);
                     }
                   }}
                   className="bg-[#224870] text-white px-6 py-3 rounded text-xs font-bold tracking-[0.2em] hover:bg-[#1a3858] transition-colors uppercase cursor-pointer border-none shadow-xs"
@@ -1737,12 +1758,9 @@ function ProductDetailContent({ product }: { product: Product }) {
               </a>
 
               {/* Instagram */}
-              <a
-                href="https://www.instagram.com/dripdoggyofficial"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsShareModalOpen(false)}
-                className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer no-underline"
+              <button
+                onClick={handleInstagramShare}
+                className="w-full flex items-center bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs font-bold text-neutral-800 transition-colors cursor-pointer text-left"
               >
                 <span className="flex items-center gap-2.5">
                   <svg
@@ -1756,7 +1774,7 @@ function ProductDetailContent({ product }: { product: Product }) {
                   </svg>
                   INSTAGRAM
                 </span>
-              </a>
+              </button>
 
               {/* Facebook */}
               <a
@@ -2022,33 +2040,32 @@ function RecommendationCard({ product }: { product: Product }) {
             />
           </button>
         </div>
-        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase">
+        <span className="text-[9px] font-extrabold tracking-widest text-[#b2533e] uppercase h-3 flex items-center">
           {product.brand}
         </span>
-        <h3 className="text-xs font-extrabold tracking-wider mt-1 mb-0.5 text-neutral-900 uppercase leading-snug line-clamp-1">
+        <h3 className="text-xs font-extrabold tracking-wider mt-1 mb-0.5 text-neutral-900 uppercase leading-snug truncate block h-6 pt-1">
           {product.name}
         </h3>
       </div>
-      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xs font-bold text-neutral-800">
-            ₹{product.price.toFixed(0)}
-          </span>
-          {product.originalPrice && (
-            <>
-              <span className="text-[10px] font-semibold text-[#858383] line-through">
-                ₹{product.originalPrice.toFixed(0)}
+      <div className="flex items-center flex-wrap h-5">
+        <span className="text-xs font-bold text-neutral-800">
+          ₹{product.price.toFixed(0)}
+        </span>
+        {product.originalPrice && (
+          <>
+            <span className="text-[10px] font-semibold text-[#858383] line-through ml-2.5">
+              ₹{product.originalPrice.toFixed(0)}
+            </span>
+            {discountPercent > 0 && (
+              <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm ml-2">
+                {discountPercent}% OFF
               </span>
-              {discountPercent > 0 && (
-                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
-                  {discountPercent}% OFF
-                </span>
-              )}
-            </>
-          )}
-        </div>
-
-        {product.rating !== undefined && product.rating > 0 && (
+            )}
+          </>
+        )}
+      </div>
+      <div className="h-4 flex items-center">
+        {product.rating !== undefined && product.rating > 0 ? (
           <div className="flex items-center gap-0.5 flex-shrink-0">
             <div className="flex items-center text-[#ffc107]">
               {[...Array(5)].map((_, i) => {
@@ -2065,6 +2082,8 @@ function RecommendationCard({ product }: { product: Product }) {
               {product.rating.toFixed(1)}
             </span>
           </div>
+        ) : (
+          <div className="h-2.5" />
         )}
       </div>
     </Link>

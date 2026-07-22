@@ -49,15 +49,7 @@ export function WishlistTab({ wishlistItems, isLoading, onRemove, onAddToCart, o
         </div>
       ) : (
         <div>
-          {/* Archive toggle hint */}
-          {onToggleArchive && (
-            <div className="flex items-center justify-between mb-5 pb-3 border-b border-neutral-100">
-              <span className="text-[8px] font-extrabold tracking-widest text-neutral-400 uppercase flex items-center gap-1.5">
-                <Archive className="h-3 w-3 stroke-[1.8]" />
-                Click the archive icon on any item to toggle its availability
-              </span>
-            </div>
-          )}
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {wishlistItems.map((item) => {
@@ -108,13 +100,7 @@ export function WishlistTab({ wishlistItems, isLoading, onRemove, onAddToCart, o
                   </div>
                   {/* Actions */}
                   <div className="absolute top-3 right-3 flex items-center gap-1">
-                    {onToggleArchive && (
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleArchive(item); }}
-                        className="text-neutral-300 hover:text-amber-600 transition-colors bg-transparent border-none cursor-pointer"
-                        aria-label="Toggle archive">
-                        <Archive className="h-3.5 w-3.5 stroke-[1.5]" />
-                      </button>
-                    )}
+
                     <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(item.id); }}
                       className="text-neutral-300 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
                       aria-label="Remove from wishlist">

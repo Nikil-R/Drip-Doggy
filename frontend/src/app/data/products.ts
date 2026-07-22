@@ -50,6 +50,9 @@ export interface Product {
   shippingInfo?: { title: string; content: string }[];
   reviews?: ProductReview[];
   features?: ProductFeature[];
+  categoryId?: number;
+  subCategoryId?: number;
+  subcategoryName?: string;
   rawVariants?: any[];
 }
 

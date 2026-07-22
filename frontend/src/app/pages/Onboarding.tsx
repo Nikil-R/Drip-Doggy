@@ -42,7 +42,7 @@ export function Onboarding() {
   }
 
   if (!pendingIdentifier) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

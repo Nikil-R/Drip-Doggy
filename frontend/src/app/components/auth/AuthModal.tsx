@@ -36,7 +36,7 @@ export function AuthModal() {
       return;
     }
 
-    const bypassedPaths = ["/login", "/onboarding"];
+    const bypassedPaths = ["/onboarding"];
     if (bypassedPaths.includes(location.pathname)) {
       setVisible(false);
       return;

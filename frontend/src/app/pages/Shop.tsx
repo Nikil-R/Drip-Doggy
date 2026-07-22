@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
 import { ProductFilters } from "../components/shop/ProductFilters";
 import { ProductGrid } from "../components/shop/ProductGrid";
@@ -9,6 +9,8 @@ export function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchVal, setSearchVal] = useState(searchParams.get("q") || "");
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const totalFilters = getActiveFilterCount(searchParams);
 
@@ -16,6 +18,19 @@ export function Shop() {
   useEffect(() => {
     setSearchVal(searchParams.get("q") || "");
   }, [searchParams]);
+
+  // Click away listener for sorting dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,25 +88,44 @@ export function Shop() {
           </button>
 
           {/* Sort dropdown overlay wrapper */}
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center" ref={sortDropdownRef}>
             <button
+              onClick={() => setIsSortOpen(!isSortOpen)}
               className="flex items-center justify-center gap-2 py-3.5 text-[9px] font-black tracking-[0.25em] text-[#030213] uppercase hover:bg-neutral-50 transition-colors bg-transparent border-none cursor-pointer w-full"
             >
               <ArrowUpDown className="h-3.5 w-3.5 stroke-[1.8]" />
-              <select
-                value={searchParams.get("sort") || "default"}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              >
-                <option value="default">SORT: DEFAULT</option>
-                <option value="price-asc">PRICE: LOW TO HIGH</option>
-                <option value="price-desc">PRICE: HIGH TO LOW</option>
-              </select>
               <span>
                 {searchParams.get("sort") === "price-asc" ? "PRICE: L-H" : 
                  searchParams.get("sort") === "price-desc" ? "PRICE: H-L" : "SORT: DEFAULT"}
               </span>
             </button>
+
+            {isSortOpen && (
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-[90%] bg-[#FAF8F5] border border-neutral-300 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden">
+                <div className="flex flex-col py-1">
+                  {[
+                    { value: "default", label: "SORT: DEFAULT" },
+                    { value: "price-asc", label: "PRICE: LOW TO HIGH" },
+                    { value: "price-desc", label: "PRICE: HIGH TO LOW" }
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        handleSortChange(opt.value);
+                        setIsSortOpen(false);
+                      }}
+                      className={`px-4 py-3 text-[9px] font-extrabold tracking-widest uppercase text-left border-none cursor-pointer transition-colors duration-150 ${
+                        (searchParams.get("sort") || "default") === opt.value
+                          ? "bg-[#030213] text-white font-extrabold"
+                          : "bg-transparent text-[#030213] hover:bg-neutral-100 font-bold"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

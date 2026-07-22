@@ -170,31 +170,31 @@ function ProductCard({
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1 mt-1">
-        <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1">
+      <div className="flex flex-col gap-0.5 mt-1.5">
+        <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight truncate block h-6 pt-1">
           {product.name}
         </h3>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-0.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
-              ₹{Math.floor(product.price)}
-            </span>
-            {product.originalPrice && (
-              <>
-                <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through">
-                  ₹{Math.floor(product.originalPrice)}
+        <div className="flex items-center flex-wrap h-5">
+          <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+            ₹{Math.floor(product.price)}
+          </span>
+          {product.originalPrice && (
+            <>
+              <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through ml-2.5">
+                ₹{Math.floor(product.originalPrice)}
+              </span>
+              {discount > 0 && (
+                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 ml-2">
+                  {discount}% OFF
                 </span>
-                {discount > 0 && (
-                  <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5">
-                    {discount}% OFF
-                  </span>
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
+        </div>
 
-          {product.rating !== undefined && product.rating > 0 && (
+        <div className="h-4 flex items-center">
+          {product.rating !== undefined && product.rating > 0 ? (
             <div className="flex items-center gap-0.5 flex-shrink-0">
               <div className="flex items-center text-[#ffc107]">
                 {[...Array(5)].map((_, i) => {
@@ -211,6 +211,8 @@ function ProductCard({
                 {product.rating.toFixed(1)}
               </span>
             </div>
+          ) : (
+            <div className="h-2.5" />
           )}
         </div>
       </div>
@@ -234,10 +236,22 @@ export function ProductGrid() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isInfiniteLoading, setIsInfiniteLoading] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(6);
-  const loaderRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(24);
+  const sortDropdownRef = useRef<HTMLDivElement | null>(null);
 
+  const [isSortOpen, setIsSortOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+
+  // Click away listener for sorting dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     async function loadProducts() {
@@ -347,7 +361,7 @@ export function ProductGrid() {
     e.stopPropagation();
     const token = localStorage.getItem("dripdoggy_auth_token");
     if (!token) {
-      navigate("/login");
+      navigate("/");
       return;
     }
 
@@ -511,48 +525,59 @@ export function ProductGrid() {
       // Subcategory filter
       if (categoryParam) {
         const cat = categoryParam.toLowerCase();
-        const name = product.name.toLowerCase();
-        if (isAccessories) {
-          if (cat === "bags" && !name.includes("bag") && !name.includes("sling"))
-            return false;
-          if (cat === "caps" && !name.includes("cap") && !name.includes("hat"))
-            return false;
-          if (
-            cat === "belts" &&
-            !name.includes("belt") &&
-            !name.includes("collar") &&
-            !name.includes("lead")
-          )
-            return false;
+        
+        if (cat === "women's apparel" || cat === "men's apparel") {
+          // Keep product (parent category, do not filter by subcategory)
+        } else if (product.subcategoryName && product.subcategoryName.toLowerCase() === cat) {
+          // Keep the product (exact backend subcategory match)
+        } else if (product.subcategoryName) {
+          // Has subcategoryName but it's different from cat, filter it out
+          return false;
         } else {
-          if (
-            cat === "dresses" &&
-            !name.includes("dress") &&
-            !name.includes("slip")
-          )
-            return false;
-          if (
-            cat === "outerwear" &&
-            !name.includes("trench") &&
-            !name.includes("utility") &&
-            !name.includes("jacket") &&
-            !name.includes("hoodie") &&
-            !name.includes("sweater")
-          )
-            return false;
-          if (
-            cat === "tops" &&
-            !name.includes("rib") &&
-            !name.includes("tee") &&
-            !name.includes("t-shirt")
-          )
-            return false;
-          if (
-            cat === "skirts" &&
-            !name.includes("skirt") &&
-            !name.includes("pants")
-          )
-            return false;
+          // Fallback to name string matching for mock/legacy items
+          const name = product.name.toLowerCase();
+          if (isAccessories) {
+            if (cat === "bags" && !name.includes("bag") && !name.includes("sling"))
+              return false;
+            if (cat === "caps" && !name.includes("cap") && !name.includes("hat"))
+              return false;
+            if (
+              cat === "belts" &&
+              !name.includes("belt") &&
+              !name.includes("collar") &&
+              !name.includes("lead")
+            )
+              return false;
+          } else {
+            if (
+              cat === "dresses" &&
+              !name.includes("dress") &&
+              !name.includes("slip")
+            )
+              return false;
+            if (
+              cat === "outerwear" &&
+              !name.includes("trench") &&
+              !name.includes("utility") &&
+              !name.includes("jacket") &&
+              !name.includes("hoodie") &&
+              !name.includes("sweater")
+            )
+              return false;
+            if (
+              cat === "tops" &&
+              !name.includes("rib") &&
+              !name.includes("tee") &&
+              !name.includes("t-shirt")
+            )
+              return false;
+            if (
+              cat === "skirts" &&
+              !name.includes("skirt") &&
+              !name.includes("pants")
+            )
+              return false;
+          }
         }
       }
 
@@ -614,40 +639,7 @@ export function ProductGrid() {
     sortBy,
   ]);
 
-  // ─── Infinite scroll ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (isLoading) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const target = entries[0];
-        if (
-          target.isIntersecting &&
-          visibleCount < filteredProducts.length &&
-          !isInfiniteLoading
-        ) {
-          setIsInfiniteLoading(true);
-          setTimeout(() => {
-            setVisibleCount((prev) =>
-              Math.min(filteredProducts.length, prev + 3)
-            );
-            setIsInfiniteLoading(false);
-          }, 800);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => {
-      if (loaderRef.current) {
-        observer.unobserve(loaderRef.current);
-      }
-    };
-  }, [isLoading, visibleCount, filteredProducts.length, isInfiniteLoading]);
 
   // ─── Render ───────────────────────────────────────────────────────────
   return (
@@ -660,24 +652,58 @@ export function ProductGrid() {
         </p>
         <div className="flex items-center gap-2">
           <span className="text-[10px]">SORT BY:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => {
-              const val = e.target.value;
-              const newParams = new URLSearchParams(searchParams);
-              if (val === "default") {
-                newParams.delete("sort");
-              } else {
-                newParams.set("sort", val);
-              }
-              setSearchParams(newParams, { replace: true });
-            }}
-            className="bg-transparent border-none text-[10px] font-bold text-[#030213] tracking-widest uppercase focus:outline-none cursor-pointer"
-          >
-            <option value="default">DEFAULT</option>
-            <option value="price-asc">PRICE LOW TO HIGH</option>
-            <option value="price-desc">PRICE HIGH TO LOW</option>
-          </select>
+          <div className="relative" ref={sortDropdownRef}>
+            <button
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="bg-transparent border-none text-[10px] font-bold text-[#030213] tracking-widest uppercase focus:outline-none cursor-pointer flex items-center gap-1.5"
+            >
+              {sortBy === "default" && "DEFAULT"}
+              {sortBy === "price-asc" && "PRICE LOW TO HIGH"}
+              {sortBy === "price-desc" && "PRICE HIGH TO LOW"}
+              <svg
+                className={`h-3 w-3 text-neutral-800 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isSortOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-[#FAF8F5] border border-neutral-300 shadow-lg z-50 animate-in fade-in slide-in-from-top-1 duration-150 rounded-xs overflow-hidden">
+                <div className="flex flex-col py-1">
+                  {[
+                    { value: "default", label: "DEFAULT" },
+                    { value: "price-asc", label: "PRICE LOW TO HIGH" },
+                    { value: "price-desc", label: "PRICE HIGH TO LOW" }
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        const val = opt.value;
+                        const newParams = new URLSearchParams(searchParams);
+                        if (val === "default") {
+                          newParams.delete("sort");
+                        } else {
+                          newParams.set("sort", val);
+                        }
+                        setSearchParams(newParams, { replace: true });
+                        setIsSortOpen(false);
+                      }}
+                      className={`px-4 py-3 text-[9px] font-extrabold tracking-widest uppercase text-left border-none cursor-pointer transition-colors duration-150 ${
+                        sortBy === opt.value
+                          ? "bg-[#030213] text-white font-extrabold"
+                          : "bg-transparent text-[#030213] hover:bg-neutral-100 font-semibold"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -717,34 +743,34 @@ export function ProductGrid() {
           ))
         )}
 
-        {/* Infinite scroll loading skeletons */}
-        {!isLoading && isInfiniteLoading && (
-          <>
-            {[
-              ...Array(
-                Math.min(3, filteredProducts.length - visibleCount)
-              ),
-            ].map((_, i) => (
-              <ProductSkeleton key={`inf-${i}`} />
-            ))}
-          </>
-        )}
       </div>
 
-      {/* Infinite scroll trigger */}
+      {/* Load More Button */}
       {visibleCount < filteredProducts.length && (
-        <div
-          ref={loaderRef}
-          className="h-24 flex items-center justify-center mt-6"
-        >
-          {isInfiniteLoading && (
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#030213]" />
-              <span className="text-[9px] font-bold tracking-[0.2em] text-neutral-400 uppercase">
-                LOADING MORE...
-              </span>
-            </div>
-          )}
+        <div className="flex flex-col items-center justify-center mt-10 mb-16 gap-3">
+          <button
+            onClick={() => {
+              setIsInfiniteLoading(true);
+              setTimeout(() => {
+                setVisibleCount((prev) => Math.min(filteredProducts.length, prev + 24));
+                setIsInfiniteLoading(false);
+              }, 800);
+            }}
+            disabled={isInfiniteLoading}
+            className="border border-[#030213] hover:bg-[#030213] hover:text-white text-[#030213] px-8 py-3.5 text-[10px] font-extrabold tracking-[0.2em] transition-all uppercase cursor-pointer rounded-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[160px] justify-center"
+          >
+            {isInfiniteLoading ? (
+              <>
+                <div className="h-3 w-3 animate-spin rounded-full border border-neutral-400 border-t-current" />
+                LOADING...
+              </>
+            ) : (
+              "LOAD MORE"
+            )}
+          </button>
+          <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+            Showing {Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length} Products
+          </span>
         </div>
       )}
     </div>

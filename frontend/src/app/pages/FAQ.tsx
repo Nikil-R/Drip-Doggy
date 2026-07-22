@@ -48,10 +48,7 @@ export function FAQ() {
           q: "Can I exchange my product?",
           a: "Yes. Exchanges are available for eligible products, subject to stock availability."
         },
-        {
-          q: "Are sale items eligible for returns or exchanges?",
-          a: "Sale or clearance items are generally not eligible for returns or exchanges unless the product arrives damaged or defective."
-        }
+
       ]
     },
     {

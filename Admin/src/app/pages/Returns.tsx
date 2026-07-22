@@ -101,6 +101,54 @@ function ApprovalStatusBadge({ status }: { status: ReturnStatus }) {
   );
 }
 
+function LogisticsStatusBadge({ status }: { status: string }) {
+  const cleanStatus = status.replace("RETURN_", "").replace("EXCHANGE_", "").replace(/_/g, " ");
+  
+  let bg = "bg-neutral-100";
+  let text = "text-neutral-700";
+  let border = "border-neutral-250";
+  let dot = "bg-neutral-500";
+  
+  if (status.includes("INITIATED")) {
+    bg = "bg-blue-50/50";
+    text = "text-blue-700";
+    border = "border-blue-200/60";
+    dot = "bg-blue-600";
+  } else if (status.includes("APPROVED")) {
+    bg = "bg-sky-50/50";
+    text = "text-sky-700";
+    border = "border-sky-200/60";
+    dot = "bg-sky-500";
+  } else if (status.includes("PICKUP")) {
+    bg = "bg-amber-50/50";
+    text = "text-amber-700";
+    border = "border-amber-250/60";
+    dot = "bg-amber-600";
+  } else if (status.includes("WAREHOUSE")) {
+    bg = "bg-indigo-50/50";
+    text = "text-indigo-700";
+    border = "border-indigo-200/60";
+    dot = "bg-indigo-600";
+  } else if (status.includes("DISPATCHED")) {
+    bg = "bg-purple-50/50";
+    text = "text-purple-700";
+    border = "border-purple-200/60";
+    dot = "bg-purple-600";
+  } else if (status.includes("COMPLETED")) {
+    bg = "bg-green-50/50";
+    text = "text-green-700";
+    border = "border-green-200/60";
+    dot = "bg-green-600";
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[9px] font-bold uppercase tracking-widest border ${bg} ${text} ${border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+      {cleanStatus}
+    </span>
+  );
+}
+
 import { adminOrderApi, AdminReturnResponse } from "../lib/admin-order-api";
 
 export function ReturnsPage() {
@@ -470,8 +518,8 @@ export function ReturnsPage() {
                 </td>
                 <td className="p-4 font-bold text-[12px] text-[#382d24]">{RS}{ret.amount.toLocaleString()}</td>
                 <td className="p-4"><ApprovalStatusBadge status={ret.approvalStatus} /></td>
-                <td className="p-4 text-[9.5px] text-[#615e56] font-bold uppercase tracking-wider">
-                  {ret.deliveryStatus.replace("RETURN_", "").replace("_", " ")}
+                <td className="p-4">
+                  <LogisticsStatusBadge status={ret.deliveryStatus} />
                 </td>
               </tr>
             ))}

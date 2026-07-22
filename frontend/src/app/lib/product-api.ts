@@ -74,6 +74,9 @@ export const productApi = {
       sizes: allSizes,
       specs: specsList,
       designDetails: p.features ? p.features.map((f: any) => f.featureName) : [],
+      categoryId: p.categoryId,
+      subCategoryId: p.subCategoryId,
+      subcategoryName: p.subcategoryName,
       rawVariants: p.variants
     };
   },

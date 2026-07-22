@@ -11,7 +11,6 @@ import { Shop } from "./pages/Shop";
 import { ProductDetail } from "./pages/ProductDetail";
 import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
-import { Login } from "./pages/Login";
 import { Onboarding } from "./pages/Onboarding";
 import { Profile } from "./pages/Profile";
 import { Orders } from "./pages/Orders";
@@ -107,7 +106,6 @@ export default function App() {
             />
 
             {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:id" element={<ProductDetail />} />

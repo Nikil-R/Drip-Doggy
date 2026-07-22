@@ -864,7 +864,7 @@ export function Header() {
                               if (isAuthenticated) {
                                 navigate('/checkout');
                               } else {
-                                navigate('/login', { state: { from: { pathname: '/checkout' } } });
+                                navigate('/', { state: { from: { pathname: '/checkout' } } });
                               }
                             }}
                             className="flex items-center justify-center w-full bg-black hover:bg-neutral-800 text-white py-2.5 rounded-none text-[9px] font-extrabold tracking-[0.15em] text-center uppercase transition-all duration-300 cursor-pointer border border-black"
@@ -905,7 +905,7 @@ export function Header() {
                       <>
                         {/* User Details Header */}
                         <Link 
-                          to="/account"
+                          to="/account#profile"
                           onClick={() => setIsProfileOpen(false)}
                           title="User Profile"
                           className="px-5 py-4 border-b border-neutral-200/80 flex flex-col bg-neutral-100/30 hover:bg-neutral-100/50 transition-colors"
@@ -950,7 +950,7 @@ export function Header() {
               </div>
             ) : (
               <button 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/')}
                 className="flex hover:opacity-75 transition-opacity items-center px-1.5 sm:px-3 bg-transparent border-none cursor-pointer h-full"
                 aria-label="Login"
               >

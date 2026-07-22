@@ -66,33 +66,32 @@ function SignatureCard({ product }: { product: Product }) {
         `}} />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase">
+      <div className="flex flex-col gap-0.5 mt-1.5">
+        <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#b2533e] uppercase h-3 flex items-center">
           {product.brand}
         </span>
-        <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight line-clamp-1 group-hover:underline">
+        <h3 className="text-xs md:text-sm font-extrabold text-[#030213] uppercase leading-tight truncate block group-hover:underline h-6 pt-1">
           {product.name}
         </h3>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-0.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
-              ₹{product.price.toFixed(0)}
-            </span>
-            {product.originalPrice && (
-              <>
-                <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through">
-                  ₹{product.originalPrice.toFixed(0)}
+        <div className="flex items-center flex-wrap h-5">
+          <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+            ₹{product.price.toFixed(0)}
+          </span>
+          {product.originalPrice && (
+            <>
+              <span className="text-[10px] sm:text-xs font-semibold text-neutral-450 line-through ml-2.5">
+                ₹{product.originalPrice.toFixed(0)}
+              </span>
+              {product.originalPrice > product.price && (
+                <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm ml-2">
+                  {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
                 </span>
-                {product.originalPrice > product.price && (
-                  <span className="text-[8px] font-extrabold text-[#b2533e] uppercase tracking-wider bg-red-50 px-1 py-0.5 rounded-sm">
-                    {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-
-          {product.rating !== undefined && product.rating > 0 && (
+              )}
+            </>
+          )}
+        </div>
+        <div className="h-4 flex items-center">
+          {product.rating !== undefined && product.rating > 0 ? (
             <div className="flex items-center gap-0.5 flex-shrink-0">
               <div className="flex items-center text-[#ffc107]">
                 {[...Array(5)].map((_, i) => {
@@ -109,6 +108,8 @@ function SignatureCard({ product }: { product: Product }) {
                 {product.rating.toFixed(1)}
               </span>
             </div>
+          ) : (
+            <div className="h-2.5" />
           )}
         </div>
       </div>

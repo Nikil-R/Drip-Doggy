@@ -843,51 +843,8 @@ export function DashboardPage() {
       {/* ═══ Top Selling Products & Live Recent Orders (Sorted Descending) ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Top Selling Products (Status Column Removed) */}
-        <div className="lg:col-span-7 bg-card border border-neutral-200/80 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-[12px] font-black tracking-[0.1em] text-[#382d24] uppercase">Top Selling Products</span>
-            <button 
-              onClick={handleExportProductsCSV}
-              className="text-[9px] font-bold tracking-widest uppercase text-[#224870] hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
-            >
-              <Download className="w-3 h-3" /> Export CSV
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left uppercase text-[9.5px] tracking-wider">
-              <thead>
-                <tr className="border-b border-neutral-200/60 text-[#615e56] text-[9px] tracking-[0.1em] font-bold">
-                  <th className="pb-2.5 font-bold">Product</th>
-                  <th className="pb-2.5 font-bold">Orders</th>
-                  <th className="pb-2.5 font-bold text-right">Revenue</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {topSellingProducts.map((p, i) => (
-                  <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
-                    <td className="py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-neutral-100 overflow-hidden shrink-0">
-                          <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-[#382d24] text-[10.5px] truncate max-w-[200px]">{p.name}</p>
-                          <span className="text-[9px] text-[#736e64] font-semibold">{p.sku}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-2.5 text-[#382d24] font-bold">{p.orders}</td>
-                    <td className="py-2.5 font-bold text-[#382d24] text-right">{RS}{p.revenue.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         {/* Live Recent Orders (Most Recent First - Descending Order) */}
-        <div className="lg:col-span-5 bg-card border border-neutral-200/80 p-5">
+        <div className="lg:col-span-7 bg-card border border-neutral-200/80 p-5">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[12px] font-black tracking-[0.1em] text-[#382d24] uppercase">Live Recent Orders</span>
             <button 
@@ -916,6 +873,49 @@ export function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Top Selling Products (Status Column Removed) */}
+        <div className="lg:col-span-5 bg-card border border-neutral-200/80 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[12px] font-black tracking-[0.1em] text-[#382d24] uppercase">Top Selling Products</span>
+            <button 
+              onClick={handleExportProductsCSV}
+              className="text-[9px] font-bold tracking-widest uppercase text-[#224870] hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
+            >
+              <Download className="w-3 h-3" /> Export CSV
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left uppercase text-[9.5px] tracking-wider">
+              <thead>
+                <tr className="border-b border-neutral-200/60 text-[#615e56] text-[9px] tracking-[0.1em] font-bold">
+                  <th className="pb-2.5 font-bold">Product</th>
+                  <th className="pb-2.5 font-bold">Orders</th>
+                  <th className="pb-2.5 font-bold text-right">Revenue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {topSellingProducts.map((p, i) => (
+                  <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-neutral-100 overflow-hidden shrink-0">
+                          <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-[#382d24] text-[10.5px] truncate max-w-[130px]">{p.name}</p>
+                          <span className="text-[9px] text-[#736e64] font-semibold">{p.sku}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-2.5 text-[#382d24] font-bold">{p.orders}</td>
+                    <td className="py-2.5 font-bold text-[#382d24] text-right">{RS}{p.revenue.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

@@ -10,9 +10,13 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
   const genderParam = searchParams.get("gender") || "women";
   const isAccessories = genderParam === "accessories";
 
+  const categoryQuery = searchParams.get("category");
+  const isMainApparelCategory = categoryQuery && (categoryQuery.toLowerCase() === "women's apparel" || categoryQuery.toLowerCase() === "men's apparel");
+
   const selectedCategory =
-    searchParams.get("category")?.toUpperCase() ||
-    (isAccessories ? "ALL ACCESSORIES" : `ALL ${genderParam.toUpperCase()}'S`);
+    (categoryQuery && !isMainApparelCategory)
+      ? categoryQuery.toUpperCase()
+      : (isAccessories ? "ALL ACCESSORIES" : `ALL ${genderParam.toUpperCase()}'S`);
   const selectedSize = searchParams.get("size")?.toUpperCase() || "";
 
   const priceRangeParam = searchParams.get("price");
@@ -147,7 +151,7 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
     searchParams.get("category");
 
   const content = (
-    <div className={isMobile ? "" : "w-64 pr-10 border-r border-neutral-100 font-sans"}>
+    <div className={isMobile ? "px-5 py-4 font-sans" : "w-64 pr-10 border-r border-neutral-100 font-sans"}>
       {/* Header for Desktop or Mobile */}
       <div className="flex items-center justify-between mb-8 pb-3.5 border-b border-neutral-150">
         <h2 className="text-[11px] font-black tracking-[0.25em] text-[#030213] uppercase">

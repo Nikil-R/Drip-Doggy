@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const msg = error.response.data?.message || "";
           if (msg.toLowerCase().includes("block") || error.response.status === 403) {
             logout();
-            window.location.href = "/login?blocked=true";
+            window.location.href = "/?blocked=true";
           }
         }
         return Promise.reject(error);
