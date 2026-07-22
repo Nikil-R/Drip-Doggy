@@ -63,6 +63,15 @@ function ProductCard({
   const [activeIdx, setActiveIdx] = useState(0);
   const discount = getDiscountPercent(product);
 
+  const isProductEntirelySoldOut = useMemo(() => {
+    if (!product.rawVariants || product.rawVariants.length === 0) return false;
+    return product.rawVariants.every((v: any) => {
+      const sizes = v.sizes || [];
+      if (sizes.length === 0) return true;
+      return sizes.every((s: any) => !s.isActive || s.stockQuantity === 0);
+    });
+  }, [product.rawVariants]);
+
   useEffect(() => {
     if (!isHovered) {
       setActiveIdx(0);
@@ -81,7 +90,7 @@ function ProductCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden mb-4">
+      <div className={`relative aspect-[3/4] bg-neutral-100 overflow-hidden mb-4 ${isProductEntirelySoldOut ? "opacity-60 grayscale-[15%]" : ""}`}>
         {/* Image crossfade */}
         {product.images.map((imgSrc, idx) => (
           <img
@@ -133,15 +142,15 @@ function ProductCard({
         />
 
         {/* Badge */}
-        {product.badge && (
+        {(product.badge || isProductEntirelySoldOut) && (
           <span
-            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-2 py-0.5 sm:px-3 sm:py-1 z-10 bg-white/75 backdrop-blur-xs border border-white/40 rounded-xs shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${
-              product.badge === "SOLD OUT"
-                ? "text-neutral-500"
-                : "text-[#030213]"
+            className={`absolute top-2 left-2 sm:top-4 sm:left-4 text-[7px] sm:text-[9px] font-extrabold sm:font-bold tracking-wider sm:tracking-[0.15em] px-2 py-0.5 sm:px-3 sm:py-1 z-10 border rounded-xs shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${
+              (product.badge === "SOLD OUT" || isProductEntirelySoldOut)
+                ? "bg-red-50/90 text-red-700 border-red-200"
+                : "bg-white/75 backdrop-blur-xs border-white/40 text-[#030213]"
             }`}
           >
-            {product.badge}
+            {isProductEntirelySoldOut ? "SOLD OUT" : product.badge}
           </span>
         )}
 

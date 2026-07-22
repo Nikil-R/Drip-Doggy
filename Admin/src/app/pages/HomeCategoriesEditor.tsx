@@ -191,8 +191,10 @@ export function HomeCategoriesEditorPage() {
       await adminHomeCategoryApi.toggleCategoryActive(Number(id), token);
       await loadCategories();
       showToast("Visibility toggled");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle category status:", err);
+      const msg = err?.response?.data?.message || err?.message || "Failed to toggle category status";
+      alert(msg);
     }
   };
 
@@ -312,26 +314,10 @@ export function HomeCategoriesEditorPage() {
                   </div>
                 )}
               </div>
-
               <div className="space-y-1">
                 <label className="text-[8.5px] font-bold tracking-wider text-neutral-500 uppercase block">Description</label>
                 <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                   className="w-full border border-neutral-300 bg-[#faf8f5] px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#224870] rounded-none text-[#382d24]" />
-              </div>
-
-              <div className="flex items-center gap-6 bg-[#faf8f5] p-3 border border-neutral-200">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={form.comingSoon} onChange={e => setForm({ ...form, comingSoon: e.target.checked })}
-                    className="accent-[#224870] h-4.5 w-4.5 cursor-pointer" />
-                  <span className="text-[9px] font-black text-[#615e56] uppercase tracking-wider">Coming Soon Capsule</span>
-                </label>
-                {form.comingSoon && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[8.5px] font-bold text-neutral-500 uppercase tracking-widest">Season Label</span>
-                    <input value={form.comingSeason} onChange={e => setForm({ ...form, comingSeason: e.target.value })}
-                      className="border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold uppercase focus:outline-none focus:border-[#224870] rounded-none text-[#382d24] w-28" placeholder="e.g. FW26" />
-                  </div>
-                )}
               </div>
             </div>
 

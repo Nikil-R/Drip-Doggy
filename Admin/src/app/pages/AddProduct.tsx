@@ -337,99 +337,99 @@ export function AddProductPage() {
 
     setValidationErrors([]);
     try {
-      const formData = new FormData();
-      formData.append("productName", productName.trim());
-      formData.append("skuCode", sku.trim());
-      formData.append("categoryId", selectedCategory);
-      formData.append("subCategoryId", selectedSubCategory);
-      formData.append("baseTitle", selectedTags[0] || "");
-      formData.append("productDescription", description.trim());
-      formData.append("isActive", "true");
+      // Build the JSON request DTO matching ProductRequestDto on backend
+      const requestData: any = {
+        productName: productName.trim(),
+        skuCode: sku.trim(),
+        categoryId: Number(selectedCategory),
+        subCategoryId: Number(selectedSubCategory),
+        baseTitle: selectedTags[0] || "",
+        productDescription: description.trim(),
+        isActive: true,
+        features: designDetails.filter(d => d.trim() !== ""),
+        specification: {
+          fabric: specs.find(s => s.label === "Fabric Type")?.value || "",
+          fit: specs.find(s => s.label === "Fit / Size")?.value || "",
+          pattern: specs.find(s => s.label === "Pattern")?.value || "",
+          neckCollarType: specs.find(s => s.label === "Neck/Collar Type")?.value || "",
+          sleeveType: specs.find(s => s.label === "Sleeve Type")?.value || "",
+          pockets: specs.find(s => s.label === "Pockets")?.value || "",
+          washCare: specs.find(s => s.label === "Wash Care")?.value || "",
+          customSpecs: {} as Record<string, string>
+        },
+        variants: [] as any[]
+      };
 
-      // Features
-      designDetails.forEach((detail, index) => {
-        if (detail.trim()) {
-          formData.append(`features[${index}]`, detail.trim());
-        }
-      });
-
-      // Specifications
       const standardLabels = ["Fabric Type", "Fit / Size", "Pattern", "Neck/Collar Type", "Sleeve Type", "Pockets", "Wash Care"];
-      
-      const specFabric = specs.find(s => s.label === "Fabric Type")?.value || "";
-      const specFit = specs.find(s => s.label === "Fit / Size")?.value || "";
-      const specPattern = specs.find(s => s.label === "Pattern")?.value || "";
-      const specNeck = specs.find(s => s.label === "Neck/Collar Type")?.value || "";
-      const specSleeve = specs.find(s => s.label === "Sleeve Type")?.value || "";
-      const specPockets = specs.find(s => s.label === "Pockets")?.value || "";
-      const specWash = specs.find(s => s.label === "Wash Care")?.value || "";
-
-      formData.append("specification.fabric", specFabric);
-      formData.append("specification.fit", specFit);
-      formData.append("specification.pattern", specPattern);
-      formData.append("specification.neckCollarType", specNeck);
-      formData.append("specification.sleeveType", specSleeve);
-      formData.append("specification.pockets", specPockets);
-      formData.append("specification.washCare", specWash);
-
       specs.filter(s => !standardLabels.includes(s.label)).forEach(custom => {
         if (custom.label.trim()) {
-          formData.append(`specification.customSpecs[${custom.label.trim()}]`, custom.value.trim());
+          requestData.specification.customSpecs[custom.label.trim()] = custom.value.trim();
         }
       });
 
-      // Variants
+      const formData = new FormData();
+      const filesToUpload: File[] = [];
+
       variants.forEach((v, index) => {
-        formData.append(`variants[${index}].variantName`, v.name);
-        formData.append(`variants[${index}].skuCode`, v.sku);
-        const cleanMrp = String(v.mrp || "").replace(/,/g, "").trim();
-        const cleanDiscountVal = String(v.discountValue || "").replace(/,/g, "").trim();
-        formData.append(`variants[${index}].mrp`, cleanMrp);
-        formData.append(`variants[${index}].discountType`, v.discountType === "percentage" ? "PERCENTAGE" : "FLAT");
-        formData.append(`variants[${index}].discountValue`, cleanDiscountVal);
-        formData.append(`variants[${index}].isActive`, String(v.active));
+        const variantJson: any = {
+          variantName: v.name,
+          skuCode: v.sku,
+          mrp: Number(String(v.mrp || "").replace(/,/g, "").trim()) || 0,
+          discountType: v.discountType === "percentage" ? "PERCENTAGE" : "FLAT",
+          discountValue: Number(String(v.discountValue || "").replace(/,/g, "").trim()) || 0,
+          isActive: v.active,
+          sizes: (v.sizes || []).map(sizeName => ({
+            sizeName,
+            stockQuantity: Number(v.sizeStock[sizeName] || 0),
+            isActive: true
+          })),
+          existingImageUrls: [] as string[],
+          imagesMetadata: [] as any[]
+        };
 
-        // Sizes
-        const activeSizes = v.sizes || [];
-        activeSizes.forEach((sizeName, sizeIdx) => {
-          formData.append(`variants[${index}].sizes[${sizeIdx}].sizeName`, sizeName);
-          formData.append(`variants[${index}].sizes[${sizeIdx}].stockQuantity`, String(v.sizeStock[sizeName] || 0));
-          formData.append(`variants[${index}].sizes[${sizeIdx}].isActive`, "true");
-        });
-
-        // Images & Primary Image resolution
         let localImageCount = 0;
-        let primaryFilename = "";
+
         const existingList = v.existingUrls || [];
         (v.images || []).forEach(img => {
-          const isExisting = existingList.includes(img);
+          const isExisting = existingList.includes(img) || img.startsWith("http");
           if (isExisting) {
-            formData.append(`variants[${index}].existingImageUrls`, img);
+            variantJson.existingImageUrls.push(img);
+            if (v.primaryImageUrl === img) {
+              variantJson.primaryImageUrl = img;
+            }
           } else {
             if (img.startsWith("data:")) {
               try {
                 const filename = `variant_${index}_img_${localImageCount++}.png`;
                 const file = dataURLtoFile(img, filename);
-                formData.append(`variants[${index}].images`, file);
-                if (v.primaryImageUrl === img) {
-                  primaryFilename = filename;
+                filesToUpload.push(file);
+                
+                const isPrimary = (v.primaryImageUrl === img);
+                variantJson.imagesMetadata.push({
+                  fileName: filename,
+                  isPrimary: isPrimary,
+                  priority: localImageCount
+                });
+                
+                if (isPrimary) {
+                  variantJson.primaryImageUrl = filename;
                 }
               } catch (fileErr) {
                 console.error("Error converting image base64 to file", fileErr);
               }
-            } else if (img.startsWith("http")) {
-              formData.append(`variants[${index}].existingImageUrls`, img);
             }
           }
         });
 
-        if (v.primaryImageUrl) {
-          if (v.primaryImageUrl.startsWith("http")) {
-            formData.append(`variants[${index}].primaryImageUrl`, v.primaryImageUrl);
-          } else if (primaryFilename) {
-            formData.append(`variants[${index}].primaryImageUrl`, primaryFilename);
-          }
-        }
+        requestData.variants.push(variantJson);
+      });
+
+      // Append request JSON to "data" parameter
+      formData.append("data", JSON.stringify(requestData));
+
+      // Append all image files to the single "images" parameter
+      filesToUpload.forEach(file => {
+        formData.append("images", file);
       });
 
       if (isEdit && id) {

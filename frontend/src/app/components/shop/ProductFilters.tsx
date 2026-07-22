@@ -12,7 +12,7 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
 
   const selectedCategory =
     searchParams.get("category")?.toUpperCase() ||
-    (isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
+    (isAccessories ? "ALL ACCESSORIES" : `ALL ${genderParam.toUpperCase()}'S`);
   const selectedSize = searchParams.get("size")?.toUpperCase() || "";
 
   const priceRangeParam = searchParams.get("price");
@@ -47,8 +47,26 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
 
   const activeSubcategories = useMemo(() => {
     const subs = new Set<string>();
-    subs.add(isAccessories ? "ALL ACCESSORIES" : "ALL WOMEN'S");
-    dbCategories.forEach(cat => {
+    subs.add(isAccessories ? "ALL ACCESSORIES" : `ALL ${genderParam.toUpperCase()}'S`);
+
+    const targetParentCategories = dbCategories.filter(cat => {
+      const name = (cat.categoryName || "").toLowerCase();
+      if (genderParam === "women") {
+        return name.includes("women") || name.includes("female");
+      }
+      if (genderParam === "men") {
+        return name.includes("men") && !name.includes("women");
+      }
+      if (genderParam === "accessories") {
+        return name.includes("access");
+      }
+      return false;
+    });
+    
+    const targetParentCategoryIds = targetParentCategories.map(c => c.categoryId);
+
+    // Add subcategories nested under the target parent categories
+    targetParentCategories.forEach(cat => {
       if (cat.subCategories) {
         cat.subCategories.forEach(sub => {
           if (sub.isActive !== false) {
@@ -57,11 +75,16 @@ export function ProductFilters({ isMobile = false }: { isMobile?: boolean }) {
         });
       }
     });
-    allSubCategories.forEach(sub => {
-      subs.add(sub.subcategoryName.toUpperCase());
+
+    // Add subcategories from the flat list that map to the target category IDs
+    allSubCategories.forEach((sub: any) => {
+      if (sub.categoryId && targetParentCategoryIds.includes(sub.categoryId) && sub.isActive !== false) {
+        subs.add(sub.subcategoryName.toUpperCase());
+      }
     });
+
     return Array.from(subs);
-  }, [dbCategories, allSubCategories, isAccessories]);
+  }, [dbCategories, allSubCategories, isAccessories, genderParam]);
 
   const categories = activeSubcategories;
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];

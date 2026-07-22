@@ -21,25 +21,33 @@ export interface Category {
 export const categoryApi = {
   fetchCategories: async (): Promise<Category[]> => {
     const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.CATEGORIES;
-    const response = await axios.get<Category[]>(url);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await axios.get<Category[]>(url, { headers });
     return response.data || [];
   },
 
   fetchCategoryById: async (id: number): Promise<Category> => {
     const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.CATEGORY_BY_ID + `/${id}`;
-    const response = await axios.get<Category>(url);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await axios.get<Category>(url, { headers });
     return response.data;
   },
 
   fetchSubCategories: async (): Promise<SubCategory[]> => {
     const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.SUBCATEGORIES;
-    const response = await axios.get<SubCategory[]>(url);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await axios.get<SubCategory[]>(url, { headers });
     return response.data?.details || response.data || [];
   },
 
   fetchSubCategoryById: async (id: number): Promise<SubCategory> => {
     const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.SUBCATEGORY_BY_ID + `/${id}`;
-    const response = await axios.get<SubCategory>(url);
+    const token = localStorage.getItem("dripdoggy_auth_token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await axios.get<SubCategory>(url, { headers });
     return response.data;
   }
 };

@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
 } from "recharts";
 import { adminOrderApi, AdminOrderResponse } from "../lib/admin-order-api";
+import { adminDashboardApi, DashboardOverview } from "../lib/dashboard-api";
 import { useAuthStore } from "../store/auth-store";
 
 const RS = "₹";
@@ -99,6 +100,7 @@ export function DashboardPage() {
   
   // Real orders from API
   const [orders, setOrders] = useState<AdminOrderResponse[]>([]);
+  const [dashboardOverview, setDashboardOverview] = useState<DashboardOverview | null>(null);
 
   // Calendar State
   const [currentYear, setCurrentYear] = useState(2026);
@@ -112,10 +114,25 @@ export function DashboardPage() {
     if (!token) return;
     setIsRefreshing(true);
     try {
+      // 1. Fetch dashboard overview stats
+      const periodParam = selectedPeriod === "today" ? "today" : selectedPeriod;
+      const vsPeriodParam = comparisonMode;
+      const startStr = dateRange.start || undefined;
+      const endStr = dateRange.end || undefined;
+      
+      const overview = await adminDashboardApi.getOverview(token, {
+        period: periodParam,
+        vsPeriod: vsPeriodParam,
+        startDate: startStr,
+        endDate: endStr
+      });
+      setDashboardOverview(overview);
+
+      // 2. Fetch orders list as well
       const data = await adminOrderApi.getAllOrders(token);
       setOrders(data);
     } catch (err) {
-      console.error("Failed to load dashboard orders:", err);
+      console.error("Failed to load dashboard overview:", err);
     } finally {
       setIsRefreshing(false);
     }
@@ -123,7 +140,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     loadData();
-  }, [token]);
+  }, [token, selectedPeriod, comparisonMode, dateRange]);
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const comparisonRef = useRef<HTMLDivElement>(null);
@@ -187,6 +204,63 @@ export function DashboardPage() {
 
   // Real-time Order calculations for Today vs Filtered Period
   const calculatedData = useMemo(() => {
+    if (dashboardOverview && dashboardOverview.kpis && dashboardOverview.kpis.length >= 4) {
+      const revKpi = dashboardOverview.kpis[0];
+      const ordKpi = dashboardOverview.kpis[1];
+      const aovKpi = dashboardOverview.kpis[2];
+      const cancelKpi = dashboardOverview.kpis[3];
+
+      const revPct = revKpi.change?.replace(/[+%]/g, "") || "0.0";
+      const ordersPct = ordKpi.change?.replace(/[+%]/g, "") || "0.0";
+      const aovPct = aovKpi.change?.replace(/[+%]/g, "") || "0.0";
+
+      const revenue = revKpi.rawValue || 0;
+      const ordersCount = ordKpi.rawValue || 0;
+      const aov = aovKpi.rawValue || 0;
+      const cancelledCount = cancelKpi.rawValue || 0;
+
+      let cancelledMoney = 0;
+      const lostAmtMatch = cancelKpi.subtitle?.match(/₹([\d,.]+)/);
+      if (lostAmtMatch) {
+        cancelledMoney = Number(lostAmtMatch[1].replace(/,/g, ""));
+      }
+
+      let deliveredCount = 184;
+      let exchangeCount = 28;
+      let returnCount = 14;
+
+      if ((dashboardOverview as any).retentionFunnelPoints) {
+        const delPt = (dashboardOverview as any).retentionFunnelPoints.find((p: any) => p.stage === "NET DELIVERIES" || p.stage === "DELIVERED");
+        const exPt = (dashboardOverview as any).retentionFunnelPoints.find((p: any) => p.stage === "EXCHANGES" || p.stage === "EXCHANGE");
+        const retPt = (dashboardOverview as any).retentionFunnelPoints.find((p: any) => p.stage === "RETURNS" || p.stage === "RETURN");
+        if (delPt) deliveredCount = delPt.count;
+        if (exPt) exchangeCount = exPt.count;
+        if (retPt) returnCount = retPt.count;
+      } else if ((dashboardOverview as any).retentionFunnel) {
+        deliveredCount = (dashboardOverview as any).retentionFunnel.deliveredCount || 184;
+        exchangeCount = (dashboardOverview as any).retentionFunnel.exchangeCount || 28;
+        returnCount = (dashboardOverview as any).retentionFunnel.returnCount || 14;
+      }
+
+      return {
+        revenue,
+        prevRevenue: 0,
+        revPct,
+        ordersCount,
+        prevOrdersCount: 0,
+        ordersPct,
+        aov,
+        prevAOV: 0,
+        aovPct,
+        cancelledCount,
+        cancelledMoney,
+        deliveredCount,
+        exchangeCount,
+        returnCount,
+        rawOrders: orders
+      };
+    }
+
     const todayStr = new Date().toDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -280,10 +354,18 @@ export function DashboardPage() {
       returnCount,
       rawOrders: activeList
     };
-  }, [orders, selectedPeriod, dateRange, activeMultiplier, comparisonMode]);
+  }, [orders, dashboardOverview, selectedPeriod, dateRange, activeMultiplier, comparisonMode]);
 
   // Chart Data: Hourly for Today, Daily for multi-days
   const chartData = useMemo(() => {
+    if (dashboardOverview && dashboardOverview.revenueChart) {
+      return dashboardOverview.revenueChart.map((pt: any) => ({
+        label: pt.day,
+        revenue: pt.revenue,
+        orders: pt.orders
+      }));
+    }
+
     if (selectedPeriod === "today" && !dateRange.start) {
       return [
         { label: "12 AM", revenue: 0, orders: 0 },
@@ -303,10 +385,21 @@ export function DashboardPage() {
       { label: "Fri", revenue: Math.round(51200 * (activeMultiplier / 7)), orders: Math.round(23 * (activeMultiplier / 7)) },
       { label: "Sat", revenue: Math.round(47800 * (activeMultiplier / 7)), orders: Math.round(20 * (activeMultiplier / 7)) },
     ];
-  }, [selectedPeriod, activeMultiplier, dateRange.start]);
+  }, [selectedPeriod, dashboardOverview, activeMultiplier, dateRange.start]);
 
   // Sorted Recent Orders (Descending by order timestamp - Most Recent First)
   const sortedRecentOrders = useMemo(() => {
+    if (dashboardOverview && dashboardOverview.recentOrders) {
+      return dashboardOverview.recentOrders.map((ro: any) => ({
+        orderNumber: ro.id,
+        customerName: ro.customer,
+        totalAmount: ro.amount,
+        deliveryStatus: ro.status,
+        orderTimestamp: ro.date,
+        paymentStatus: ro.payment
+      }));
+    }
+
     const raw = orders.length > 0 ? orders : [
       { orderNumber: "#DD-ORD-1005", customerName: "Ananya Sharma", totalAmount: 5800, deliveryStatus: "DELIVERED", orderTimestamp: "2026-07-21T10:30:00Z" },
       { orderNumber: "#DD-ORD-1004", customerName: "Rahul Verma", totalAmount: 3200, deliveryStatus: "SHIPPED", orderTimestamp: "2026-07-21T09:15:00Z" },
@@ -315,12 +408,33 @@ export function DashboardPage() {
       { orderNumber: "#DD-ORD-1001", customerName: "Neha Gupta", totalAmount: 4200, deliveryStatus: "PENDING", orderTimestamp: "2026-07-20T16:50:00Z" },
     ];
     return [...raw].sort((a, b) => new Date(b.orderTimestamp).getTime() - new Date(a.orderTimestamp).getTime());
-  }, [orders]);
+  }, [orders, dashboardOverview]);
+
+  const categorySales = useMemo(() => {
+    if (dashboardOverview && dashboardOverview.categorySales) {
+      return dashboardOverview.categorySales;
+    }
+    return defaultCategorySales;
+  }, [dashboardOverview]);
+
+  const topSellingProducts = useMemo(() => {
+    if (dashboardOverview && dashboardOverview.topProducts) {
+      return dashboardOverview.topProducts;
+    }
+    return defaultTopSellingProducts;
+  }, [dashboardOverview]);
+
+  const citySales = useMemo(() => {
+    if (dashboardOverview && dashboardOverview.citySales) {
+      return dashboardOverview.citySales;
+    }
+    return defaultCitySales;
+  }, [dashboardOverview]);
 
   // Export CSV for Top Products (No Status Column)
   const handleExportProductsCSV = () => {
     const headers = ["Product,SKU,Orders,Revenue"];
-    const rows = defaultTopSellingProducts.map(p => `"${p.name}","${p.sku}",${p.orders},${p.revenue}`);
+    const rows = topSellingProducts.map(p => `"${p.name}","${p.sku}",${p.orders},${p.revenue}`);
     const csv = [...headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -665,17 +779,17 @@ export function DashboardPage() {
           <div className="h-[190px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={defaultCategorySales} cx="50%" cy="50%" innerRadius={45} outerRadius={68} dataKey="value" paddingAngle={2}>
-                  {defaultCategorySales.map((e, i) => <Cell key={i} fill={e.color} />)}
+                <Pie data={categorySales} cx="50%" cy="50%" innerRadius={45} outerRadius={68} dataKey="value" paddingAngle={2}>
+                  {categorySales.map((e: any, i: number) => <Cell key={i} fill={e.color || "#717182"} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-2 pt-3 border-t border-neutral-100">
-            {defaultCategorySales.map((c) => (
+            {categorySales.map((c: any) => (
               <div key={c.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-none" style={{ backgroundColor: c.color }} />
+                <span className="w-2.5 h-2.5 rounded-none" style={{ backgroundColor: c.color || "#717182" }} />
                 <span className="text-[9px] font-bold text-[#382d24] uppercase">{c.name} ({c.value}%)</span>
               </div>
             ))}
@@ -750,7 +864,7 @@ export function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {defaultTopSellingProducts.map((p, i) => (
+                {topSellingProducts.map((p, i) => (
                   <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
                     <td className="py-2.5">
                       <div className="flex items-center gap-2.5">
@@ -814,7 +928,7 @@ export function DashboardPage() {
           <span className="text-[9px] font-bold text-neutral-400 uppercase">Top 5 Indian Regional Markets</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {defaultCitySales.map((c, i) => (
+          {citySales.map((c, i) => (
             <div key={i} className="border border-neutral-100 bg-[#faf8f5] p-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10.5px] font-black text-[#382d24] uppercase">{c.city}</span>

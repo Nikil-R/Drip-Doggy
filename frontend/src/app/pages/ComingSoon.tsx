@@ -1,18 +1,41 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowRight, Bell, Check } from "lucide-react";
-import { getSitePages, getComingSoonSlides, ComingSoonSlide } from "../lib/content-store";
+import { getSitePages, ComingSoonSlide } from "../lib/content-store";
+import axios from "axios";
+import { API_CONFIG } from "@/app/utils/api-config";
 
 export function ComingSoon() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [pageData, setPageData] = useState(() => getSitePages().find(p => p.slug === "coming-soon"));
-  const [slides, setSlides] = useState<ComingSoonSlide[]>(() => getComingSoonSlides().filter(s => s.active));
+  const [slides, setSlides] = useState<ComingSoonSlide[]>([]);
 
   useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await axios.get(`${API_CONFIG.BASE_URL}/dripdoggy/api/public/coming-soon-banners`);
+        const mapped = (res.data || []).map((b: any) => ({
+          id: String(b.id),
+          tagline: b.taglineBadge || "",
+          title: b.releaseTitle || "",
+          description: b.description || "",
+          image: b.backgroundImageUrl || "",
+          ctaText: b.buttonText || "",
+          ctaLink: b.actionLink || "",
+          active: !!b.isActive,
+          order: b.displayOrder ?? 0
+        }));
+        setSlides(mapped);
+      } catch (err) {
+        console.error("Failed to fetch public coming soon banners", err);
+      }
+    };
+    fetchBanners();
+
     const handleUpdate = () => {
       setPageData(getSitePages().find(p => p.slug === "coming-soon"));
-      setSlides(getComingSoonSlides().filter(s => s.active));
+      fetchBanners();
     };
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("dd-content-changed" as any, handleUpdate);

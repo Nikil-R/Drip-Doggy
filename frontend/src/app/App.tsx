@@ -127,7 +127,7 @@ export default function App() {
         </div>
         {/* Hidden cross-origin localStorage sync bridge for dev */}
         <iframe
-          src="http://localhost:5174/bridge.html"
+          src="http://localhost:5174/admin/bridge.html"
           style={{ display: 'none', width: 0, height: 0, border: 'none' }}
           title="localstorage-bridge"
         />

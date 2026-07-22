@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { Package, CheckCircle, Truck, Eye, Printer, X, QrCode, Smartphone, Banknote, Upload, AlertCircle, RefreshCw, Palette, Tag, Camera } from "lucide-react";
+import { Package, CheckCircle, Truck, Eye, Printer, X, QrCode, Smartphone, Banknote, Upload, AlertCircle, RefreshCw, Palette, Tag, Camera, ChevronDown } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { printInvoice, printBill } from "../../lib/invoice";
 import type { Order, RefundDetails, RefundMethod } from "../../types/account";
@@ -1054,22 +1054,25 @@ export function OrdersTab() {
                             </div>
 
                             {isChecked && (
-                              <div className="pl-6 space-y-3">
+                              <div className="pl-6 space-y-4">
                                 {/* Quantity Selector */}
                                 <div className="flex items-center justify-between gap-4">
-                                  <label className="text-[8px] font-black tracking-widest uppercase text-neutral-400">Qty to {requestType === "return" ? "Return" : "Exchange"}</label>
-                                  <select
-                                    value={returnQuantities[item.id] || 1}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value, 10);
-                                      setReturnQuantities(prev => ({ ...prev, [item.id]: val }));
-                                    }}
-                                    className="bg-white border border-neutral-200 px-2 py-1 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
-                                  >
-                                    {quantityOptions.map(q => (
-                                      <option key={q} value={q}>{q}</option>
-                                    ))}
-                                  </select>
+                                  <label className="text-[8px] font-black tracking-widest uppercase text-neutral-450">Qty to {requestType === "return" ? "Return" : "Exchange"}</label>
+                                  <div className="relative min-w-[70px]">
+                                    <select
+                                      value={returnQuantities[item.id] || 1}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        setReturnQuantities(prev => ({ ...prev, [item.id]: val }));
+                                      }}
+                                      className="w-full appearance-none bg-white border border-neutral-200/80 pl-3 pr-8 py-1.5 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#030213] rounded-none cursor-pointer"
+                                    >
+                                      {quantityOptions.map(q => (
+                                        <option key={q} value={q}>{q}</option>
+                                      ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500 pointer-events-none stroke-[2.5]" />
+                                  </div>
                                 </div>
 
                                 {/* Exchange Variant Selectors */}
@@ -1082,64 +1085,70 @@ export function OrdersTab() {
                                   const availableSizesForColor = variantConfig ? variantConfig.sizes : details.sizes;
 
                                   return (
-                                    <div className="border border-neutral-100 p-3 bg-neutral-50/50 space-y-3">
-                                      <p className="text-[8px] font-black tracking-widest text-[#030213] uppercase">Select Replacement Variant</p>
+                                    <div className="border border-neutral-200/70 p-4 bg-[#faf8f5]/40 space-y-4 rounded-none">
+                                      <p className="text-[8.5px] font-black tracking-[0.15em] text-[#030213] uppercase">Select Replacement Variant</p>
                                       
                                       {/* Color selection dropdown */}
                                       <div>
-                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-400 mb-1.5">
                                           Color / Style
                                         </label>
-                                        <select
-                                          value={selectedColor}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            setExchangeColors(prev => ({ ...prev, [item.id]: val }));
-                                            
-                                            const newColorConfig = details.colors.find(c => c.name.toLowerCase() === val.toLowerCase());
-                                            const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
-                                            setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes.includes(item.size) ? item.size : newColorSizes[0] || item.size }));
-                                          }}
-                                          className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
-                                        >
-                                          {allColors.length > 0 ? allColors.map(c => {
-                                            const isCurrentColor = c.name.toLowerCase() === item.color.toLowerCase();
-                                            return (
-                                              <option key={c.name} value={c.name} disabled={isCurrentColor}>
-                                                {c.name} {isCurrentColor ? "(Current)" : ""}
-                                              </option>
-                                            );
-                                          }) : (
-                                            <option value={item.color}>{item.color} (No other colors available)</option>
-                                          )}
-                                        </select>
+                                        <div className="relative">
+                                          <select
+                                            value={selectedColor}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setExchangeColors(prev => ({ ...prev, [item.id]: val }));
+                                              
+                                              const newColorConfig = details.colors.find(c => c.name.toLowerCase() === val.toLowerCase());
+                                              const newColorSizes = newColorConfig ? newColorConfig.sizes : details.sizes;
+                                              setExchangeSizes(prev => ({ ...prev, [item.id]: newColorSizes.includes(item.size) ? item.size : newColorSizes[0] || item.size }));
+                                            }}
+                                            className="w-full appearance-none bg-white border border-neutral-200/85 pl-3 pr-10 py-2.5 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#030213] rounded-none cursor-pointer"
+                                          >
+                                            {allColors.length > 0 ? allColors.map(c => {
+                                              const isCurrentColor = c.name.toLowerCase() === item.color.toLowerCase();
+                                              return (
+                                                <option key={c.name} value={c.name} disabled={isCurrentColor}>
+                                                  {c.name} {isCurrentColor ? "(Current)" : ""}
+                                                </option>
+                                              );
+                                            }) : (
+                                              <option value={item.color}>{item.color} (No other colors available)</option>
+                                            )}
+                                          </select>
+                                          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500 pointer-events-none stroke-[2.5]" />
+                                        </div>
                                       </div>
 
                                       {/* Size selection dropdown */}
                                       <div>
-                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-1">
+                                        <label className="flex items-center gap-1 text-[7.5px] font-black tracking-[0.15em] uppercase text-neutral-400 mb-1.5">
                                           Size
                                         </label>
-                                        <select
-                                          value={exchangeSizes[item.id] || item.size}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
-                                          }}
-                                          className="w-full bg-white border border-neutral-200 px-2.5 py-1.5 text-[9px] font-bold focus:outline-none focus:border-[#030213]"
-                                        >
-                                          {availableSizesForColor.length > 0 ? availableSizesForColor.map((s: string) => {
-                                            const isOriginalColor = selectedColor.toLowerCase() === item.color.toLowerCase();
-                                            const isCurrentSize = isOriginalColor && s === item.size;
-                                            return (
-                                              <option key={s} value={s} disabled={isCurrentSize}>
-                                                {s} {isCurrentSize ? "(Current)" : ""}
-                                              </option>
-                                            );
-                                          }) : (
-                                            <option value={item.size}>{item.size} (No sizes available)</option>
-                                          )}
-                                        </select>
+                                        <div className="relative">
+                                          <select
+                                            value={exchangeSizes[item.id] || item.size}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setExchangeSizes(prev => ({ ...prev, [item.id]: val }));
+                                            }}
+                                            className="w-full appearance-none bg-white border border-neutral-200/85 pl-3 pr-10 py-2.5 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#030213] rounded-none cursor-pointer"
+                                          >
+                                            {availableSizesForColor.length > 0 ? availableSizesForColor.map((s: string) => {
+                                              const isOriginalColor = selectedColor.toLowerCase() === item.color.toLowerCase();
+                                              const isCurrentSize = isOriginalColor && s === item.size;
+                                              return (
+                                                <option key={s} value={s} disabled={isCurrentSize}>
+                                                  {s} {isCurrentSize ? "(Current)" : ""}
+                                                </option>
+                                              );
+                                            }) : (
+                                              <option value={item.size}>{item.size} (No sizes available)</option>
+                                            )}
+                                          </select>
+                                          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500 pointer-events-none stroke-[2.5]" />
+                                        </div>
                                       </div>
                                     </div>
                                   );
@@ -1158,22 +1167,25 @@ export function OrdersTab() {
 
                   {/* Reason Dropdown */}
                   <div>
-                    <label className="block text-[8px] font-black tracking-[0.15em] uppercase text-neutral-500 mb-2">
+                    <label className="block text-[8px] font-black tracking-[0.15em] uppercase text-neutral-450 mb-2">
                       Reason for {requestType === "return" ? "Return" : "Exchange"}
                     </label>
-                    <select
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="w-full bg-white border border-neutral-200 px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-[#030213]"
-                    >
-                      <option value="Defective / Damaged">Defective / Damaged</option>
-                      {requestType === "exchange" && (
-                        <option value="Wrong Size Ordered">Wrong Size Ordered</option>
-                      )}
-                      <option value="Color Discrepancy">Color Discrepancy</option>
-                      <option value="Not as Described">Not as Described</option>
-                      <option value="Other">Other</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        className="w-full appearance-none bg-white border border-neutral-200/85 pl-3 pr-10 py-2.5 text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-[#030213] rounded-none cursor-pointer"
+                      >
+                        <option value="Defective / Damaged">Defective / Damaged</option>
+                        {requestType === "exchange" && (
+                          <option value="Wrong Size Ordered">Wrong Size Ordered</option>
+                        )}
+                        <option value="Color Discrepancy">Color Discrepancy</option>
+                        <option value="Not as Described">Not as Described</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500 pointer-events-none stroke-[2.5]" />
+                    </div>
                   </div>
 
                   {reason === "Other" && (

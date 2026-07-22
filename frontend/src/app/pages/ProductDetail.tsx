@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Star,
   ShieldCheck,
@@ -297,6 +297,25 @@ function ProductDetailContent({ product }: { product: Product }) {
     }
   };
 
+  const isVariantOutOfStock = (colorName: string) => {
+    const variantObj = (product.rawVariants || []).find(
+      (v: any) => (v.variantName || "Default").toLowerCase() === colorName.toLowerCase()
+    );
+    if (!variantObj) return true;
+    const sizes = variantObj.sizes || [];
+    if (sizes.length === 0) return true;
+    return sizes.every((s: any) => !s.isActive || s.stockQuantity === 0);
+  };
+
+  const isProductEntirelySoldOut = useMemo(() => {
+    if (!product.rawVariants || product.rawVariants.length === 0) return true;
+    return product.rawVariants.every((v: any) => {
+      const sizes = v.sizes || [];
+      if (sizes.length === 0) return true;
+      return sizes.every((s: any) => !s.isActive || s.stockQuantity === 0);
+    });
+  }, [product.rawVariants]);
+
   // Wishlist
   const [isWishlisted, setIsWishlisted] = useState(false);
   const ctaSectionRef = useRef<HTMLDivElement | null>(null);
@@ -584,6 +603,11 @@ function ProductDetailContent({ product }: { product: Product }) {
                     </>
                   )}
                 </div>
+                {isProductEntirelySoldOut && (
+                  <span className="text-[9px] font-extrabold text-red-700 tracking-wider uppercase bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-sm">
+                    SOLD OUT
+                  </span>
+                )}
                 {(product.rating ?? 0) > 0 && (
                   <div className="flex items-center gap-0.5 text-neutral-800">
                     {[...Array(5)].map((_, i) => (
@@ -642,12 +666,17 @@ function ProductDetailContent({ product }: { product: Product }) {
                       }`}
                       aria-label={`Select ${color.name} variant`}
                     >
-                      <div className="w-15 h-20 md:w-18 md:h-24 rounded-md overflow-hidden bg-white border border-neutral-200">
+                      <div className="w-15 h-20 md:w-18 md:h-24 rounded-md overflow-hidden bg-white border border-neutral-200 relative">
                         <img
                           src={color.thumbnail}
                           alt={`${color.name} variant`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${isVariantOutOfStock(color.name) ? "opacity-35 grayscale" : ""}`}
                         />
+                        {isVariantOutOfStock(color.name) && (
+                          <div className="absolute inset-0 bg-black/45 flex items-center justify-center p-0.5 text-center">
+                            <span className="text-[7.5px] font-[950] tracking-tighter text-white leading-none uppercase">OUT OF STOCK</span>
+                          </div>
+                        )}
                       </div>
                     </button>
                   ))}
@@ -726,36 +755,47 @@ function ProductDetailContent({ product }: { product: Product }) {
               ref={ctaSectionRef}
               className="grid grid-cols-2 gap-4 max-w-md pt-2"
             >
-              {cartQuantity === 0 ? (
+              {isProductEntirelySoldOut ? (
                 <button
-                  onClick={handleAddToBag}
-                  className="bg-[#030213] text-white py-4 rounded-sm text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-800 transition-all uppercase shadow-md active:scale-[0.99] border-none cursor-pointer"
+                  disabled
+                  className="col-span-2 bg-neutral-200 text-neutral-400 py-4 rounded-sm text-xs font-extrabold tracking-[0.15em] uppercase border-none cursor-not-allowed select-none w-full"
                 >
-                  ADD TO BAG
+                  SOLD OUT
                 </button>
               ) : (
-                <div className="flex items-center justify-between bg-[#030213] text-white py-3 px-1 rounded-sm text-xs font-extrabold tracking-[0.15em] shadow-md select-none">
+                <>
+                  {cartQuantity === 0 ? (
+                    <button
+                      onClick={handleAddToBag}
+                      className="bg-[#030213] text-white py-4 rounded-sm text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-800 transition-all uppercase shadow-md active:scale-[0.99] border-none cursor-pointer"
+                    >
+                      ADD TO BAG
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-between bg-[#030213] text-white py-3 px-1 rounded-sm text-xs font-extrabold tracking-[0.15em] shadow-md select-none">
+                      <button
+                        onClick={() => updateProductQuantity(cartQuantity - 1)}
+                        className="px-3 py-1 text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                      >
+                        -
+                      </button>
+                      <span>{cartQuantity}</span>
+                      <button
+                        onClick={() => updateProductQuantity(cartQuantity + 1)}
+                        className="px-3 py-1 text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
                   <button
-                    onClick={() => updateProductQuantity(cartQuantity - 1)}
-                    className="px-3 py-1 text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                    onClick={handleBuyNow}
+                    className="bg-white text-black border border-[#030213] py-4 rounded-sm text-xs font-extrabold tracking-[0.15em] hover:bg-[#030213] hover:text-white transition-all uppercase active:scale-[0.99] cursor-pointer"
                   >
-                    -
+                    BUY IT NOW
                   </button>
-                  <span>{cartQuantity}</span>
-                  <button
-                    onClick={() => updateProductQuantity(cartQuantity + 1)}
-                    className="px-3 py-1 text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
-                  >
-                    +
-                  </button>
-                </div>
+                </>
               )}
-              <button
-                onClick={handleBuyNow}
-                className="bg-white text-black border border-[#030213] py-4 rounded-sm text-xs font-extrabold tracking-[0.15em] hover:bg-[#030213] hover:text-white transition-all uppercase active:scale-[0.99] cursor-pointer"
-              >
-                BUY IT NOW
-              </button>
             </div>
           </div>
         </div>
@@ -1528,36 +1568,47 @@ function ProductDetailContent({ product }: { product: Product }) {
             </div>
 
             <div className="flex gap-3">
-              {cartQuantity === 0 ? (
+              {isProductEntirelySoldOut ? (
                 <button
-                  onClick={handleAddToBag}
-                  className="w-[180px] h-[48px] bg-white text-black border border-[#030213] text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-50 transition-all uppercase rounded-sm shadow-sm active:scale-[0.99] cursor-pointer"
+                  disabled
+                  className="w-[180px] h-[48px] bg-neutral-200 text-neutral-400 text-xs font-extrabold tracking-[0.15em] uppercase rounded-sm cursor-not-allowed select-none border-none"
                 >
-                  ADD TO BAG
+                  SOLD OUT
                 </button>
               ) : (
-                <div className="w-[180px] h-[48px] bg-[#030213] text-white flex items-center justify-between text-xs font-extrabold tracking-[0.15em] rounded-sm shadow-md select-none">
+                <>
+                  {cartQuantity === 0 ? (
+                    <button
+                      onClick={handleAddToBag}
+                      className="w-[180px] h-[48px] bg-white text-black border border-[#030213] text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-50 transition-all uppercase rounded-sm shadow-sm active:scale-[0.99] cursor-pointer"
+                    >
+                      ADD TO BAG
+                    </button>
+                  ) : (
+                    <div className="w-[180px] h-[48px] bg-[#030213] text-white flex items-center justify-between text-xs font-extrabold tracking-[0.15em] rounded-sm shadow-md select-none">
+                      <button
+                        onClick={() => updateProductQuantity(cartQuantity - 1)}
+                        className="px-4 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                      >
+                        -
+                      </button>
+                      <span>{cartQuantity}</span>
+                      <button
+                        onClick={() => updateProductQuantity(cartQuantity + 1)}
+                        className="px-4 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
                   <button
-                    onClick={() => updateProductQuantity(cartQuantity - 1)}
-                    className="px-4 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                    onClick={handleBuyNow}
+                    className="w-[180px] h-[48px] bg-[#030213] text-white text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-800 transition-all uppercase rounded-sm shadow-md active:scale-[0.99] cursor-pointer"
                   >
-                    -
+                    BUY NOW
                   </button>
-                  <span>{cartQuantity}</span>
-                  <button
-                    onClick={() => updateProductQuantity(cartQuantity + 1)}
-                    className="px-4 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
-                  >
-                    +
-                  </button>
-                </div>
+                </>
               )}
-              <button
-                onClick={handleBuyNow}
-                className="w-[180px] h-[48px] bg-[#030213] text-white text-xs font-extrabold tracking-[0.15em] hover:bg-neutral-800 transition-all uppercase rounded-sm shadow-md active:scale-[0.99] cursor-pointer"
-              >
-                BUY NOW
-              </button>
             </div>
           </div>
         </div>
@@ -1586,36 +1637,47 @@ function ProductDetailContent({ product }: { product: Product }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3.5">
-            {cartQuantity === 0 ? (
+            {isProductEntirelySoldOut ? (
               <button
-                onClick={handleAddToBag}
-                className="w-full h-[52px] bg-white text-black border border-[#030213] text-[10px] font-extrabold tracking-[0.15em] hover:bg-neutral-50 uppercase rounded-sm active:scale-[0.99] cursor-pointer"
+                disabled
+                className="col-span-2 w-full h-[52px] bg-neutral-200 text-neutral-400 text-[10px] font-extrabold tracking-[0.15em] uppercase rounded-sm cursor-not-allowed select-none border-none"
               >
-                ADD TO BAG
+                SOLD OUT
               </button>
             ) : (
-              <div className="w-full h-[52px] bg-[#030213] text-white flex items-center justify-between text-[10px] font-extrabold tracking-[0.15em] rounded-sm shadow-md select-none">
+              <>
+                {cartQuantity === 0 ? (
+                  <button
+                    onClick={handleAddToBag}
+                    className="w-full h-[52px] bg-white text-black border border-[#030213] text-[10px] font-extrabold tracking-[0.15em] hover:bg-neutral-50 uppercase rounded-sm active:scale-[0.99] cursor-pointer"
+                  >
+                    ADD TO BAG
+                  </button>
+                ) : (
+                  <div className="w-full h-[52px] bg-[#030213] text-white flex items-center justify-between text-[10px] font-extrabold tracking-[0.15em] rounded-sm shadow-md select-none">
+                    <button
+                      onClick={() => updateProductQuantity(cartQuantity - 1)}
+                      className="px-3 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                    >
+                      -
+                    </button>
+                    <span>{cartQuantity}</span>
+                    <button
+                      onClick={() => updateProductQuantity(cartQuantity + 1)}
+                      className="px-3 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
                 <button
-                  onClick={() => updateProductQuantity(cartQuantity - 1)}
-                  className="px-3 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
+                  onClick={handleBuyNow}
+                  className="w-full h-[52px] bg-[#030213] text-white text-[10px] font-extrabold tracking-[0.15em] hover:bg-neutral-800 uppercase rounded-sm active:scale-[0.99] cursor-pointer"
                 >
-                  -
+                  BUY NOW
                 </button>
-                <span>{cartQuantity}</span>
-                <button
-                  onClick={() => updateProductQuantity(cartQuantity + 1)}
-                  className="px-3 h-full text-white hover:text-neutral-300 font-extrabold text-base cursor-pointer border-none bg-transparent"
-                >
-                  +
-                </button>
-              </div>
+              </>
             )}
-            <button
-              onClick={handleBuyNow}
-              className="w-full h-[52px] bg-[#030213] text-white text-[10px] font-extrabold tracking-[0.15em] hover:bg-neutral-800 uppercase rounded-sm active:scale-[0.99] cursor-pointer"
-            >
-              BUY NOW
-            </button>
           </div>
         </div>
       </div>

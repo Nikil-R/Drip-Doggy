@@ -1,10 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, Edit2, ArrowUp, ArrowDown, Eye, EyeOff, X, AlertTriangle, Sparkles, Upload } from "lucide-react";
-import {
-  getComingSoonSlides,
-  setComingSoonSlides,
-  ComingSoonSlide,
-} from "../lib/admin-content-store";
+import { adminComingSoonApi } from "../lib/coming-soon-banner-api";
+import { useAuthStore } from "../store/auth-store";
+
+export interface ComingSoonSlide {
+  id: string;
+  tagline: string;
+  title: string;
+  description: string;
+  image: string;
+  ctaText: string;
+  ctaLink: string;
+  active: boolean;
+  order: number;
+}
 
 function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
@@ -28,11 +37,13 @@ function ToggleSwitch({ enabled, onClick }: { enabled: boolean; onClick: () => v
 }
 
 export function ComingSoonEditorPage() {
+  const { token } = useAuthStore();
   const [slides, setSlides] = useState<ComingSoonSlide[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editSlide, setEditSlide] = useState<ComingSoonSlide | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [form, setForm] = useState<Omit<ComingSoonSlide, "id" | "order">>({
     tagline: "",
@@ -44,9 +55,24 @@ export function ComingSoonEditorPage() {
     active: true,
   });
 
-  const loadSlides = () => {
-    const data = getComingSoonSlides();
-    setSlides(data);
+  const loadSlides = async () => {
+    try {
+      const res = await adminComingSoonApi.getAllBanners(token || "");
+      const mapped = res.map((b: any) => ({
+        id: String(b.id),
+        tagline: b.taglineBadge || "",
+        title: b.releaseTitle || "",
+        description: b.description || "",
+        image: b.backgroundImageUrl || "",
+        ctaText: b.buttonText || "",
+        ctaLink: b.actionLink || "",
+        active: !!b.isActive,
+        order: b.displayOrder ?? 0
+      }));
+      setSlides(mapped);
+    } catch (err) {
+      console.error("Failed to load coming soon banners", err);
+    }
   };
 
   useEffect(() => {
@@ -62,6 +88,7 @@ export function ComingSoonEditorPage() {
 
   const openAdd = () => {
     setEditSlide(null);
+    setSelectedFile(null);
     setForm({
       tagline: "UPCOMING RELEASE",
       title: "MEN'S SYNDICATE",
@@ -76,6 +103,7 @@ export function ComingSoonEditorPage() {
 
   const openEdit = (s: ComingSoonSlide) => {
     setEditSlide(s);
+    setSelectedFile(null);
     setForm({
       tagline: s.tagline,
       title: s.title,
@@ -91,6 +119,7 @@ export function ComingSoonEditorPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === "string") {
@@ -100,64 +129,105 @@ export function ComingSoonEditorPage() {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
-    let updated: ComingSoonSlide[];
-    if (editSlide) {
-      updated = slides.map((s) => (s.id === editSlide.id ? { ...s, ...form } : s));
-    } else {
-      const newSlide: ComingSoonSlide = {
-        ...form,
-        id: `cs-${Date.now()}`,
-        order: slides.length,
-      };
-      updated = [...slides, newSlide];
+  const save = async () => {
+    try {
+      const activeToken = token || "";
+      const formData = new FormData();
+      formData.append("taglineBadge", form.tagline);
+      formData.append("releaseTitle", form.title);
+      formData.append("description", form.description);
+      formData.append("buttonText", form.ctaText);
+      formData.append("actionLink", form.ctaLink);
+      formData.append("isActive", String(form.active));
+      formData.append("displayOrder", String(editSlide ? editSlide.order : slides.length));
+
+      if (selectedFile) {
+        formData.append("file", selectedFile);
+      } else {
+        formData.append("backgroundImageUrl", form.image);
+      }
+
+      if (editSlide) {
+        await adminComingSoonApi.updateBanner(Number(editSlide.id), formData, activeToken);
+        showToast("Coming Soon slide updated");
+      } else {
+        await adminComingSoonApi.createBanner(formData, activeToken);
+        showToast("Coming Soon slide added");
+      }
+      setSelectedFile(null);
+      setShowModal(false);
+      loadSlides();
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to save banner: " + (err.response?.data?.message || err.message));
     }
-    setComingSoonSlides(updated);
-    setSlides(updated);
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_coming_soon_teasers" } }));
-    setShowModal(false);
-    showToast(editSlide ? "Coming Soon slide updated" : "Coming Soon slide added");
   };
 
-  const remove = () => {
+  const remove = async () => {
     if (deleteId) {
-      const updated = slides.filter((s) => s.id !== deleteId);
-      setComingSoonSlides(updated);
-      setSlides(updated);
-      setDeleteId(null);
-      window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_coming_soon_teasers" } }));
-      showToast("Slide deleted");
+      try {
+        const activeToken = token || "";
+        await adminComingSoonApi.deleteBanner(Number(deleteId), activeToken);
+        setDeleteId(null);
+        showToast("Slide deleted");
+        loadSlides();
+      } catch (err: any) {
+        console.error(err);
+        alert("Failed to delete banner: " + (err.response?.data?.message || err.message));
+      }
     }
   };
 
-  const moveUp = (idx: number) => {
+  const moveUp = async (idx: number) => {
     if (idx === 0) return;
-    const arr = [...sorted];
-    [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-    const reordered = arr.map((s, i) => ({ ...s, order: i }));
-    setComingSoonSlides(reordered);
-    setSlides(reordered);
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_coming_soon_teasers" } }));
-    showToast("Order updated");
+    try {
+      const activeToken = token || "";
+      const arr = [...sorted];
+      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+      
+      for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        const fd = new FormData();
+        fd.append("displayOrder", String(i));
+        await adminComingSoonApi.updateBanner(Number(item.id), fd, activeToken);
+      }
+      showToast("Order updated");
+      loadSlides();
+    } catch (err: any) {
+      console.error(err);
+    }
   };
 
-  const moveDown = (idx: number) => {
+  const moveDown = async (idx: number) => {
     if (idx >= sorted.length - 1) return;
-    const arr = [...sorted];
-    [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-    const reordered = arr.map((s, i) => ({ ...s, order: i }));
-    setComingSoonSlides(reordered);
-    setSlides(reordered);
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_coming_soon_teasers" } }));
-    showToast("Order updated");
+    try {
+      const activeToken = token || "";
+      const arr = [...sorted];
+      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+      
+      for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        const fd = new FormData();
+        fd.append("displayOrder", String(i));
+        await adminComingSoonApi.updateBanner(Number(item.id), fd, activeToken);
+      }
+      showToast("Order updated");
+      loadSlides();
+    } catch (err: any) {
+      console.error(err);
+    }
   };
 
-  const toggleActive = (id: string) => {
-    const updated = slides.map((s) => (s.id === id ? { ...s, active: !s.active } : s));
-    setComingSoonSlides(updated);
-    setSlides(updated);
-    window.dispatchEvent(new CustomEvent("dd-content-changed", { detail: { key: "dd_content_coming_soon_teasers" } }));
-    showToast("Toggled visibility");
+  const toggleActive = async (id: string) => {
+    try {
+      const activeToken = token || "";
+      await adminComingSoonApi.toggleBannerActive(Number(id), activeToken);
+      showToast("Toggled visibility");
+      loadSlides();
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to toggle banner: " + (err.response?.data?.message || err.message));
+    }
   };
 
   return (

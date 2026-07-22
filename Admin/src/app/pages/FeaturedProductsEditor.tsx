@@ -32,6 +32,7 @@ export function FeaturedProductsEditorPage() {
   const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; price: number }[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadData = async () => {
     if (!token) return;
@@ -68,6 +69,7 @@ export function FeaturedProductsEditorPage() {
 
   const save = async () => {
     if (!token) return;
+    setIsSaving(true);
     try {
       await adminCuratedCollectionApi.updateCollection("NEW_IN", {
         title: config.sectionTitle,
@@ -79,6 +81,8 @@ export function FeaturedProductsEditorPage() {
     } catch (err) {
       console.error("Failed to save new in collection:", err);
       showToast("Error saving new in collection");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -150,9 +154,19 @@ export function FeaturedProductsEditorPage() {
                   </button>
                   <button
                     onClick={save}
-                    className="bg-[#224870] hover:bg-[#1a3a5c] text-white text-[8px] font-bold tracking-widest px-4 py-1.5 uppercase flex items-center gap-1 cursor-pointer rounded-none border-none transition-colors"
+                    disabled={isSaving}
+                    className="bg-[#224870] hover:bg-[#1a3a5c] text-white text-[8px] font-bold tracking-widest px-4 py-1.5 uppercase flex items-center gap-1 cursor-pointer rounded-none border-none transition-colors disabled:opacity-75 min-w-[110px] justify-center"
                   >
-                    <Check className="w-3 h-3" /> Save Settings
+                    {isSaving ? (
+                      <>
+                        <span className="inline-block w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-1.5" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3 h-3" /> Save Settings
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
