@@ -224,7 +224,7 @@ public class OrderReturnService implements IOrderReturnService {
 
 		// Notify admin via email
 		try {
-			String adminEmail = "dripdoggyofficial@gmail.com";
+			String adminEmail = "returns.dripdoggy@gmail.com";
 			String orderNumber = "#DD-" + order.getId();
 			Address address = order.getAddress();
 			String customerName = "";
@@ -401,7 +401,7 @@ public class OrderReturnService implements IOrderReturnService {
 
 		// Notify admin & customer via email
 		try {
-			String adminEmail = "dripdoggyofficial@gmail.com";
+			String adminEmail = "returns.dripdoggy@gmail.com";
 			String orderNumber = "#DD-" + order.getId();
 			Address address = order.getAddress();
 			String customerName = "";

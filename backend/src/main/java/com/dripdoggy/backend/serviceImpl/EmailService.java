@@ -274,6 +274,9 @@ public class EmailService {
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                helper.setBcc("orders.dripdoggy@gmail.com");
+            }
             helper.setSubject("DripDoggy Order Placed Successfully - " + orderNumber);
             
             java.math.BigDecimal subTotal = java.math.BigDecimal.ZERO;
@@ -363,6 +366,9 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                message.setBcc("orders.dripdoggy@gmail.com");
+            }
             message.setSubject("DripDoggy Order Placed Successfully - " + orderNumber);
             message.setText("Dear " + customerName + ",\n\n" +
                     "Your order " + orderNumber + " has been successfully placed.\n\n" +
@@ -833,6 +839,9 @@ public class EmailService {
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                helper.setBcc("orders.dripdoggy@gmail.com");
+            }
             helper.setSubject("DripDoggy Exchange Product Delivered - " + orderNumber);
             
             String title = "Replacement Product Delivered!";
@@ -859,6 +868,9 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                message.setBcc("orders.dripdoggy@gmail.com");
+            }
             message.setSubject("DripDoggy Exchange Product Delivered - " + orderNumber);
             message.setText("Dear " + customerName + ",\n\n" +
                     "Your exchange product for order " + orderNumber + " has been successfully delivered to you.\n\n" +
@@ -1029,6 +1041,9 @@ public class EmailService {
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                helper.setBcc("orders.dripdoggy@gmail.com");
+            }
             helper.setSubject("DripDoggy Order Cancelled - " + orderNumber);
             
             java.math.BigDecimal subTotal = java.math.BigDecimal.ZERO;
@@ -1121,6 +1136,9 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                message.setBcc("orders.dripdoggy@gmail.com");
+            }
             message.setSubject("DripDoggy Order Cancelled - " + orderNumber);
             message.setText("Dear " + customerName + ",\n\n" +
                     "Your order " + orderNumber + " has been successfully cancelled.\n\n" +
@@ -1139,6 +1157,9 @@ public class EmailService {
             
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                helper.setBcc("orders.dripdoggy@gmail.com");
+            }
             helper.setSubject("Your DripDoggy Order Has Been Delivered! - " + orderNumber);
             
             java.math.BigDecimal subTotal = java.math.BigDecimal.ZERO;
@@ -1228,6 +1249,9 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
+            if (toEmail != null && !toEmail.equalsIgnoreCase("orders.dripdoggy@gmail.com")) {
+                message.setBcc("orders.dripdoggy@gmail.com");
+            }
             message.setSubject("Your DripDoggy Order Has Been Delivered! - " + orderNumber);
             message.setText("Dear " + customerName + ",\n\n" +
                     "Your order " + orderNumber + " has been successfully delivered. Thank you for ordering!\n\n" +

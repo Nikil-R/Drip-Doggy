@@ -607,6 +607,8 @@ public class DashboardServiceImpl implements IDashboardService {
                     "ORDER BY SUM(o.totalAmount) DESC";
 
             List<Object[]> rows = entityManager.createQuery(jpql, Object[].class)
+            		.setParameter("start", start)
+                    .setParameter("end", end)
                     .setMaxResults(5)
                     .getResultList();
 
